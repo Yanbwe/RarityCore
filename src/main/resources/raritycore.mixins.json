@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "org.yanbwe.raritycore.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "raritycore.refmap.json",
+  "mixins": [
+    "ItemStackMixin"
+  ],
+  "client": [
+    "ItemRendererMixin",
+    "AbstractContainerScreenMixin",
+    "GuiMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}
