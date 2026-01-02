@@ -1,16 +1,17 @@
 package org.yanbwe.raritycore.config;
 
-import com.google.gson.*;
-import net.minecraftforge.fml.loading.FMLPaths;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.util.RarityConstants;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 统一配置管理器

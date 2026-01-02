@@ -3,7 +3,6 @@ package org.yanbwe.raritycore.registry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.registries.ForgeRegistries;
-import org.yanbwe.raritycore.RarityCore;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
