@@ -29,7 +29,6 @@ java {
 }
 
 minecraft {
-    reobf = false
     // The mappings can be changed at any time and must be in the following format.
     // Channel:   Version:
     // official   MCVersion             Official field/method names from Mojang mapping files
@@ -203,7 +202,26 @@ tasks.named('jar', Jar).configure {
         ])
     }
 
-    // Reobfuscation is disabled
+}
+
+if (project.hasProperty('enableReobf') && project.getProperty('enableReobf') == 'true') {
+    tasks.jar {
+        finalizedBy 'reobfJar'
+    }
+}
+
+// Apply reobf configuration for production builds
+if (project.hasProperty('enableReobf') && project.getProperty('enableReobf') == 'true') {
+    tasks.withType(JavaCompile) {
+        options.compilerArgs += ['-Aforge.reobf=true']
+    }
+}
+
+tasks.jar {
+    // Conditionally apply reobfuscation based on environment
+    if (project.hasProperty('enableReobf') && project.getProperty('enableReobf') == 'true') {
+        finalizedBy 'reobfJar'
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
