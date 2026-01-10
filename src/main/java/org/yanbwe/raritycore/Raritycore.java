@@ -51,6 +51,6 @@ public class RarityCore {
     
     @SubscribeEvent
     public void registerCommands(RegisterCommandsEvent event) {
-        RarityCoreCommands.register(event.getDispatcher());
+        RarityCoreCommands.register(event.getDispatcher(), event.getBuildContext());
     }
 }

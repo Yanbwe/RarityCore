@@ -8,6 +8,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
@@ -33,39 +34,44 @@ import java.util.Map;
 
 public class RarityCoreCommands {
     
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext context) {
         dispatcher.register(Commands.literal("raritycore")
             .then(Commands.literal("sethand")
                 .then(Commands.argument("rarity", IntegerArgumentType.integer(RarityConstants.MIN_RARITY, RarityConstants.MAX_RARITY))
-                    .executes(context -> setHandRarity(
-                        context.getSource(),
-                        IntegerArgumentType.getInteger(context, "rarity")
+                    .executes(context1 -> setHandRarity(
+                        context1.getSource(),
+                        IntegerArgumentType.getInteger(context1, "rarity")
                     ))
                 )
             )
             .then(Commands.literal("setrarity")
                 .then(Commands.argument("item", ResourceLocationArgument.id())
                     .then(Commands.argument("rarity", IntegerArgumentType.integer(RarityConstants.MIN_RARITY, RarityConstants.MAX_RARITY))
-                        .executes(context -> setItemRarity(
-                            context.getSource(),
-                            ResourceLocationArgument.getId(context, "item"),
-                            IntegerArgumentType.getInteger(context, "rarity")
+                        .executes(context1 -> setItemRarity(
+                            context1.getSource(),
+                            ResourceLocationArgument.getId(context1, "item"),
+                            IntegerArgumentType.getInteger(context1, "rarity")
                         ))
                     )
                 )
             )
             .then(Commands.literal("reload")
-                .executes(context -> reloadRarityData(context.getSource()))
+                .executes(context1 -> reloadRarityData(context1.getSource()))
             )
             .then(Commands.literal("export")
-                .executes(context -> exportRarityData(context.getSource()))
+                .executes(context1 -> exportRarityData(context1.getSource()))
             )
         );
         
         // 注册客户端配置重载命令
         dispatcher.register(Commands.literal("raritycore-client")
-            .executes(context -> reloadClientConfig(context.getSource()))
+            .executes(context1 -> reloadClientConfig(context1.getSource()))
         );
+    }
+    
+    // 保留原始的注册方法以确保向后兼容
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        register(dispatcher, null);
     }
     
     /**
