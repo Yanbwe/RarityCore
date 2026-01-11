@@ -19,8 +19,8 @@ public class RarityColorUtil {
                 return ChatFormatting.WHITE;
             case 2: // 稀有 - 绿色
                 return ChatFormatting.GREEN;
-            case 3: // 罕见 - 蓝色
-                return ChatFormatting.BLUE;
+            case 3: // 罕见 - 深青色
+                return ChatFormatting.DARK_AQUA;
             case 4: // 史诗 - 浅紫色
                 return ChatFormatting.LIGHT_PURPLE;
             case 5: // 传说 - 金色
@@ -40,23 +40,22 @@ public class RarityColorUtil {
      * @return ARGB颜色值
      */
     public static int getRarityArgbColor(int rarity) {
-        switch (rarity) {
-            case 1: // 普通 - 灰色（更明显）
-                return 0xFFA0A0A0;
-            case 2: // 稀有 - 绿色
-                return 0xFF00AA00;
-            case 3: // 罕见 - 蓝色
-                return 0xFF0000FF;
-            case 4: // 史诗 - 浅紫色
-                return 0xFFC870FF;
-            case 5: // 传说 - 金色
-                return 0xFFFFAA00;
-            case 6: // 神话 - 红色
-                return 0xFFFF5555;
-            case 7: // 唯一 - 深红色
-                return 0xFFAA0000;
-            default:
-                return 0xFFA0A0A0; // 默认灰色
-        }
+        return switch (rarity) {
+            case 1 -> // 普通 - 灰色（更明显）
+                    0xFFA0A0A0;
+            case 2 -> // 稀有 - 绿色
+                    0xFF00AA00;
+            case 3 -> // 罕见 - 青蓝色
+                    0xFF00AAAA;
+            case 4 -> // 史诗 - 浅紫色
+                    0xFFC870FF;
+            case 5 -> // 传说 - 金色
+                    0xFFFFAA00;
+            case 6 -> // 神话 - 红色
+                    0xFFFF5555;
+            case 7 -> // 唯一 - 深红色
+                    0xFFAA0000;
+            default -> 0xFFA0A0A0; // 默认灰色
+        };
     }
 }

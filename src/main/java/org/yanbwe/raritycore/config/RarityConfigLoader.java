@@ -26,7 +26,7 @@ public class RarityConfigLoader {
         try {
             Files.createDirectories(configDir);
         } catch (IOException e) {
-            RarityCore.LOGGER.error("无法创建配置目录: {}", configDir.toString(), e);
+            RarityCore.LOGGER.error("无法创建配置目录: {}", configDir, e);
             return;
         }
 
@@ -57,34 +57,31 @@ public class RarityConfigLoader {
                         
                         ResourceLocation itemId = new ResourceLocation(itemIdString);
                         net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
-                        
+
                         if (item == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-                            RarityCore.LOGGER.warn("未知物品 '{}' 在配置文件 '{}'", itemIdString, configFile.toString());
-                            continue;
+                            continue; // 跳过未知物品
                         }
                         
                         if (rarity < RarityConstants.MIN_RARITY || rarity > RarityConstants.MAX_RARITY) {
-                            RarityCore.LOGGER.warn("无效的稀有度值 {} 对于物品 '{}' 在配置文件 '{}'", rarity, itemIdString, configFile.toString());
-                            continue;
+                            continue; // 跳过无效稀有度值
                         }
                         
-                        // 注册稀有度（这将覆盖之前加载的任何数据）
-                        RarityRegistry.register(item, rarity);
-                        RarityCore.LOGGER.debug("从配置文件加载物品稀有度: {} -> {}", itemIdString, rarity);
+                        // 注册稀有度，不自动同步到客户端
+                        RarityRegistry.register(item, rarity, false);
                     } else {
-                        RarityCore.LOGGER.warn("无效的稀有度数据格式 对于物品 '{}' 在配置文件 '{}'", itemIdString, configFile.toString());
+                        // 跳过无效数据格式
                     }
                 }
             }
         } catch (IOException e) {
-            RarityCore.LOGGER.error("无法读取配置文件: {}", configFile.toString(), e);
+            RarityCore.LOGGER.error("无法读取配置文件: {}", configFile, e);
         } catch (JsonParseException e) {
             RarityCore.LOGGER.error("配置文件格式错误: {}", configFile.toString(), e);
             // 尝试创建默认配置文件
             try {
                 createDefaultConfig(configFile);
             } catch (Exception ex) {
-                RarityCore.LOGGER.error("无法创建默认配置文件: {}", configFile.toString(), ex);
+                RarityCore.LOGGER.error("无法创建默认配置文件: {}", configFile, ex);
             }
         }
     }
@@ -99,7 +96,7 @@ public class RarityConfigLoader {
         try (FileWriter writer = new FileWriter(configFile.toFile())) {
             GSON.toJson(configObject, writer);
         } catch (IOException e) {
-            RarityCore.LOGGER.error("无法创建默认配置文件: {}", configFile.toString(), e);
+            RarityCore.LOGGER.error("无法创建默认配置文件: {}", configFile, e);
         }
     }
 }

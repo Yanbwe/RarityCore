@@ -12,7 +12,7 @@ buildscript {
 plugins {
     id 'eclipse'
     id 'idea'
-    id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
+    id 'net.minecraftforge.gradle' version '6.0.42'
 }
 
 apply plugin: 'org.spongepowered.mixin'
@@ -202,10 +202,38 @@ tasks.named('jar', Jar).configure {
         ])
     }
 
-    // This is the preferred method to reobfuscate your jar file
-    finalizedBy 'reobfJar'
+}
+
+if (project.hasProperty('enableReobf') && project.getProperty('enableReobf') == 'true') {
+    tasks.jar {
+        finalizedBy 'reobfJar'
+    }
+}
+
+// Apply reobf configuration for production builds
+if (project.hasProperty('enableReobf') && project.getProperty('enableReobf') == 'true') {
+    tasks.withType(JavaCompile) {
+        options.compilerArgs += ['-Aforge.reobf=true']
+    }
+}
+
+tasks.jar {
+    // Conditionally apply reobfuscation based on environment
+    if (project.hasProperty('enableReobf') && project.getProperty('enableReobf') == 'true') {
+        finalizedBy 'reobfJar'
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
+apply plugin: 'maven-publish'
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact jar
+            //artifact sourcesJar
+        }
+    }
 }

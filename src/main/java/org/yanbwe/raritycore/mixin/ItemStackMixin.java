@@ -2,7 +2,6 @@ package org.yanbwe.raritycore.mixin;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,7 +16,7 @@ import org.yanbwe.raritycore.util.RarityConstants;
 public class ItemStackMixin {
 
     @Inject(method = "getHoverName", at = @At("RETURN"), cancellable = true)
-    private void getHoverName(CallbackInfoReturnable<Component> cir) {
+    private void modifyHoverName(CallbackInfoReturnable<Component> cir) {
         ItemStack stack = (ItemStack) (Object) this;
         
         // 获取物品的稀有度
@@ -40,16 +39,10 @@ public class ItemStackMixin {
         
         // 获取对应颜色
         ChatFormatting color = RarityColorUtil.getRarityChatColor(rarity);
-        
-        // 获取原始名称
         Component originalName = cir.getReturnValue();
         
-        // 创建带有颜色格式的新组件
-        MutableComponent coloredName = Component.literal(originalName.getString()).withStyle(color);
-        
-        // 取消原始返回值并设置新的带颜色的名称
-        cir.cancel();
-        cir.setReturnValue(coloredName);
+        // 设置带有颜色格式的名称并取消默认返回值
+        cir.setReturnValue(originalName.copy().withStyle(color));
     }
     
     /**
