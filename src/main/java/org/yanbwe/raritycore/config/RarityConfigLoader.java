@@ -57,22 +57,19 @@ public class RarityConfigLoader {
                         
                         ResourceLocation itemId = new ResourceLocation(itemIdString);
                         net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
-                        
+
                         if (item == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-                            RarityCore.LOGGER.warn("未知物品 '{}' 在配置文件 '{}'", itemIdString, configFile);
-                            continue;
+                            continue; // 跳过未知物品
                         }
                         
                         if (rarity < RarityConstants.MIN_RARITY || rarity > RarityConstants.MAX_RARITY) {
-                            RarityCore.LOGGER.warn("无效的稀有度值 {} 对于物品 '{}' 在配置文件 '{}'", rarity, itemIdString, configFile);
-                            continue;
+                            continue; // 跳过无效稀有度值
                         }
                         
-                        // 注册稀有度（这将覆盖之前加载的任何数据），不自动同步到客户端
+                        // 注册稀有度，不自动同步到客户端
                         RarityRegistry.register(item, rarity, false);
-                        RarityCore.LOGGER.debug("从配置文件加载物品稀有度: {} -> {}", itemIdString, rarity);
                     } else {
-                        RarityCore.LOGGER.warn("无效的稀有度数据格式 对于物品 '{}' 在配置文件 '{}'", itemIdString, configFile);
+                        // 跳过无效数据格式
                     }
                 }
             }

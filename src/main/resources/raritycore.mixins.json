@@ -8,7 +8,6 @@
     "ItemStackMixin"
   ],
   "client": [
-    "ItemRendererMixin",
     "AbstractContainerScreenMixin",
     "GuiMixin"
   ],
