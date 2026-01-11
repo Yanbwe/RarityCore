@@ -89,11 +89,14 @@ public class RarityCoreCommands {
                 return 0;
             }
             
-            // 注册稀有度
-            RarityRegistry.register(item, rarity);
+            // 注册稀有度（不自动同步，因为后面会手动同步）
+            RarityRegistry.register(item, rarity, false);
             
             // 保存到配置文件
             saveRarityToConfig(itemId.toString(), rarity);
+            
+            // 手动同步到所有客户端
+            RarityRegistry.syncRarityToClients();
             
             source.sendSuccess(() -> Component.literal("已将手上物品 " + itemId + " 设置为稀有度 " + rarity).withStyle(ChatFormatting.GREEN), false);
             return 1;
@@ -115,11 +118,14 @@ public class RarityCoreCommands {
             return 0;
         }
         
-        // 注册稀有度
-        RarityRegistry.register(item, rarity);
+        // 注册稀有度（不自动同步，因为后面会手动同步）
+        RarityRegistry.register(item, rarity, false);
         
         // 保存到配置文件
         saveRarityToConfig(itemId.toString(), rarity);
+        
+        // 手动同步到所有客户端
+        RarityRegistry.syncRarityToClients();
         
         source.sendSuccess(() -> Component.literal("已将物品 " + itemId + " 设置为稀有度 " + rarity).withStyle(ChatFormatting.GREEN), false);
         return 1;
@@ -133,6 +139,9 @@ public class RarityCoreCommands {
         // 注意：在实际游戏中，这通常需要通过资源重载器来完成
         // 这里我们只重新加载配置文件
         RarityConfigLoader.loadConfigRarityData();
+        
+        // 同步更新后的数据到所有客户端
+        RarityRegistry.syncRarityToClients();
         
         source.sendSuccess(() -> Component.literal("已重新加载稀有度数据").withStyle(ChatFormatting.GREEN), false);
         return 1;

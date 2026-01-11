@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.data.RarityDataLoader;
+import org.yanbwe.raritycore.network.RaritySyncPacket;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(RarityCore.MODID)

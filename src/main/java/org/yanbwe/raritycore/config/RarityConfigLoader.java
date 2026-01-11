@@ -68,8 +68,8 @@ public class RarityConfigLoader {
                             continue;
                         }
                         
-                        // 注册稀有度（这将覆盖之前加载的任何数据）
-                        RarityRegistry.register(item, rarity);
+                        // 注册稀有度（这将覆盖之前加载的任何数据），不自动同步到客户端
+                        RarityRegistry.register(item, rarity, false);
                         RarityCore.LOGGER.debug("从配置文件加载物品稀有度: {} -> {}", itemIdString, rarity);
                     } else {
                         RarityCore.LOGGER.warn("无效的稀有度数据格式 对于物品 '{}' 在配置文件 '{}'", itemIdString, configFile.toString());

@@ -75,5 +75,8 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener {
         
         // 在资源包数据加载完成后，加载配置文件中的数据以覆盖或补充
         RarityConfigLoader.loadConfigRarityData();
+        
+        // 同步更新后的数据到所有客户端
+        RarityRegistry.syncRarityToClients();
     }
 }
