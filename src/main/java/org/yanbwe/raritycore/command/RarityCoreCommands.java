@@ -30,6 +30,9 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 public class RarityCoreCommands {
     
@@ -58,7 +61,17 @@ public class RarityCoreCommands {
                 .executes(context -> reloadRarityData(context.getSource()))
             )
             .then(Commands.literal("export")
-                .executes(context -> exportRarityData(context.getSource()))
+                .then(Commands.literal("all")
+                    .executes(context -> exportAllRarityData(context.getSource()))
+                )
+                .then(Commands.literal("mod")
+                    .then(Commands.argument("modid", ResourceLocationArgument.id())
+                        .executes(context -> exportModRarityData(context.getSource(), ResourceLocationArgument.getId(context, "modid")))
+                    )
+                )
+            )
+            .then(Commands.literal("details")
+                .executes(context -> showDetails(context.getSource()))
             )
         );
         
@@ -148,9 +161,39 @@ public class RarityCoreCommands {
     }
     
     /**
-     * 导出稀有度数据
+     * 显示稀有度配置详情
      */
-    private static int exportRarityData(CommandSourceStack source) {
+    private static int showDetails(CommandSourceStack source) {
+        // 统计每个模组的物品数量
+        Map<String, Integer> modItemCount = new HashMap<>();
+        int totalItems = 0;
+        
+        for (Map.Entry<ResourceLocation, Integer> entry : RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
+            String modId = entry.getKey().getNamespace();
+            modItemCount.put(modId, modItemCount.getOrDefault(modId, 0) + 1);
+            totalItems++;
+        }
+        
+        int modCount = modItemCount.size();
+        
+        // 构建响应消息
+        StringBuilder response = new StringBuilder();
+        response.append("有稀有度配置的模组：").append(modCount).append("\n");
+        response.append("有稀有度配置的物品：").append(totalItems).append("\n");
+        
+        // 添加模组列表
+        for (Map.Entry<String, Integer> entry : modItemCount.entrySet()) {
+            response.append(entry.getKey()).append(":").append(entry.getValue()).append(" ");
+        }
+        
+        source.sendSuccess(() -> Component.literal(response.toString().trim()).withStyle(ChatFormatting.YELLOW), false);
+        return 1;
+    }
+    
+    /**
+     * 导出所有稀有度数据
+     */
+    private static int exportAllRarityData(CommandSourceStack source) {
         try {
             // 使用ConfigManager提供的路径
             Path configDir = ConfigManager.getConfigDirPath();
@@ -158,17 +201,43 @@ public class RarityCoreCommands {
             
             // 生成带时间戳的文件名
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
-            String fileName = "export_" + timestamp + ".json";
+            String fileName = "export_all_" + timestamp + ".json";
             Path exportFile = configDir.resolve(fileName);
             
             // 导出当前注册的所有稀有度数据
             exportRarityDataToFile(exportFile);
             
-            source.sendSuccess(() -> Component.literal("稀有度数据已导出到: " + exportFile.toString()).withStyle(ChatFormatting.GREEN), false);
+            source.sendSuccess(() -> Component.literal("所有稀有度数据已导出到: " + exportFile.toString()).withStyle(ChatFormatting.GREEN), false);
             return 1;
         } catch (IOException e) {
             RarityCore.LOGGER.error("导出稀有度数据失败", e);
             source.sendSuccess(() -> Component.literal("导出稀有度数据失败: " + e.getMessage()).withStyle(ChatFormatting.RED), false);
+            return 0;
+        }
+    }
+    
+    /**
+     * 导出特定模组的稀有度数据
+     */
+    private static int exportModRarityData(CommandSourceStack source, ResourceLocation modId) {
+        try {
+            // 使用ConfigManager提供的路径
+            Path configDir = ConfigManager.getConfigDirPath();
+            Files.createDirectories(configDir);
+            
+            // 生成带时间戳的文件名
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+            String fileName = "export_mod_" + modId.getNamespace() + "_" + timestamp + ".json";
+            Path exportFile = configDir.resolve(fileName);
+            
+            // 导出特定模组的稀有度数据
+            exportModRarityDataToFile(exportFile, modId.getNamespace());
+            
+            source.sendSuccess(() -> Component.literal("模组 " + modId.getNamespace() + " 的稀有度数据已导出到: " + exportFile.toString()).withStyle(ChatFormatting.GREEN), false);
+            return 1;
+        } catch (IOException e) {
+            RarityCore.LOGGER.error("导出模组稀有度数据失败", e);
+            source.sendSuccess(() -> Component.literal("导出模组稀有度数据失败: " + e.getMessage()).withStyle(ChatFormatting.RED), false);
             return 0;
         }
     }
@@ -237,6 +306,27 @@ public class RarityCoreCommands {
         // 从注册表获取所有已注册的稀有度数据
         for (Map.Entry<ResourceLocation, Integer> entry : RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
             exportData.put(entry.getKey().toString(), entry.getValue());
+        }
+        
+        // 写入导出文件
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try (FileWriter writer = new FileWriter(exportFile.toFile())) {
+            gson.toJson(exportData, writer);
+        }
+    }
+    
+    /**
+     * 导出特定模组的稀有度数据到文件
+     */
+    private static void exportModRarityDataToFile(Path exportFile, String modNamespace) throws IOException {
+        // 使用LinkedHashMap保持顺序
+        java.util.LinkedHashMap<String, Integer> exportData = new java.util.LinkedHashMap<>();
+        
+        // 从注册表获取特定模组的已注册稀有度数据
+        for (Map.Entry<ResourceLocation, Integer> entry : RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
+            if (entry.getKey().getNamespace().equals(modNamespace)) {
+                exportData.put(entry.getKey().toString(), entry.getValue());
+            }
         }
         
         // 写入导出文件

@@ -48,16 +48,20 @@ Chinese
 1. `/raritycore sethand <rarity> ` 设置当前手持物品的稀有度
 2. `/raritycore setrarity <item> <rarity>`设置指定物品的稀有度
 3. `/raritycore reload`重新加载所有稀有度配置，用于修改`FinalRarity.json`后的应用
-4. `/raritycore export`导出当前所有已注册的稀有度数据到文件，文件会保存到 config/raritycore/ 目录下，带有时间戳
+4. `/raritycore export all/mod`导出当前已注册的稀有度数据到文件
+
+其中`/raritycore export all`会导出所有已注册的稀有度数据，而`/raritycore export mod <modid>`会导出指定模组的稀有度数据，文件会保存到 `config/raritycore/` 目录下，带有时间戳
+
+5. `/raritycore details`打印当前已注册的稀有度信息，如有多少个模组和物品拥有稀有度配置
 
 English
 ---
 ---
 # Raritycore
 
-A simple mod that offers seven rarity levels and reflects the rarity of items in the item name color, tool tip box, and item slot background.
+A simple mod that provides seven rarity levels and reflects the rarity of items in the item name color, tool tip box, and item slot background.
 
-This mod comes with pre-configured rarity settings for vanilla and some modded items. You can add or modify the rarity of items through commands, configurations, and mods.
+This mod comes with the rarity configuration for vanilla and some modded items. You can add or modify the rarity of items through commands, configurations, and mods.
 
 If you are not a mod developer but have a good rarity configuration, please send me your configuration file, and I may add it to the mod.
 
@@ -68,8 +72,8 @@ If you need to export the mod as a jar file usable outside the development envir
 ## **Configuration Instructions**
 
 If you wish to add or modify the rarity of an item, you can do so using the following methods:
-### 1. Addition via Resource Pack
-If you are a mod developer, you can add a `data/<namespace>/rarity/any_name.json` file to the resource pack, with the content format as follows:
+### 1. Adding via Resource Pack
+If you are a mod developer, you can add a `data/<namespace>/rarity/any_name.json` file to the resource pack, with the following content format:
 ```json
 {
 
@@ -78,9 +82,9 @@ If you are a mod developer, you can add a `data/<namespace>/rarity/any_name.json
   ...
 }
 ```
-If you want to quickly and intuitively write configuration files, you can use the command introduced in Method 4 below. First, use the command to modify the rarity of items, and then use the command to export the rarity information in the correct format
+If you want to quickly and intuitively write configuration files, you can use the command introduced in Method 4 below. First, use the command to modify the rarity of items, and then use the command to export the rarity information in the appropriate format
 
-If you need to override the built-in rarity information of this mod, please add a dependency in mods.toml to ensure that the built-in rarity information is overridden:
+If you need to overwrite the built-in rarity information of this mod, please add a dependency in mods.toml to ensure that the built-in rarity information is overwritten:
 ```Toml
 [[dependencies.your_mod]]
    modId="raritycore"
@@ -91,12 +95,16 @@ If you need to override the built-in rarity information of this mod, please add 
 ```
 ### 2. Adding via Code
 If you are a mod developer, you can directly register by calling the public method `RarityRegistry.register(Item item, int rarity)`. This method can be used at any time after the raritycore mod is loaded, and is recommended for temporarily modifying rarity within the world
-### 3. Add through the game's config
+### 3. Addition through the game's config
 If you are a regular player or a mod developer, you can register or modify rarity through `config\raritycore\FinalRarity.json`, with the content format consistent with the aforementioned resource pack file
 It should be noted that the Rarity Information Loader will load this file last, so the rarity information entered here will overwrite the rarity information in the resource pack
 ### 4. Adding via game commands
-You can use the `/raritycore` command in-game to add or modify rarity. Currently, the following commands are available:
+You can use the `/raritycore` command in-game to add or modify rarity levels. Currently, the following commands are available:
 1. `/raritycore sethand <rarity>` Set the rarity of the currently held item
 2. `/raritycore setrarity <item> <rarity>` sets the rarity of the specified item
 3. `/raritycore reload` reloads all rarity configurations, intended for use after modifying `FinalRarity.json`
-4. `/raritycore export` exports all currently registered rarity data to a file, which will be saved to the config/raritycore/ directory with a timestamp
+4. `/raritycore export all/mod` exports the currently registered rarity data to a file
+
+The command `/raritycore export all` will export all registered rarity data, while `/raritycore export mod <modid>` will export the rarity data of the specified mod. The file will be saved to the `config/raritycore/` directory with a timestamp
+
+5. `/raritycore details` prints the currently registered rarity information, such as the number of modules and items that have rarity configurations
