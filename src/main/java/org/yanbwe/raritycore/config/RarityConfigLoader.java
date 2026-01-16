@@ -26,7 +26,7 @@ public class RarityConfigLoader {
         try {
             Files.createDirectories(configDir);
         } catch (IOException e) {
-            RarityCore.LOGGER.error("无法创建配置目录: {}", configDir, e);
+            RarityCore.LOGGER.error("Cannot create config directory: {}", configDir, e);
             return;
         }
 
@@ -74,14 +74,14 @@ public class RarityConfigLoader {
                 }
             }
         } catch (IOException e) {
-            RarityCore.LOGGER.error("无法读取配置文件: {}", configFile, e);
+            RarityCore.LOGGER.error("Cannot read config file: {}", configFile, e);
         } catch (JsonParseException e) {
-            RarityCore.LOGGER.error("配置文件格式错误: {}", configFile.toString(), e);
+            RarityCore.LOGGER.error("Config file format error: {}", configFile.toString(), e);
             // 尝试创建默认配置文件
             try {
                 createDefaultConfig(configFile);
             } catch (Exception ex) {
-                RarityCore.LOGGER.error("无法创建默认配置文件: {}", configFile, ex);
+                RarityCore.LOGGER.error("Cannot create default config file: {}", configFile, ex);
             }
         }
     }
@@ -96,7 +96,7 @@ public class RarityConfigLoader {
         try (FileWriter writer = new FileWriter(configFile.toFile())) {
             GSON.toJson(configObject, writer);
         } catch (IOException e) {
-            RarityCore.LOGGER.error("无法创建默认配置文件: {}", configFile, e);
+            RarityCore.LOGGER.error("Cannot create default config file: {}", configFile, e);
         }
     }
 }

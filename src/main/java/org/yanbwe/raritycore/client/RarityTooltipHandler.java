@@ -38,29 +38,29 @@ public class RarityTooltipHandler {
         }
         
         // 设置前缀和颜色
-        String prefix;
+        MutableComponent prefixComponent;
         ChatFormatting color = RarityColorUtil.getRarityChatColor(rarity);
         switch (rarity) {
             case RarityConstants.RARITY_COMMON:
-                prefix = "[普通]";
+                prefixComponent = Component.translatable("rarity.core.common").withStyle(color);
                 break;
             case RarityConstants.RARITY_UNCOMMON:
-                prefix = "[稀有]";
+                prefixComponent = Component.translatable("rarity.core.uncommon").withStyle(color);
                 break;
             case RarityConstants.RARITY_RARE:
-                prefix = "[罕见]";
+                prefixComponent = Component.translatable("rarity.core.rare").withStyle(color);
                 break;
             case RarityConstants.RARITY_EPIC:
-                prefix = "[史诗]";
+                prefixComponent = Component.translatable("rarity.core.epic").withStyle(color);
                 break;
             case RarityConstants.RARITY_LEGENDARY:
-                prefix = "[传说]";
+                prefixComponent = Component.translatable("rarity.core.legendary").withStyle(color);
                 break;
             case RarityConstants.RARITY_MYTHICAL:
-                prefix = "[神话]";
+                prefixComponent = Component.translatable("rarity.core.mythical").withStyle(color);
                 break;
             case RarityConstants.RARITY_UNIQUE:
-                prefix = "[唯一]";
+                prefixComponent = Component.translatable("rarity.core.unique").withStyle(color);
                 break;
             default:
                 return;
@@ -73,8 +73,8 @@ public class RarityTooltipHandler {
         }
         
         // 构建文本
-        MutableComponent rarityComponent = Component.literal(prefix + " " + stars.toString())
-                .withStyle(color);
+        MutableComponent starsComponent = Component.literal(" " + stars.toString()).withStyle(color);
+        MutableComponent rarityComponent = Component.empty().append(prefixComponent).append(starsComponent);
         
         // 在工具提示列表的第二行插入稀有度提示
         if (event.getToolTip().size() >= 1) {

@@ -90,7 +90,7 @@ public class RarityCoreCommands {
             ItemStack itemStack = player.getMainHandItem();
             
             if (itemStack.isEmpty()) {
-                source.sendSuccess(() -> Component.literal("你手上没有物品！").withStyle(ChatFormatting.RED), false);
+                source.sendSuccess(() -> Component.translatable("rarity.core.no_item_in_hand").withStyle(ChatFormatting.RED), false);
                 return 0;
             }
             
@@ -98,7 +98,7 @@ public class RarityCoreCommands {
             ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
             
             if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-                source.sendSuccess(() -> Component.literal("无法识别的物品！").withStyle(ChatFormatting.RED), false);
+                source.sendSuccess(() -> Component.translatable("rarity.core.unrecognized_item").withStyle(ChatFormatting.RED), false);
                 return 0;
             }
             
@@ -111,11 +111,11 @@ public class RarityCoreCommands {
             // 手动同步到所有客户端
             RarityRegistry.syncRarityToClients();
             
-            source.sendSuccess(() -> Component.literal("已将手上物品 " + itemId + " 设置为稀有度 " + rarity).withStyle(ChatFormatting.GREEN), false);
+            source.sendSuccess(() -> Component.translatable("rarity.core.item_set_rarity", itemId, rarity).withStyle(ChatFormatting.GREEN), false);
             return 1;
         } catch (CommandSyntaxException e) {
-            RarityCore.LOGGER.error("命令执行失败", e);
-            source.sendSuccess(() -> Component.literal("命令执行失败！").withStyle(ChatFormatting.RED), false);
+            RarityCore.LOGGER.error("Command execution failed", e);
+            source.sendSuccess(() -> Component.translatable("rarity.core.command_failed").withStyle(ChatFormatting.RED), false);
             return 0;
         }
     }
@@ -127,7 +127,7 @@ public class RarityCoreCommands {
         Item item = ForgeRegistries.ITEMS.getValue(itemId);
         
         if (item == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-            source.sendSuccess(() -> Component.literal("未知物品ID: " + itemId).withStyle(ChatFormatting.RED), false);
+            source.sendSuccess(() -> Component.translatable("rarity.core.unknown_item_id", itemId).withStyle(ChatFormatting.RED), false);
             return 0;
         }
         
@@ -140,7 +140,7 @@ public class RarityCoreCommands {
         // 手动同步到所有客户端
         RarityRegistry.syncRarityToClients();
         
-        source.sendSuccess(() -> Component.literal("已将物品 " + itemId + " 设置为稀有度 " + rarity).withStyle(ChatFormatting.GREEN), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.item_set_rarity_by_id", itemId, rarity).withStyle(ChatFormatting.GREEN), false);
         return 1;
     }
     
@@ -156,7 +156,7 @@ public class RarityCoreCommands {
         // 同步更新后的数据到所有客户端
         RarityRegistry.syncRarityToClients();
         
-        source.sendSuccess(() -> Component.literal("已重新加载稀有度数据").withStyle(ChatFormatting.GREEN), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.reload_success").withStyle(ChatFormatting.GREEN), false);
         return 1;
     }
     
@@ -178,8 +178,8 @@ public class RarityCoreCommands {
         
         // 构建响应消息
         StringBuilder response = new StringBuilder();
-        response.append("有稀有度配置的模组：").append(modCount).append("\n");
-        response.append("有稀有度配置的物品：").append(totalItems).append("\n");
+        response.append(Component.translatable("rarity.core.mods_count", modCount).getString()).append("\n");
+        response.append(Component.translatable("rarity.core.items_count", totalItems).getString()).append("\n");
         
         // 添加模组列表
         for (Map.Entry<String, Integer> entry : modItemCount.entrySet()) {
@@ -207,11 +207,11 @@ public class RarityCoreCommands {
             // 导出当前注册的所有稀有度数据
             exportRarityDataToFile(exportFile);
             
-            source.sendSuccess(() -> Component.literal("所有稀有度数据已导出到: " + exportFile.toString()).withStyle(ChatFormatting.GREEN), false);
+            source.sendSuccess(() -> Component.translatable("rarity.core.export_all_success", exportFile.toString()).withStyle(ChatFormatting.GREEN), false);
             return 1;
         } catch (IOException e) {
-            RarityCore.LOGGER.error("导出稀有度数据失败", e);
-            source.sendSuccess(() -> Component.literal("导出稀有度数据失败: " + e.getMessage()).withStyle(ChatFormatting.RED), false);
+            RarityCore.LOGGER.error("Failed to export rarity data", e);
+            source.sendSuccess(() -> Component.translatable("rarity.core.export_failed", e.getMessage()).withStyle(ChatFormatting.RED), false);
             return 0;
         }
     }
@@ -233,11 +233,11 @@ public class RarityCoreCommands {
             // 导出特定模组的稀有度数据
             exportModRarityDataToFile(exportFile, modId.getNamespace());
             
-            source.sendSuccess(() -> Component.literal("模组 " + modId.getNamespace() + " 的稀有度数据已导出到: " + exportFile.toString()).withStyle(ChatFormatting.GREEN), false);
+            source.sendSuccess(() -> Component.translatable("rarity.core.export_mod_success", modId.getNamespace(), exportFile.toString()).withStyle(ChatFormatting.GREEN), false);
             return 1;
         } catch (IOException e) {
-            RarityCore.LOGGER.error("导出模组稀有度数据失败", e);
-            source.sendSuccess(() -> Component.literal("导出模组稀有度数据失败: " + e.getMessage()).withStyle(ChatFormatting.RED), false);
+            RarityCore.LOGGER.error("Failed to export mod rarity data", e);
+            source.sendSuccess(() -> Component.translatable("rarity.core.export_mod_failed", e.getMessage()).withStyle(ChatFormatting.RED), false);
             return 0;
         }
     }
@@ -247,9 +247,10 @@ public class RarityCoreCommands {
      */
     private static int reloadClientConfig(CommandSourceStack source) {
         ConfigManager.loadClientConfig();
-        source.sendSuccess(() -> Component.literal("已重新加载客户端配置: 物品边框渲染=" + 
-                ConfigManager.isEnableItemBorderRendering() + ", 边框样式=" + 
-                (ConfigManager.getItemBorderStyle() == 0 ? "空心" : "实心")).withStyle(ChatFormatting.GREEN), false);
+        String borderStyleText = ConfigManager.getItemBorderStyle() == 0 ? Component.translatable("rarity.core.border_style_hollow").getString() : Component.translatable("rarity.core.border_style_solid").getString();
+        source.sendSuccess(() -> Component.translatable("rarity.core.reload_client_config", 
+                ConfigManager.isEnableItemBorderRendering(), 
+                borderStyleText).withStyle(ChatFormatting.GREEN), false);
         return 1;
     }
     
@@ -292,7 +293,7 @@ public class RarityCoreCommands {
                 gson.toJson(jsonObject, writer);
             }
         } catch (IOException e) {
-            RarityCore.LOGGER.error("保存稀有度配置失败", e);
+            RarityCore.LOGGER.error("Failed to save rarity config", e);
         }
     }
     

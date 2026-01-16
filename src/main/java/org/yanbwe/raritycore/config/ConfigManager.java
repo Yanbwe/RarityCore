@@ -58,7 +58,7 @@ public class ConfigManager {
             // 确保配置目录存在
             Files.createDirectories(CONFIG_DIR);
         } catch (Exception e) {
-            RarityCore.LOGGER.error("无法创建配置目录: {}", CONFIG_DIR.toString(), e);
+            RarityCore.LOGGER.error("Cannot create config directory: {}", CONFIG_DIR.toString(), e);
             return;
         }
         
@@ -91,28 +91,28 @@ public class ConfigManager {
                 if (jsonObject.has("enableItemBorderRendering")) {
                     enableItemBorderRendering = jsonObject.get("enableItemBorderRendering").getAsBoolean();
                 } else {
-                    // 如果配置项不存在，使用默认值
+                    // If the config option doesn't exist, use default value
                     enableItemBorderRendering = RarityConstants.DEFAULT_ENABLE_ITEM_BORDER_RENDERING;
                 }
                 
-                // 读取边框样式
+                // Read border style
                 if (jsonObject.has("itemBorderStyle")) {
                     itemBorderStyle = jsonObject.get("itemBorderStyle").getAsInt();
-                    // 确保值在有效范围内
+                    // Ensure value is within valid range
                     if (itemBorderStyle < 0 || itemBorderStyle > 1) {
-                        itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE; // 默认为空心
-                        RarityCore.LOGGER.warn("客户端配置中边框样式值无效，已重置为默认值: {}", itemBorderStyle);
+                        itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE; // Default to hollow
+                        RarityCore.LOGGER.warn("Invalid border style value in client config, reset to default: {}", itemBorderStyle);
                     }
                 } else {
-                    // 如果配置项不存在，使用默认值
-                    itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE; // 默认为空心
+                    // If the config option doesn't exist, use default value
+                    itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE; // Default to hollow
                 }
                 
-                RarityCore.LOGGER.info("客户端配置加载成功: enableItemBorderRendering={}, itemBorderStyle={}", 
+                RarityCore.LOGGER.info("Client config loaded successfully: enableItemBorderRendering={}, itemBorderStyle={}", 
                     enableItemBorderRendering, itemBorderStyle);
             }
         } catch (Exception e) {
-            RarityCore.LOGGER.error("加载客户端配置文件时发生错误，使用默认配置: {}", CLIENT_CONFIG_FILE.toString(), e);
+            RarityCore.LOGGER.error("Error loading client config file, using default config: {}", CLIENT_CONFIG_FILE.toString(), e);
             // 出错时使用默认值
             enableItemBorderRendering = RarityConstants.DEFAULT_ENABLE_ITEM_BORDER_RENDERING;
             itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE;
@@ -132,9 +132,9 @@ public class ConfigManager {
         // 写入默认配置文件
         try (FileWriter writer = new FileWriter(CLIENT_CONFIG_FILE.toFile())) {
             GSON.toJson(configObject, writer);
-            RarityCore.LOGGER.info("已创建默认客户端配置文件: {}", CLIENT_CONFIG_FILE.toString());
+            RarityCore.LOGGER.info("Created default client config file: {}", CLIENT_CONFIG_FILE.toString());
         } catch (IOException e) {
-            RarityCore.LOGGER.error("无法创建默认客户端配置文件: {}", CLIENT_CONFIG_FILE.toString(), e);
+            RarityCore.LOGGER.error("Cannot create default client config file: {}", CLIENT_CONFIG_FILE.toString(), e);
         }
     }
     
@@ -149,10 +149,10 @@ public class ConfigManager {
         // 写入配置文件
         try (FileWriter writer = new FileWriter(CLIENT_CONFIG_FILE.toFile())) {
             GSON.toJson(configObject, writer);
-            RarityCore.LOGGER.info("客户端配置已保存: enableItemBorderRendering={}, itemBorderStyle={}", 
+            RarityCore.LOGGER.info("Client config saved: enableItemBorderRendering={}, itemBorderStyle={}", 
                 enableItemBorderRendering, itemBorderStyle);
         } catch (IOException e) {
-            RarityCore.LOGGER.error("无法保存客户端配置文件: {}", CLIENT_CONFIG_FILE.toString(), e);
+            RarityCore.LOGGER.error("Cannot save client config file: {}", CLIENT_CONFIG_FILE.toString(), e);
         }
     }
     
