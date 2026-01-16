@@ -17,7 +17,7 @@
 
 ### 1. 通过资源包添加
 如果你是模组开发者，可以在资源包中添加`data/<命名空间>/rarity/任意名称.json`文件，内容格式如下：
-```json
+```
 {
   "minecraft:item_id": rarity_value,
   "another_mod:item_id": rarity_value,
@@ -54,3 +54,10 @@
 其中`/raritycore export all`会导出所有已注册的稀有度数据，而`/raritycore export mod <modid>`会导出指定模组的稀有度数据，文件会保存到 `config/raritycore/` 目录下，带有时间戳
 
 5. `/raritycore details` 打印当前已注册的稀有度信息，如有多少个模组和物品拥有稀有度配置
+
+### 5. 最后
+说实话，基本所有模组作者肯定不会多花力气去在自己的模组里编写稀有度配置，只能靠本模组自带配置去支持。
+
+所以如果你愿意的话，你可以通过b站，mc百科，github等地方联系我，把写好的配置发给我，谢谢！
+
+即使你不想编写配置，你也可以给我留言你想让本模组支持哪些模组，我会尽快去编写的！

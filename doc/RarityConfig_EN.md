@@ -16,7 +16,7 @@ After understanding the meaning of rarity, you can officially begin adding or mo
 
 ### 1. Adding via Resource Pack
 If you are a mod developer, you can add `data/<namespace>/rarity/any_name.json` files in your resource pack, with the following format:
-```json
+```
 {
   "minecraft:item_id": rarity_value,
   "another_mod:item_id": rarity_value,
