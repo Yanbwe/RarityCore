@@ -1,5 +1,6 @@
 package org.yanbwe.raritycore.registry;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -155,9 +156,24 @@ public class RarityRegistry {
         if (item != null) {
             ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
             if (itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-                return ITEM_RARITY_MAP.get(itemId);
+                // 首先检查本模组的稀有度配置
+                Integer configuredRarity = ITEM_RARITY_MAP.get(itemId);
+                if (configuredRarity != null) {
+                    return configuredRarity;
+                }
+                
+                // 如果没有本模组的稀有度配置，使用原版稀有度
+                net.minecraft.world.item.ItemStack tempStack = new net.minecraft.world.item.ItemStack(item);
+                net.minecraft.world.item.Rarity vanillaRarity = tempStack.getRarity();
+                if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
+                    return 3; // 罕见
+                } else if (vanillaRarity == net.minecraft.world.item.Rarity.RARE) {
+                    return 4; // 史诗
+                } else if (vanillaRarity == net.minecraft.world.item.Rarity.EPIC) {
+                    return 5; // 传说
+                }
             }
         }
-        return null;
+        return 1; // 默认为普通
     }
 }
