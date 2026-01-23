@@ -20,6 +20,12 @@
   "rarity.core.export_failed": "导出稀有度数据失败: %s",
   "rarity.core.export_mod_failed": "导出模组稀有度数据失败: %s",
   "rarity.core.reload_client_config": "已重新加载客户端配置: 物品边框渲染=%s, 边框样式=%s",
+  "rarity.core.reload_client_config_with_texture": "已重新加载客户端配置: 物品边框渲染=%s, 边框样式=%s, 纹理边框=%s",
   "rarity.core.border_style_hollow": "空心",
-  "rarity.core.border_style_solid": "实心"
+  "rarity.core.border_style_solid": "实心",
+  "rarity.core.enabled": "启用",
+  "rarity.core.disabled": "禁用",
+  "rarity.core.texture_border_toggle_success": "纹理边框已%s",
+  "rarity.core.texture_border_toggle_error": "切换纹理边框状态失败",
+  "rarity.core.unusual.tips":"级稀有度-"
 }

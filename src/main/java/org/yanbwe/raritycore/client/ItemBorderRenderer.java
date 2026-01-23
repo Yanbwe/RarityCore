@@ -1,10 +1,12 @@
 package org.yanbwe.raritycore.client;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
+import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
 
@@ -34,10 +36,53 @@ public class ItemBorderRenderer {
             rarity = RarityConstants.RARITY_COMMON; // 默认为普通
         }
 
-        if (!ConfigManager.isValidRarity(rarity)) {
-            return;
+        // 限制稀有度在1-7范围内
+        if (rarity < RarityConstants.RARITY_COMMON) {
+            rarity = RarityConstants.RARITY_COMMON;
+        } else if (rarity > RarityConstants.RARITY_UNIQUE) {
+            rarity = RarityConstants.RARITY_UNIQUE;
         }
         
+        // 检查是否使用纹理边框
+        if (ConfigManager.isUseTextureBorder()) {
+            // 使用纹理渲染边框
+            renderTextureBorder(guiGraphics, rarity, x, y);
+        } else {
+            // 使用颜色渲染边框
+            renderColorBorder(guiGraphics, rarity, x, y);
+        }
+    }
+    
+    /**
+     * 使用纹理渲染边框
+     * @param guiGraphics GUI图形上下文
+     * @param rarity 稀有度等级
+     * @param x X坐标
+     * @param y Y坐标
+     */
+    private static void renderTextureBorder(GuiGraphics guiGraphics, int rarity, int x, int y) {
+        // 构造纹理路径，例如: raritycore:textures/border/rarity_1.png
+        String textureName = "rarity_" + rarity;
+        ResourceLocation textureLocation = new ResourceLocation(RarityConstants.BORDER_TEXTURE_PATH + textureName + RarityConstants.TEXTURE_SUFFIX);
+        
+        // 尝试绘制纹理边框
+        try {
+            guiGraphics.blit(textureLocation, x, y, 0, 0, 16, 16, 16, 16);
+        } catch (Exception e) {
+            // 如果纹理加载失败，回退到颜色边框
+            RarityCore.LOGGER.warn("Failed to load texture for rarity {}, falling back to color border: {}", rarity, e.getMessage());
+            renderColorBorder(guiGraphics, rarity, x, y);
+        }
+    }
+    
+    /**
+     * 使用颜色渲染边框
+     * @param guiGraphics GUI图形上下文
+     * @param rarity 稀有度等级
+     * @param x X坐标
+     * @param y Y坐标
+     */
+    private static void renderColorBorder(GuiGraphics guiGraphics, int rarity, int x, int y) {
         // 根据稀有度获取对应颜色
         int borderColor = RarityColorUtil.getRarityArgbColor(rarity);
         

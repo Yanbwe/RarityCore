@@ -51,7 +51,7 @@
 3. `/raritycore reload` 重新加载所有稀有度配置，用于修改`FinalRarity.json`后的应用
 4. `/raritycore export all/mod` 导出当前已注册的稀有度数据到文件
 
-其中`/raritycore export all`会导出所有已注册的稀有度数据，而`/raritycore export mod <modid>`会导出指定模组的稀有度数据，文件会保存到 `config/raritycore/` 目录下，带有时间戳
+   其中`/raritycore export all`会导出所有已注册的稀有度数据，而`/raritycore export mod <modid>`会导出指定模组的稀有度数据，文件会保存到 `config/raritycore/` 目录下，带有时间戳
 
 5. `/raritycore details` 打印当前已注册的稀有度信息，如有多少个模组和物品拥有稀有度配置
 

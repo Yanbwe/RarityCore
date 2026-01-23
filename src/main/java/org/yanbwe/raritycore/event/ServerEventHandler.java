@@ -25,7 +25,7 @@ public class ServerEventHandler {
 
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {
-        // Load server-side config file when server starts
+        // 当服务端启动时，加载配置文件
         org.yanbwe.raritycore.config.RarityConfigLoader.loadConfigRarityData();
         RarityCore.LOGGER.info("RarityCore server starting, loaded server-side rarity config");
     }

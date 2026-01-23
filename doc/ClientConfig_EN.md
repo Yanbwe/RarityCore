@@ -14,9 +14,14 @@ The client configuration file is located at:
 ### 2. itemBorderStyle
 - **Type**: Integer
 - **Default**: 1
-- **Description**: Controls the style of item borders
+- **Description**: Controls the style of item borders (only effective when texture border is disabled)
   - `0`: Hollow border
   - `1`: Solid fill
+
+### 3. useTextureBorder
+- **Type**: Boolean
+- **Default**: false
+- **Description**: Whether to use texture borders, will use custom textures to render borders when enabled
 
 ### How to Apply Configuration
 #### Method 1: Restart the game
@@ -25,6 +30,17 @@ The client configuration file is located at:
 Send the following command in-game to immediately reload the client configuration:
 ```
 /raritycore-client
+```
+
+### Texture Border Configuration
+If texture borders are enabled (useTextureBorder=true), you need to prepare the corresponding texture files:
+- Texture file path: `assets/raritycore/textures/border/`
+- Texture file naming: `rarity_1.png` to `rarity_7.png`, corresponding to 7 rarity levels
+- Texture size: 16x16 pixels
+
+You can use the following command to toggle the texture border enable/disable state:
+```
+/raritycore-texture toggle
 ```
 
 ### Notes

@@ -28,4 +28,11 @@ public class RarityConstants {
     // 默认值
     public static final boolean DEFAULT_ENABLE_ITEM_BORDER_RENDERING = true;
     public static final int DEFAULT_ITEM_BORDER_STYLE = 1; // 0为空心，1为实心
+    
+    // 纹理相关常量
+    public static final String BORDER_TEXTURE_PATH = "raritycore:textures/border/";
+    public static final String TEXTURE_SUFFIX = ".png";
+    public static final int TEXTURE_WIDTH = 16;
+    public static final int TEXTURE_HEIGHT = 16;
+    public static final boolean DEFAULT_USE_TEXTURE_BORDER = true; // 默认使用纹理边框
 }

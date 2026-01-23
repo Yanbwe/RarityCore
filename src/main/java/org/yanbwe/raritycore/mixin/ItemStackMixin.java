@@ -28,12 +28,15 @@ public class ItemStackMixin {
             return;
         }
 
+        // 限制稀有度在1-7范围内
+        if (rarity < RarityConstants.RARITY_COMMON) {
+            rarity = RarityConstants.RARITY_COMMON;
+        } else if (rarity > RarityConstants.RARITY_UNIQUE) {
+            rarity = RarityConstants.RARITY_UNIQUE;
+        }
+        
         // 如果是普通稀有度（1），则使用白色，但不添加格式化代码（默认颜色）
         if (rarity == RarityConstants.RARITY_COMMON) {
-            return;
-        }
-
-        if (rarity < RarityConstants.MIN_RARITY || rarity > RarityConstants.MAX_RARITY) {
             return;
         }
         

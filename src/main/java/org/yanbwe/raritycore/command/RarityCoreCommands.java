@@ -39,7 +39,7 @@ public class RarityCoreCommands {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("raritycore")
             .then(Commands.literal("sethand")
-                .then(Commands.argument("rarity", IntegerArgumentType.integer(RarityConstants.MIN_RARITY, RarityConstants.MAX_RARITY))
+                .then(Commands.argument("rarity", IntegerArgumentType.integer())
                     .executes(context -> setHandRarity(
                         context.getSource(),
                         IntegerArgumentType.getInteger(context, "rarity")
@@ -48,7 +48,7 @@ public class RarityCoreCommands {
             )
             .then(Commands.literal("setrarity")
                 .then(Commands.argument("item", ResourceLocationArgument.id())
-                    .then(Commands.argument("rarity", IntegerArgumentType.integer(RarityConstants.MIN_RARITY, RarityConstants.MAX_RARITY))
+                    .then(Commands.argument("rarity", IntegerArgumentType.integer())
                         .executes(context -> setItemRarity(
                             context.getSource(),
                             ResourceLocationArgument.getId(context, "item"),
@@ -64,6 +64,9 @@ public class RarityCoreCommands {
                 .then(Commands.literal("all")
                     .executes(context -> exportAllRarityData(context.getSource()))
                 )
+                .then(Commands.literal("all-mod")
+                    .executes(context -> exportAllModRarityData(context.getSource()))
+                )
                 .then(Commands.literal("mod")
                     .then(Commands.argument("modid", ResourceLocationArgument.id())
                         .executes(context -> exportModRarityData(context.getSource(), ResourceLocationArgument.getId(context, "modid")))
@@ -78,6 +81,13 @@ public class RarityCoreCommands {
         // 注册客户端配置重载命令
         dispatcher.register(Commands.literal("raritycore-client")
             .executes(context -> reloadClientConfig(context.getSource()))
+        );
+        
+        // 注册切换纹理边框命令
+        dispatcher.register(Commands.literal("raritycore-texture")
+            .then(Commands.literal("toggle")
+                .executes(context -> toggleTextureBorder(context.getSource()))
+            )
         );
     }
     
@@ -199,9 +209,10 @@ public class RarityCoreCommands {
             Path configDir = ConfigManager.getConfigDirPath();
             Files.createDirectories(configDir);
             
-            // 生成带时间戳的文件名
+            // 生成带 Minecraft 版本和时间戳的文件名
+            String mcVersion = "1.20.1"; // 从 gradle.properties 获取的 Minecraft 版本
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
-            String fileName = "export_all_" + timestamp + ".json";
+            String fileName = "export_all_" + mcVersion + "_" + timestamp + ".json";
             Path exportFile = configDir.resolve(fileName);
             
             // 导出当前注册的所有稀有度数据
@@ -225,9 +236,10 @@ public class RarityCoreCommands {
             Path configDir = ConfigManager.getConfigDirPath();
             Files.createDirectories(configDir);
             
-            // 生成带时间戳的文件名
+            // 生成带 Minecraft 版本和时间戳的文件名
+            String mcVersion = "1.20.1";
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
-            String fileName = "export_mod_" + modId.getNamespace() + "_" + timestamp + ".json";
+            String fileName = "export_mod_" + modId.getNamespace() + "_" + mcVersion + "_" + timestamp + ".json";
             Path exportFile = configDir.resolve(fileName);
             
             // 导出特定模组的稀有度数据
@@ -243,15 +255,117 @@ public class RarityCoreCommands {
     }
     
     /**
+     * 导出所有模组的稀有度数据到单独的文件
+     */
+    private static int exportAllModRarityData(CommandSourceStack source) {
+        try {
+            // 使用ConfigManager提供的路径
+            Path configDir = ConfigManager.getConfigDirPath();
+            Files.createDirectories(configDir);
+            
+            // 生成带 Minecraft 版本和时间戳的文件夹名
+            String mcVersion = "1.20.1";
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+            Path exportDir = configDir.resolve("export_all-mod_" + mcVersion + "_" + timestamp);
+            Files.createDirectories(exportDir);
+            
+            // 按模组分组稀有度数据
+            Map<String, Map<String, Integer>> modBasedData = new HashMap<>();
+            
+            for (Map.Entry<ResourceLocation, Integer> entry : RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
+                String modId = entry.getKey().getNamespace();
+                String itemId = entry.getKey().toString();
+                Integer rarity = entry.getValue();
+                
+                modBasedData.computeIfAbsent(modId, k -> new HashMap<>()).put(itemId, rarity);
+            }
+            
+            // 为每个模组创建单独的文件
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            for (Map.Entry<String, Map<String, Integer>> modEntry : modBasedData.entrySet()) {
+                String modId = modEntry.getKey();
+                Map<String, Integer> modData = modEntry.getValue();
+                
+                Path modExportFile = exportDir.resolve(modId + "_" + mcVersion + ".json");
+                
+                try (FileWriter writer = new FileWriter(modExportFile.toFile())) {
+                    gson.toJson(modData, writer);
+                }
+            }
+            
+            source.sendSuccess(() -> Component.translatable("rarity.core.export_all_success", exportDir.toString()).withStyle(ChatFormatting.GREEN), false);
+            return 1;
+        } catch (IOException e) {
+            RarityCore.LOGGER.error("Failed to export all-mod rarity data", e);
+            source.sendSuccess(() -> Component.translatable("rarity.core.export_failed", e.getMessage()).withStyle(ChatFormatting.RED), false);
+            return 0;
+        }
+    }
+    
+    /**
      * 重新加载客户端配置
      */
     private static int reloadClientConfig(CommandSourceStack source) {
         ConfigManager.loadClientConfig();
         String borderStyleText = ConfigManager.getItemBorderStyle() == 0 ? Component.translatable("rarity.core.border_style_hollow").getString() : Component.translatable("rarity.core.border_style_solid").getString();
-        source.sendSuccess(() -> Component.translatable("rarity.core.reload_client_config", 
+        String textureBorderStatus = ConfigManager.isUseTextureBorder() ? Component.translatable("rarity.core.enabled").getString() : Component.translatable("rarity.core.disabled").getString();
+        source.sendSuccess(() -> Component.translatable("rarity.core.reload_client_config_with_texture", 
                 ConfigManager.isEnableItemBorderRendering(), 
-                borderStyleText).withStyle(ChatFormatting.GREEN), false);
+                borderStyleText,
+                textureBorderStatus).withStyle(ChatFormatting.GREEN), false);
         return 1;
+    }
+    
+    /**
+     * 切换纹理边框启用状态
+     */
+    private static int toggleTextureBorder(CommandSourceStack source) {
+        boolean currentState = ConfigManager.isUseTextureBorder();
+        boolean newState = !currentState;
+        ConfigManager.setUseTextureBorder(newState);
+        
+        // 尝试保存到配置文件
+        try {
+            Path configDir = ConfigManager.getConfigDirPath();
+            Files.createDirectories(configDir);
+            
+            Path configFile = ConfigManager.getClientConfigPath();
+            
+            // 读取现有配置
+            JsonObject jsonObject;
+            if (Files.exists(configFile)) {
+                String content = Files.readString(configFile);
+                if (!content.trim().isEmpty()) {
+                    try {
+                        jsonObject = JsonParser.parseString(content).getAsJsonObject();
+                    } catch (Exception e) {
+                        RarityCore.LOGGER.warn("解析配置文件失败，将重新创建", e);
+                        jsonObject = new JsonObject();
+                    }
+                } else {
+                    jsonObject = new JsonObject();
+                }
+            } else {
+                jsonObject = new JsonObject();
+            }
+            
+            // 更新配置
+            jsonObject.addProperty("useTextureBorder", newState);
+            
+            // 写入配置文件
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            try (FileWriter writer = new FileWriter(configFile.toFile())) {
+                gson.toJson(jsonObject, writer);
+            }
+            
+            source.sendSuccess(() -> Component.translatable("rarity.core.texture_border_toggle_success", 
+                newState ? Component.translatable("rarity.core.enabled") : Component.translatable("rarity.core.disabled")).withStyle(ChatFormatting.GREEN), false);
+            return 1;
+        } catch (IOException e) {
+            RarityCore.LOGGER.error("Failed to save client config", e);
+            source.sendSuccess(() -> Component.translatable("rarity.core.texture_border_toggle_error").withStyle(ChatFormatting.RED), false);
+            return 0;
+        }
     }
     
     /**

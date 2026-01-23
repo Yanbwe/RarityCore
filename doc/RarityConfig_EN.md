@@ -50,6 +50,6 @@ You can use the `/raritycore` command in-game to add or modify rarities. Current
 3. `/raritycore reload` Reloads all rarity configurations, used to apply changes after modifying `FinalRarity.json`
 4. `/raritycore export all/mod` Exports currently registered rarity data to files
 
-The `/raritycore export all` command exports all registered rarity data, while `/raritycore export mod <modid>` exports rarity data for a specific mod. Files are saved to the `config/raritycore/` directory with timestamps.
+     The `/raritycore export all` command exports all registered rarity data, while `/raritycore export mod <modid>` exports rarity data for a specific mod. Files are saved to the `config/raritycore/` directory with timestamps.
 
 5. `/raritycore details` Prints currently registered rarity information, such as how many mods and items have rarity configurations.

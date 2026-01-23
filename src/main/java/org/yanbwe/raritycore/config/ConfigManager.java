@@ -24,6 +24,7 @@ public class ConfigManager {
     // 客户端配置
     private static boolean enableItemBorderRendering = RarityConstants.DEFAULT_ENABLE_ITEM_BORDER_RENDERING;
     private static int itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE; // 0为空心，1为实心
+    private static boolean useTextureBorder = RarityConstants.DEFAULT_USE_TEXTURE_BORDER; // 是否使用纹理边框
     
     // 配置文件路径
     private static final Path CONFIG_DIR = Paths.get(RarityConstants.CONFIG_DIR_PARENT).resolve(RarityConstants.CONFIG_DIR_NAME);
@@ -58,7 +59,7 @@ public class ConfigManager {
             // 确保配置目录存在
             Files.createDirectories(CONFIG_DIR);
         } catch (Exception e) {
-            RarityCore.LOGGER.error("Cannot create config directory: {}", CONFIG_DIR.toString(), e);
+            RarityCore.LOGGER.error("Cannot create config directory: {}", CONFIG_DIR, e);
             return;
         }
         
@@ -108,11 +109,18 @@ public class ConfigManager {
                     itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE; // Default to hollow
                 }
                 
-                RarityCore.LOGGER.info("Client config loaded successfully: enableItemBorderRendering={}, itemBorderStyle={}", 
-                    enableItemBorderRendering, itemBorderStyle);
+                if (jsonObject.has("useTextureBorder")) {
+                    useTextureBorder = jsonObject.get("useTextureBorder").getAsBoolean();
+                } else {
+                    // If the config option doesn't exist, use default value
+                    useTextureBorder = RarityConstants.DEFAULT_USE_TEXTURE_BORDER;
+                }
+                
+                RarityCore.LOGGER.info("Client config loaded successfully: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}", 
+                    enableItemBorderRendering, itemBorderStyle, useTextureBorder);
             }
         } catch (Exception e) {
-            RarityCore.LOGGER.error("Error loading client config file, using default config: {}", CLIENT_CONFIG_FILE.toString(), e);
+            RarityCore.LOGGER.error("Error loading client config file, using default config: {}", CLIENT_CONFIG_FILE, e);
             // 出错时使用默认值
             enableItemBorderRendering = RarityConstants.DEFAULT_ENABLE_ITEM_BORDER_RENDERING;
             itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE;
@@ -128,13 +136,14 @@ public class ConfigManager {
         JsonObject configObject = new JsonObject();
         configObject.addProperty("enableItemBorderRendering", RarityConstants.DEFAULT_ENABLE_ITEM_BORDER_RENDERING);
         configObject.addProperty("itemBorderStyle", RarityConstants.DEFAULT_ITEM_BORDER_STYLE);
+        configObject.addProperty("useTextureBorder", RarityConstants.DEFAULT_USE_TEXTURE_BORDER);
         
         // 写入默认配置文件
         try (FileWriter writer = new FileWriter(CLIENT_CONFIG_FILE.toFile())) {
             GSON.toJson(configObject, writer);
-            RarityCore.LOGGER.info("Created default client config file: {}", CLIENT_CONFIG_FILE.toString());
+            RarityCore.LOGGER.info("Created default client config file: {}", CLIENT_CONFIG_FILE);
         } catch (IOException e) {
-            RarityCore.LOGGER.error("Cannot create default client config file: {}", CLIENT_CONFIG_FILE.toString(), e);
+            RarityCore.LOGGER.error("Cannot create default client config file: {}", CLIENT_CONFIG_FILE, e);
         }
     }
     
@@ -145,14 +154,15 @@ public class ConfigManager {
         JsonObject configObject = new JsonObject();
         configObject.addProperty("enableItemBorderRendering", enableItemBorderRendering);
         configObject.addProperty("itemBorderStyle", itemBorderStyle);
+        configObject.addProperty("useTextureBorder", useTextureBorder);
         
         // 写入配置文件
         try (FileWriter writer = new FileWriter(CLIENT_CONFIG_FILE.toFile())) {
             GSON.toJson(configObject, writer);
-            RarityCore.LOGGER.info("Client config saved: enableItemBorderRendering={}, itemBorderStyle={}", 
-                enableItemBorderRendering, itemBorderStyle);
+            RarityCore.LOGGER.info("Client config saved: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}", 
+                enableItemBorderRendering, itemBorderStyle, useTextureBorder);
         } catch (IOException e) {
-            RarityCore.LOGGER.error("Cannot save client config file: {}", CLIENT_CONFIG_FILE.toString(), e);
+            RarityCore.LOGGER.error("Cannot save client config file: {}", CLIENT_CONFIG_FILE, e);
         }
     }
     
@@ -189,5 +199,19 @@ public class ConfigManager {
      */
     public static void setItemBorderStyle(int style) {
         itemBorderStyle = style;
+    }
+    
+    /**
+     * 获取是否使用纹理边框
+     */
+    public static boolean isUseTextureBorder() {
+        return useTextureBorder;
+    }
+    
+    /**
+     * 设置是否使用纹理边框
+     */
+    public static void setUseTextureBorder(boolean useTexture) {
+        useTextureBorder = useTexture;
     }
 }
