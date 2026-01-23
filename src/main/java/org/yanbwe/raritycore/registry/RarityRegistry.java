@@ -8,6 +8,7 @@ import net.minecraft.world.item.Item;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.server.ServerLifecycleHooks;
+import org.jetbrains.annotations.NotNull;
 import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.IncrementalSyncPacket;
 import org.yanbwe.raritycore.network.RaritySyncPacket;
@@ -151,8 +152,7 @@ public class RarityRegistry {
      * @param item 要查稀有度的物品
      * @return 物品的稀有度等级（1-7）
      */
-    @Nullable
-    public static Integer getRarity(@Nullable Item item) {
+    public static @NotNull Integer getRarity(@Nullable Item item) {
         if (item != null) {
             ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
             if (itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {

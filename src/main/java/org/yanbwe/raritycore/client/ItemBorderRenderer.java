@@ -34,8 +34,11 @@ public class ItemBorderRenderer {
             rarity = RarityConstants.RARITY_COMMON; // 默认为普通
         }
 
-        if (!ConfigManager.isValidRarity(rarity)) {
-            return;
+        // 限制稀有度在1-7范围内
+        if (rarity < RarityConstants.RARITY_COMMON) {
+            rarity = RarityConstants.RARITY_COMMON;
+        } else if (rarity > RarityConstants.RARITY_UNIQUE) {
+            rarity = RarityConstants.RARITY_UNIQUE;
         }
         
         // 根据稀有度获取对应颜色

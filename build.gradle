@@ -212,7 +212,7 @@ if (project.hasProperty('enableReobf') && project.getProperty('enableReobf') == 
 
 // Apply reobf configuration for production builds
 if (project.hasProperty('enableReobf') && project.getProperty('enableReobf') == 'true') {
-    tasks.withType(JavaCompile) {
+    tasks.withType(JavaCompile).configureEach {
         options.compilerArgs += ['-Aforge.reobf=true']
     }
 }

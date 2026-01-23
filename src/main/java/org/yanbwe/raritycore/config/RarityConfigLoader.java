@@ -62,14 +62,10 @@ public class RarityConfigLoader {
                             continue; // 跳过未知物品
                         }
                         
-                        if (rarity < RarityConstants.MIN_RARITY || rarity > RarityConstants.MAX_RARITY) {
-                            continue; // 跳过无效稀有度值
-                        }
-                        
                         // 注册稀有度，不自动同步到客户端
                         RarityRegistry.register(item, rarity, false);
-                    } else {
-                        // 跳过无效数据格式
+                    }  {
+
                     }
                 }
             }

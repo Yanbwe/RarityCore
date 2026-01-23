@@ -21,5 +21,6 @@
   "rarity.core.export_mod_failed": "Failed to export mod rarity data: %s",
   "rarity.core.reload_client_config": "Client config reloaded: Item border rendering=%s, Border style=%s",
   "rarity.core.border_style_hollow": "hollow",
-  "rarity.core.border_style_solid": "solid"
+  "rarity.core.border_style_solid": "solid",
+  "rarity.core.unusual.tips":"-level rarity-"
 }

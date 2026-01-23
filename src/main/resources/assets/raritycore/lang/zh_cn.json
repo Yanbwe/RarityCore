@@ -21,5 +21,6 @@
   "rarity.core.export_mod_failed": "导出模组稀有度数据失败: %s",
   "rarity.core.reload_client_config": "已重新加载客户端配置: 物品边框渲染=%s, 边框样式=%s",
   "rarity.core.border_style_hollow": "空心",
-  "rarity.core.border_style_solid": "实心"
+  "rarity.core.border_style_solid": "实心",
+  "rarity.core.unusual.tips":"级稀有度-"
 }

@@ -58,7 +58,7 @@ public class ConfigManager {
             // 确保配置目录存在
             Files.createDirectories(CONFIG_DIR);
         } catch (Exception e) {
-            RarityCore.LOGGER.error("Cannot create config directory: {}", CONFIG_DIR.toString(), e);
+            RarityCore.LOGGER.error("Cannot create config directory: {}", CONFIG_DIR, e);
             return;
         }
         
@@ -112,7 +112,7 @@ public class ConfigManager {
                     enableItemBorderRendering, itemBorderStyle);
             }
         } catch (Exception e) {
-            RarityCore.LOGGER.error("Error loading client config file, using default config: {}", CLIENT_CONFIG_FILE.toString(), e);
+            RarityCore.LOGGER.error("Error loading client config file, using default config: {}", CLIENT_CONFIG_FILE, e);
             // 出错时使用默认值
             enableItemBorderRendering = RarityConstants.DEFAULT_ENABLE_ITEM_BORDER_RENDERING;
             itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE;
@@ -132,9 +132,9 @@ public class ConfigManager {
         // 写入默认配置文件
         try (FileWriter writer = new FileWriter(CLIENT_CONFIG_FILE.toFile())) {
             GSON.toJson(configObject, writer);
-            RarityCore.LOGGER.info("Created default client config file: {}", CLIENT_CONFIG_FILE.toString());
+            RarityCore.LOGGER.info("Created default client config file: {}", CLIENT_CONFIG_FILE);
         } catch (IOException e) {
-            RarityCore.LOGGER.error("Cannot create default client config file: {}", CLIENT_CONFIG_FILE.toString(), e);
+            RarityCore.LOGGER.error("Cannot create default client config file: {}", CLIENT_CONFIG_FILE, e);
         }
     }
     
@@ -152,7 +152,7 @@ public class ConfigManager {
             RarityCore.LOGGER.info("Client config saved: enableItemBorderRendering={}, itemBorderStyle={}", 
                 enableItemBorderRendering, itemBorderStyle);
         } catch (IOException e) {
-            RarityCore.LOGGER.error("Cannot save client config file: {}", CLIENT_CONFIG_FILE.toString(), e);
+            RarityCore.LOGGER.error("Cannot save client config file: {}", CLIENT_CONFIG_FILE, e);
         }
     }
     
