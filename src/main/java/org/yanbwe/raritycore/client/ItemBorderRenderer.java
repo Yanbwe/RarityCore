@@ -43,6 +43,12 @@ public class ItemBorderRenderer {
             rarity = RarityConstants.RARITY_UNIQUE;
         }
         
+        // 检查是否启用物品背景渲染
+        if (ConfigManager.isEnableItemBackgroundRendering()) {
+            // 渲染物品背景
+            renderItemBackground(guiGraphics, rarity, x, y);
+        }
+        
         // 检查是否使用纹理边框
         if (ConfigManager.isUseTextureBorder()) {
             // 使用纹理渲染边框
@@ -82,6 +88,18 @@ public class ItemBorderRenderer {
      * @param x X坐标
      * @param y Y坐标
      */
+    private static void renderItemBackground(GuiGraphics guiGraphics, int rarity, int x, int y) {
+        // 根据稀有度获取对应颜色
+        int backgroundColor = RarityColorUtil.getRarityArgbColor(rarity);
+        
+        // 设置背景颜色为半透明
+        int alphaMask = 0x60000000;  // 37.5%透明度的alpha值
+        int translucentBackgroundColor = (backgroundColor & 0x00FFFFFF) | alphaMask;  // 保留RGB值，设置alpha
+        
+        // 绘制16x16区域的半透明背景
+        guiGraphics.fill(x, y, x + 16, y + 16, translucentBackgroundColor);
+    }
+    
     private static void renderColorBorder(GuiGraphics guiGraphics, int rarity, int x, int y) {
         // 根据稀有度获取对应颜色
         int borderColor = RarityColorUtil.getRarityArgbColor(rarity);

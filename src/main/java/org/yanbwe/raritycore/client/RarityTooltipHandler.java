@@ -24,6 +24,11 @@ public class RarityTooltipHandler {
 
     @SubscribeEvent
     public static void onItemTooltip(ItemTooltipEvent event) {
+        // 检查是否启用工具提示插入
+        if (!ConfigManager.isEnableTooltipInsert()) {
+            return;
+        }
+        
         ItemStack itemStack = event.getItemStack();
         Item item = itemStack.getItem();
         

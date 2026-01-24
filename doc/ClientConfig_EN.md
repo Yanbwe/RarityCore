@@ -20,8 +20,23 @@ The client configuration file is located at:
 
 ### 3. useTextureBorder
 - **Type**: Boolean
-- **Default**: false
+- **Default**: true
 - **Description**: Whether to use texture borders, will use custom textures to render borders when enabled
+
+### 4. enableItemNameColor
+- **Type**: Boolean
+- **Default**: true
+- **Description**: Whether to enable item name color feature, changes item name color according to item rarity
+
+### 5. enableTooltipInsert
+- **Type**: Boolean
+- **Default**: true
+- **Description**: Whether to enable tooltip insertion feature, inserts rarity information in item tooltips
+
+### 6. enableItemBackgroundRendering
+- **Type**: Boolean
+- **Default**: false
+- **Description**: Whether to enable item background rendering feature, renders background color for items
 
 ### How to Apply Configuration
 #### Method 1: Restart the game
