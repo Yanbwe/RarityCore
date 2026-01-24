@@ -26,8 +26,9 @@ import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.data.RarityDataLoader;
 import org.yanbwe.raritycore.network.RaritySyncPacket;
 
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(RarityCore.MODID)
@@ -38,13 +39,15 @@ public class RarityCore {
     // Directly reference a slf4j logger
     public static final Logger LOGGER = LogUtils.getLogger();
     
-    private static Timer syncTimer;
+    private static ScheduledExecutorService syncScheduler;
 
     public RarityCore() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         modEventBus.addListener(this::commonSetup);
         MinecraftForge.EVENT_BUS.register(this);
 
+        // 确保在构造函数中初始化配置
+        ConfigManager.initializeConfigs();
     }
     
     @SubscribeEvent
@@ -55,32 +58,50 @@ public class RarityCore {
     private void commonSetup(final FMLCommonSetupEvent event) {
         // 初始化网络包
         event.enqueueWork(RaritySyncPacket::initialize);
+        event.enqueueWork(IncrementalSyncPacket::initialize);
         
-        // 初始化所有配置
-        ConfigManager.initializeConfigs();
+        // 初始化所有配置（已在构造函数中处理，这里是为了确保）
+        event.enqueueWork(ConfigManager::initializeConfigs);
     }
     
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         // 启动定时同步任务，每秒检查一次是否有待处理的变更
-        syncTimer = new Timer("RarityCore-Incremental-Sync", true);
-        syncTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
+        syncScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "RarityCore-Incremental-Sync");
+            t.setDaemon(true);  // 设置为守护线程
+            return t;
+        });
+        
+        syncScheduler.scheduleAtFixedRate(() -> {
+            try {
                 if (RarityRegistry.getPendingChangeCount() > 0) {
                     RarityRegistry.syncIncrementalChangesToClients();
                 }
+            } catch (Exception e) {
+                LOGGER.error("Error during incremental sync", e);
             }
-        }, 0, 1000); // 每秒检查一次
+        }, 0, 1000, TimeUnit.MILLISECONDS); // 每秒检查一次
     }
     
     @SubscribeEvent
     public void onServerStopped(ServerStoppedEvent event) {
-        // 服务器停止时取消定时任务
-        if (syncTimer != null) {
-            syncTimer.cancel();
-            syncTimer = null;
+        // 服务器停止时关闭调度器
+        if (syncScheduler != null) {
+            syncScheduler.shutdown();
+            try {
+                if (!syncScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    syncScheduler.shutdownNow();
+                    if (!syncScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                        LOGGER.error("Pool did not terminate cleanly");
+                    }
+                }
+            } catch (InterruptedException e) {
+                syncScheduler.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+            syncScheduler = null;
         }
         
         // 清空变更缓冲区

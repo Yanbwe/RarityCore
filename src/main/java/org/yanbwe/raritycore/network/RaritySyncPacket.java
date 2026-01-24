@@ -30,9 +30,6 @@ public class RaritySyncPacket {
                 .decoder(RaritySyncPacket::new)
                 .consumerMainThread(RaritySyncPacket::handle)
                 .add();
-        
-        // 同时初始化增量同步包
-        IncrementalSyncPacket.initialize();
     }
 
     private Map<ResourceLocation, Integer> rarityData;
