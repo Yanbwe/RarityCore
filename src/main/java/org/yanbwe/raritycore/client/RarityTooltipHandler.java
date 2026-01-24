@@ -15,6 +15,7 @@ import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -24,6 +25,11 @@ public class RarityTooltipHandler {
 
     @SubscribeEvent
     public static void onItemTooltip(ItemTooltipEvent event) {
+        // 检查是否启用工具提示插入
+        if (!ConfigManager.isEnableTooltipInsert()) {
+            return;
+        }
+        
         ItemStack itemStack = event.getItemStack();
         Item item = itemStack.getItem();
         
