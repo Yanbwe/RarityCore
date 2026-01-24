@@ -1,5 +1,6 @@
 package org.yanbwe.raritycore.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -73,6 +74,14 @@ public class ItemBorderRenderer {
         
         // 尝试绘制纹理边框
         try {
+            // 启用混合模式以确保纹理透明度正确显示
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            
+            // 使用 blit 方法，指定完整的纹理坐标和裁剪尺寸
+            // 参数顺序：ResourceLocation texture, int x, int y, float z, 
+            //           int uOffset, int vOffset, int uWidth, int vHeight, 
+            //           int textureWidth, int textureHeight
             guiGraphics.blit(textureLocation, x, y, 0, 0, 16, 16, 16, 16);
         } catch (Exception e) {
             // 如果纹理加载失败，回退到颜色边框
@@ -93,8 +102,18 @@ public class ItemBorderRenderer {
         int backgroundColor = RarityColorUtil.getRarityArgbColor(rarity);
         
         // 设置背景颜色为半透明
-        int alphaMask = 0x60000000;  // 37.5%透明度的alpha值
+        int alphaMask;
+        if (ConfigManager.isUseTextureBorder()) {
+            // 当启用纹理边框时，降低物品背景的透明度（如设为25%），避免与纹理叠加导致透明度异常
+            alphaMask = 0x40000000;  // 25%透明度的alpha值
+        } else {
+            alphaMask = 0x60000000;  // 37.5%透明度的alpha值
+        }
         int translucentBackgroundColor = (backgroundColor & 0x00FFFFFF) | alphaMask;  // 保留RGB值，设置alpha
+        
+        // 启用混合模式以确保透明度正确显示
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         
         // 绘制16x16区域的半透明背景
         guiGraphics.fill(x, y, x + 16, y + 16, translucentBackgroundColor);
@@ -103,6 +122,10 @@ public class ItemBorderRenderer {
     private static void renderColorBorder(GuiGraphics guiGraphics, int rarity, int x, int y) {
         // 根据稀有度获取对应颜色
         int borderColor = RarityColorUtil.getRarityArgbColor(rarity);
+        
+        // 启用混合模式以确保透明度正确显示
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         
         if (ConfigManager.getItemBorderStyle() == 1) {
             // 实心边框 - 50%半透明，16x16大小
