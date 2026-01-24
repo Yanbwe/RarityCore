@@ -36,7 +36,7 @@ The client configuration file is located at:
 ### 6. enableItemBackgroundRendering
 - **Type**: Boolean
 - **Default**: false
-- **Description**: Whether to enable item background rendering feature, renders background color for items
+- **Description**: Please keep this configuration false, otherwise it will cause abnormal border rendering
 
 ### How to Apply Configuration
 #### Method 1: Restart the game
