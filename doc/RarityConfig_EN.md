@@ -1,8 +1,9 @@
+# RarityCore Rarity Configuration Documentation
 # Rarity Configuration Guide
 
-## **Configuration Instructions**
+## **Rarity Explanation**
 
-Before starting to assign rarities to items, you need to understand what rarity means in this mod.
+Before assigning rarities to items, you should understand what rarity means in this mod.
 
 As the name suggests, rarity is a characteristic of an item that represents how rare the item is. The harder an item is to obtain, the higher its rarity should be.
 
@@ -12,6 +13,7 @@ An item deserves a high rarity if it requires great effort or good luck to obtai
 
 On the other hand, an item that can be crafted with just dirt but has effects superior to a golden apple does not deserve a high rarity despite its utility.
 
+## **Getting Started!**
 After understanding the meaning of rarity, you can officially begin adding or modifying item rarities using the following methods:
 
 ### 1. Adding via Resource Pack
@@ -71,6 +73,56 @@ Additionally, there are the following standalone commands (available to all play
 - `/raritycore-client` Reloads client configuration
 - `/raritycore-texture toggle` Toggles texture border enable status
 
-     The `/raritycore export all` command exports all registered rarity data, while `/raritycore export mod <modid>` exports rarity data for a specific mod. Files are saved to the `config/raritycore/` directory with timestamps.
+The `/raritycore export all` command exports all registered rarity data, while `/raritycore export mod <modid>` exports rarity data for a specific mod. Files are saved to the `config/raritycore/` directory with timestamps.
 
 5. `/raritycore details` Prints currently registered rarity information, such as how many mods and items have rarity configurations.
+
+## **Detailed Edit Mode Usage Instructions**
+
+### Enabling Edit Mode
+
+1. **Enable Edit Mode**
+   ```bash
+   /raritycore edit enable
+   ```
+   After execution, a "Edit mode enabled" prompt will appear in the chat box.
+
+2. **Check Status**
+   ```bash
+   /raritycore edit status
+   ```
+   You can check the current edit mode status at any time.
+
+### Using Edit Mode
+
+After enabling edit mode, you can modify item rarities as follows:
+
+#### Basic Operation Flow
+1. In any game interface (inventory, chest, crafting table, etc.)
+2. Click on the item whose rarity you want to modify
+3. Hold `Ctrl` key and press the corresponding number key to switch rarity level
+
+#### Rarity Level Mapping
+- `Ctrl + 1` - Level 1
+- `Ctrl + 2` - Level 2
+- `Ctrl + 3` - Level 3
+- `Ctrl + 4` - Level 4
+- `Ctrl + 5` - Level 5
+- `Ctrl + 6` - Level 6
+- `Ctrl + 7` - Level 7
+
+#### Additional Notes
+
+- Modifications in edit mode will be applied immediately like commands and automatically saved to `config/raritycore/FinalRarity.json` file;
+-
+  Remember to disable edit mode after completing edits~
+```bash
+/raritycore edit disable
+```
+
+### 5. Finally
+To be honest, most mod authors probably won't spend extra effort writing rarity configurations for their own mods, so they can only rely on this mod's built-in configurations for support.
+
+So if you're willing, you can contact me through Bilibili, MC Wiki, GitHub and other places to send me the written configurations, thank you!
+
+Even if you don't want to write configurations, you can also leave me a message about which mods you want this mod to support, and I will write them as soon as possible!
