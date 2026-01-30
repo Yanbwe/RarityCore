@@ -41,15 +41,36 @@
 如果你是模组开发者，可以通过调用`RarityRegistry.register(Item item, int rarity)`此公共方法直接注册，该方法在raritycore模组加载后的任意时机均可以使用，建议用于世界内临时修改稀有度。
 
 ### 3. 通过游戏的config添加
-如果你是普通玩家或整合包开发者，可通过`config\raritycore\FinalRarity.json`注册或修改稀有度，内容格式与上述的资源包文件一致
-需要注意的是，稀有度信息加载器会在最后加载此文件，因此在这里填写的稀有度信息会覆盖资源包中的稀有度信息。
+如果你是普通玩家或整合包开发者，可通过以下两种方式注册或修改稀有度：
+
+**方式一：FinalRarityConfig文件夹**
+在`config\raritycore\FinalRarityConfig\`文件夹中放置JSON配置文件，文件名任意，内容格式与资源包文件一致。模组会按文件名字母顺序加载所有JSON文件。
+
+**方式二：FinalRarity.json文件**
+通过`config\raritycore\FinalRarity.json`注册或修改稀有度，内容格式与资源包文件一致。
+
+**加载优先级说明：**
+模组按照以下顺序加载稀有度配置，后加载的会覆盖先加载的同名物品配置：
+1. 数据包中的稀有度配置
+2. FinalRarityConfig文件夹中的JSON文件（按文件名字母顺序）
+3. FinalRarity.json文件
+
+因此FinalRarity.json中的配置具有最高优先级。
 
 ### 4. 通过游戏命令添加
-你可以在游戏内使用`/raritycore`命令添加或修改稀有度，目前包含以下命令：
+你可以在游戏内使用`/raritycore`命令添加或修改稀有度，目前包含以下命令（仅OP可用）：
 1. `/raritycore sethand <rarity>` 设置当前手持物品的稀有度
 2. `/raritycore setrarity <item> <rarity>` 设置指定物品的稀有度
-3. `/raritycore reload` 重新加载所有稀有度配置，用于修改`FinalRarity.json`后的应用
+3. `/raritycore reload` 重新加载所有稀有度配置，会按顺序加载FinalRarityConfig文件夹和FinalRarity.json文件
 4. `/raritycore export all/mod` 导出当前已注册的稀有度数据到文件
+   - `all`: 导出所有稀有度数据到单个文件
+   - `mod <modid>`: 导出指定模组的稀有度数据
+   - `all-mod`: 导出所有模组的稀有度数据到独立文件（文件名格式：{modid}_{mcversion}_{timestamp}.json）
+5. `/raritycore edit <enable/disable/toggle/status>` 控制编辑模式的启用、禁用、切换和状态查看
+
+此外还有以下独立命令：
+- `/raritycore-client` 重新加载客户端配置
+- `/raritycore-texture toggle` 切换纹理边框启用状态
 
    其中`/raritycore export all`会导出所有已注册的稀有度数据，而`/raritycore export mod <modid>`会导出指定模组的稀有度数据，文件会保存到 `config/raritycore/` 目录下，带有时间戳
 

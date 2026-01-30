@@ -40,15 +40,36 @@ If you need to override the built-in rarity information of this mod, add a depen
 If you are a mod developer, you can directly register items by calling the public method `RarityRegistry.register(Item item, int rarity)`. This method can be used at any time after the raritycore mod is loaded, and is recommended for temporary in-world rarity modifications.
 
 ### 3. Adding via Game Config
-If you are a regular player or modpack developer, you can register or modify rarities via `config\raritycore\FinalRarity.json`. The format is consistent with the resource pack files mentioned above.
-Note that the rarity information loader loads this file last, so the rarity information filled in here will override the rarities in resource packs.
+If you are a regular player or modpack developer, you can register or modify rarities via two methods:
+
+**Method 1: FinalRarityConfig Folder**
+Place JSON configuration files in the `config\raritycore\FinalRarityConfig\` folder. File names can be arbitrary, and the format is consistent with resource pack files. The mod will load all JSON files in alphabetical order by filename.
+
+**Method 2: FinalRarity.json File**
+Register or modify rarities via `config\raritycore\FinalRarity.json`. The format is consistent with resource pack files mentioned above.
+
+**Loading Priority:**
+The mod loads rarity configurations in the following order, where later-loaded configurations will override earlier-loaded configurations for the same items:
+1. Rarity configurations in datapacks
+2. JSON files in the FinalRarityConfig folder (in alphabetical order by filename)
+3. FinalRarity.json file
+
+Therefore, configurations in FinalRarity.json have the highest priority.
 
 ### 4. Adding via Game Commands
-You can use the `/raritycore` command in-game to add or modify rarities. Currently includes the following commands:
+You can use the `/raritycore` command in-game to add or modify rarities. Currently includes the following commands (OP only):
 1. `/raritycore sethand <rarity>` Sets the rarity of the currently held item
 2. `/raritycore setrarity <item> <rarity>` Sets the rarity of a specified item
-3. `/raritycore reload` Reloads all rarity configurations, used to apply changes after modifying `FinalRarity.json`
+3. `/raritycore reload` Reloads all rarity configurations, will load FinalRarityConfig folder and FinalRarity.json file in order
 4. `/raritycore export all/mod` Exports currently registered rarity data to files
+   - `all`: Exports all rarity data to a single file
+   - `mod <modid>`: Exports rarity data for a specific mod
+   - `all-mod`: Exports rarity data for all mods to separate files (filename format: {modid}_{mcversion}_{timestamp}.json)
+5. `/raritycore edit <enable/disable/toggle/status>` Controls edit mode enable, disable, toggle and status viewing
+
+Additionally, there are the following standalone commands (available to all players):
+- `/raritycore-client` Reloads client configuration
+- `/raritycore-texture toggle` Toggles texture border enable status
 
      The `/raritycore export all` command exports all registered rarity data, while `/raritycore export mod <modid>` exports rarity data for a specific mod. Files are saved to the `config/raritycore/` directory with timestamps.
 

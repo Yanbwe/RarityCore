@@ -10,6 +10,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
+import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityConstants;
 
@@ -73,7 +74,14 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener {
             }
         }
         
-        // 在资源包数据加载完成后，加载配置文件中的数据以覆盖或补充
+        // 按照顺序：
+        // 1. 数据包（已完成加载）
+        // 2. FinalRarityConfig文件夹
+        RarityCore.LOGGER.info("Loading FinalRarityConfig folder...");
+        FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
+        
+        // 3. FinalRarity.json文件
+        RarityCore.LOGGER.info("Loading FinalRarity.json file...");
         RarityConfigLoader.loadConfigRarityData();
         
         // 使用增量同步将变更发送到客户端

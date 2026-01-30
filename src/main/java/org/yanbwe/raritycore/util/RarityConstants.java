@@ -18,6 +18,7 @@ public class RarityConstants {
     // 配置文件相关常量
     public static final String CONFIG_DIR_NAME = "raritycore";
     public static final String FINAL_RARITY_FILE_NAME = "FinalRarity.json";
+    public static final String FINAL_RARITY_CONFIG_FOLDER_NAME = "FinalRarityConfig";
     public static final String CLIENT_CONFIG_FILE_NAME = "client.json";
     public static final String CONFIG_DIR_PARENT = "config";
     

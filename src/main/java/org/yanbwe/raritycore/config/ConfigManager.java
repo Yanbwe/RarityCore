@@ -55,6 +55,13 @@ public class ConfigManager {
     }
     
     /**
+     * 获取FinalRarityConfig文件夹路径
+     */
+    public static Path getFinalRarityConfigFolderPath() {
+        return CONFIG_DIR.resolve(RarityConstants.FINAL_RARITY_CONFIG_FOLDER_NAME);
+    }
+    
+    /**
      * 初始化所有配置
      */
     public static void initializeConfigs() {

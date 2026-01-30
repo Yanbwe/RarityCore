@@ -20,6 +20,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
+import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityConstants;
 import org.yanbwe.raritycore.edit.EditModeManager;
@@ -39,6 +40,7 @@ public class RarityCoreCommands {
     
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("raritycore")
+            .requires(source -> source.hasPermission(2)) // 仅OP可用
             .then(Commands.literal("sethand")
                 .then(Commands.argument("rarity", IntegerArgumentType.integer())
                     .executes(context -> setHandRarity(
@@ -77,6 +79,20 @@ public class RarityCoreCommands {
             .then(Commands.literal("details")
                 .executes(context -> showDetails(context.getSource()))
             )
+            .then(Commands.literal("edit")
+                .then(Commands.literal("enable")
+                    .executes(context -> enableEditMode(context.getSource()))
+                )
+                .then(Commands.literal("disable")
+                    .executes(context -> disableEditMode(context.getSource()))
+                )
+                .then(Commands.literal("toggle")
+                    .executes(context -> toggleEditMode(context.getSource()))
+                )
+                .then(Commands.literal("status")
+                    .executes(context -> showEditModeStatus(context.getSource()))
+                )
+            )
         );
         
         // 注册客户端配置重载命令
@@ -88,22 +104,6 @@ public class RarityCoreCommands {
         dispatcher.register(Commands.literal("raritycore-texture")
             .then(Commands.literal("toggle")
                 .executes(context -> toggleTextureBorder(context.getSource()))
-            )
-        );
-        
-        // 注册编辑模式命令
-        dispatcher.register(Commands.literal("raritycore-edit")
-            .then(Commands.literal("enable")
-                .executes(context -> enableEditMode(context.getSource()))
-            )
-            .then(Commands.literal("disable")
-                .executes(context -> disableEditMode(context.getSource()))
-            )
-            .then(Commands.literal("toggle")
-                .executes(context -> toggleEditMode(context.getSource()))
-            )
-            .then(Commands.literal("status")
-                .executes(context -> showEditModeStatus(context.getSource()))
             )
         );
     }
@@ -175,9 +175,15 @@ public class RarityCoreCommands {
      * 重新加载稀有度数据
      */
     private static int reloadRarityData(CommandSourceStack source) {
-        // 重新加载资源包数据
-        // 注意：在实际游戏中，这通常需要通过资源重载器来完成
-        // 这里我们只重新加载配置文件
+        // 重新加载所有配置文件
+        
+        // 按照加载顺序重新加载所有配置
+        // 1. FinalRarityConfig文件夹
+        source.sendSuccess(() -> Component.literal("正在加载FinalRarityConfig文件夹...").withStyle(ChatFormatting.YELLOW), false);
+        FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
+        
+        // 2. FinalRarity.json文件
+        source.sendSuccess(() -> Component.literal("正在加载FinalRarity.json文件...").withStyle(ChatFormatting.YELLOW), false);
         RarityConfigLoader.loadConfigRarityData();
         
         // 同步更新后的数据到所有客户端
@@ -297,13 +303,13 @@ public class RarityCoreCommands {
                 modBasedData.computeIfAbsent(modId, k -> new HashMap<>()).put(itemId, rarity);
             }
             
-            // 为每个模组创建单独的文件
+            // 为每个模组创建单独的文件（包含时间戳）
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
             for (Map.Entry<String, Map<String, Integer>> modEntry : modBasedData.entrySet()) {
                 String modId = modEntry.getKey();
                 Map<String, Integer> modData = modEntry.getValue();
                 
-                Path modExportFile = exportDir.resolve(modId + "_" + mcVersion + ".json");
+                Path modExportFile = exportDir.resolve(modId + "_" + mcVersion + "_" + timestamp + ".json");
                 
                 try (FileWriter writer = new FileWriter(modExportFile.toFile())) {
                     gson.toJson(modData, writer);
