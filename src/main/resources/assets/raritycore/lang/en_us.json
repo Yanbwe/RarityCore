@@ -27,5 +27,11 @@
   "rarity.core.disabled": "disabled",
   "rarity.core.texture_border_toggle_success": "Texture border %s",
   "rarity.core.texture_border_toggle_error": "Failed to toggle texture border",
-  "rarity.core.unusual.tips":"-level rarity-"
+  "rarity.core.unusual.tips":"-level rarity-",
+  "rarity.core.edit_mode_enabled": "Edit mode enabled",
+  "rarity.core.edit_mode_disabled": "Edit mode disabled",
+  "rarity.core.edit_mode_status_enabled": "Edit mode: Enabled (Current rarity: %d)",
+  "rarity.core.edit_mode_status_disabled": "Edit mode: Disabled",
+  "rarity.core.edit_mode_applied": "Item rarity set to %d",
+  "rarity.core.edit_mode_rarity_selected": "Selected rarity %d"
 }

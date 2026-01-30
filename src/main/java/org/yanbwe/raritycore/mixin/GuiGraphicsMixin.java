@@ -14,7 +14,7 @@ public abstract class GuiGraphicsMixin {
 
     /**
      * 处理物品装饰渲染，为其添加基于稀有度的边框
-     * 这是最关键的注入点，因为物品的装饰（包括数量、耐久等）在此渲染
+     * 最关键的注入点，因为物品的装饰在此渲染
      * 同时也涵盖了大部分物品边框显示的需求
      */
     @Inject(method = "renderItemDecorations(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;II)V", 

@@ -22,6 +22,7 @@ import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityConstants;
+import org.yanbwe.raritycore.edit.EditModeManager;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -87,6 +88,22 @@ public class RarityCoreCommands {
         dispatcher.register(Commands.literal("raritycore-texture")
             .then(Commands.literal("toggle")
                 .executes(context -> toggleTextureBorder(context.getSource()))
+            )
+        );
+        
+        // 注册编辑模式命令
+        dispatcher.register(Commands.literal("raritycore-edit")
+            .then(Commands.literal("enable")
+                .executes(context -> enableEditMode(context.getSource()))
+            )
+            .then(Commands.literal("disable")
+                .executes(context -> disableEditMode(context.getSource()))
+            )
+            .then(Commands.literal("toggle")
+                .executes(context -> toggleEditMode(context.getSource()))
+            )
+            .then(Commands.literal("status")
+                .executes(context -> showEditModeStatus(context.getSource()))
             )
         );
     }
@@ -372,6 +389,21 @@ public class RarityCoreCommands {
      * 保存稀有度到配置文件
      */
     private static void saveRarityToConfig(String itemId, int rarity) {
+        saveRarityToConfigInternal(itemId, rarity);
+    }
+    
+    /**
+     * 公共方法：保存稀有度到配置文件
+     * 供其他类调用
+     */
+    public static void saveRarityToConfigPublic(String itemId, int rarity) {
+        saveRarityToConfigInternal(itemId, rarity);
+    }
+    
+    /**
+     * 内部实现：保存稀有度到配置文件
+     */
+    private static void saveRarityToConfigInternal(String itemId, int rarity) {
         try {
             Path configDir = ConfigManager.getConfigDirPath();
             Files.createDirectories(configDir);
@@ -449,5 +481,53 @@ public class RarityCoreCommands {
         try (FileWriter writer = new FileWriter(exportFile.toFile())) {
             gson.toJson(exportData, writer);
         }
+    }
+    
+    /**
+     * 启用编辑模式
+     */
+    private static int enableEditMode(CommandSourceStack source) {
+        EditModeManager.setEditMode(true);
+        source.sendSuccess(() -> Component.translatable("rarity.core.edit_mode_enabled").withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+    
+    /**
+     * 禁用编辑模式
+     */
+    private static int disableEditMode(CommandSourceStack source) {
+        EditModeManager.setEditMode(false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.edit_mode_disabled").withStyle(ChatFormatting.YELLOW), false);
+        return 1;
+    }
+    
+    /**
+     * 切换编辑模式
+     */
+    private static int toggleEditMode(CommandSourceStack source) {
+        boolean newState = EditModeManager.toggleEditMode();
+        if (newState) {
+            source.sendSuccess(() -> Component.translatable("rarity.core.edit_mode_enabled").withStyle(ChatFormatting.GREEN), false);
+        } else {
+            source.sendSuccess(() -> Component.translatable("rarity.core.edit_mode_disabled").withStyle(ChatFormatting.YELLOW), false);
+        }
+        return 1;
+    }
+    
+    /**
+     * 显示编辑模式状态
+     */
+    private static int showEditModeStatus(CommandSourceStack source) {
+        boolean isEnabled = EditModeManager.isEditModeEnabled();
+        int currentRarity = EditModeManager.getCurrentRarity();
+        
+        if (isEnabled) {
+            source.sendSuccess(() -> Component.translatable("rarity.core.edit_mode_status_enabled", currentRarity)
+                .withStyle(ChatFormatting.GREEN), false);
+        } else {
+            source.sendSuccess(() -> Component.translatable("rarity.core.edit_mode_status_disabled")
+                .withStyle(ChatFormatting.YELLOW), false);
+        }
+        return 1;
     }
 }
