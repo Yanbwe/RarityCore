@@ -4,7 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.util.ConfigFileUtils;
 import org.yanbwe.raritycore.util.RarityConstants;
+import org.yanbwe.raritycore.util.RarityValidator;
 
 import java.io.BufferedReader;
 import java.io.FileWriter;
@@ -28,6 +30,8 @@ public class ConfigManager {
     private static boolean enableItemNameColor = RarityConstants.DEFAULT_ENABLE_ITEM_NAME_COLOR; // 是否启用物品名称变色
     private static boolean enableTooltipInsert = RarityConstants.DEFAULT_ENABLE_TOOLTIP_INSERT; // 是否启用工具提示插入
     private static boolean enableItemBackgroundRendering = RarityConstants.DEFAULT_ENABLE_ITEM_BACKGROUND_RENDERING; // 是否启用物品背景渲染
+    private static boolean checkVanillaRarity = RarityConstants.DEFAULT_CHECK_VANILLA_RARITY; // 是否检查原版稀有度
+    private static boolean skipUnconfiguredItems = RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS; // 是否跳过未配置物品的渲染
     
     // 配置文件路径
     private static final Path CONFIG_DIR = Paths.get(RarityConstants.CONFIG_DIR_PARENT).resolve(RarityConstants.CONFIG_DIR_NAME);
@@ -299,5 +303,21 @@ public class ConfigManager {
      */
     public static void setEnableItemBackgroundRendering(boolean enable) {
         enableItemBackgroundRendering = enable;
+    }
+    
+    public static boolean isCheckVanillaRarity() {
+        return checkVanillaRarity;
+    }
+    
+    public static void setCheckVanillaRarity(boolean check) {
+        checkVanillaRarity = check;
+    }
+    
+    public static boolean isSkipUnconfiguredItems() {
+        return skipUnconfiguredItems;
+    }
+    
+    public static void setSkipUnconfiguredItems(boolean skip) {
+        skipUnconfiguredItems = skip;
     }
 }

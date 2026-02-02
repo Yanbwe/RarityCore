@@ -23,6 +23,11 @@ public class ItemStackMixin {
         Item item = stack.getItem();
         Integer rarity = RarityRegistry.getRarity(item);
         
+        // 如果启用了跳过未配置物品且物品没有配置稀有度，则不修改名称颜色
+        if (org.yanbwe.raritycore.config.ConfigManager.isSkipUnconfiguredItems() && rarity == null) {
+            return;
+        }
+        
         // 如果没有注册稀有度，则不修改名称颜色
         if (rarity == null) {
             return;

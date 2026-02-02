@@ -10,6 +10,7 @@ import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
+import org.yanbwe.raritycore.util.RarityValidator;
 
 public class ItemBorderRenderer {
     
@@ -30,19 +31,17 @@ public class ItemBorderRenderer {
             return;
         }
 
-        // 获取物品的稀有度，未注册的物品默认为普通
+        // 获取物品的稀有度
         Item item = itemStack.getItem();
         Integer rarity = RarityRegistry.getRarity(item);
-        if (rarity == null) {
-            rarity = RarityConstants.RARITY_COMMON; // 默认为普通
+        
+        // 如果启用了跳过未配置物品且物品没有配置稀有度，则不渲染
+        if (ConfigManager.isSkipUnconfiguredItems() && rarity == null) {
+            return;
         }
-
-        // 限制稀有度在1-7范围内
-        if (rarity < RarityConstants.RARITY_COMMON) {
-            rarity = RarityConstants.RARITY_COMMON;
-        } else if (rarity > RarityConstants.RARITY_UNIQUE) {
-            rarity = RarityConstants.RARITY_UNIQUE;
-        }
+        
+        // 遵循模组包容性原则：小于1视为1，大于7视为7
+        rarity = RarityValidator.normalizeRarity(rarity);
         
         // 检查是否启用物品背景渲染
         if (ConfigManager.isEnableItemBackgroundRendering()) {

@@ -33,8 +33,15 @@ public class RarityTooltipHandler {
         ItemStack itemStack = event.getItemStack();
         Item item = itemStack.getItem();
         
-        // 获取物品的稀有度，未注册的物品默认为普通
+        // 获取物品的稀有度
         Integer rarity = RarityRegistry.getRarity(item);
+        
+        // 如果启用了跳过未配置物品且物品没有配置稀有度，则不插入工具提示
+        if (ConfigManager.isSkipUnconfiguredItems() && rarity == null) {
+            return;
+        }
+        
+        // 如果没有注册稀有度，默认为普通
         if (rarity == null) {
             rarity = RarityConstants.RARITY_COMMON;
         }

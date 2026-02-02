@@ -1,4 +1,3 @@
-
 # 稀有度核心 Raritycore
 
 一个轻量的模组，提供七个稀有度等级，并在物品名称颜色、工具提示框、物品槽位背景体现物品的稀有度。
@@ -7,16 +6,15 @@
 
 如果您不是模组开发者，但是有好的稀有度配置 ，请将您的配置文件发送给我，我会很愿意将其添加到模组中。
 
+## **项目文档**
 
-## **如何为物品赋予稀有度？**
+### 配置指南
+- [稀有度配置说明 (中文)](RarityConfig_CN.md) - 稀有度配置方法
+- [客户端配置说明 (中文)](ClientConfig_CN.md) - 客户端配置选项
 
-请参阅doc下的 [RarityConfig_CN.md](RarityConfig_CN.md) ！
-
-## **客户端配置说明**
-
-有关客户端特有配置的说明，请参阅doc下的 [ClientConfig_CN.md](ClientConfig_CN.md) ！
+### 开发文档
+- [API文档 (中文)](API_Documentation_CN.md) - API参考
 
 ## **项目构建说明**
 
 如果您需要将模组导出为开发环境外可用的jar文件，请使用`./gradlew build -PenableReobf=true`，这将会在导出jar文件时启用重混淆，否则会导致游戏崩溃。
-

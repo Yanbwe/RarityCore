@@ -17,6 +17,11 @@ If you need to export the mod as a JAR file usable outside the development envir
 
 For detailed configuration instructions, please refer to the [RarityConfig_EN.md](doc/RarityConfig_EN.md) file.
 
-## **Client Configuration Guide**
+## **Documentation**
 
-For information about client-specific configurations (such as border rendering, etc.), please refer to the [ClientConfig_EN.md](doc/ClientConfig_EN.md) file.
+### Configuration Guides
+- [Rarity Configuration Guide (English)](doc/RarityConfig_EN.md) - Detailed instructions for configuring item rarities
+- [Client Configuration Guide (English)](doc/ClientConfig_EN.md) - Client-specific configuration options
+
+### API Documentation
+- [API Documentation (English)](doc/API_Documentation_EN.md) - Complete API reference for developers

@@ -33,5 +33,7 @@
   "rarity.core.edit_mode_status_enabled": "Edit mode: Enabled (Current rarity: %d)",
   "rarity.core.edit_mode_status_disabled": "Edit mode: Disabled",
   "rarity.core.edit_mode_applied": "Item rarity set to %d",
-  "rarity.core.edit_mode_rarity_selected": "Selected rarity %d"
+  "rarity.core.edit_mode_rarity_selected": "Selected rarity %d",
+  "rarity.core.loading_final_rarity_config_folder": "Loading FinalRarityConfig folder...",
+  "rarity.core.loading_final_rarity_file": "Loading FinalRarity.json file..."
 }

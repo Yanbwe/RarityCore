@@ -71,7 +71,12 @@ public class IncrementalSyncPacket {
 
     public boolean handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
-            // 应用变更操作到客户端的注册表
+            // 批量应用变更操作到客户端的注册表
+            RarityCore.LOGGER.debug("Applying incremental sync packet with {} operations", changeOperations.size());
+            
+            int appliedCount = 0;
+            int skippedCount = 0;
+            
             for (ChangeOperation op : changeOperations) {
                 net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(op.getItemId());
                 
@@ -81,13 +86,25 @@ public class IncrementalSyncPacket {
                         if (item != null && !op.getItemId().equals(net.minecraftforge.registries.ForgeRegistries.ITEMS.getDefaultKey())) {
                             // 直接操作底层映射，不触发变更记录，避免循环
                             RarityRegistry.ITEM_RARITY_MAP.put(op.getItemId(), op.getRarity());
+                            appliedCount++;
+                        } else {
+                            skippedCount++;
+                            RarityCore.LOGGER.debug("Skipped invalid item: {}", op.getItemId());
                         }
                         break;
                     case DELETE:
-                        RarityRegistry.ITEM_RARITY_MAP.remove(op.getItemId()); // 从映射中删除
+                        if (RarityRegistry.ITEM_RARITY_MAP.containsKey(op.getItemId())) {
+                            RarityRegistry.ITEM_RARITY_MAP.remove(op.getItemId());
+                            appliedCount++;
+                        } else {
+                            skippedCount++;
+                        }
                         break;
                 }
             }
+            
+            RarityCore.LOGGER.debug("Incremental sync applied: {} operations, {} skipped", 
+                appliedCount, skippedCount);
         });
         ctx.get().setPacketHandled(true);
         return true;

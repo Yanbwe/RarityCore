@@ -22,6 +22,8 @@ import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
 import org.yanbwe.raritycore.registry.RarityRegistry;
+import org.yanbwe.raritycore.network.SyncBatchManager;
+import org.yanbwe.raritycore.util.ConfigFileUtils;
 import org.yanbwe.raritycore.util.RarityConstants;
 import org.yanbwe.raritycore.edit.EditModeManager;
 
@@ -179,11 +181,11 @@ public class RarityCoreCommands {
         
         // 按照加载顺序重新加载所有配置
         // 1. FinalRarityConfig文件夹
-        source.sendSuccess(() -> Component.literal("正在加载FinalRarityConfig文件夹...").withStyle(ChatFormatting.YELLOW), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.loading_final_rarity_config_folder").withStyle(ChatFormatting.YELLOW), false);
         FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
         
         // 2. FinalRarity.json文件
-        source.sendSuccess(() -> Component.literal("正在加载FinalRarity.json文件...").withStyle(ChatFormatting.YELLOW), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.loading_final_rarity_file").withStyle(ChatFormatting.YELLOW), false);
         RarityConfigLoader.loadConfigRarityData();
         
         // 同步更新后的数据到所有客户端

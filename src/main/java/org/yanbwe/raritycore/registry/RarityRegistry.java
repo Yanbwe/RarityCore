@@ -9,6 +9,7 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.jetbrains.annotations.NotNull;
+import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.IncrementalSyncPacket;
 import org.yanbwe.raritycore.network.RaritySyncPacket;
@@ -162,15 +163,17 @@ public class RarityRegistry {
                     return configuredRarity;
                 }
                 
-                // 如果没有本模组的稀有度配置，使用原版稀有度
-                net.minecraft.world.item.ItemStack tempStack = new net.minecraft.world.item.ItemStack(item);
-                net.minecraft.world.item.Rarity vanillaRarity = tempStack.getRarity();
-                if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
-                    return 3; // 罕见
-                } else if (vanillaRarity == net.minecraft.world.item.Rarity.RARE) {
-                    return 4; // 史诗
-                } else if (vanillaRarity == net.minecraft.world.item.Rarity.EPIC) {
-                    return 5; // 传说
+                // 如果没有本模组的稀有度配置，检查是否启用原版稀有度检查
+                if (org.yanbwe.raritycore.config.ConfigManager.isCheckVanillaRarity()) {
+                    net.minecraft.world.item.ItemStack tempStack = new net.minecraft.world.item.ItemStack(item);
+                    net.minecraft.world.item.Rarity vanillaRarity = tempStack.getRarity();
+                    if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
+                        return 3; // 罕见
+                    } else if (vanillaRarity == net.minecraft.world.item.Rarity.RARE) {
+                        return 4; // 史诗
+                    } else if (vanillaRarity == net.minecraft.world.item.Rarity.EPIC) {
+                        return 5; // 传说
+                    }
                 }
             }
         }

@@ -33,5 +33,7 @@
   "rarity.core.edit_mode_status_enabled": "编辑模式: 已启用 (当前稀有度: %d)",
   "rarity.core.edit_mode_status_disabled": "编辑模式: 已禁用",
   "rarity.core.edit_mode_applied": "已将物品稀有度设置为 %d",
-  "rarity.core.edit_mode_rarity_selected": "已选择稀有度 %d"
+  "rarity.core.edit_mode_rarity_selected": "已选择稀有度 %d",
+  "rarity.core.loading_final_rarity_config_folder": "正在加载FinalRarityConfig文件夹...",
+  "rarity.core.loading_final_rarity_file": "正在加载FinalRarity.json文件..."
 }

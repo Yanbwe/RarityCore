@@ -30,6 +30,8 @@ public class RarityConstants {
     public static final boolean DEFAULT_ENABLE_ITEM_BORDER_RENDERING = true;
     public static final int DEFAULT_ITEM_BORDER_STYLE = 1; // 0为空心，1为实心
     public static final boolean DEFAULT_ENABLE_ITEM_NAME_COLOR = true; // 默认启用物品名称变色
+    public static final boolean DEFAULT_CHECK_VANILLA_RARITY = true; // 默认检查原版稀有度
+    public static final boolean DEFAULT_SKIP_UNCONFIGURED_ITEMS = false; // 默认不禁用未配置物品的渲染
     public static final boolean DEFAULT_ENABLE_TOOLTIP_INSERT = true; // 默认启用工具提示插入
     public static final boolean DEFAULT_ENABLE_ITEM_BACKGROUND_RENDERING = false; // 默认不启用物品背景渲染
     

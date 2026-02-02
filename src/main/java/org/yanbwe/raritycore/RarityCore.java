@@ -67,7 +67,7 @@ public class RarityCore {
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
-        // 启动定时同步任务，每秒检查一次是否有待处理的变更
+        // 启动智能定时同步任务
         syncScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "RarityCore-Incremental-Sync");
             t.setDaemon(true);  // 设置为守护线程
@@ -76,13 +76,15 @@ public class RarityCore {
         
         syncScheduler.scheduleAtFixedRate(() -> {
             try {
-                if (RarityRegistry.getPendingChangeCount() > 0) {
+                // 使用批处理管理器检查是否需要同步
+                int pendingCount = org.yanbwe.raritycore.network.SyncBatchManager.getPendingOperationCount();
+                if (pendingCount > 0) {
                     RarityRegistry.syncIncrementalChangesToClients();
                 }
             } catch (Exception e) {
                 LOGGER.error("Error during incremental sync", e);
             }
-        }, 0, 1000, TimeUnit.MILLISECONDS); // 每秒检查一次
+        }, 0, 2000, TimeUnit.MILLISECONDS); // 每2秒检查一次，与批处理时间窗口匹配
     }
     
     @SubscribeEvent

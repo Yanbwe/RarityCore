@@ -1,0 +1,310 @@
+# RarityCore API Documentation
+
+**This documentation is written for RarityCore 1.20.1 Forge**
+
+## Main API Classes
+
+### 1. RarityRegistry (Core Registry Class)
+**Package Path**: `org.yanbwe.raritycore.registry.RarityRegistry`
+
+#### Public Fields
+```java
+// Item rarity mapping table (thread-safe)
+public static final ConcurrentHashMap<ResourceLocation, Integer> ITEM_RARITY_MAP
+```
+
+#### Public Methods
+
+##### Rarity Registration and Management
+```java
+// Register item rarity
+public static void register(@Nullable Item item, int rarity, boolean syncToClients)
+
+// Unregister item rarity
+public static void unregister(@Nullable Item item, boolean syncToClients)
+
+// Get item rarity level
+public static @NotNull Integer getRarity(@Nullable Item item)
+
+// Check if item has rarity configuration
+public static boolean hasRarity(@Nullable Item item)
+
+// Get all registered item rarity mappings
+public static Map<ResourceLocation, Integer> getAllRarities()
+```
+
+##### Network Synchronization
+```java
+// Synchronize rarity data to all clients
+public static void syncRarityToClients()
+
+// Get change operations buffer size
+public static int getChangeOperationsBufferSize()
+
+// Clear change operations buffer
+public static void clearChangeOperationsBuffer()
+```
+
+### 2. RarityColorUtil (Color Utility Class)
+**Package Path**: `org.yanbwe.raritycore.util.RarityColorUtil`
+
+#### Public Methods
+```java
+// Get chat formatting color by rarity
+public static ChatFormatting getRarityChatColor(int rarity)
+
+// Get ARGB color value by rarity
+public static int getRarityArgbColor(int rarity)
+```
+
+**Rarity Color Mapping**:
+- 1 (Common): White (WHITE) - 0xFFA0A0A0
+- 2 (Uncommon): Green (GREEN) - 0xFF00AA00
+- 3 (Rare): Dark Aqua (DARK_AQUA) - 0xFF00AAAA
+- 4 (Epic): Light Purple (LIGHT_PURPLE) - 0xFFC870FF
+- 5 (Legendary): Gold (GOLD) - 0xFFFFAA00
+- 6 (Mythical): Red (RED) - 0xFFFF5555
+- 7 (Unique): Dark Red (DARK_RED) - 0xFFAA0000
+
+### 3. RarityValidator (Validation Utility Class)
+**Package Path**: `org.yanbwe.raritycore.util.RarityValidator`
+
+#### Public Methods
+```java
+// Validate if rarity value is valid (1-7)
+public static boolean isValidRarity(int rarity)
+
+// Normalize rarity value (values < 1 become 1, values > 7 become 7)
+public static int normalizeRarity(int rarity)
+
+// Validate if item is valid
+public static boolean isValidItem(Item item)
+
+// Get item resource location identifier
+public static ResourceLocation getItemId(Item item)
+
+// Validate if border style is valid (0 or 1)
+public static boolean isValidBorderStyle(int borderStyle)
+
+// Validate and return valid border style
+public static int validateBorderStyle(int borderStyle)
+```
+
+### 4. ConfigManager (Configuration Manager Class)
+**Package Path**: `org.yanbwe.raritycore.config.ConfigManager`
+
+#### Public Methods
+
+##### Configuration Initialization and Loading
+```java
+// Initialize all configurations
+public static void initializeConfigs()
+
+// Load client configuration
+public static void loadClientConfig()
+
+// Save client configuration to file
+public static void saveClientConfig()
+```
+
+##### Path Retrieval
+```java
+// Get client configuration path
+public static Path getClientConfigPath()
+
+// Get configuration directory path
+public static Path getConfigDirPath()
+
+// Get final rarity configuration path
+public static Path getFinalRarityConfigPath()
+
+// Get FinalRarityConfig folder path
+public static Path getFinalRarityConfigFolderPath()
+```
+
+##### Client Rendering Configuration
+```java
+// Item border rendering
+public static boolean isEnableItemBorderRendering()
+public static void setEnableItemBorderRendering(boolean enable)
+
+// Item border style (0: hollow, 1: solid)
+public static int getItemBorderStyle()
+public static void setItemBorderStyle(int style)
+
+// Texture border
+public static boolean isUseTextureBorder()
+public static void setUseTextureBorder(boolean useTexture)
+
+// Item name coloring
+public static boolean isEnableItemNameColor()
+public static void setEnableItemNameColor(boolean enable)
+
+// Tooltip insertion
+public static boolean isEnableTooltipInsert()
+public static void setEnableTooltipInsert(boolean enable)
+
+// Item background rendering
+public static boolean isEnableItemBackgroundRendering()
+public static void setEnableItemBackgroundRendering(boolean enable)
+
+// Vanilla rarity check
+public static boolean isCheckVanillaRarity()
+public static void setCheckVanillaRarity(boolean check)
+
+// Skip unconfigured items
+public static boolean isSkipUnconfiguredItems()
+public static void setSkipUnconfiguredItems(boolean skip)
+```
+
+##### Validation Methods
+```java
+// Validate if rarity value is valid
+public static boolean isValidRarity(int rarity)
+```
+
+### 5. EditModeManager (Edit Mode Manager Class)
+**Package Path**: `org.yanbwe.raritycore.edit.EditModeManager`
+
+#### Public Methods
+```java
+// Edit mode control
+public static boolean toggleEditMode()
+public static void setEditMode(boolean enabled)
+public static boolean isEditModeEnabled()
+
+// Rarity level operations
+public static void nextRarity()
+public static void previousRarity()
+public static void setRarity(int rarity)
+public static int getCurrentRarity()
+public static List<Integer> getAvailableRarities()
+
+// Modify item rarity (client-side only)
+@OnlyIn(Dist.CLIENT)
+public static boolean modifyItemRarity(ItemStack itemStack)
+
+// Reset edit mode status
+public static void reset()
+```
+
+### 6. RarityCoreCommands (Command Utility Class)
+**Package Path**: `org.yanbwe.raritycore.command.RarityCoreCommands`
+
+#### Public Methods
+```java
+// Save rarity to configuration file (for external calls)
+public static void saveRarityToConfigPublic(String itemId, int rarity)
+```
+
+### 7. ConfigFileUtils (Configuration File Utility Class)
+**Package Path**: `org.yanbwe.raritycore.util.ConfigFileUtils`
+
+#### Public Methods
+```java
+// Ensure directory exists
+public static boolean ensureDirectoryExists(Path directoryPath, String operationName)
+
+// Read JSON configuration file
+public static JsonObject readJsonConfig(Path configFile, String operationName)
+
+// Write JSON configuration file
+public static boolean writeJsonConfig(Path configFile, JsonObject jsonObject, String operationName)
+
+// Safely read and update JSON configuration file
+public static boolean updateJsonConfig(Path configFile, JsonUpdater updater, String operationName)
+```
+
+#### Interface
+```java
+// JSON updater functional interface
+@FunctionalInterface
+public interface JsonUpdater {
+    void update(JsonObject jsonObject) throws Exception;
+}
+```
+
+## Usage Examples
+
+### 1. Basic Rarity Query
+```java
+import org.yanbwe.raritycore.registry.RarityRegistry;
+import net.minecraft.world.item.Items;
+
+// Get item rarity
+Item diamond = Items.DIAMOND;
+Integer rarity = RarityRegistry.getRarity(diamond);
+if (rarity != null) {
+    System.out.println("Diamond rarity: " + rarity); // Output: 4
+}
+```
+
+### 2. Color Retrieval
+```java
+import org.yanbwe.raritycore.util.RarityColorUtil;
+
+// Get color corresponding to rarity
+int rarityLevel = 5; // Legendary level
+ChatFormatting chatColor = RarityColorUtil.getRarityChatColor(rarityLevel);
+int argbColor = RarityColorUtil.getRarityArgbColor(rarityLevel);
+```
+
+### 3. Configuration Management
+```java
+import org.yanbwe.raritycore.config.ConfigManager;
+
+// Check if border rendering is enabled
+if (ConfigManager.isEnableItemBorderRendering()) {
+    // Border rendering is enabled
+}
+
+// Modify configuration
+ConfigManager.setEnableItemNameColor(false);
+ConfigManager.saveClientConfig(); // Save to file
+```
+
+### 4. Edit Mode Operations
+```java
+import org.yanbwe.raritycore.edit.EditModeManager;
+import net.minecraft.world.item.ItemStack;
+
+// Enable edit mode and set rarity
+EditModeManager.setEditMode(true);
+EditModeManager.setRarity(6); // Set to Mythical level
+
+// Modify item rarity (client environment)
+ItemStack itemStack = player.getMainHandItem();
+boolean success = EditModeManager.modifyItemRarity(itemStack);
+```
+
+### 5. Configuration File Operations
+```java
+import org.yanbwe.raritycore.util.ConfigFileUtils;
+import com.google.gson.JsonObject;
+
+// Safely update configuration file
+Path configFile = Paths.get("config/example.json");
+ConfigFileUtils.updateJsonConfig(configFile, jsonObject -> {
+    jsonObject.addProperty("custom_setting", "value");
+}, "Example Operation");
+```
+
+## Important Notes
+
+1. `EditModeManager.modifyItemRarity()` can only be called in client environment
+2. Rarity changes are automatically synchronized to all clients
+3. Configuration changes require calling `saveClientConfig()` to persist to file
+
+## Dependencies
+
+To use these APIs, add the following dependency in `mods.toml`:
+```toml
+[[dependencies.your_mod]]
+    modId="raritycore"
+    mandatory=true
+    versionRange="[1.0,)"
+    ordering="AFTER"
+    side="BOTH"
+```
+
+#
