@@ -60,5 +60,10 @@
   "rarity.core.cleanup_count": "清理次数: %d",
   "rarity.core.time_since_last_cleanup": "上次清理至今: %d秒",
   "rarity.core.average_entry_size": "平均条目大小: %.1f 字节",
-  "rarity.core.health_check_failed": "获取缓存健康状态失败: %s"
+  "rarity.core.health_check_failed": "获取缓存健康状态失败: %s",
+  "rarity.core.server_config_reload_success": "服务端配置重载成功: 检查原版稀有度=%s, 跳过未配置物品=%s",
+  "rarity.core.server_config_reload_failed": "服务端配置重载失败: %s",
+  "rarity.core.server_config_status_title": "=== 服务端配置状态 ===",
+  "rarity.core.check_vanilla_rarity": "检查原版稀有度: %s",
+  "rarity.core.skip_unconfigured_items": "跳过未配置物品: %s"
 }

@@ -60,5 +60,10 @@
   "rarity.core.cleanup_count": "Cleanup count: %d",
   "rarity.core.time_since_last_cleanup": "Time since last cleanup: %d seconds",
   "rarity.core.average_entry_size": "Average entry size: %.1f bytes",
-  "rarity.core.health_check_failed": "Failed to get cache health status: %s"
+  "rarity.core.health_check_failed": "Failed to get cache health status: %s",
+  "rarity.core.server_config_reload_success": "Server config reloaded successfully: checkVanillaRarity=%s, skipUnconfiguredItems=%s",
+  "rarity.core.server_config_reload_failed": "Failed to reload server config: %s",
+  "rarity.core.server_config_status_title": "=== Server Configuration Status ===",
+  "rarity.core.check_vanilla_rarity": "Check Vanilla Rarity: %s",
+  "rarity.core.skip_unconfigured_items": "Skip Unconfigured Items: %s"
 }

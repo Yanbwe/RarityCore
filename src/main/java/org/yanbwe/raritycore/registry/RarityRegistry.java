@@ -263,7 +263,7 @@ public class RarityRegistry {
                 }
                 
                 // 如果没有本模组的稀有度配置，检查是否启用原版稀有度检查
-                if (org.yanbwe.raritycore.config.ConfigManager.isCheckVanillaRarity()) {
+                if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
                     net.minecraft.world.item.ItemStack tempStack = new net.minecraft.world.item.ItemStack(item);
                     net.minecraft.world.item.Rarity vanillaRarity = tempStack.getRarity();
                     if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {

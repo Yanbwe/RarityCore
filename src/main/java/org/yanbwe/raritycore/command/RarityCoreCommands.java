@@ -119,6 +119,14 @@ public class RarityCoreCommands {
                     .executes(context -> showEditModeStatus(context.getSource()))
                 )
             )
+            .then(Commands.literal("server")
+                .then(Commands.literal("reload")
+                    .executes(context -> reloadServerConfig(context.getSource()))
+                )
+                .then(Commands.literal("status")
+                    .executes(context -> showServerConfigStatus(context.getSource()))
+                )
+            )
         );
         
         // 注册客户端配置重载命令
@@ -696,6 +704,57 @@ public class RarityCoreCommands {
             source.sendSuccess(() -> Component.translatable("rarity.core.health_check_failed", e.getMessage())
                 .withStyle(ChatFormatting.RED), false);
         }
+        
+        return 1;
+    }
+    
+    /**
+     * 重新加载服务端配置
+     */
+    private static int reloadServerConfig(CommandSourceStack source) {
+        try {
+            // 重新加载服务端配置
+            org.yanbwe.raritycore.config.ServerConfigManager.loadServerConfig();
+            
+            // 重新加载稀有度数据以应用新配置
+            org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
+            org.yanbwe.raritycore.config.RarityConfigLoader.loadConfigRarityData();
+            
+            // 同步更新后的数据到所有客户端
+            org.yanbwe.raritycore.registry.RarityRegistry.syncRarityToClientsWithRetry();
+            
+            String checkVanillaRarityStatus = org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity() ? 
+                Component.translatable("rarity.core.enabled").getString() : 
+                Component.translatable("rarity.core.disabled").getString();
+            String skipUnconfiguredItemsStatus = org.yanbwe.raritycore.config.ServerConfigManager.isSkipUnconfiguredItems() ? 
+                Component.translatable("rarity.core.enabled").getString() : 
+                Component.translatable("rarity.core.disabled").getString();
+            
+            source.sendSuccess(() -> Component.translatable("rarity.core.server_config_reload_success", 
+                checkVanillaRarityStatus, skipUnconfiguredItemsStatus).withStyle(ChatFormatting.GREEN), false);
+            return 1;
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Failed to reload server config", e);
+            source.sendSuccess(() -> Component.translatable("rarity.core.server_config_reload_failed", e.getMessage())
+                .withStyle(ChatFormatting.RED), false);
+            return 0;
+        }
+    }
+    
+    /**
+     * 显示服务端配置状态
+     */
+    private static int showServerConfigStatus(CommandSourceStack source) {
+        boolean checkVanillaRarity = org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity();
+        boolean skipUnconfiguredItems = org.yanbwe.raritycore.config.ServerConfigManager.isSkipUnconfiguredItems();
+        
+        source.sendSuccess(() -> Component.translatable("rarity.core.server_config_status_title").withStyle(ChatFormatting.GOLD), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.check_vanilla_rarity", 
+            checkVanillaRarity ? Component.translatable("rarity.core.enabled") : Component.translatable("rarity.core.disabled"))
+            .withStyle(checkVanillaRarity ? ChatFormatting.GREEN : ChatFormatting.RED), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.skip_unconfigured_items", 
+            skipUnconfiguredItems ? Component.translatable("rarity.core.enabled") : Component.translatable("rarity.core.disabled"))
+            .withStyle(skipUnconfiguredItems ? ChatFormatting.GREEN : ChatFormatting.RED), false);
         
         return 1;
     }

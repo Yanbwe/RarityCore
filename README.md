@@ -20,6 +20,7 @@ For detailed configuration instructions, please refer to the following documents
 ### Configuration Guides
 - [Rarity Configuration Guide (English)](doc/RarityConfig_EN.md) - Detailed instructions for configuring item rarities
 - [Client Configuration Guide (English)](doc/ClientConfig_EN.md) - Client-specific configuration options
+- [Server Configuration Guide (English)](doc/ServerConfig_EN.md) - Server-side configuration options
 
 ### API Documentation
 - [API Documentation (English)](doc/API_Documentation_EN.md) - Complete API reference for developers

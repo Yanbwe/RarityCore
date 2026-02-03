@@ -11,6 +11,7 @@
 ### 配置指南
 - [稀有度配置说明 (中文)](RarityConfig_CN.md) - 稀有度配置方法
 - [客户端配置说明 (中文)](ClientConfig_CN.md) - 客户端配置选项
+- [服务端配置说明 (中文)](ServerConfig_CN.md) - 服务端配置选项
 
 ### 开发文档
 - [API文档 (中文)](API_Documentation_CN.md) - API参考

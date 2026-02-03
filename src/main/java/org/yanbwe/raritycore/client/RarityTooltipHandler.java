@@ -8,12 +8,14 @@ package org.yanbwe.raritycore.client;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
@@ -48,7 +50,8 @@ public class RarityTooltipHandler {
         }
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度，则不插入工具提示
-        if (ConfigManager.isSkipUnconfiguredItems() && rarity == null) {
+        // 注意：需要检查物品是否真的没有配置，而不是检查rarity是否为null
+        if (org.yanbwe.raritycore.config.ServerConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
             return;
         }
         
@@ -108,5 +111,25 @@ public class RarityTooltipHandler {
             // 高效插入到工具提示
             ComponentBuilder.insertIntoTooltip(event.getToolTip(), rarityComponent);
         }
+    }
+    
+    /**
+     * 检查物品是否有配置的稀有度
+     * @param item 要检查的物品
+     * @return 如果物品有配置稀有度返回true，否则返回false
+     */
+    private static boolean hasConfiguredRarity(Item item) {
+        if (item == null) {
+            return false;
+        }
+        
+        // 获取物品ID
+        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+        if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+            return false;
+        }
+        
+        // 检查是否在注册表中有配置
+        return RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId);
     }
 }

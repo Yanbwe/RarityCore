@@ -34,7 +34,7 @@ public class ItemStackMixin {
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度，则不修改名称颜色
         // 注意：需要检查物品是否真的没有配置，而不是默认的稀有度1
-        if (org.yanbwe.raritycore.config.ConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
+        if (org.yanbwe.raritycore.config.ServerConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
             return;
         }
         

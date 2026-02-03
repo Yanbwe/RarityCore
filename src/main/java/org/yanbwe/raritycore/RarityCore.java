@@ -47,6 +47,7 @@ public class RarityCore {
 
         // Ensure configuration initialization in constructor
         ConfigManager.initializeConfigs();
+        org.yanbwe.raritycore.config.ServerConfigManager.initializeServerConfigs();
     }
     
     @SubscribeEvent

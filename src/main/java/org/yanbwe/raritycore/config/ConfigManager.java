@@ -284,30 +284,6 @@ public class ConfigManager {
         enableTooltipInsert = enable;
     }
     
-    public static boolean isCheckVanillaRarity() {
-        return checkVanillaRarity;
-    }
-    
-    public static void setCheckVanillaRarity(boolean check) {
-        if (checkVanillaRarity != check) {
-            checkVanillaRarity = check;
-            // 通知缓存系统配置已变更
-            notifyCacheOfConfigChange();
-        }
-    }
-    
-    public static boolean isSkipUnconfiguredItems() {
-        return skipUnconfiguredItems;
-    }
-    
-    public static void setSkipUnconfiguredItems(boolean skip) {
-        if (skipUnconfiguredItems != skip) {
-            skipUnconfiguredItems = skip;
-            // 通知缓存系统配置已变更
-            notifyCacheOfConfigChange();
-        }
-    }
-    
     /**
      * 通知缓存系统配置已变更
      */
