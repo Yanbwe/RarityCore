@@ -17,8 +17,10 @@ import net.minecraftforge.fml.common.Mod;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
+import org.yanbwe.raritycore.util.ComponentBuilder;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
+import org.yanbwe.raritycore.util.RarityValidator;
 
 @Mod.EventBusSubscriber(modid = RarityCore.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class RarityTooltipHandler {
@@ -30,11 +32,20 @@ public class RarityTooltipHandler {
             return;
         }
         
+        // 更新星星缓存
+        ComponentBuilder.updateStarCache();
+        
         ItemStack itemStack = event.getItemStack();
         Item item = itemStack.getItem();
         
-        // 获取物品的稀有度
-        Integer rarity = RarityRegistry.getRarity(item);
+        // 获取物品的稀有度（使用缓存优化）
+        Integer rarity = RenderCacheManager.getCachedRarity(item);
+        
+        // 如果缓存未命中，则从注册表获取并缓存
+        if (rarity == null) {
+            rarity = RarityRegistry.getRarity(item);
+            RenderCacheManager.cacheRarity(item, rarity);
+        }
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度，则不插入工具提示
         if (ConfigManager.isSkipUnconfiguredItems() && rarity == null) {
@@ -46,6 +57,9 @@ public class RarityTooltipHandler {
             rarity = RarityConstants.RARITY_COMMON;
         }
 
+        // 标准化稀有度值，遵循模组的包容性原则
+        rarity = RarityValidator.normalizeRarity(rarity);
+        
         // 处理超出范围的稀有度值
         ChatFormatting color = RarityColorUtil.getRarityChatColor(rarity);
         MutableComponent prefixComponent;
@@ -53,27 +67,12 @@ public class RarityTooltipHandler {
         if (rarity > RarityConstants.RARITY_UNIQUE) {
             // 如果稀有度大于7，显示为 [x级稀有度-x(星星)]
             ChatFormatting uniqueColor = RarityColorUtil.getRarityChatColor(RarityConstants.RARITY_UNIQUE);
-            StringBuilder stars = new StringBuilder();
-            for (int i = 0; i < rarity; i++) {
-                stars.append("⭐");
-            }
-            MutableComponent numberComponent = Component.literal("[" + rarity).withStyle(uniqueColor);
-            MutableComponent tipsComponent = Component.translatable("rarity.core.unusual.tips").withStyle(uniqueColor);
-            MutableComponent starsComponent = Component.literal(stars.toString() + "]").withStyle(uniqueColor);
-            MutableComponent rarityComponent = Component.empty().append(numberComponent).append(tipsComponent).append(starsComponent);
+            MutableComponent rarityComponent = ComponentBuilder.buildSpecialRarityComponent(rarity, uniqueColor);
             
-            // 在工具提示列表的第二行插入稀有度提示
-            if (!event.getToolTip().isEmpty()) {
-                event.getToolTip().add(1, rarityComponent);
-            } else {
-                event.getToolTip().add(rarityComponent);
-            }
+            // 高效插入到工具提示
+            ComponentBuilder.insertIntoTooltip(event.getToolTip(), rarityComponent);
             return;
         } else {
-            // 限制稀有度在1-7范围内
-            if (rarity < RarityConstants.RARITY_COMMON) {
-                rarity = RarityConstants.RARITY_COMMON;
-            }
             
             // 设置前缀和颜色
             switch (rarity) {
@@ -102,22 +101,12 @@ public class RarityTooltipHandler {
                     return;
             }
         
-            // 创建星星，星号数量等于稀有度值
-            StringBuilder stars = new StringBuilder();
-            for (int i = 0; i < rarity; i++) {
-                stars.append("⭐");
-            }
+            // 构建文本（使用优化的组件构建器）
+            MutableComponent starsComponent = ComponentBuilder.buildRarityComponent(rarity, color);
+            MutableComponent rarityComponent = Component.empty().append(prefixComponent).append(starsComponent).withStyle(color);
             
-            // 构建文本
-            MutableComponent starsComponent = Component.literal(" " + stars).withStyle(color);
-            MutableComponent rarityComponent = Component.empty().append(prefixComponent).append(starsComponent);
-            
-            // 在工具提示列表的第二行插入稀有度提示
-            if (!event.getToolTip().isEmpty()) {
-                event.getToolTip().add(1, rarityComponent);
-            } else {
-                event.getToolTip().add(rarityComponent);
-            }
+            // 高效插入到工具提示
+            ComponentBuilder.insertIntoTooltip(event.getToolTip(), rarityComponent);
         }
     }
 }

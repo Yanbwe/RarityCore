@@ -33,7 +33,10 @@ public class RarityConstants {
     public static final boolean DEFAULT_CHECK_VANILLA_RARITY = true; // 默认检查原版稀有度
     public static final boolean DEFAULT_SKIP_UNCONFIGURED_ITEMS = false; // 默认不禁用未配置物品的渲染
     public static final boolean DEFAULT_ENABLE_TOOLTIP_INSERT = true; // 默认启用工具提示插入
-    public static final boolean DEFAULT_ENABLE_ITEM_BACKGROUND_RENDERING = false; // 默认不启用物品背景渲染
+    
+    // 星星显示相关默认值
+    public static final boolean DEFAULT_ENABLE_STAR_DISPLAY = true; // 默认启用星星显示
+    public static final String DEFAULT_STAR_EMOJI = "⭐"; // 默认星星emoji
     
     // 纹理相关常量
     public static final String BORDER_TEXTURE_PATH = "raritycore:textures/border/";

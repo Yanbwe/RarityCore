@@ -81,6 +81,22 @@ public class RarityCoreCommands {
             .then(Commands.literal("details")
                 .executes(context -> showDetails(context.getSource()))
             )
+            .then(Commands.literal("cache")
+                .then(Commands.literal("stats")
+                    .executes(context -> showCacheStats(context.getSource()))
+                )
+                .then(Commands.literal("clear")
+                    .executes(context -> clearCache(context.getSource()))
+                )
+            )
+            .then(Commands.literal("perf")
+                .then(Commands.literal("stats")
+                    .executes(context -> showPerformanceStats(context.getSource()))
+                )
+                .then(Commands.literal("optimize")
+                    .executes(context -> triggerManualOptimization(context.getSource()))
+                )
+            )
             .then(Commands.literal("edit")
                 .then(Commands.literal("enable")
                     .executes(context -> enableEditMode(context.getSource()))
@@ -536,6 +552,78 @@ public class RarityCoreCommands {
             source.sendSuccess(() -> Component.translatable("rarity.core.edit_mode_status_disabled")
                 .withStyle(ChatFormatting.YELLOW), false);
         }
+        return 1;
+    }
+    
+    /**
+     * 显示缓存统计信息
+     */
+    private static int showCacheStats(CommandSourceStack source) {
+        org.yanbwe.raritycore.client.RenderCacheManager.CacheStats stats = 
+            org.yanbwe.raritycore.client.RenderCacheManager.getCacheStats();
+        
+        source.sendSuccess(() -> Component.literal("=== 渲染缓存统计 ===").withStyle(ChatFormatting.GOLD), false);
+        source.sendSuccess(() -> Component.literal(String.format("缓存命中: %d", stats.getHits())).withStyle(ChatFormatting.GREEN), false);
+        source.sendSuccess(() -> Component.literal(String.format("缓存未命中: %d", stats.getMisses())).withStyle(ChatFormatting.RED), false);
+        source.sendSuccess(() -> Component.literal(String.format("命中率: %.2f%%", stats.getHitRate())).withStyle(ChatFormatting.AQUA), false);
+        source.sendSuccess(() -> Component.literal(String.format("物品缓存大小: %d", stats.getRarityCacheSize())).withStyle(ChatFormatting.YELLOW), false);
+        source.sendSuccess(() -> Component.literal(String.format("物品堆缓存大小: %d", stats.getItemStackCacheSize())).withStyle(ChatFormatting.YELLOW), false);
+        source.sendSuccess(() -> Component.literal(String.format("缓存清理次数: %d", stats.getClears())).withStyle(ChatFormatting.GRAY), false);
+        
+        return 1;
+    }
+    
+    /**
+     * 清除渲染缓存
+     */
+    private static int clearCache(CommandSourceStack source) {
+        org.yanbwe.raritycore.client.RenderCacheManager.clearAllCache();
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_cleared").withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+    
+    /**
+     * 显示性能统计信息
+     */
+    private static int showPerformanceStats(CommandSourceStack source) {
+        // 获取各种性能指标
+        org.yanbwe.raritycore.client.RenderCacheManager.CacheStats cacheStats = 
+            org.yanbwe.raritycore.client.RenderCacheManager.getCacheStats();
+        
+        int pendingChanges = org.yanbwe.raritycore.registry.RarityRegistry.getPendingChangeCount();
+        int registrySize = org.yanbwe.raritycore.registry.RarityRegistry.ITEM_RARITY_MAP.size();
+        
+        source.sendSuccess(() -> Component.literal("=== 性能统计 ===").withStyle(ChatFormatting.GOLD), false);
+        source.sendSuccess(() -> Component.literal(String.format("注册表大小: %d 个物品", registrySize)).withStyle(ChatFormatting.YELLOW), false);
+        source.sendSuccess(() -> Component.literal(String.format("待处理变更: %d 个操作", pendingChanges)).withStyle(ChatFormatting.AQUA), false);
+        source.sendSuccess(() -> Component.literal(String.format("缓存命中率: %.2f%%", cacheStats.getHitRate())).withStyle(ChatFormatting.GREEN), false);
+        source.sendSuccess(() -> Component.literal(String.format("物品缓存: %d 项", cacheStats.getRarityCacheSize())).withStyle(ChatFormatting.WHITE), false);
+        source.sendSuccess(() -> Component.literal(String.format("物品堆缓存: %d 项", cacheStats.getItemStackCacheSize())).withStyle(ChatFormatting.WHITE), false);
+        
+        return 1;
+    }
+    
+    /**
+     * 触发手动优化
+     */
+    private static int triggerManualOptimization(CommandSourceStack source) {
+        // 清理缓存
+        org.yanbwe.raritycore.client.RenderCacheManager.clearAllCache();
+        
+        // 重新加载配置（使用优化解析器）
+        org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
+        org.yanbwe.raritycore.config.RarityConfigLoader.loadConfigRarityData();
+        
+        source.sendSuccess(() -> Component.translatable("rarity.core.optimization_completed").withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+    
+    /**
+     * 预加载缓存
+     */
+    private static int preloadCache(CommandSourceStack source) {
+        org.yanbwe.raritycore.client.ImprovedRenderCacheManager.preloadCache();
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_preloaded").withStyle(ChatFormatting.GREEN), false);
         return 1;
     }
 }

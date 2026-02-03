@@ -31,12 +31,17 @@ The client configuration file is located at:
 ### 5. enableTooltipInsert
 - **Type**: Boolean
 - **Default**: true
-- **Description**: Whether to enable tooltip insertion feature, inserts rarity information in item tooltips
+- **Description**: Whether to enable tooltip insertion feature, displays rarity information in item tooltips
 
-### 6. enableItemBackgroundRendering
+### 6. checkVanillaRarity
+- **Type**: Boolean
+- **Default**: true
+- **Description**: Whether to check vanilla item rarity and map it, when enabled will map vanilla EPIC/LEGENDARY rarity to corresponding levels
+
+### 7. skipUnconfiguredItems
 - **Type**: Boolean
 - **Default**: false
-- **Description**: Please keep this configuration false, otherwise it will cause abnormal border rendering
+- **Description**: Whether to skip unconfigured items, when enabled will not render borders, name colors and tooltips for items without rarity configuration
 
 ### How to Apply Configuration
 #### Method 1: Restart the game
@@ -60,3 +65,6 @@ You can use the following command to toggle the texture border enable/disable st
 
 ### Notes
 If the configuration file becomes corrupted, you can delete the configuration file and restart the game to regenerate a default configuration file.
+
+### Star Display
+Star symbols are now permanently enabled in tooltips and cannot be configured. The default star emoji "⭐" will always be displayed.

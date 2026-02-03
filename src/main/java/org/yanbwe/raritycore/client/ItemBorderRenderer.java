@@ -5,6 +5,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.RarityCore;
@@ -31,25 +32,26 @@ public class ItemBorderRenderer {
             return;
         }
 
-        // 获取物品的稀有度
+        // 获取物品的稀有度（使用缓存优化）
         Item item = itemStack.getItem();
-        Integer rarity = RarityRegistry.getRarity(item);
+        Integer rarity = RenderCacheManager.getCachedRarity(item);
+        
+        // 如果缓存未命中，则从注册表获取并缓存
+        if (rarity == null) {
+            rarity = RarityRegistry.getRarity(item);
+            RenderCacheManager.cacheRarity(item, rarity);
+        }
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度，则不渲染
-        if (ConfigManager.isSkipUnconfiguredItems() && rarity == null) {
+        // 注意：需要检查物品是否真的没有配置，而不是默认的稀有度1
+        if (ConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
             return;
         }
         
         // 遵循模组包容性原则：小于1视为1，大于7视为7
         rarity = RarityValidator.normalizeRarity(rarity);
         
-        // 检查是否启用物品背景渲染
-        if (ConfigManager.isEnableItemBackgroundRendering()) {
-            // 渲染物品背景
-            renderItemBackground(guiGraphics, rarity, x, y);
-        }
-        
-        // 检查是否使用纹理边框
+        // 根据配置选择渲染方式
         if (ConfigManager.isUseTextureBorder()) {
             // 使用纹理渲染边框
             renderTextureBorder(guiGraphics, rarity, x, y);
@@ -89,35 +91,6 @@ public class ItemBorderRenderer {
         }
     }
     
-    /**
-     * 使用颜色渲染边框
-     * @param guiGraphics GUI图形上下文
-     * @param rarity 稀有度等级
-     * @param x X坐标
-     * @param y Y坐标
-     */
-    private static void renderItemBackground(GuiGraphics guiGraphics, int rarity, int x, int y) {
-        // 根据稀有度获取对应颜色
-        int backgroundColor = RarityColorUtil.getRarityArgbColor(rarity);
-        
-        // 设置背景颜色为半透明
-        int alphaMask;
-        if (ConfigManager.isUseTextureBorder()) {
-            // 当启用纹理边框时，降低物品背景的透明度（如设为25%），避免与纹理叠加导致透明度异常
-            alphaMask = 0x40000000;  // 25%透明度的alpha值
-        } else {
-            alphaMask = 0x60000000;  // 37.5%透明度的alpha值
-        }
-        int translucentBackgroundColor = (backgroundColor & 0x00FFFFFF) | alphaMask;  // 保留RGB值，设置alpha
-        
-        // 启用混合模式以确保透明度正确显示
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        
-        // 绘制16x16区域的半透明背景
-        guiGraphics.fill(x, y, x + 16, y + 16, translucentBackgroundColor);
-    }
-    
     private static void renderColorBorder(GuiGraphics guiGraphics, int rarity, int x, int y) {
         // 根据稀有度获取对应颜色
         int borderColor = RarityColorUtil.getRarityArgbColor(rarity);
@@ -145,6 +118,26 @@ public class ItemBorderRenderer {
             // 右边框
             guiGraphics.fill(x + 15, y, x + 16, y + 16, borderColor);
         }
+    }
+    
+    /**
+     * 检查物品是否有配置的稀有度
+     * @param item 要检查的物品
+     * @return 如果物品有配置稀有度返回true，否则返回false
+     */
+    private static boolean hasConfiguredRarity(Item item) {
+        if (item == null) {
+            return false;
+        }
+        
+        // 获取物品ID
+        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+        if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+            return false;
+        }
+        
+        // 检查是否在注册表中有配置
+        return RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId);
     }
     
     /**

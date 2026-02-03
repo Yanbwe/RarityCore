@@ -29,7 +29,6 @@ public class ConfigManager {
     private static boolean useTextureBorder = RarityConstants.DEFAULT_USE_TEXTURE_BORDER; // 是否使用纹理边框
     private static boolean enableItemNameColor = RarityConstants.DEFAULT_ENABLE_ITEM_NAME_COLOR; // 是否启用物品名称变色
     private static boolean enableTooltipInsert = RarityConstants.DEFAULT_ENABLE_TOOLTIP_INSERT; // 是否启用工具提示插入
-    private static boolean enableItemBackgroundRendering = RarityConstants.DEFAULT_ENABLE_ITEM_BACKGROUND_RENDERING; // 是否启用物品背景渲染
     private static boolean checkVanillaRarity = RarityConstants.DEFAULT_CHECK_VANILLA_RARITY; // 是否检查原版稀有度
     private static boolean skipUnconfiguredItems = RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS; // 是否跳过未配置物品的渲染
     
@@ -146,16 +145,8 @@ public class ConfigManager {
                     enableTooltipInsert = RarityConstants.DEFAULT_ENABLE_TOOLTIP_INSERT;
                 }
                 
-                // Read item background rendering setting
-                if (jsonObject.has("enableItemBackgroundRendering")) {
-                    enableItemBackgroundRendering = jsonObject.get("enableItemBackgroundRendering").getAsBoolean();
-                } else {
-                    // If the config option doesn't exist, use default value
-                    enableItemBackgroundRendering = RarityConstants.DEFAULT_ENABLE_ITEM_BACKGROUND_RENDERING;
-                }
-                
-                RarityCore.LOGGER.info("Client config loaded successfully: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}, enableItemBackgroundRendering={}", 
-                    enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert, enableItemBackgroundRendering);
+                RarityCore.LOGGER.info("Client config loaded successfully: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}", 
+                    enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert);
             }
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error loading client config file, using default config: {}", CLIENT_CONFIG_FILE, e);
@@ -177,7 +168,8 @@ public class ConfigManager {
         configObject.addProperty("useTextureBorder", RarityConstants.DEFAULT_USE_TEXTURE_BORDER);
         configObject.addProperty("enableItemNameColor", RarityConstants.DEFAULT_ENABLE_ITEM_NAME_COLOR);
         configObject.addProperty("enableTooltipInsert", RarityConstants.DEFAULT_ENABLE_TOOLTIP_INSERT);
-        configObject.addProperty("enableItemBackgroundRendering", RarityConstants.DEFAULT_ENABLE_ITEM_BACKGROUND_RENDERING);
+        configObject.addProperty("checkVanillaRarity", RarityConstants.DEFAULT_CHECK_VANILLA_RARITY);
+        configObject.addProperty("skipUnconfiguredItems", RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS);
         
         // 写入默认配置文件
         try {
@@ -200,14 +192,15 @@ public class ConfigManager {
         configObject.addProperty("useTextureBorder", useTextureBorder);
         configObject.addProperty("enableItemNameColor", enableItemNameColor);
         configObject.addProperty("enableTooltipInsert", enableTooltipInsert);
-        configObject.addProperty("enableItemBackgroundRendering", enableItemBackgroundRendering);
+        configObject.addProperty("checkVanillaRarity", checkVanillaRarity);
+        configObject.addProperty("skipUnconfiguredItems", skipUnconfiguredItems);
         
         // 写入配置文件
         try {
             try (FileWriter writer = new FileWriter(CLIENT_CONFIG_FILE.toString())) {
                 GSON.toJson(configObject, writer);
-                RarityCore.LOGGER.info("Client config saved: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}, enableItemBackgroundRendering={}", 
-                    enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert, enableItemBackgroundRendering);
+                RarityCore.LOGGER.info("Client config saved: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}, checkVanillaRarity={}, skipUnconfiguredItems={}", 
+                    enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert, checkVanillaRarity, skipUnconfiguredItems);
             }
         } catch (IOException e) {
             RarityCore.LOGGER.error("Cannot save client config file: {}", CLIENT_CONFIG_FILE, e);
@@ -289,20 +282,6 @@ public class ConfigManager {
      */
     public static void setEnableTooltipInsert(boolean enable) {
         enableTooltipInsert = enable;
-    }
-    
-    /**
-     * 获取是否启用物品背景渲染
-     */
-    public static boolean isEnableItemBackgroundRendering() {
-        return enableItemBackgroundRendering;
-    }
-    
-    /**
-     * 设置是否启用物品背景渲染
-     */
-    public static void setEnableItemBackgroundRendering(boolean enable) {
-        enableItemBackgroundRendering = enable;
     }
     
     public static boolean isCheckVanillaRarity() {

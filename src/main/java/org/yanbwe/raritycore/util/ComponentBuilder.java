@@ -1,0 +1,103 @@
+package org.yanbwe.raritycore.util;
+
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import org.yanbwe.raritycore.RarityCore;
+
+/**
+ * 组件构建器工具类
+ * 优化Minecraft组件的创建和组装性能
+ */
+public class ComponentBuilder {
+    
+    // 预构建的星星字符串，避免重复创建
+    private static final String[] STAR_CACHE = new String[16]; // 支持最多15颗星
+    private static String currentStarEmoji = "⭐";
+    
+    static {
+        // 预填充星星缓存
+        updateStarCache();
+    }
+    
+    /**
+     * 更新星星缓存
+     */
+    public static void updateStarCache() {
+        String starEmoji = "⭐"; // 硬编码星星符号
+        if (!starEmoji.equals(currentStarEmoji)) {
+            currentStarEmoji = starEmoji;
+            for (int i = 0; i < STAR_CACHE.length; i++) {
+                StringBuilder sb = new StringBuilder();
+                for (int j = 0; j < i; j++) {
+                    sb.append(starEmoji);
+                }
+                STAR_CACHE[i] = sb.toString();
+            }
+        }
+    }
+    
+    /**
+     * 获取预构建的星星字符串
+     * @param count 星星数量
+     * @return 星星字符串
+     */
+    public static String getStars(int count) {
+        if (count <= 0) {
+            return "";
+        }
+        
+        // 简单直接构建星星字符串
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            sb.append("⭐");
+        }
+        return sb.toString();
+    }
+    
+    /**
+     * 构建稀有度组件（高性能版本）
+     * @param rarity 稀有度等级
+     * @param color 颜色格式
+     * @return 构建好的组件
+     */
+    public static MutableComponent buildRarityComponent(int rarity, ChatFormatting color) {
+        if (rarity <= 0) return Component.empty();
+        
+        // 使用预构建的星星字符串
+        String stars = getStars(rarity);
+
+        return Component.literal(" " + stars).withStyle(color);
+    }
+    
+    /**
+     * 构建特殊稀有度组件（大于7级的情况）
+     * @param rarity 稀有度等级
+     * @param color 颜色格式
+     * @return 构建好的组件
+     */
+    public static MutableComponent buildSpecialRarityComponent(int rarity, ChatFormatting color) {
+        String stars = getStars(rarity);
+        MutableComponent numberComponent = Component.literal("[" + rarity).withStyle(color);
+        MutableComponent tipsComponent = Component.translatable("rarity.core.unusual.tips").withStyle(color);
+        MutableComponent starsComponent = Component.literal(stars + "]").withStyle(color);
+        
+        return Component.empty()
+            .append(numberComponent)
+            .append(tipsComponent)
+            .append(starsComponent);
+    }
+    
+    /**
+     * 高效地将组件插入到工具提示中
+     * @param tooltip 工具提示列表
+     * @param component 要插入的组件
+     */
+    public static void insertIntoTooltip(java.util.List<Component> tooltip, MutableComponent component) {
+        if (tooltip.isEmpty()) {
+            tooltip.add(component);
+        } else {
+            tooltip.add(1, component); // 插入到第二行
+        }
+    }
+}

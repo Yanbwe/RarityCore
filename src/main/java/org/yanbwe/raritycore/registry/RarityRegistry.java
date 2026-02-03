@@ -5,14 +5,17 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.server.ServerLifecycleHooks;
+import org.yanbwe.raritycore.event.RarityChangeEvent;
 import org.jetbrains.annotations.NotNull;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.IncrementalSyncPacket;
 import org.yanbwe.raritycore.network.RaritySyncPacket;
+import org.yanbwe.raritycore.util.RarityConstants;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -55,6 +58,11 @@ public class RarityRegistry {
             if (itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
                 Integer oldRarity = ITEM_RARITY_MAP.put(itemId, rarity);
                 
+                // 发布稀有度变更事件
+                RarityChangeEvent.ChangeType changeType = (oldRarity == null) ? 
+                    RarityChangeEvent.ChangeType.REGISTER : RarityChangeEvent.ChangeType.UPDATE;
+                MinecraftForge.EVENT_BUS.post(new RarityChangeEvent(item, oldRarity, rarity, changeType));
+                
                 // 如果需要同步到客户端且当前在服务端环境中，记录变更操作
                 if (syncToClients) {
                     // 记录变更操作
@@ -83,6 +91,12 @@ public class RarityRegistry {
             ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
             if (itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
                 Integer removedRarity = ITEM_RARITY_MAP.remove(itemId);
+                
+                // 发布稀有度变更事件
+                if (removedRarity != null) {
+                    MinecraftForge.EVENT_BUS.post(new RarityChangeEvent(
+                        item, removedRarity, null, RarityChangeEvent.ChangeType.REMOVE));
+                }
                 
                 // 如果需要同步到客户端且当前在服务端环境中，记录删除操作
                 if (syncToClients) {
@@ -148,6 +162,91 @@ public class RarityRegistry {
         CHANGE_OPERATIONS_BUFFER.clear();
     }
 
+    /**
+     * 获取物品的稀有度等级（标准化版本）
+     * 遵循模组的包容性原则：小于1的值视为1，大于7的值视为7
+     * @param item 要查稀有度的物品
+     * @return 标准化后的物品稀有度等级（1-7）
+     */
+    public static @NotNull Integer getNormalizedRarity(@Nullable Item item) {
+        Integer rawRarity = getRarity(item);
+        return org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rawRarity);
+    }
+    
+    /**
+     * 获取本地化文本
+     * @param key 本地化键
+     * @return 本地化文本
+     */
+    private static String getLocalizedText(String key) {
+        // 直接使用和原版工具提示系统一样的方式
+        return net.minecraft.client.resources.language.I18n.get(key);
+    }
+    
+    /**
+     * 获取物品的完整稀有度工具提示字符串（支持本地化）
+     * 返回格式示例：
+     * - 普通物品："[普通] ⭐" (中文) 或 "[Common] ⭐" (英文)
+     * - 高级物品："[5级稀有度-⭐⭐⭐⭐⭐]"
+     * @param item 要获取工具提示的物品
+     * @return 本地化的稀有度工具提示字符串
+     */
+    public static @NotNull String getLocalizedRarityTooltip(@Nullable Item item) {
+        if (item == null) {
+            return "[普通]"; // 默认返回普通稀有度
+        }
+        
+        // 获取物品稀有度
+        Integer rarity = getRarity(item);
+        if (rarity == null) {
+            rarity = RarityConstants.RARITY_COMMON;
+        }
+        
+        // 标准化稀有度值
+        rarity = org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rarity);
+        
+        // 构建工具提示字符串
+        if (rarity > RarityConstants.RARITY_UNIQUE) {
+            // 特殊稀有度（大于7级）
+            String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(rarity);
+            return "[" + rarity + "级稀有度-" + stars + "]";
+        } else {
+            // 标准稀有度（1-7级）
+            String rarityKey;
+            switch (rarity) {
+                case RarityConstants.RARITY_COMMON:
+                    rarityKey = "rarity.core.common";
+                    break;
+                case RarityConstants.RARITY_UNCOMMON:
+                    rarityKey = "rarity.core.uncommon";
+                    break;
+                case RarityConstants.RARITY_RARE:
+                    rarityKey = "rarity.core.rare";
+                    break;
+                case RarityConstants.RARITY_EPIC:
+                    rarityKey = "rarity.core.epic";
+                    break;
+                case RarityConstants.RARITY_LEGENDARY:
+                    rarityKey = "rarity.core.legendary";
+                    break;
+                case RarityConstants.RARITY_MYTHICAL:
+                    rarityKey = "rarity.core.mythical";
+                    break;
+                case RarityConstants.RARITY_UNIQUE:
+                    rarityKey = "rarity.core.unique";
+                    break;
+                default:
+                    rarityKey = "rarity.core.common";
+                    break;
+            }
+            
+            // 获取本地化文本
+            String localizedLabel = net.minecraft.client.resources.language.I18n.get(rarityKey);
+            String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(rarity);
+            return localizedLabel + " " + stars;
+        }
+    }
+    
     /**
      * 获取物品的稀有度等级
      * @param item 要查稀有度的物品

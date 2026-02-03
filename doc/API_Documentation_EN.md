@@ -294,6 +294,8 @@ ConfigFileUtils.updateJsonConfig(configFile, jsonObject -> {
 1. `EditModeManager.modifyItemRarity()` can only be called in client environment
 2. Rarity changes are automatically synchronized to all clients
 3. Configuration changes require calling `saveClientConfig()` to persist to file
+4. `getLocalizedRarityTooltip()` returns fully localized tooltip strings ready for display
+5. Star display is now permanently enabled and cannot be configured. The default star emoji "⭐" will always be displayed
 
 ## Dependencies
 
