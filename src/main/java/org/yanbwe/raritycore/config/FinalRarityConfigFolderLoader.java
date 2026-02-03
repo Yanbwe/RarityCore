@@ -85,8 +85,14 @@ public class FinalRarityConfigFolderLoader {
                             continue; // 跳过未知物品
                         }
                         
-                        // 注册稀有度，不自动同步到客户端
-                        RarityRegistry.register(item, rarity, false);
+                        // 使用批处理管理器注册稀有度
+                        org.yanbwe.raritycore.network.ChangeOperation operation = 
+                            new org.yanbwe.raritycore.network.ChangeOperation(
+                                org.yanbwe.raritycore.network.ChangeOperation.OperationType.ADD,
+                                itemId, 
+                                rarity
+                            );
+                        org.yanbwe.raritycore.network.SyncBatchManager.addOperation(operation);
                         itemCount++;
                     } else {
                         RarityCore.LOGGER.warn("Invalid rarity data format for item '{}' in file '{}'", 

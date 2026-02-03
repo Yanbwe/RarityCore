@@ -142,8 +142,8 @@ public class EditModeManager {
         // 保存到配置文件
         RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), currentRarity);
         
-        // 手动同步到所有客户端
-        RarityRegistry.syncRarityToClients();
+        // 使用重试机制手动同步到所有客户端
+        RarityRegistry.syncRarityToClientsWithRetry();
         
         return true;
     }

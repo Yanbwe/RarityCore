@@ -38,14 +38,23 @@ public static Map<ResourceLocation, Integer> getAllRarities()
 
 ##### 网络同步
 ```java
-// 同步稀有度数据到所有客户端
+// 同步稀有度数据到所有客户端（全量同步）
 public static void syncRarityToClients()
 
-// 获取变更操作缓冲区大小
-public static int getChangeOperationsBufferSize()
+// 使用重试机制同步稀有度数据到所有客户端
+public static void syncRarityToClientsWithRetry()
 
-// 清空变更操作缓冲区
-public static void clearChangeOperationsBuffer()
+// 同步增量变更到所有客户端
+public static void syncIncrementalChangesToClients()
+
+// 使用重试机制同步增量变更到所有客户端
+public static void syncIncrementalChangesToClientsWithRetry()
+
+// 获取当前变更缓冲区中的操作数量
+public static int getPendingChangeCount()
+
+// 清空变更缓冲区
+public static void clearChangeBuffer()
 ```
 
 ### 2. RarityColorUtil (颜色工具类)
@@ -200,7 +209,84 @@ public static void reset()
 public static void saveRarityToConfigPublic(String itemId, int rarity)
 ```
 
-### 7. ConfigFileUtils (配置文件工具类)
+### 7. SyncBatchManager (同步批处理管理器)
+**包路径**: `org.yanbwe.raritycore.network.SyncBatchManager`
+
+#### 公共枚举
+```java
+// 同步优先级枚举
+public enum SyncPriority {
+    IMMEDIATE,    // 立即发送
+    HIGH,         // 高优先级
+    NORMAL,       // 正常优先级
+    LOW           // 低优先级
+}
+```
+
+#### 公共方法
+```java
+// 添加变更操作到批处理队列（默认正常优先级）
+public static boolean addOperation(ChangeOperation operation)
+
+// 添加变更操作到批处理队列（指定优先级）
+public static boolean addOperation(ChangeOperation operation, SyncPriority priority)
+
+// 获取并清空待处理的操作列表（按优先级排序）
+public static List<ChangeOperation> getAndClearPendingOperations()
+
+// 获取并清空待处理的操作列表
+public static List<ChangeOperation> getAndClearPendingOperations(boolean sortByPriority)
+
+// 获取当前待处理操作数量
+public static int getPendingOperationCount()
+
+// 清空所有待处理操作
+public static void clearAllOperations()
+
+// 合并重复操作以减少网络传输
+public static List<ChangeOperation> optimizeOperations(List<ChangeOperation> operations)
+
+// 获取批处理统计信息
+public static BatchStats getBatchStats()
+```
+
+### 8. NetworkRetryManager (网络重试管理器)
+**包路径**: `org.yanbwe.raritycore.network.NetworkRetryManager`
+
+#### 公共方法
+```java
+// 带重试机制的增量同步包发送
+public static void sendIncrementalSyncWithRetry(IncrementalSyncPacket packet)
+
+// 带重试机制的全量同步包发送
+public static void sendFullSyncWithRetry(RaritySyncPacket packet)
+
+// 发送包到特定玩家（带重试）
+public static <T> void sendToPlayerWithRetry(Object channel, T packet, ServerPlayer player)
+```
+
+### 9. DelayedSyncManager (延迟同步管理器)
+**包路径**: `org.yanbwe.raritycore.network.DelayedSyncManager`
+
+#### 公共方法
+```java
+// 调度延迟同步
+public static void scheduleDelayedSync()
+
+// 立即执行延迟同步（强制执行）
+public static void forceImmediateSync()
+
+// 关闭同步管理器
+public static void shutdown()
+
+// 检查是否有待处理的同步操作
+public static boolean hasPendingOperations()
+
+// 获取当前同步状态信息
+public static SyncStatus getStatus()
+```
+
+### 10. ConfigFileUtils (配置文件工具类)
 **包路径**: `org.yanbwe.raritycore.util.ConfigFileUtils`
 
 #### 公共方法

@@ -121,6 +121,9 @@ public class RarityCore {
         
         // Clear change buffer
         RarityRegistry.clearChangeBuffer();
+        
+        // Shutdown delayed sync manager
+        org.yanbwe.raritycore.network.DelayedSyncManager.shutdown();
     }
     
     @SubscribeEvent

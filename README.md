@@ -15,9 +15,7 @@ If you need to export the mod as a JAR file usable outside the development envir
 
 ## **Configuration Guide**
 
-For detailed configuration instructions, please refer to the [RarityConfig_EN.md](doc/RarityConfig_EN.md) file.
-
-## **Documentation**
+For detailed configuration instructions, please refer to the following documents:
 
 ### Configuration Guides
 - [Rarity Configuration Guide (English)](doc/RarityConfig_EN.md) - Detailed instructions for configuring item rarities

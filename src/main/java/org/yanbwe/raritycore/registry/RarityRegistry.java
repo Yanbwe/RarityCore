@@ -278,4 +278,36 @@ public class RarityRegistry {
         }
         return 1; // 默认为普通
     }
+    
+    /**
+     * 使用重试机制将所有稀有度数据同步到客户端（全量同步）
+     */
+    public static void syncRarityToClientsWithRetry() {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null) {
+            // 创建包含当前所有数据的映射
+            java.util.Map<ResourceLocation, Integer> currentData = new java.util.HashMap<>(ITEM_RARITY_MAP);
+            RaritySyncPacket packet = new RaritySyncPacket(currentData);
+            
+            // 使用重试管理器发送
+            org.yanbwe.raritycore.network.NetworkRetryManager.sendFullSyncWithRetry(packet);
+        }
+    }
+    
+    /**
+     * 使用重试机制将增量变更同步到客户端
+     */
+    public static void syncIncrementalChangesToClientsWithRetry() {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null && !CHANGE_OPERATIONS_BUFFER.isEmpty()) {
+            // 创建包含变更操作的增量同步包
+            IncrementalSyncPacket packet = new IncrementalSyncPacket(new ArrayList<>(CHANGE_OPERATIONS_BUFFER));
+            
+            // 清空缓冲区
+            CHANGE_OPERATIONS_BUFFER.clear();
+            
+            // 使用重试管理器发送
+            org.yanbwe.raritycore.network.NetworkRetryManager.sendIncrementalSyncWithRetry(packet);
+        }
+    }
 }

@@ -120,3 +120,5 @@ runs/
 !gradle-wrapper.jar
 /.lingma/
 /.lingma/rules/
+/DevelopmentRecord/
+/config/

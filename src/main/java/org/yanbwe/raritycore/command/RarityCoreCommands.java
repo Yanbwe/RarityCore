@@ -212,8 +212,8 @@ public class RarityCoreCommands {
         source.sendSuccess(() -> Component.translatable("rarity.core.loading_final_rarity_file").withStyle(ChatFormatting.YELLOW), false);
         RarityConfigLoader.loadConfigRarityData();
         
-        // 同步更新后的数据到所有客户端
-        RarityRegistry.syncRarityToClients();
+        // 使用重试机制同步更新后的数据到所有客户端
+        RarityRegistry.syncRarityToClientsWithRetry();
         
         source.sendSuccess(() -> Component.translatable("rarity.core.reload_success").withStyle(ChatFormatting.GREEN), false);
         return 1;

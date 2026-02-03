@@ -197,7 +197,84 @@ public static void reset()
 public static void saveRarityToConfigPublic(String itemId, int rarity)
 ```
 
-### 7. ConfigFileUtils (Configuration File Utility Class)
+### 7. SyncBatchManager (Synchronization Batch Manager)
+**Package Path**: `org.yanbwe.raritycore.network.SyncBatchManager`
+
+#### Public Enums
+```java
+// Synchronization priority enumeration
+public enum SyncPriority {
+    IMMEDIATE,    // Send immediately
+    HIGH,         // High priority
+    NORMAL,       // Normal priority
+    LOW           // Low priority
+}
+```
+
+#### Public Methods
+```java
+// Add change operation to batch queue (default normal priority)
+public static boolean addOperation(ChangeOperation operation)
+
+// Add change operation to batch queue (specified priority)
+public static boolean addOperation(ChangeOperation operation, SyncPriority priority)
+
+// Get and clear pending operations list (sorted by priority)
+public static List<ChangeOperation> getAndClearPendingOperations()
+
+// Get and clear pending operations list
+public static List<ChangeOperation> getAndClearPendingOperations(boolean sortByPriority)
+
+// Get current pending operation count
+public static int getPendingOperationCount()
+
+// Clear all pending operations
+public static void clearAllOperations()
+
+// Merge duplicate operations to reduce network transmission
+public static List<ChangeOperation> optimizeOperations(List<ChangeOperation> operations)
+
+// Get batch statistics
+public static BatchStats getBatchStats()
+```
+
+### 8. NetworkRetryManager (Network Retry Manager)
+**Package Path**: `org.yanbwe.raritycore.network.NetworkRetryManager`
+
+#### Public Methods
+```java
+// Send incremental sync packet with retry mechanism
+public static void sendIncrementalSyncWithRetry(IncrementalSyncPacket packet)
+
+// Send full sync packet with retry mechanism
+public static void sendFullSyncWithRetry(RaritySyncPacket packet)
+
+// Send packet to specific player (with retry)
+public static <T> void sendToPlayerWithRetry(Object channel, T packet, ServerPlayer player)
+```
+
+### 9. DelayedSyncManager (Delayed Synchronization Manager)
+**Package Path**: `org.yanbwe.raritycore.network.DelayedSyncManager`
+
+#### Public Methods
+```java
+// Schedule delayed synchronization
+public static void scheduleDelayedSync()
+
+// Force immediate execution of delayed sync
+public static void forceImmediateSync()
+
+// Shutdown synchronization manager
+public static void shutdown()
+
+// Check if there are pending synchronization operations
+public static boolean hasPendingOperations()
+
+// Get current synchronization status information
+public static SyncStatus getStatus()
+```
+
+### 10. ConfigFileUtils (Configuration File Utility Class)
 **Package Path**: `org.yanbwe.raritycore.util.ConfigFileUtils`
 
 #### Public Methods

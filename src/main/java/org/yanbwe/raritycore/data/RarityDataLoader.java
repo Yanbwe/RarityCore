@@ -4,11 +4,20 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.server.ServerLifecycleHooks;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.network.ChangeOperation;
+import org.yanbwe.raritycore.network.IncrementalSyncPacket;
+import org.yanbwe.raritycore.network.SyncBatchManager;
+
+import java.util.List;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
 import org.yanbwe.raritycore.registry.RarityRegistry;
@@ -84,7 +93,19 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener {
         RarityCore.LOGGER.info("Loading FinalRarity.json file...");
         RarityConfigLoader.loadConfigRarityData();
         
-        // 使用增量同步将变更发送到客户端
-        RarityRegistry.syncIncrementalChangesToClients();
+        // 使用批处理管理器优化后的同步
+        List<ChangeOperation> pendingOps = SyncBatchManager.getAndClearPendingOperations();
+        if (!pendingOps.isEmpty()) {
+            List<ChangeOperation> optimizedOps = SyncBatchManager.optimizeOperations(pendingOps);
+            if (!optimizedOps.isEmpty()) {
+                IncrementalSyncPacket packet = new IncrementalSyncPacket(optimizedOps);
+                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+                if (server != null) {
+                    for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                        IncrementalSyncPacket.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
+                    }
+                }
+            }
+        }
     }
 }
