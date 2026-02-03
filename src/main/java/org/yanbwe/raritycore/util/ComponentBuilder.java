@@ -3,11 +3,10 @@ package org.yanbwe.raritycore.util;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import org.yanbwe.raritycore.RarityCore;
 
 /**
  * 组件构建器工具类
- * 优化Minecraft组件的创建和组装性能
+ * Minecraft组件创建和组装工具
  */
 public class ComponentBuilder {
     

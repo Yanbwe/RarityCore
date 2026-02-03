@@ -1,13 +1,11 @@
 package org.yanbwe.raritycore.config;
 
-import com.google.gson.*;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.registry.RarityRegistry;
-import org.yanbwe.raritycore.util.RarityConstants;
+import org.yanbwe.raritycore.util.ConfigLoaderUtils;
 
-import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -45,60 +43,17 @@ public class RarityConfigLoader {
      * 从文件加载稀有度数据
      */
     private static void loadRarityDataFromFile(Path configFile) {
-        // 首先尝试使用优化的解析器
+        // 首先尝试使用高性能解析器
         if (tryOptimizedParsing(configFile)) {
             return;
         }
         
-        // 回退到传统解析方式
-        try (BufferedReader reader = Files.newBufferedReader(configFile)) {
-            JsonObject jsonObject = GSON.fromJson(reader, JsonObject.class);
-            
-            if (jsonObject != null && org.yanbwe.raritycore.util.JsonPerformanceOptimizer.validateRarityJsonFormat(jsonObject)) {
-                for (String itemIdString : jsonObject.keySet()) {
-                    JsonElement rarityElement = jsonObject.get(itemIdString);
-                    
-                    if (rarityElement.isJsonPrimitive() && rarityElement.getAsJsonPrimitive().isNumber()) {
-                        int rarity = rarityElement.getAsInt();
-                        
-                        // 验证稀有度范围
-                        if (rarity < RarityConstants.MIN_RARITY || rarity > RarityConstants.MAX_RARITY) {
-                            continue;
-                        }
-                        
-                        ResourceLocation itemId = new ResourceLocation(itemIdString);
-                        net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
-
-                        if (item == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-                            continue; // 跳过未知物品
-                        }
-                        
-                        // 使用批处理管理器注册稀有度
-                        org.yanbwe.raritycore.network.ChangeOperation operation = 
-                            new org.yanbwe.raritycore.network.ChangeOperation(
-                                org.yanbwe.raritycore.network.ChangeOperation.OperationType.ADD,
-                                itemId, 
-                                rarity
-                            );
-                        org.yanbwe.raritycore.network.SyncBatchManager.addOperation(operation);
-                    }
-                }
-            }
-        } catch (IOException e) {
-            RarityCore.LOGGER.error("无法读取配置文件: {}", configFile, e);
-        } catch (JsonParseException e) {
-            RarityCore.LOGGER.error("配置文件格式错误: {}", configFile.toString(), e);
-            // 尝试创建默认配置文件
-            try {
-                createDefaultConfig(configFile);
-            } catch (Exception ex) {
-                RarityCore.LOGGER.error("无法创建默认配置文件: {}", configFile, ex);
-            }
-        }
+        // 使用通用工具类加载配置
+        ConfigLoaderUtils.loadJsonConfigFileWithBatch(configFile, configFile.getFileName().toString(), true);
     }
     
     /**
-     * 尝试使用优化的JSON解析
+     * 尝试使用高性能JSON解析
      */
     private static boolean tryOptimizedParsing(Path configFile) {
         try {

@@ -26,9 +26,14 @@ public class EditModeEventHandler {
     @SubscribeEvent
     public static void onKeyInput(ScreenEvent.KeyPressed.Pre event) {
         // 检查是否按下 Ctrl + 数字键组合
-        if (isCtrlPressed() && isNumberKey(event.getKeyCode())) {
-            handleNumberKeyPress(event.getKeyCode());
-            event.setCanceled(true); // 阻止默认按键行为
+        if (isCtrlPressed()) {
+            if (isNumberKey(event.getKeyCode())) {
+                handleNumberKeyPress(event.getKeyCode());
+                event.setCanceled(true); // 阻止默认按键行为
+            } else if (event.getKeyCode() == GLFW.GLFW_KEY_0) {
+                handleZeroKeyPress();
+                event.setCanceled(true); // 阻止默认按键行为
+            }
         }
     }
     
@@ -104,6 +109,9 @@ public class EditModeEventHandler {
         int rarity = keyCode - GLFW.GLFW_KEY_1 + 1;
         EditModeManager.setRarity(rarity);
         
+        // 退出删除模式
+        EditModeManager.setDeleteMode(false);
+        
         // 显示反馈消息
         LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
@@ -111,6 +119,33 @@ public class EditModeEventHandler {
                 Component.translatable("rarity.core.edit_mode_rarity_selected", rarity), 
                 true
             );
+        }
+    }
+    
+    /**
+     * 处理0键按下事件（切换删除模式）
+     */
+    private static void handleZeroKeyPress() {
+        if (!EditModeManager.isEditModeEnabled()) {
+            return;
+        }
+        
+        boolean newDeleteMode = EditModeManager.toggleDeleteMode();
+        
+        // 显示反馈消息
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player != null) {
+            if (newDeleteMode) {
+                player.displayClientMessage(
+                    Component.translatable("rarity.core.edit_mode_delete_mode_enabled"), 
+                    true
+                );
+            } else {
+                player.displayClientMessage(
+                    Component.translatable("rarity.core.edit_mode_delete_mode_disabled"), 
+                    true
+                );
+            }
         }
     }
     

@@ -40,7 +40,7 @@ public class RarityTooltipHandler {
         ItemStack itemStack = event.getItemStack();
         Item item = itemStack.getItem();
         
-        // 获取物品的稀有度（使用缓存优化）
+        // 获取物品的稀有度（使用缓存）
         Integer rarity = RenderCacheManager.getCachedRarity(item);
         
         // 如果缓存未命中，则从注册表获取并缓存
@@ -104,7 +104,7 @@ public class RarityTooltipHandler {
                     return;
             }
         
-            // 构建文本（使用优化的组件构建器）
+            // 构建文本（使用组件构建器）
             MutableComponent starsComponent = ComponentBuilder.buildRarityComponent(rarity, color);
             MutableComponent rarityComponent = Component.empty().append(prefixComponent).append(starsComponent).withStyle(color);
             

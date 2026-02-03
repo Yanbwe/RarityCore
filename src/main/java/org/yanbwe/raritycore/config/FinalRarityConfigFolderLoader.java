@@ -1,17 +1,13 @@
 package org.yanbwe.raritycore.config;
 
-import com.google.gson.*;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.registries.ForgeRegistries;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.registry.RarityRegistry;
-import org.yanbwe.raritycore.util.RarityConstants;
+import org.yanbwe.raritycore.util.ConfigLoaderUtils;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 
 /**
  * FinalRarityConfig文件夹加载器
@@ -65,47 +61,6 @@ public class FinalRarityConfigFolderLoader {
      * 从单个JSON文件加载稀有度数据
      */
     private static void loadRarityDataFromFile(Path configFile) {
-        try (BufferedReader reader = Files.newBufferedReader(configFile)) {
-            JsonObject jsonObject = GSON.fromJson(reader, JsonObject.class);
-            
-            if (jsonObject != null) {
-                int itemCount = 0;
-                for (String itemIdString : jsonObject.keySet()) {
-                    JsonElement rarityElement = jsonObject.get(itemIdString);
-                    
-                    if (rarityElement.isJsonPrimitive() && rarityElement.getAsJsonPrimitive().isNumber()) {
-                        int rarity = rarityElement.getAsInt();
-                        
-                        ResourceLocation itemId = new ResourceLocation(itemIdString);
-                        net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
-
-                        if (item == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-                            RarityCore.LOGGER.debug("Unknown item '{}' in FinalRarityConfig file '{}'", 
-                                itemIdString, configFile.getFileName());
-                            continue; // 跳过未知物品
-                        }
-                        
-                        // 使用批处理管理器注册稀有度
-                        org.yanbwe.raritycore.network.ChangeOperation operation = 
-                            new org.yanbwe.raritycore.network.ChangeOperation(
-                                org.yanbwe.raritycore.network.ChangeOperation.OperationType.ADD,
-                                itemId, 
-                                rarity
-                            );
-                        org.yanbwe.raritycore.network.SyncBatchManager.addOperation(operation);
-                        itemCount++;
-                    } else {
-                        RarityCore.LOGGER.warn("Invalid rarity data format for item '{}' in file '{}'", 
-                            itemIdString, configFile.getFileName());
-                    }
-                }
-                RarityCore.LOGGER.info("Loaded {} items from FinalRarityConfig file: {}", 
-                    itemCount, configFile.getFileName());
-            }
-        } catch (IOException e) {
-            RarityCore.LOGGER.error("Cannot read FinalRarityConfig file: {}", configFile, e);
-        } catch (JsonParseException e) {
-            RarityCore.LOGGER.error("FinalRarityConfig file format error: {}", configFile.toString(), e);
-        }
+        ConfigLoaderUtils.loadJsonConfigFileWithBatch(configFile, configFile.getFileName().toString(), true);
     }
 }

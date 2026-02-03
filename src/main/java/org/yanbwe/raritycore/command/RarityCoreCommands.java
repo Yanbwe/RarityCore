@@ -19,13 +19,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
-import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
-import org.yanbwe.raritycore.registry.RarityRegistry;
-import org.yanbwe.raritycore.network.SyncBatchManager;
-import org.yanbwe.raritycore.util.ConfigFileUtils;
-import org.yanbwe.raritycore.util.RarityConstants;
+import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.edit.EditModeManager;
+import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -33,10 +30,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 import java.util.HashMap;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -50,6 +45,17 @@ public class RarityCoreCommands {
                     .executes(context -> setHandRarity(
                         context.getSource(),
                         IntegerArgumentType.getInteger(context, "rarity")
+                    ))
+                )
+            )
+            .then(Commands.literal("removehand")
+                .executes(context -> removeHandRarity(context.getSource()))
+            )
+            .then(Commands.literal("removerarity")
+                .then(Commands.argument("item", ResourceLocationArgument.id())
+                    .executes(context -> removeItemRarity(
+                        context.getSource(),
+                        ResourceLocationArgument.getId(context, "item")
                     ))
                 )
             )
@@ -83,20 +89,6 @@ public class RarityCoreCommands {
             .then(Commands.literal("details")
                 .executes(context -> showDetails(context.getSource()))
             )
-            .then(Commands.literal("cache")
-                .then(Commands.literal("stats")
-                    .executes(context -> showCacheStats(context.getSource()))
-                )
-                .then(Commands.literal("clear")
-                    .executes(context -> clearCache(context.getSource()))
-                )
-                .then(Commands.literal("health")
-                    .executes(context -> showCacheHealth(context.getSource()))
-                )
-                .then(Commands.literal("smart-optimize")
-                    .executes(context -> triggerSmartOptimization(context.getSource()))
-                )
-            )
             .then(Commands.literal("perf")
                 .then(Commands.literal("stats")
                     .executes(context -> showPerformanceStats(context.getSource()))
@@ -129,15 +121,29 @@ public class RarityCoreCommands {
             )
         );
         
-        // 注册客户端配置重载命令
+        // 注册客户端命令
         dispatcher.register(Commands.literal("raritycore-client")
-            .executes(context -> reloadClientConfig(context.getSource()))
-        );
-        
-        // 注册切换纹理边框命令
-        dispatcher.register(Commands.literal("raritycore-texture")
-            .then(Commands.literal("toggle")
-                .executes(context -> toggleTextureBorder(context.getSource()))
+            .then(Commands.literal("reload")
+                .executes(context -> reloadClientConfig(context.getSource()))
+            )
+            .then(Commands.literal("cache")
+                .then(Commands.literal("stats")
+                    .executes(context -> showCacheStats(context.getSource()))
+                )
+                .then(Commands.literal("clear")
+                    .executes(context -> clearCache(context.getSource()))
+                )
+                .then(Commands.literal("health")
+                    .executes(context -> showCacheHealth(context.getSource()))
+                )
+                .then(Commands.literal("smart-optimize")
+                    .executes(context -> triggerSmartOptimization(context.getSource()))
+                )
+            )
+            .then(Commands.literal("texture")
+                .then(Commands.literal("toggle")
+                    .executes(context -> toggleTextureBorder(context.getSource()))
+                )
             )
         );
     }
@@ -220,7 +226,7 @@ public class RarityCoreCommands {
         source.sendSuccess(() -> Component.translatable("rarity.core.loading_final_rarity_file").withStyle(ChatFormatting.YELLOW), false);
         RarityConfigLoader.loadConfigRarityData();
         
-        // 使用重试机制同步更新后的数据到所有客户端
+        // 同步数据到所有客户端
         RarityRegistry.syncRarityToClientsWithRetry();
         
         source.sendSuccess(() -> Component.translatable("rarity.core.reload_success").withStyle(ChatFormatting.GREEN), false);
@@ -624,13 +630,13 @@ public class RarityCoreCommands {
     }
     
     /**
-     * 触发手动优化
+     * 触发性能优化
      */
     private static int triggerManualOptimization(CommandSourceStack source) {
         // 清理缓存
         org.yanbwe.raritycore.client.RenderCacheManager.clearAllCache();
         
-        // 重新加载配置（使用优化解析器）
+        // 重新加载配置
         org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
         org.yanbwe.raritycore.config.RarityConfigLoader.loadConfigRarityData();
         
@@ -652,7 +658,7 @@ public class RarityCoreCommands {
                 // 执行智能预加载
                 org.yanbwe.raritycore.client.ImprovedRenderCacheManager.smartPreloadCache();
                 
-                // 获取优化后的统计信息
+                // 获取统计信息
                 org.yanbwe.raritycore.client.RenderCacheManager.CacheStats stats = 
                     org.yanbwe.raritycore.client.RenderCacheManager.getCacheStats();
                 
@@ -720,7 +726,7 @@ public class RarityCoreCommands {
             org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
             org.yanbwe.raritycore.config.RarityConfigLoader.loadConfigRarityData();
             
-            // 同步更新后的数据到所有客户端
+            // 同步数据到所有客户端
             org.yanbwe.raritycore.registry.RarityRegistry.syncRarityToClientsWithRetry();
             
             String checkVanillaRarityStatus = org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity() ? 
@@ -756,6 +762,69 @@ public class RarityCoreCommands {
             skipUnconfiguredItems ? Component.translatable("rarity.core.enabled") : Component.translatable("rarity.core.disabled"))
             .withStyle(skipUnconfiguredItems ? ChatFormatting.GREEN : ChatFormatting.RED), false);
         
+        return 1;
+    }
+    
+    /**
+     * 删除手上物品的稀有度
+     */
+    private static int removeHandRarity(CommandSourceStack source) {
+        try {
+            Player player = source.getPlayerOrException();
+            ItemStack itemStack = player.getMainHandItem();
+            
+            if (itemStack.isEmpty()) {
+                source.sendSuccess(() -> Component.translatable("rarity.core.no_item_in_hand").withStyle(ChatFormatting.RED), false);
+                return 0;
+            }
+            
+            Item item = itemStack.getItem();
+            ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+            
+            if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+                source.sendSuccess(() -> Component.translatable("rarity.core.unrecognized_item").withStyle(ChatFormatting.RED), false);
+                return 0;
+            }
+            
+            // 删除稀有度（不自动同步，因为后面会手动同步）
+            RarityRegistry.unregister(item, false);
+            
+            // 保存到配置文件（稀有度为0表示删除）
+            saveRarityToConfig(itemId.toString(), 0);
+            
+            // 手动同步到所有客户端
+            RarityRegistry.syncRarityToClients();
+            
+            source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity", itemId).withStyle(ChatFormatting.GREEN), false);
+            return 1;
+        } catch (CommandSyntaxException e) {
+            RarityCore.LOGGER.error("Command execution failed", e);
+            source.sendSuccess(() -> Component.translatable("rarity.core.command_failed").withStyle(ChatFormatting.RED), false);
+            return 0;
+        }
+    }
+    
+    /**
+     * 删除指定物品的稀有度
+     */
+    private static int removeItemRarity(CommandSourceStack source, ResourceLocation itemId) {
+        Item item = ForgeRegistries.ITEMS.getValue(itemId);
+        
+        if (item == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+            source.sendSuccess(() -> Component.translatable("rarity.core.unknown_item_id", itemId).withStyle(ChatFormatting.RED), false);
+            return 0;
+        }
+        
+        // 删除稀有度（不自动同步，因为后面会手动同步）
+        RarityRegistry.unregister(item, false);
+        
+        // 保存到配置文件（稀有度为0表示删除）
+        saveRarityToConfig(itemId.toString(), 0);
+        
+        // 手动同步到所有客户端
+        RarityRegistry.syncRarityToClients();
+        
+        source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity_by_id", itemId).withStyle(ChatFormatting.GREEN), false);
         return 1;
     }
 }

@@ -20,22 +20,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 改进的渲染缓存管理器
+ * 渲染缓存管理器
  * 基于注册表大小的动态缓存容量策略
  */
 @Mod.EventBusSubscriber(modid = RarityCore.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ImprovedRenderCacheManager {
     
     // 动态缓存倍数配置（相对于注册表大小）
-    private static final double RARITY_CACHE_MULTIPLIER = 1.5;   // 物品缓存倍数（降低）
-    private static final double ITEMSTACK_CACHE_MULTIPLIER = 0.3; // 物品堆缓存倍数（降低）
-    private static final double MEMORY_SAFETY_FACTOR = 0.6;      // 内存安全因子（更保守）
+    private static final double RARITY_CACHE_MULTIPLIER = 1.5;   // 物品缓存倍数
+    private static final double ITEMSTACK_CACHE_MULTIPLIER = 0.3; // 物品堆缓存倍数
+    private static final double MEMORY_SAFETY_FACTOR = 0.6;      // 内存安全因子
     
     // 缓存容量配置
-    private static final long INITIAL_RARITY_CAPACITY = 3000;    // 物品缓存初始容量（降低）
-    private static final long INITIAL_ITEMSTACK_CAPACITY = 1000; // 物品堆缓存初始容量（降低）
+    private static final long INITIAL_RARITY_CAPACITY = 3000;    // 物品缓存初始容量
+    private static final long INITIAL_ITEMSTACK_CAPACITY = 1000; // 物品堆缓存初始容量
     private static final long MIN_DYNAMIC_CAPACITY = 1000;       // 动态调整最小容量
-    private static final long MAX_DYNAMIC_CAPACITY = 50000;      // 动态调整最大容量（大幅降低）
+    private static final long MAX_DYNAMIC_CAPACITY = 50000;      // 动态调整最大容量
     
     // 自适应容量调整参数
     private static final double CAPACITY_GROWTH_FACTOR = 1.2;    // 容量增长因子
@@ -473,14 +473,14 @@ public class ImprovedRenderCacheManager {
             RarityCore.LOGGER.debug("Performing progressive cleanup: removing {} entries ({:.1}% of cache)", 
                 entriesToRemove, removalRatio * 100);
             
-            // 由于Guava Cache不直接暴露内部条目，我们通过触发清理来间接实现
+            // 由于Guava Cache不直接暴露内部条目，通过触发清理来间接实现
             // Guava会根据LRU策略自动移除最少使用的条目
             for (int i = 0; i < Math.min(3, entriesToRemove / 100 + 1); i++) {
                 cache.cleanUp();
                 // 异步触发额外清理以确保效果
                 CompletableFuture.runAsync(() -> {
                     try {
-                        Thread.yield(); // 使用yield替代sleep
+                        Thread.yield(); // 使用yield让出CPU时间片
                         cache.cleanUp();
                     } catch (Exception e) {
                         RarityCore.LOGGER.debug("Background progressive cleanup task encountered exception", e);
@@ -656,7 +656,7 @@ public class ImprovedRenderCacheManager {
                 migratedCount++;
             }
             
-            // 替换缓存实例
+            // 替换缓存实例为新容量
             rarityCache = newCache;
             currentRarityCapacity = newCapacity;
             
@@ -683,7 +683,7 @@ public class ImprovedRenderCacheManager {
                 migratedCount++;
             }
             
-            // 替换缓存实例
+            // 替换缓存实例为新容量
             itemStackCache = newCache;
             currentItemStackCapacity = newCapacity;
             
@@ -760,7 +760,7 @@ public class ImprovedRenderCacheManager {
             long usedMemoryAfter = runtime.totalMemory() - runtime.freeMemory();
             long memoryDelta = usedMemoryAfter - usedMemoryBefore;
             
-            // 计算当前缓存的实际大小
+            // 计算缓存实际内存占用
             long currentCacheEntries = rarityCache.size() + itemStackCache.size();
             
             if (currentCacheEntries > 100 && Math.abs(memoryDelta) > 1024) { // 至少100个条目且内存变化超过1KB
@@ -913,7 +913,7 @@ public class ImprovedRenderCacheManager {
             rarityCache.invalidateAll();
             itemStackCache.invalidateAll();
             
-            // 预加载最新数据
+            // 预加载最新稀有度数据
             preloadCache();
             
             RarityCore.LOGGER.debug("Network sync handled - All caches refreshed");

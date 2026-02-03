@@ -59,19 +59,36 @@ The mod loads rarity configurations in the following order, where later-loaded c
 Therefore, configurations in FinalRarity.json have the highest priority.
 
 ### 4. Adding via Game Commands
-You can use the `/raritycore` command in-game to add or modify rarities. Currently includes the following commands (OP only):
-1. `/raritycore sethand <rarity>` Sets the rarity of the currently held item
-2. `/raritycore setrarity <item> <rarity>` Sets the rarity of a specified item
-3. `/raritycore reload` Reloads all rarity configurations, will load FinalRarityConfig folder and FinalRarity.json file in order
-4. `/raritycore export all/mod` Exports currently registered rarity data to files
-   - `all`: Exports all rarity data to a single file
-   - `mod <modid>`: Exports rarity data for a specific mod
-   - `all-mod`: Exports rarity data for all mods to separate files (filename format: {modid}_{mcversion}_{timestamp}.json)
-5. `/raritycore edit <enable/disable/toggle/status>` Controls edit mode enable, disable, toggle and status viewing
+You can use commands in-game to add or modify rarities. Commands are divided into OP commands and client commands:
 
-Additionally, there are the following standalone commands (available to all players):
-- `/raritycore-client` Reloads client configuration
-- `/raritycore-texture toggle` Toggles texture border enable status
+**OP Commands (`/raritycore`):**
+1. `/raritycore sethand <rarity>` Sets the rarity of the currently held item
+2. `/raritycore removehand` Removes the rarity configuration of the currently held item
+3. `/raritycore setrarity <item> <rarity>` Sets the rarity of a specified item
+4. `/raritycore removerarity <item>` Removes the rarity configuration of a specified item
+5. `/raritycore reload` Reloads all rarity configurations
+6. `/raritycore export all` Exports all rarity data to a single file
+7. `/raritycore export mod <modid>` Exports rarity data for a specific mod
+8. `/raritycore export all-mod` Exports rarity data for all mods to separate files
+9. `/raritycore details` Shows current registered rarity statistics
+10. `/raritycore perf stats` Shows performance statistics
+11. `/raritycore perf optimize` Triggers manual optimization
+12. `/raritycore edit enable/disable/toggle/status` Edit mode control
+13. `/raritycore server reload` Reloads server configuration
+14. `/raritycore server status` Shows server configuration status
+
+**Client Commands (`/raritycore-client`):**
+1. `/raritycore-client reload` Reloads client configuration
+2. `/raritycore-client cache stats` Shows cache statistics
+3. `/raritycore-client cache clear` Clears render cache
+4. `/raritycore-client cache health` Shows cache health status
+5. `/raritycore-client cache smart-optimize` Triggers smart cache optimization
+6. `/raritycore-client texture toggle` Toggles texture border enable status
+
+**Command Usage Notes:**
+- All exported files are saved to `config/raritycore/` directory with timestamps
+- In edit mode, you can quickly modify item rarity using Ctrl+number keys
+- Client commands are available to all players without OP permissions
 
 The `/raritycore export all` command exports all registered rarity data, while `/raritycore export mod <modid>` exports rarity data for a specific mod. Files are saved to the `config/raritycore/` directory with timestamps.
 

@@ -6,7 +6,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
-import org.yanbwe.raritycore.config.ConfigManager;
 
 /**
  * 缓存失效监听器
@@ -23,7 +22,7 @@ public class CacheInvalidationListener {
         try {
             Item item = event.getItem();
             if (item != null) {
-                // 使用改进的缓存管理器使缓存失效
+                // 使用缓存管理器使缓存失效
                 ImprovedRenderCacheManager.invalidateItemCache(item);
                 RarityCore.LOGGER.debug("Cache invalidated for item {} due to rarity change", item);
             }

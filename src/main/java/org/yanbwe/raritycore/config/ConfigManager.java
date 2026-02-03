@@ -4,9 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.util.ConfigFileUtils;
 import org.yanbwe.raritycore.util.RarityConstants;
-import org.yanbwe.raritycore.util.RarityValidator;
 
 import java.io.BufferedReader;
 import java.io.FileWriter;

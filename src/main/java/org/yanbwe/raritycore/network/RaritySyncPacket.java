@@ -7,7 +7,6 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.registry.RarityRegistry;
-import org.yanbwe.raritycore.network.IncrementalSyncPacket;
 
 import java.util.HashMap;
 import java.util.Map;

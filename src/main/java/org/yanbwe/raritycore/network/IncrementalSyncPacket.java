@@ -7,7 +7,6 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.registry.RarityRegistry;
-import org.yanbwe.raritycore.network.ChangeOperation;
 
 import java.util.ArrayList;
 import java.util.List;

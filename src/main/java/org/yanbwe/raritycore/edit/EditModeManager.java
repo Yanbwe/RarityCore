@@ -1,14 +1,13 @@
 package org.yanbwe.raritycore.edit;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.registries.ForgeRegistries;
-import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
+import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +23,9 @@ public class EditModeManager {
     
     // 当前选中的稀有度等级 (1-7)
     private static int currentRarity = 1;
+    
+    // 删除模式开关
+    private static boolean deleteModeEnabled = false;
     
     // 可用的稀有度等级列表
     private static final List<Integer> AVAILABLE_RARITIES = new ArrayList<>();
@@ -107,6 +109,34 @@ public class EditModeManager {
     }
     
     /**
+     * 切换删除模式
+     * @return 新的删除模式状态
+     */
+    public static boolean toggleDeleteMode() {
+        if (!editModeEnabled) return false;
+        deleteModeEnabled = !deleteModeEnabled;
+        return deleteModeEnabled;
+    }
+    
+    /**
+     * 设置删除模式状态
+     * @param enabled 是否启用删除模式
+     */
+    public static void setDeleteMode(boolean enabled) {
+        if (editModeEnabled) {
+            deleteModeEnabled = enabled;
+        }
+    }
+    
+    /**
+     * 获取删除模式状态
+     * @return 是否处于删除模式
+     */
+    public static boolean isDeleteModeEnabled() {
+        return deleteModeEnabled && editModeEnabled;
+    }
+    
+    /**
      * 获取可用稀有度等级列表
      * @return 稀有度等级列表
      */
@@ -136,11 +166,19 @@ public class EditModeManager {
             return false;
         }
         
-        // 注册稀有度（不自动同步，因为后面会手动同步）
-        RarityRegistry.register(item, currentRarity, false);
-        
-        // 保存到配置文件
-        RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), currentRarity);
+        if (deleteModeEnabled) {
+            // 删除模式：删除物品稀有度
+            RarityRegistry.unregister(item, false);
+            
+            // 保存到配置文件（稀有度为0表示删除）
+            RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), 0);
+        } else {
+            // 正常模式：设置物品稀有度
+            RarityRegistry.register(item, currentRarity, false);
+            
+            // 保存到配置文件
+            RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), currentRarity);
+        }
         
         // 使用重试机制手动同步到所有客户端
         RarityRegistry.syncRarityToClientsWithRetry();
@@ -154,5 +192,6 @@ public class EditModeManager {
     public static void reset() {
         editModeEnabled = false;
         currentRarity = 1;
+        deleteModeEnabled = false;
     }
 }

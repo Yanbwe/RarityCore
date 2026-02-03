@@ -1,29 +1,27 @@
 package org.yanbwe.raritycore;
 
 import com.mojang.logging.LogUtils;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraft.resources.ResourceLocation;
-import org.yanbwe.raritycore.registry.RarityRegistry;
-import org.yanbwe.raritycore.network.IncrementalSyncPacket;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
-
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.data.RarityDataLoader;
+import org.yanbwe.raritycore.network.IncrementalSyncPacket;
 import org.yanbwe.raritycore.network.RaritySyncPacket;
+import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;

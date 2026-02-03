@@ -22,7 +22,7 @@ public class ItemStackMixin {
     private void modifyHoverName(CallbackInfoReturnable<Component> cir) {
         ItemStack stack = (ItemStack) (Object) this;
         
-        // 获取物品的稀有度（使用缓存优化）
+        // 获取物品的稀有度（使用缓存）
         Item item = stack.getItem();
         Integer rarity = org.yanbwe.raritycore.client.RenderCacheManager.getCachedRarity(item);
         

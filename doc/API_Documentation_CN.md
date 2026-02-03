@@ -29,6 +29,9 @@ public static @NotNull Integer getRarity(@Nullable Item item)
 // 获取物品的完整稀有度工具提示字符串（支持本地化）
 public static @NotNull String getLocalizedRarityTooltip(@Nullable Item item)
 
+// 获取标准化的物品稀有度（遵循包容性原则）
+public static @NotNull Integer getNormalizedRarity(@Nullable Item item)
+
 // 检查物品是否有稀有度配置
 public static boolean hasRarity(@Nullable Item item)
 
@@ -156,9 +159,11 @@ public static void setEnableItemNameColor(boolean enable)
 public static boolean isEnableTooltipInsert()
 public static void setEnableTooltipInsert(boolean enable)
 
-// 物品背景渲染
-public static boolean isEnableItemBackgroundRendering()
-public static void setEnableItemBackgroundRendering(boolean enable)
+// 获取是否启用工具提示插入
+public static boolean isEnableTooltipInsert()
+
+// 设置是否启用工具提示插入
+public static void setEnableTooltipInsert(boolean enable)
 
 // 原版稀有度检查
 public static boolean isCheckVanillaRarity()
@@ -380,12 +385,10 @@ ConfigFileUtils.updateJsonConfig(configFile, jsonObject -> {
 
 ## 注意事项
 
-1. `EditModeManager.modifyItemRarity()` 只能在客户端环境调用
-2. 稀有度变更会自动同步到所有客户端
-3. 客户端配置更改后需要调用 `saveClientConfig()` 才会保存到文件
-4. `getLocalizedRarityTooltip()` 方法返回已本地化的完整工具提示字符串，可直接用于显示
-5. 星星显示现在永久启用，无法进行配置。默认的星星emoji "⭐" 将始终显示
-
+1. `EditModeManager.modifyItemRarity()` 只能在客户端环境调用；
+2. 稀有度变更会自动同步到所有客户端；
+3. 客户端配置更改后需要调用 `saveClientConfig()` 才会保存到文件；
+4. `getLocalizedRarityTooltip()` 方法返回已本地化的完整工具提示字符串，可直接用于显示。
 
 ## 依赖关系
 

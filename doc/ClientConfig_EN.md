@@ -33,23 +33,13 @@ The client configuration file is located at:
 - **Default**: true
 - **Description**: Whether to enable tooltip insertion feature, displays rarity information in item tooltips
 
-### 6. checkVanillaRarity
-- **Type**: Boolean
-- **Default**: true
-- **Description**: Whether to check vanilla item rarity and map it, when enabled will map vanilla EPIC/LEGENDARY rarity to corresponding levels
-
-### 7. skipUnconfiguredItems
-- **Type**: Boolean
-- **Default**: false
-- **Description**: Whether to skip unconfigured items, when enabled will not render borders, name colors and tooltips for items without rarity configuration
-
 ### How to Apply Configuration
 #### Method 1: Restart the game
 
 #### Method 2: Using Command
 Send the following command in-game to immediately reload the client configuration:
 ```
-/raritycore-client
+/raritycore-client reload
 ```
 
 ### Texture Border Configuration
@@ -60,7 +50,7 @@ If texture borders are enabled (useTextureBorder=true), you need to prepare the 
 
 You can use the following command to toggle the texture border enable/disable state:
 ```
-/raritycore-texture toggle
+/raritycore-client texture toggle
 ```
 
 ### Notes

@@ -13,16 +13,15 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
+import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.IncrementalSyncPacket;
 import org.yanbwe.raritycore.network.SyncBatchManager;
-
-import java.util.List;
-import org.yanbwe.raritycore.config.RarityConfigLoader;
-import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityConstants;
 
+import java.util.List;
 import java.util.Map;
 
 public class RarityDataLoader extends SimpleJsonResourceReloadListener {
@@ -93,7 +92,7 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener {
         RarityCore.LOGGER.info("Loading FinalRarity.json file...");
         RarityConfigLoader.loadConfigRarityData();
         
-        // 使用批处理管理器优化后的同步
+        // 使用批处理管理器进行同步
         List<ChangeOperation> pendingOps = SyncBatchManager.getAndClearPendingOperations();
         if (!pendingOps.isEmpty()) {
             List<ChangeOperation> optimizedOps = SyncBatchManager.optimizeOperations(pendingOps);

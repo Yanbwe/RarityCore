@@ -4,11 +4,10 @@ import net.minecraft.resources.ResourceLocation;
 import org.yanbwe.raritycore.RarityCore;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 网络同步批处理管理器
- * 优化网络包发送效率，减少频繁的小数据包传输
+ * 网络包发送优化器，减少频繁的小数据包传输
  * 支持优先级调度和智能批处理
  */
 public class SyncBatchManager {
@@ -167,7 +166,7 @@ public class SyncBatchManager {
     /**
      * 合并重复操作以减少网络传输
      * @param operations 原始操作列表
-     * @return 优化后的操作列表
+     * @return 处理后的操作列表
      */
     public static List<ChangeOperation> optimizeOperations(List<ChangeOperation> operations) {
         if (operations.size() <= 1) {
@@ -188,7 +187,7 @@ public class SyncBatchManager {
                     break;
                     
                 case DELETE:
-                    // DELETE操作会移除之前的ADD/UPDATE操作
+                    // DELETE操作会清除之前的ADD/UPDATE操作
                     latestOperations.remove(itemId);
                     // 但仍然保留DELETE操作本身
                     latestOperations.put(itemId, op);

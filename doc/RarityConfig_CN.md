@@ -59,19 +59,36 @@
 因此FinalRarity.json中的配置具有最高优先级。
 
 ### 4. 通过游戏命令添加
-你可以在游戏内使用`/raritycore`命令添加或修改稀有度，目前包含以下命令（仅OP可用）：
-1. `/raritycore sethand <rarity>` 设置当前手持物品的稀有度
-2. `/raritycore setrarity <item> <rarity>` 设置指定物品的稀有度
-3. `/raritycore reload` 重新加载所有稀有度配置，会按顺序加载FinalRarityConfig文件夹和FinalRarity.json文件
-4. `/raritycore export all/mod` 导出当前已注册的稀有度数据到文件
-   - `all`: 导出所有稀有度数据到单个文件
-   - `mod <modid>`: 导出指定模组的稀有度数据
-   - `all-mod`: 导出所有模组的稀有度数据到独立文件（文件名格式：{modid}_{mcversion}_{timestamp}.json）
-5. `/raritycore edit <enable/disable/toggle/status>` 控制编辑模式的启用、禁用、切换和状态查看
+你可以在游戏内使用命令添加或修改稀有度，分为OP命令和客户端命令：
 
-此外还有以下独立命令：
-- `/raritycore-client` 重新加载客户端配置
-- `/raritycore-texture toggle` 切换纹理边框启用状态
+**OP专用命令 (`/raritycore`)：**
+1. `/raritycore sethand <rarity>` 设置当前手持物品的稀有度
+2. `/raritycore removehand` 删除当前手持物品的稀有度配置
+3. `/raritycore setrarity <item> <rarity>` 设置指定物品的稀有度
+4. `/raritycore removerarity <item>` 删除指定物品的稀有度配置
+5. `/raritycore reload` 重新加载所有稀有度配置
+6. `/raritycore export all` 导出所有稀有度数据到单个文件
+7. `/raritycore export mod <modid>` 导出指定模组的稀有度数据
+8. `/raritycore export all-mod` 导出所有模组的稀有度数据到独立文件
+9. `/raritycore details` 显示当前已注册的稀有度统计信息
+10. `/raritycore perf stats` 显示性能统计信息
+11. `/raritycore perf optimize` 触发手动优化
+12. `/raritycore edit enable/disable/toggle/status` 编辑模式控制
+13. `/raritycore server reload` 重新加载服务端配置
+14. `/raritycore server status` 显示服务端配置状态
+
+**客户端命令 (`/raritycore-client`)：**
+1. `/raritycore-client reload` 重新加载客户端配置
+2. `/raritycore-client cache stats` 显示缓存统计信息
+3. `/raritycore-client cache clear` 清除渲染缓存
+4. `/raritycore-client cache health` 显示缓存健康状态
+5. `/raritycore-client cache smart-optimize` 触发智能缓存优化
+6. `/raritycore-client texture toggle` 切换纹理边框启用状态
+
+**命令使用说明：**
+- 所有导出文件都会保存到 `config/raritycore/` 目录下，并带有时间戳
+- 编辑模式下可以通过 Ctrl+数字键快速修改物品稀有度
+- 客户端命令可供所有玩家使用，无需OP权限
 
    其中`/raritycore export all`会导出所有已注册的稀有度数据，而`/raritycore export mod <modid>`会导出指定模组的稀有度数据，文件会保存到 `config/raritycore/` 目录下，带有时间戳
 

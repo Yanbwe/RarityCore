@@ -1,6 +1,5 @@
 package org.yanbwe.raritycore.registry;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -9,9 +8,8 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.server.ServerLifecycleHooks;
-import org.yanbwe.raritycore.event.RarityChangeEvent;
 import org.jetbrains.annotations.NotNull;
-import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.event.RarityChangeEvent;
 import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.IncrementalSyncPacket;
 import org.yanbwe.raritycore.network.RaritySyncPacket;

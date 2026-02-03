@@ -15,7 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * JSON性能优化器
+ * JSON处理器
  * 提供高效的JSON解析和处理方法
  */
 public class JsonPerformanceOptimizer {
@@ -42,17 +42,24 @@ public class JsonPerformanceOptimizer {
                 int rarity = jsonReader.nextInt();
                 
                 // 验证稀有度范围
-                if (rarity < RarityConstants.MIN_RARITY || rarity > RarityConstants.MAX_RARITY) {
+                if (rarity < 0 || rarity > RarityConstants.MAX_RARITY) { // 允许0表示删除
                     RarityCore.LOGGER.debug("Skipping invalid rarity {} for item {}", rarity, itemIdString);
                     continue;
                 }
                 
-                // 注册物品稀有度
+                // 注册物品稀有度或删除稀有度
                 ResourceLocation itemId = new ResourceLocation(itemIdString);
                 net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
                 
                 if (item != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-                    RarityRegistry.register(item, rarity, false);
+                    if (rarity == 0) {
+                        // 稀有度为0表示删除该物品的稀有度配置
+                        RarityRegistry.unregister(item, false);
+                        RarityCore.LOGGER.debug("Removed rarity configuration for item: {}", itemIdString);
+                    } else {
+                        // 正常注册稀有度
+                        RarityRegistry.register(item, rarity, false);
+                    }
                     itemCount++;
                 } else {
                     RarityCore.LOGGER.debug("Unknown item '{}' in config file '{}'", itemIdString, configFile.getFileName());
@@ -70,7 +77,7 @@ public class JsonPerformanceOptimizer {
     }
     
     /**
-     * 获取优化的Gson实例
+     * 获取高性能Gson实例
      */
     public static Gson getOptimizedGson() {
         return OPTIMIZED_GSON;
@@ -95,7 +102,7 @@ public class JsonPerformanceOptimizer {
             try {
                 // 检查值是否为有效的整数
                 int value = jsonObject.get(key).getAsInt();
-                if (value >= RarityConstants.MIN_RARITY && value <= RarityConstants.MAX_RARITY) {
+                if (value >= 0 && value <= RarityConstants.MAX_RARITY) { // 允许0表示删除
                     validCount++;
                 }
             } catch (Exception e) {

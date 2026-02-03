@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 延迟同步管理器
@@ -77,7 +76,7 @@ public class DelayedSyncManager {
             List<ChangeOperation> pendingOps = SyncBatchManager.getAndClearPendingOperations();
             
             if (!pendingOps.isEmpty()) {
-                // 优化操作列表
+                // 处理操作列表
                 List<ChangeOperation> optimizedOps = SyncBatchManager.optimizeOperations(pendingOps);
                 
                 if (!optimizedOps.isEmpty()) {

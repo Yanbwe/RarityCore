@@ -26,6 +26,12 @@ public static void unregister(@Nullable Item item, boolean syncToClients)
 // Get item rarity level
 public static @NotNull Integer getRarity(@Nullable Item item)
 
+// Get normalized item rarity (following inclusivity principle)
+public static @NotNull Integer getNormalizedRarity(@Nullable Item item)
+
+// Get localized rarity tooltip string
+public static @NotNull String getLocalizedRarityTooltip(@Nullable Item item)
+
 // Check if item has rarity configuration
 public static boolean hasRarity(@Nullable Item item)
 
@@ -38,11 +44,20 @@ public static Map<ResourceLocation, Integer> getAllRarities()
 // Synchronize rarity data to all clients
 public static void syncRarityToClients()
 
-// Get change operations buffer size
-public static int getChangeOperationsBufferSize()
+// Synchronize rarity data to all clients with retry mechanism
+public static void syncRarityToClientsWithRetry()
 
-// Clear change operations buffer
-public static void clearChangeOperationsBuffer()
+// Synchronize incremental changes to all clients
+public static void syncIncrementalChangesToClients()
+
+// Synchronize incremental changes to all clients with retry mechanism
+public static void syncIncrementalChangesToClientsWithRetry()
+
+// Get current pending change count
+public static int getPendingChangeCount()
+
+// Clear change buffer
+public static void clearChangeBuffer()
 ```
 
 ### 2. RarityColorUtil (Color Utility Class)
@@ -144,9 +159,11 @@ public static void setEnableItemNameColor(boolean enable)
 public static boolean isEnableTooltipInsert()
 public static void setEnableTooltipInsert(boolean enable)
 
-// Item background rendering
-public static boolean isEnableItemBackgroundRendering()
-public static void setEnableItemBackgroundRendering(boolean enable)
+// Get whether tooltip insertion is enabled
+public static boolean isEnableTooltipInsert()
+
+// Set whether tooltip insertion is enabled
+public static void setEnableTooltipInsert(boolean enable)
 
 // Vanilla rarity check
 public static boolean isCheckVanillaRarity()

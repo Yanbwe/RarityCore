@@ -5,13 +5,13 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "raritycore.refmap.json",
   "mixins": [
-    "ItemStackMixin",
-    "AbstractContainerScreenAccessor"
+    "AbstractContainerScreenAccessor",
+    "ItemStackMixin"
   ],
   "client": [
     "AbstractContainerScreenMixin",
-    "GuiMixin",
-    "GuiGraphicsMixin"
+    "GuiGraphicsMixin",
+    "GuiMixin"
   ],
   "injectors": {
     "defaultRequire": 1

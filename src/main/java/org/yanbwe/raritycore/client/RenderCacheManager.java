@@ -2,15 +2,14 @@ package org.yanbwe.raritycore.client;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import org.yanbwe.raritycore.RarityCore;
 
 /**
  * 渲染缓存管理器（代理类）
- * 代理到改进的缓存管理器以保持向后兼容性
+ * 代理到缓存管理器以保持向后兼容性
  */
 public class RenderCacheManager {
     
-    // 代理到改进的缓存管理器
+    // 代理到缓存管理器
     
     /**
      * 获取物品的缓存稀有度
