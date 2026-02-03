@@ -45,68 +45,71 @@ public class RarityCore {
         modEventBus.addListener(this::commonSetup);
         MinecraftForge.EVENT_BUS.register(this);
 
-        // 确保在构造函数中初始化配置
+        // Ensure configuration initialization in constructor
         ConfigManager.initializeConfigs();
     }
     
     @SubscribeEvent
     public void addReloadListeners(AddReloadListenerEvent event) {
         event.addListener(RarityDataLoader.INSTANCE);
+        
+        // 注册缓存失效监听器到事件总线
+        MinecraftForge.EVENT_BUS.register(org.yanbwe.raritycore.client.CacheInvalidationListener.class);
     }
     
     private void commonSetup(final FMLCommonSetupEvent event) {
-        // 初始化网络数据包
+        // Initialize network packets
         event.enqueueWork(RaritySyncPacket::initialize);
         event.enqueueWork(IncrementalSyncPacket::initialize);
         
-        // 初始化所有配置（已在构造函数中处理，这里是为了确保）
+        // Initialize all configurations (already handled in constructor, just to be safe)
         event.enqueueWork(ConfigManager::initializeConfigs);
     }
     
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
-        // 启动智能定时同步任务
+        // Start smart scheduled sync task
         syncScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "RarityCore-Incremental-Sync");
-            t.setDaemon(true);  // 设置为守护线程
+            t.setDaemon(true);  // Set as daemon thread
             return t;
         });
         
         syncScheduler.scheduleAtFixedRate(() -> {
             try {
-                // 使用批处理管理器检查是否需要同步
+                // Check if sync is needed using batch manager
                 int pendingCount = org.yanbwe.raritycore.network.SyncBatchManager.getPendingOperationCount();
                 if (pendingCount > 0) {
                     RarityRegistry.syncIncrementalChangesToClients();
                 }
             } catch (Exception e) {
-                LOGGER.error("增量同步期间发生错误", e);
+                LOGGER.error("Error occurred during incremental sync", e);
             }
-        }, 0, 2000, TimeUnit.MILLISECONDS); // 每2秒检查一次，与批处理时间窗口匹配
+        }, 0, 2000, TimeUnit.MILLISECONDS); // Check every 2 seconds, matching batch processing window
         
-        // 添加缓存清理任务（使用更长的间隔）
+        // Add cache cleanup task (using longer interval)
         syncScheduler.scheduleAtFixedRate(() -> {
             try {
-                // 使用智能清理而非全量清理，间隔延长到10分钟
+                // Use smart cleanup instead of full cleanup, interval extended to 10 minutes
                 org.yanbwe.raritycore.client.ImprovedRenderCacheManager.smartCleanup();
-                LOGGER.debug("执行智能缓存清理");
+                LOGGER.debug("Executing smart cache cleanup");
             } catch (Exception e) {
-                LOGGER.error("缓存清理期间发生错误", e);
+                LOGGER.error("Error occurred during cache cleanup", e);
             }
-        }, 600000, 600000, TimeUnit.MILLISECONDS); // 每10分钟执行一次
+        }, 600000, 600000, TimeUnit.MILLISECONDS); // Execute every 10 minutes
     }
     
     @SubscribeEvent
     public void onServerStopped(ServerStoppedEvent event) {
-        // 服务器停止时关闭调度器
+        // Shutdown scheduler when server stops
         if (syncScheduler != null) {
             syncScheduler.shutdown();
             try {
                 if (!syncScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
                     syncScheduler.shutdownNow();
                     if (!syncScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                        LOGGER.error("线程池未能正常终止");
+                        LOGGER.error("Thread pool failed to terminate properly");
                     }
                 }
             } catch (InterruptedException e) {
@@ -116,7 +119,7 @@ public class RarityCore {
             syncScheduler = null;
         }
         
-        // 清空变更缓冲区
+        // Clear change buffer
         RarityRegistry.clearChangeBuffer();
     }
     
@@ -127,13 +130,13 @@ public class RarityCore {
     
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        // 玩家登录时发送完整的稀有度数据
+        // Send full rarity data to player on login
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-            // 创建包含当前所有数据的映射
+            // Create a map containing all current data
             java.util.Map<ResourceLocation, Integer> currentData = new java.util.HashMap<>(RarityRegistry.ITEM_RARITY_MAP);
             RaritySyncPacket packet = new RaritySyncPacket(currentData);
             
-            // 发送完整数据给刚登录的玩家
+            // Send full data to newly logged-in player
             RaritySyncPacket.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), packet);
         }
     }

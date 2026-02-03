@@ -67,6 +67,9 @@ public class RaritySyncPacket {
                     RarityRegistry.ITEM_RARITY_MAP.put(entry.getKey(), entry.getValue()); // 直接放入映射，不记录变更
                 }
             }
+            
+            // 通知缓存系统网络同步已完成
+            org.yanbwe.raritycore.client.CacheInvalidationListener.onNetworkSync();
         });
         ctx.get().setPacketHandled(true);
         return true;

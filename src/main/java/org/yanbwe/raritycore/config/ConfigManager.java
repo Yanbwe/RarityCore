@@ -289,7 +289,11 @@ public class ConfigManager {
     }
     
     public static void setCheckVanillaRarity(boolean check) {
-        checkVanillaRarity = check;
+        if (checkVanillaRarity != check) {
+            checkVanillaRarity = check;
+            // 通知缓存系统配置已变更
+            notifyCacheOfConfigChange();
+        }
     }
     
     public static boolean isSkipUnconfiguredItems() {
@@ -297,6 +301,22 @@ public class ConfigManager {
     }
     
     public static void setSkipUnconfiguredItems(boolean skip) {
-        skipUnconfiguredItems = skip;
+        if (skipUnconfiguredItems != skip) {
+            skipUnconfiguredItems = skip;
+            // 通知缓存系统配置已变更
+            notifyCacheOfConfigChange();
+        }
+    }
+    
+    /**
+     * 通知缓存系统配置已变更
+     */
+    private static void notifyCacheOfConfigChange() {
+        try {
+            // 调用缓存失效监听器
+            org.yanbwe.raritycore.client.CacheInvalidationListener.onClientConfigChange();
+        } catch (Exception e) {
+            RarityCore.LOGGER.warn("Failed to notify cache of config change", e);
+        }
     }
 }
