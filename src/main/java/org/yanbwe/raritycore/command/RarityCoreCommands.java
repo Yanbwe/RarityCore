@@ -359,7 +359,7 @@ public class RarityCoreCommands {
                 String modId = modEntry.getKey();
                 Map<String, Integer> modData = modEntry.getValue();
                 
-                Path modExportFile = exportDir.resolve(modId + "_" + mcVersion + "_" + timestamp + ".json");
+                Path modExportFile = exportDir.resolve(modId + "_" + mcVersion + ".json");
                 
                 try (FileWriter writer = new FileWriter(modExportFile.toFile())) {
                     gson.toJson(modData, writer);
