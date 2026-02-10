@@ -271,7 +271,7 @@ public class RarityRegistry {
     
     /**
      * 统一的稀有度获取逻辑
-     * 优先级顺序：神化模组稀有度 > 原版稀有度 > 本模组稀有度（配置和数据包）
+     * 优先级顺序：神化模组稀有度 > 本模组稀有度（配置和数据包） > 原版稀有度映射
      * @param itemId 物品资源位置
      * @param itemStack 物品栈（用于检查NBT数据）
      * @param item 物品
@@ -294,7 +294,14 @@ public class RarityRegistry {
             RarityCore.LOGGER.debug("神化稀有度检查已禁用或物品栈为空");
         }
         
-        // 然后检查原版稀有度
+        // 然后检查本模组的稀有度配置（包括配置文件和数据包）
+        Integer configuredRarity = ITEM_RARITY_MAP.get(itemId);
+        if (configuredRarity != null) {
+            RarityCore.LOGGER.debug("物品 {} 使用本模组稀有度: {}", itemId, configuredRarity);
+            return configuredRarity;
+        }
+        
+        // 最后检查原版稀有度映射（最低优先级）
         if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
             net.minecraft.world.item.Rarity vanillaRarity = itemStack != null ? itemStack.getRarity() : item.getDefaultInstance().getRarity();
             Integer mappedVanilla = mapVanillaRarity(vanillaRarity);
@@ -303,13 +310,6 @@ public class RarityRegistry {
                     itemId, mappedVanilla, vanillaRarity);
                 return mappedVanilla;
             }
-        }
-        
-        // 最后检查本模组的稀有度配置（包括配置文件和数据包）
-        Integer configuredRarity = ITEM_RARITY_MAP.get(itemId);
-        if (configuredRarity != null) {
-            RarityCore.LOGGER.debug("物品 {} 使用本模组稀有度: {}", itemId, configuredRarity);
-            return configuredRarity;
         }
         
         // 默认返回普通稀有度
@@ -360,7 +360,7 @@ public class RarityRegistry {
                     return configuredRarity;
                 }
                 
-                // 最后检查原版稀有度映射
+                // 最后检查原版稀有度映射（最低优先级）
                 if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
                     net.minecraft.world.item.Rarity vanillaRarity = tempStack.getRarity();
                     if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
