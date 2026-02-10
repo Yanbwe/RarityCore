@@ -6,9 +6,9 @@ This document lists all mods that currently have pre-configured rarity informati
 
 ## Version / 版本  
 
-当前最新稀有度配置版本为 ` 1 `
+当前最新稀有度配置版本为 ` 2 `
 
-The current latest rarity configuration version is `1`
+The current latest rarity configuration version is `2`
 
 你可以在模组的版本号中找到稀有度配置的版本，模组版本号格式为：<MC版本>.<模组版本>.<稀有度配置版本>。
 
@@ -16,15 +16,40 @@ You can find the version of the rarity configuration in the mod's version number
 
 ## Total Count / 总计
 
-Currently supporting **58** mods with pre-configured rarity information.
+Currently supporting **76** mods with pre-configured rarity information.
 
-目前共支持 **58** 个模组的预置稀有度信息。
+目前共支持 **76** 个模组的预置稀有度信息。
 
 `Version 1`：add 58 mods
+
+`Version 2`：add 18 mods
 
 ## Supported Mods / 支持的模组
 
 _模组中文名为机翻。_
+````
+== Version 2 ==
+
+- ae2 - 应用能源2
+- aether - 天境
+- ars_nouveau - 新生魔艺
+- artifacts - 奇异饰品
+- botania - 植物魔法
+- comforts - 舒适用品
+- constructionwand - 建筑魔杖
+- create - 机械动力
+- dummmmmmy - 假人测试
+- elevatorid - 电梯
+- iceandfire - 冰与火之歌
+- industrialforegoing - 工业先锋
+- ironchest - 铁箱子
+- ironfurnaces - 铁熔炉
+- mekanism - 通用机械
+- relics - 遗物
+- sophisticatedbackpacks - 精妙背包
+- supplementaries - 附加组件
+- twilightforest - 暮色森林
+````
 ````
 == Version 1 ==
 
