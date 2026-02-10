@@ -4,6 +4,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Rarity;
+import org.yanbwe.raritycore.RarityCore;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -246,7 +249,94 @@ public class RarityRegistry {
     }
     
     /**
+     * 获取物品栈的稀有度等级（支持NBT数据）
+     * 优先级顺序：神化模组稀有度 > 原版稀有度 > 本模组稀有度（配置和数据包）
+     * @param itemStack 要查稀有度的物品栈
+     * @return 物品的稀有度等级（1-7）
+     */
+    public static @NotNull Integer getRarity(@Nullable ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty()) {
+            return 1;
+        }
+        
+        Item item = itemStack.getItem();
+        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+        if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+            return 1;
+        }
+        
+        // 使用统一的稀有度获取逻辑
+        return getRarityInternal(itemId, itemStack, item);
+    }
+    
+    /**
+     * 统一的稀有度获取逻辑
+     * 优先级顺序：神化模组稀有度 > 原版稀有度 > 本模组稀有度（配置和数据包）
+     * @param itemId 物品资源位置
+     * @param itemStack 物品栈（用于检查NBT数据）
+     * @param item 物品
+     * @return 物品的稀有度等级（1-7）
+     */
+    private static @NotNull Integer getRarityInternal(ResourceLocation itemId, @Nullable ItemStack itemStack, Item item) {
+        // 首先检查神化模组稀有度（最高优先级）
+        if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity() && itemStack != null) {
+            boolean hasApothRarity = org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.hasApotheosisRarity(itemStack);
+            RarityCore.LOGGER.debug("物品 {} 是否具有神化稀有度: {}", itemId, hasApothRarity);
+            
+            Integer apothRarity = org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(itemStack);
+            if (apothRarity != null) {
+                RarityCore.LOGGER.debug("物品 {} 使用神化稀有度: {}", itemId, apothRarity);
+                return apothRarity;
+            } else {
+                RarityCore.LOGGER.debug("物品 {} 神化稀有度映射失败", itemId);
+            }
+        } else {
+            RarityCore.LOGGER.debug("神化稀有度检查已禁用或物品栈为空");
+        }
+        
+        // 然后检查原版稀有度
+        if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
+            net.minecraft.world.item.Rarity vanillaRarity = itemStack != null ? itemStack.getRarity() : item.getDefaultInstance().getRarity();
+            Integer mappedVanilla = mapVanillaRarity(vanillaRarity);
+            if (mappedVanilla > 1) { // 只有当原版稀有度不是普通时才使用
+                RarityCore.LOGGER.debug("物品 {} 使用原版稀有度映射: {} (原版: {})", 
+                    itemId, mappedVanilla, vanillaRarity);
+                return mappedVanilla;
+            }
+        }
+        
+        // 最后检查本模组的稀有度配置（包括配置文件和数据包）
+        Integer configuredRarity = ITEM_RARITY_MAP.get(itemId);
+        if (configuredRarity != null) {
+            RarityCore.LOGGER.debug("物品 {} 使用本模组稀有度: {}", itemId, configuredRarity);
+            return configuredRarity;
+        }
+        
+        // 默认返回普通稀有度
+        RarityCore.LOGGER.debug("物品 {} 使用默认稀有度: 1", itemId);
+        return 1;
+    }
+    
+    /**
+     * 映射原版稀有度到本模组稀有度
+     * @param vanillaRarity 原版稀有度
+     * @return 映射后的稀有度等级（1-7）
+     */
+    private static Integer mapVanillaRarity(Rarity vanillaRarity) {
+        if (vanillaRarity == Rarity.UNCOMMON) {
+            return 3; // 罕见
+        } else if (vanillaRarity == Rarity.RARE) {
+            return 4; // 史诗
+        } else if (vanillaRarity == Rarity.EPIC) {
+            return 5; // 传说
+        } else {
+            return 1; // 普通
+        }
+    }
+    
+    /**
      * 获取物品的稀有度等级
+     * 优先级顺序：神化模组映射 > 本模组稀有度（配置和数据包） > 原版映射 > 默认值
      * @param item 要查稀有度的物品
      * @return 物品的稀有度等级（1-7）
      */
@@ -254,15 +344,24 @@ public class RarityRegistry {
         if (item != null) {
             ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
             if (itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-                // 首先检查本模组的稀有度配置
+                net.minecraft.world.item.ItemStack tempStack = new net.minecraft.world.item.ItemStack(item);
+                
+                // 首先检查神化模组稀有度（最高优先级）
+                if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity()) {
+                    Integer apotheosisRarity = org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(tempStack);
+                    if (apotheosisRarity != null) {
+                        return apotheosisRarity; // 返回映射后的神化稀有度
+                    }
+                }
+                
+                // 然后检查本模组的稀有度配置（包括配置文件和数据包）
                 Integer configuredRarity = ITEM_RARITY_MAP.get(itemId);
                 if (configuredRarity != null) {
                     return configuredRarity;
                 }
                 
-                // 如果没有本模组的稀有度配置，检查是否启用原版稀有度检查
+                // 最后检查原版稀有度映射
                 if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
-                    net.minecraft.world.item.ItemStack tempStack = new net.minecraft.world.item.ItemStack(item);
                     net.minecraft.world.item.Rarity vanillaRarity = tempStack.getRarity();
                     if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
                         return 3; // 罕见

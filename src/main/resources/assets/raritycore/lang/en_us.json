@@ -69,5 +69,15 @@
   "rarity.core.server_config_reload_failed": "Failed to reload server config: %s",
   "rarity.core.server_config_status_title": "=== Server Configuration Status ===",
   "rarity.core.check_vanilla_rarity": "Check Vanilla Rarity: %s",
-  "rarity.core.skip_unconfigured_items": "Skip Unconfigured Items: %s"
+  "rarity.core.skip_unconfigured_items": "Skip Unconfigured Items: %s",
+  "rarity.core.config_version_info_title": "=== Configuration Version Info ===",
+  "rarity.core.current_config_version": "Current config version: %d",
+  "rarity.core.client_config_version": "Client config version: %d (mod version: %s)",
+  "rarity.core.server_config_version": "Server config version: %d (mod version: %s)",
+  "rarity.core.client_config_not_found": "❌ Client config file not found",
+  "rarity.core.server_config_not_found": "❌ Server config file not found",
+  "rarity.core.config_version_info_failed": "Failed to get config version info: %s",
+  "rarity.core.forcing_config_upgrade": "Forcing upgrade of all config files...",
+  "rarity.core.config_upgrade_completed": "Config upgrade completed! Client version: %d, Server version: %d, Target version: %d",
+  "rarity.core.config_upgrade_failed": "Config upgrade failed: %s"
 }

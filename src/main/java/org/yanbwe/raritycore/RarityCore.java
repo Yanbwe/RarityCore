@@ -17,6 +17,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
+import org.yanbwe.raritycore.compat.CompatibilityManager;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.data.RarityDataLoader;
 import org.yanbwe.raritycore.network.IncrementalSyncPacket;
@@ -63,6 +64,9 @@ public class RarityCore {
         
         // Initialize all configurations (already handled in constructor, just to be safe)
         event.enqueueWork(ConfigManager::initializeConfigs);
+        
+        // Initialize compatibility adapters
+        event.enqueueWork(CompatibilityManager::initializeCompatibilityAdapters);
     }
     
     // You can use SubscribeEvent and let the Event Bus discover methods to call

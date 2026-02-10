@@ -22,5 +22,8 @@ For detailed configuration instructions, please refer to the following documents
 - [Client Configuration Guide (English)](doc/ClientConfig_EN.md) - Client-specific configuration options
 - [Server Configuration Guide (English)](doc/ServerConfig_EN.md) - Server-side configuration options
 
+### Reference Documents
+- [Supported Mods List (English)](doc/SupportedModsList.md) - List of mods with pre-configured rarity information
+
 ### API Documentation
 - [API Documentation (English)](doc/API_Documentation_EN.md) - Complete API reference for developers

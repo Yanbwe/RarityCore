@@ -24,6 +24,7 @@ public class ServerConfigManager {
     // 服务端配置
     private static boolean checkVanillaRarity = RarityConstants.DEFAULT_CHECK_VANILLA_RARITY; // 是否检查原版稀有度
     private static boolean skipUnconfiguredItems = RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS; // 是否跳过未配置物品
+    private static boolean checkApotheosisRarity = true; // 是否检查神化模组稀有度
     
     // 配置文件路径
     private static final Path CONFIG_DIR = Paths.get(RarityConstants.CONFIG_DIR_PARENT).resolve(RarityConstants.CONFIG_DIR_NAME);
@@ -87,14 +88,22 @@ public class ServerConfigManager {
                     skipUnconfiguredItems = RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS;
                 }
                 
-                RarityCore.LOGGER.info("Server config loaded successfully: checkVanillaRarity={}, skipUnconfiguredItems={}", 
-                    checkVanillaRarity, skipUnconfiguredItems);
+                // 读取神化稀有度检查设置
+                if (jsonObject.has("checkApotheosisRarity")) {
+                    checkApotheosisRarity = jsonObject.get("checkApotheosisRarity").getAsBoolean();
+                } else {
+                    checkApotheosisRarity = true; // 默认启用神化稀有度检查
+                }
+                
+                RarityCore.LOGGER.info("Server config loaded successfully: checkVanillaRarity={}, skipUnconfiguredItems={}, checkApotheosisRarity={}", 
+                    checkVanillaRarity, skipUnconfiguredItems, checkApotheosisRarity);
             }
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error loading server config file, using default config: {}", SERVER_CONFIG_FILE, e);
             // 出错时使用默认值
             checkVanillaRarity = RarityConstants.DEFAULT_CHECK_VANILLA_RARITY;
             skipUnconfiguredItems = RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS;
+            checkApotheosisRarity = true;
             // 重新创建配置文件以恢复默认设置
             createDefaultServerConfig();
         }
@@ -104,15 +113,19 @@ public class ServerConfigManager {
      * 创建默认服务端配置文件
      */
     private static void createDefaultServerConfig() {
-        JsonObject configObject = new JsonObject();
+        // 创建带版本信息的配置对象
+        JsonObject configObject = ConfigVersionManager.createVersionedConfig();
+        
         configObject.addProperty("checkVanillaRarity", RarityConstants.DEFAULT_CHECK_VANILLA_RARITY);
         configObject.addProperty("skipUnconfiguredItems", RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS);
+        configObject.addProperty("checkApotheosisRarity", true);
         
         // 写入默认配置文件
         try {
             try (FileWriter writer = new FileWriter(SERVER_CONFIG_FILE.toString())) {
                 GSON.toJson(configObject, writer);
-                RarityCore.LOGGER.info("Created default server config file: {}", SERVER_CONFIG_FILE);
+                RarityCore.LOGGER.info("Created default server config file with version {}: {}", 
+                    ConfigVersionManager.CURRENT_CONFIG_VERSION, SERVER_CONFIG_FILE);
             }
         } catch (IOException e) {
             RarityCore.LOGGER.error("Cannot create default server config file: {}", SERVER_CONFIG_FILE, e);
@@ -123,16 +136,18 @@ public class ServerConfigManager {
      * 保存服务端配置到文件
      */
     public static void saveServerConfig() {
-        JsonObject configObject = new JsonObject();
+        // 创建带版本信息的配置对象
+        JsonObject configObject = ConfigVersionManager.createVersionedConfig();
         configObject.addProperty("checkVanillaRarity", checkVanillaRarity);
         configObject.addProperty("skipUnconfiguredItems", skipUnconfiguredItems);
+        configObject.addProperty("checkApotheosisRarity", checkApotheosisRarity);
         
         // 写入配置文件
         try {
             try (FileWriter writer = new FileWriter(SERVER_CONFIG_FILE.toString())) {
                 GSON.toJson(configObject, writer);
-                RarityCore.LOGGER.info("Server config saved: checkVanillaRarity={}, skipUnconfiguredItems={}", 
-                    checkVanillaRarity, skipUnconfiguredItems);
+                RarityCore.LOGGER.info("Server config saved with version {}: checkVanillaRarity={}, skipUnconfiguredItems={}, checkApotheosisRarity={}", 
+                    ConfigVersionManager.CURRENT_CONFIG_VERSION, checkVanillaRarity, skipUnconfiguredItems, checkApotheosisRarity);
             }
         } catch (IOException e) {
             RarityCore.LOGGER.error("Cannot save server config file: {}", SERVER_CONFIG_FILE, e);
@@ -174,6 +189,26 @@ public class ServerConfigManager {
             notifyConfigChange();
         }
     }
+    
+    /**
+     * 获取是否检查神化模组稀有度
+     */
+    public static boolean isCheckApotheosisRarity() {
+        return checkApotheosisRarity;
+    }
+    
+    /**
+     * 设置是否检查神化模组稀有度
+     */
+    public static void setCheckApotheosisRarity(boolean check) {
+        if (checkApotheosisRarity != check) {
+            checkApotheosisRarity = check;
+            // 通知相关系统配置已变更
+            notifyConfigChange();
+        }
+    }
+    
+
     
     /**
      * 通知配置变更
