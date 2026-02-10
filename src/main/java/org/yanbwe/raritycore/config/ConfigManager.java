@@ -82,6 +82,9 @@ public class ConfigManager {
      * 加载客户端配置
      */
     public static void loadClientConfig() {
+        // 检查并升级配置文件
+        ConfigVersionManager.checkAndUpgradeConfig(CLIENT_CONFIG_FILE, "client");
+        
         // 如果配置文件不存在，则创建一个默认的
         if (!Files.exists(CLIENT_CONFIG_FILE)) {
             createDefaultClientConfig();
@@ -99,6 +102,18 @@ public class ConfigManager {
             JsonObject jsonObject = GSON.fromJson(reader, JsonObject.class);
             
             if (jsonObject != null) {
+                // 记录配置版本信息
+                int configVersion = 0;
+                String modVersion = "unknown";
+                if (jsonObject.has("config_version")) {
+                    configVersion = jsonObject.get("config_version").getAsInt();
+                }
+                if (jsonObject.has("mod_version")) {
+                    modVersion = jsonObject.get("mod_version").getAsString();
+                }
+                
+                RarityCore.LOGGER.info("Loading client config version {} (mod version: {}) from {}", 
+                    configVersion, modVersion, CLIENT_CONFIG_FILE.getFileName());
                 // 读取边框渲染开关
                 if (jsonObject.has("enableItemBorderRendering")) {
                     enableItemBorderRendering = jsonObject.get("enableItemBorderRendering").getAsBoolean();
@@ -143,8 +158,8 @@ public class ConfigManager {
                     enableTooltipInsert = RarityConstants.DEFAULT_ENABLE_TOOLTIP_INSERT;
                 }
                 
-                RarityCore.LOGGER.info("Client config loaded successfully: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}", 
-                    enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert);
+                RarityCore.LOGGER.info("Client config loaded successfully: version={}, enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}", 
+                    configVersion, enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert);
             }
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error loading client config file, using default config: {}", CLIENT_CONFIG_FILE, e);
@@ -160,7 +175,10 @@ public class ConfigManager {
      * 创建默认客户端配置文件
      */
     private static void createDefaultClientConfig() {
-        JsonObject configObject = new JsonObject();
+        // 创建带版本信息的配置对象
+        JsonObject configObject = ConfigVersionManager.createVersionedConfig();
+        
+        // 添加所有默认配置项
         configObject.addProperty("enableItemBorderRendering", RarityConstants.DEFAULT_ENABLE_ITEM_BORDER_RENDERING);
         configObject.addProperty("itemBorderStyle", RarityConstants.DEFAULT_ITEM_BORDER_STYLE);
         configObject.addProperty("useTextureBorder", RarityConstants.DEFAULT_USE_TEXTURE_BORDER);
@@ -168,12 +186,14 @@ public class ConfigManager {
         configObject.addProperty("enableTooltipInsert", RarityConstants.DEFAULT_ENABLE_TOOLTIP_INSERT);
         configObject.addProperty("checkVanillaRarity", RarityConstants.DEFAULT_CHECK_VANILLA_RARITY);
         configObject.addProperty("skipUnconfiguredItems", RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS);
+        configObject.addProperty("enableBatchProcessing", true);
         
         // 写入默认配置文件
         try {
             try (FileWriter writer = new FileWriter(CLIENT_CONFIG_FILE.toString())) {
                 GSON.toJson(configObject, writer);
-                RarityCore.LOGGER.info("Created default client config file: {}", CLIENT_CONFIG_FILE);
+                RarityCore.LOGGER.info("Created default client config file with version {}: {}", 
+                    ConfigVersionManager.CURRENT_CONFIG_VERSION, CLIENT_CONFIG_FILE);
             }
         } catch (IOException e) {
             RarityCore.LOGGER.error("Cannot create default client config file: {}", CLIENT_CONFIG_FILE, e);

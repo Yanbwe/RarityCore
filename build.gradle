@@ -227,13 +227,49 @@ tasks.jar {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+    options.charSet = 'UTF-8'
+    options.docEncoding = 'UTF-8'
+}
 apply plugin: 'maven-publish'
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            artifact jar
-            //artifact sourcesJar
+            groupId = mod_group_id
+            artifactId = mod_id
+            version = mod_version
+            
+            from components.java
+            
+            pom {
+                name = mod_name
+                description = mod_description
+                url = 'https://github.com/Yanbwe/RarityCore' // 可以根据实际情况修改
+                licenses {
+                    license {
+                        name = mod_license
+                        url = 'https://www.gnu.org/licenses/gpl-3.0.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'yanbwe'
+                        name = mod_authors
+                    }
+                }
+            }
         }
+    }
+    
+    repositories {
+        mavenLocal()
     }
 }

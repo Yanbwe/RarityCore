@@ -32,18 +32,18 @@ public class ItemBorderRenderer {
             return;
         }
 
-        // 获取物品的稀有度（使用缓存）
-        Item item = itemStack.getItem();
-        Integer rarity = RenderCacheManager.getCachedRarity(item);
+        // 获取物品栈的稀有度（使用缓存）
+        Integer rarity = ImprovedRenderCacheManager.getCachedItemStackRarity(itemStack);
         
         // 如果缓存未命中，则从注册表获取并缓存
         if (rarity == null) {
-            rarity = RarityRegistry.getRarity(item);
-            RenderCacheManager.cacheRarity(item, rarity);
+            rarity = RarityRegistry.getRarity(itemStack);
+            ImprovedRenderCacheManager.cacheItemStackRarity(itemStack, rarity);
         }
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度，则不渲染
         // 注意：需要检查物品是否真的没有配置，而不是默认的稀有度1
+        Item item = itemStack.getItem();
         if (org.yanbwe.raritycore.config.ServerConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
             return;
         }

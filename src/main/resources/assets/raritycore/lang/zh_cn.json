@@ -69,5 +69,15 @@
   "rarity.core.server_config_reload_failed": "服务端配置重载失败: %s",
   "rarity.core.server_config_status_title": "=== 服务端配置状态 ===",
   "rarity.core.check_vanilla_rarity": "检查原版稀有度: %s",
-  "rarity.core.skip_unconfigured_items": "跳过未配置物品: %s"
+  "rarity.core.skip_unconfigured_items": "跳过未配置物品: %s",
+  "rarity.core.config_version_info_title": "=== 配置版本信息 ===",
+  "rarity.core.current_config_version": "当前配置版本: %d",
+  "rarity.core.client_config_version": "客户端配置版本: %d (模组版本: %s)",
+  "rarity.core.server_config_version": "服务端配置版本: %d (模组版本: %s)",
+  "rarity.core.client_config_not_found": "❌ 客户端配置文件不存在",
+  "rarity.core.server_config_not_found": "❌ 服务端配置文件不存在",
+  "rarity.core.config_version_info_failed": "获取配置版本信息失败: %s",
+  "rarity.core.forcing_config_upgrade": "正在强制升级所有配置文件...",
+  "rarity.core.config_upgrade_completed": "配置升级完成! 客户端版本: %d, 服务端版本: %d, 目标版本: %d",
+  "rarity.core.config_upgrade_failed": "配置升级失败: %s"
 }

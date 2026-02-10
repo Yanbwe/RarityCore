@@ -387,8 +387,11 @@ ConfigFileUtils.updateJsonConfig(configFile, jsonObject -> {
 
 1. `EditModeManager.modifyItemRarity()` 只能在客户端环境调用；
 2. 稀有度变更会自动同步到所有客户端；
-3. 客户端配置更改后需要调用 `saveClientConfig()` 才会保存到文件；
-4. `getLocalizedRarityTooltip()` 方法返回已本地化的完整工具提示字符串，可直接用于显示。
+3. 配置更改后需要调用 `saveClientConfig()` 或 `saveServerConfig()` 才会保存到文件；
+4. `getLocalizedRarityTooltip()` 方法返回已本地化的完整工具提示字符串，可直接用于显示；
+5. 配置文件在模组版本变更时会自动进行版本控制和升级；
+6. 使用 `/raritycore config version` 查看当前配置版本信息；
+7. 使用 `/raritycore config upgrade` 强制升级配置文件。
 
 ## 依赖关系
 

@@ -310,6 +310,25 @@ public class ImprovedRenderCacheManager {
     }
     
     /**
+     * 获取缓存的物品堆稀有度
+     * @param itemStack 物品堆
+     * @return 缓存的稀有度，如果未缓存则返回null
+     */
+    public static Integer getCachedItemStackRarity(ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty()) {
+            return null;
+        }
+        
+        try {
+            int hash = getItemStackHash(itemStack);
+            return itemStackCache.getIfPresent(hash);
+        } catch (Exception e) {
+            RarityCore.LOGGER.warn("Error getting cached itemstack rarity", e);
+            return null;
+        }
+    }
+    
+    /**
      * 缓存物品堆稀有度
      * @param itemStack 物品堆
      * @param rarity 稀有度
