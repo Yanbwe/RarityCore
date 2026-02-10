@@ -12,7 +12,7 @@ The current latest rarity configuration version is `1`
 
 你可以在模组的版本号中找到稀有度配置的版本，模组版本号格式为：<MC版本>.<模组版本>.<稀有度配置版本>。
 
-You can find the version of the rarity configuration in the mod's version number, which follows the format: <Minecraft version>.<Mod version>.<Rarity configuration version>.
+You can find the version of the rarity configuration in the mod's version number, which follows the format:Minecraft version.Mod version.Rarity configuration version.
 
 ## Total Count / 总计
 
