@@ -24,7 +24,7 @@ public class CacheInvalidationListener {
             if (item != null) {
                 // 使用缓存管理器使缓存失效
                 ImprovedRenderCacheManager.invalidateItemCache(item);
-                RarityCore.LOGGER.debug("Cache invalidated for item {} due to rarity change", item);
+                // RarityCore.LOGGER.debug("Cache invalidated for item {} due to rarity change", item);
             }
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling rarity change event", e);
@@ -53,7 +53,7 @@ public class CacheInvalidationListener {
         try {
             // 客户端配置变更时处理相关缓存
             ImprovedRenderCacheManager.handleClientConfigChange();
-            RarityCore.LOGGER.debug("Handled client config change for cache");
+            // RarityCore.LOGGER.debug("Handled client config change for cache");
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling client config change", e);
         }
@@ -66,7 +66,7 @@ public class CacheInvalidationListener {
         try {
             // 网络同步时刷新缓存
             ImprovedRenderCacheManager.handleNetworkSync();
-            RarityCore.LOGGER.debug("Handled network sync for cache");
+            // RarityCore.LOGGER.debug("Handled network sync for cache");
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling network sync", e);
         }

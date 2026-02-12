@@ -79,5 +79,22 @@
   "rarity.core.config_version_info_failed": "Failed to get config version info: %s",
   "rarity.core.forcing_config_upgrade": "Forcing upgrade of all config files...",
   "rarity.core.config_upgrade_completed": "Config upgrade completed! Client version: %d, Server version: %d, Target version: %d",
-  "rarity.core.config_upgrade_failed": "Config upgrade failed: %s"
+  "rarity.core.config_upgrade_failed": "Config upgrade failed: %s",
+  "rarity.core.cache_system_enabled": "Cache system enabled successfully",
+  "rarity.core.cache_system_disabled": "Cache system disabled successfully",
+  "rarity.core.cache_system_toggled": "Cache system toggled to: %s",
+  "rarity.core.cache_system_status_title": "=== Cache System Status ===",
+  "rarity.core.cache_system_config_status": "Config status: %s",
+  "rarity.core.cache_system_manager_status": "Manager status: %s",
+  "rarity.core.cache_system_active_note": "Cache system is currently active - may conflict with other optimization mods",
+  "rarity.core.cache_system_inactive_note": "Cache system is currently inactive ",
+  "rarity.core.cache_counters_title": "=== Cache Counters Status ===",
+  "rarity.core.cache_system_enabled_status": "System status: %s",
+  "rarity.core.cache_config_enabled_status": "Config status: %s",
+  "rarity.core.cache_total_requests": "Total requests: %d",
+  "rarity.core.cache_hits_detail": "Cache hits: %d",
+  "rarity.core.cache_misses_detail": "Cache misses: %d",
+  "rarity.core.cache_hit_rate_detail": "Hit rate: %s%%",
+  "rarity.core.cache_clears_detail": "Cache clears: %d",
+  "rarity.core.cache_counters_disabled_note": "Counters may not increase when cache system is disabled"
 }

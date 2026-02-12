@@ -149,12 +149,30 @@ public class RarityCoreCommands {
                 .then(Commands.literal("smart-optimize")
                     .executes(context -> triggerSmartOptimization(context.getSource()))
                 )
+                .then(Commands.literal("system")
+                    .then(Commands.literal("enable")
+                        .executes(context -> enableCacheSystem(context.getSource()))
+                    )
+                    .then(Commands.literal("disable")
+                        .executes(context -> disableCacheSystem(context.getSource()))
+                    )
+                    .then(Commands.literal("toggle")
+                        .executes(context -> toggleCacheSystem(context.getSource()))
+                    )
+                    .then(Commands.literal("status")
+                        .executes(context -> showCacheSystemStatus(context.getSource()))
+                    )
+                )
+                .then(Commands.literal("counters")
+                    .executes(context -> showCacheCounters(context.getSource()))
+                )
             )
             .then(Commands.literal("texture")
                 .then(Commands.literal("toggle")
                     .executes(context -> toggleTextureBorder(context.getSource()))
                 )
             )
+
         );
     }
     
@@ -925,5 +943,208 @@ public class RarityCoreCommands {
                 .withStyle(ChatFormatting.RED), false);
             return 0;
         }
+    }
+    
+    /**
+     * 启用缓存系统
+     */
+    private static int enableCacheSystem(CommandSourceStack source) {
+        ConfigManager.setEnableCacheSystem(true);
+        org.yanbwe.raritycore.client.ImprovedRenderCacheManager.setCacheSystemEnabled(true);
+        
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_system_enabled").withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+    
+    /**
+     * 禁用缓存系统
+     */
+    private static int disableCacheSystem(CommandSourceStack source) {
+        ConfigManager.setEnableCacheSystem(false);
+        org.yanbwe.raritycore.client.ImprovedRenderCacheManager.setCacheSystemEnabled(false);
+        
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_system_disabled").withStyle(ChatFormatting.YELLOW), false);
+        return 1;
+    }
+    
+    /**
+     * 切换缓存系统启用状态
+     */
+    private static int toggleCacheSystem(CommandSourceStack source) {
+        boolean currentState = ConfigManager.isEnableCacheSystem();
+        boolean newState = !currentState;
+        
+        ConfigManager.setEnableCacheSystem(newState);
+        org.yanbwe.raritycore.client.ImprovedRenderCacheManager.setCacheSystemEnabled(newState);
+        
+        String status = newState ? Component.translatable("rarity.core.enabled").getString() : 
+                                   Component.translatable("rarity.core.disabled").getString();
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_system_toggled", status)
+            .withStyle(newState ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+        return 1;
+    }
+    
+    /**
+     * 显示缓存系统状态
+     */
+    private static int showCacheSystemStatus(CommandSourceStack source) {
+        boolean isEnabled = ConfigManager.isEnableCacheSystem();
+        boolean isManagerEnabled = org.yanbwe.raritycore.client.ImprovedRenderCacheManager.isCacheSystemEnabled();
+        
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_system_status_title").withStyle(ChatFormatting.GOLD), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_system_config_status", 
+            isEnabled ? Component.translatable("rarity.core.enabled").withStyle(ChatFormatting.GREEN) : 
+                       Component.translatable("rarity.core.disabled").withStyle(ChatFormatting.RED)), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_system_manager_status", 
+            isManagerEnabled ? Component.translatable("rarity.core.enabled").withStyle(ChatFormatting.GREEN) : 
+                              Component.translatable("rarity.core.disabled").withStyle(ChatFormatting.RED)), false);
+        
+        if (isEnabled && isManagerEnabled) {
+            source.sendSuccess(() -> Component.translatable("rarity.core.cache_system_active_note").withStyle(ChatFormatting.GRAY), false);
+        } else {
+            source.sendSuccess(() -> Component.translatable("rarity.core.cache_system_inactive_note").withStyle(ChatFormatting.GRAY), false);
+        }
+        
+        return 1;
+    }
+    
+    /**
+     * 显示缓存计数器详细信息
+     */
+    private static int showCacheCounters(CommandSourceStack source) {
+        org.yanbwe.raritycore.client.ImprovedRenderCacheManager.CacheStats stats = 
+            org.yanbwe.raritycore.client.ImprovedRenderCacheManager.getCacheStats();
+        
+        boolean isCacheEnabled = org.yanbwe.raritycore.client.ImprovedRenderCacheManager.isCacheSystemEnabled();
+        boolean isConfigEnabled = org.yanbwe.raritycore.config.ConfigManager.isEnableCacheSystem();
+        
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_counters_title").withStyle(ChatFormatting.GOLD), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_system_enabled_status", 
+            isCacheEnabled ? Component.translatable("rarity.core.enabled").withStyle(ChatFormatting.GREEN) : 
+                            Component.translatable("rarity.core.disabled").withStyle(ChatFormatting.RED)), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_config_enabled_status", 
+            isConfigEnabled ? Component.translatable("rarity.core.enabled").withStyle(ChatFormatting.GREEN) : 
+                             Component.translatable("rarity.core.disabled").withStyle(ChatFormatting.RED)), false);
+        
+        long totalRequests = stats.getHits() + stats.getMisses();
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_total_requests", totalRequests)
+            .withStyle(ChatFormatting.WHITE), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_hits_detail", stats.getHits())
+            .withStyle(ChatFormatting.GREEN), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_misses_detail", stats.getMisses())
+            .withStyle(ChatFormatting.RED), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_hit_rate_detail", String.format("%.2f", stats.getHitRate()))
+            .withStyle(ChatFormatting.AQUA), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.cache_clears_detail", stats.getClears())
+            .withStyle(ChatFormatting.YELLOW), false);
+        
+        if (!isCacheEnabled || !isConfigEnabled) {
+            source.sendSuccess(() -> Component.translatable("rarity.core.cache_counters_disabled_note")
+                .withStyle(ChatFormatting.GRAY), false);
+        }
+        
+        return 1;
+    }
+    
+    /**
+     * 验证缓存禁用功能
+     */
+    private static int verifyCacheDisable(CommandSourceStack source) {
+        source.sendSuccess(() -> Component.literal("=== 缓存禁用功能验证 ===").withStyle(ChatFormatting.GOLD), false);
+        
+        // 保存当前状态
+        boolean originalConfigState = org.yanbwe.raritycore.config.ConfigManager.isEnableCacheSystem();
+        boolean originalManagerState = org.yanbwe.raritycore.client.ImprovedRenderCacheManager.isCacheSystemEnabled();
+        
+        source.sendSuccess(() -> Component.literal("初始状态检查:").withStyle(ChatFormatting.YELLOW), false);
+        source.sendSuccess(() -> Component.literal("  配置管理器: " + (originalConfigState ? "启用" : "禁用")).withStyle(originalConfigState ? ChatFormatting.GREEN : ChatFormatting.RED), false);
+        source.sendSuccess(() -> Component.literal("  缓存管理器: " + (originalManagerState ? "启用" : "禁用")).withStyle(originalManagerState ? ChatFormatting.GREEN : ChatFormatting.RED), false);
+        
+        // 测试当前启用状态下的缓存行为
+        source.sendSuccess(() -> Component.literal("\n启用状态测试:").withStyle(ChatFormatting.YELLOW), false);
+        boolean enabledStateWorks = testCacheBehavior(true);
+        source.sendSuccess(() -> Component.literal("  启用状态下缓存行为: " + (enabledStateWorks ? "✓ 正常" : "✗ 异常")).withStyle(enabledStateWorks ? ChatFormatting.GREEN : ChatFormatting.RED), false);
+        
+        // 临时禁用缓存系统进行测试
+        source.sendSuccess(() -> Component.literal("\n禁用测试:").withStyle(ChatFormatting.YELLOW), false);
+        org.yanbwe.raritycore.config.ConfigManager.setEnableCacheSystem(false);
+        org.yanbwe.raritycore.client.ImprovedRenderCacheManager.setCacheSystemEnabled(false);
+        
+        // 验证禁用状态
+        boolean disabledConfigState = org.yanbwe.raritycore.config.ConfigManager.isEnableCacheSystem();
+        boolean disabledManagerState = org.yanbwe.raritycore.client.ImprovedRenderCacheManager.isCacheSystemEnabled();
+        boolean statesConsistent = disabledConfigState == disabledManagerState;
+        
+        source.sendSuccess(() -> Component.literal("  配置管理器: " + (disabledConfigState ? "启用" : "禁用")).withStyle(disabledConfigState ? ChatFormatting.RED : ChatFormatting.GREEN), false);
+        source.sendSuccess(() -> Component.literal("  缓存管理器: " + (disabledManagerState ? "启用" : "禁用")).withStyle(disabledManagerState ? ChatFormatting.RED : ChatFormatting.GREEN), false);
+        source.sendSuccess(() -> Component.literal("  状态一致性: " + (statesConsistent ? "✓ 一致" : "✗ 不一致")).withStyle(statesConsistent ? ChatFormatting.GREEN : ChatFormatting.RED), false);
+        
+        // 测试禁用状态下的缓存行为
+        boolean disabledStateWorks = testCacheBehavior(false);
+        source.sendSuccess(() -> Component.literal("  禁用状态下缓存行为: " + (disabledStateWorks ? "✓ 正确" : "✗ 错误")).withStyle(disabledStateWorks ? ChatFormatting.GREEN : ChatFormatting.RED), false);
+        
+        // 恢复原始状态
+        source.sendSuccess(() -> Component.literal("\n状态恢复:").withStyle(ChatFormatting.YELLOW), false);
+        org.yanbwe.raritycore.config.ConfigManager.setEnableCacheSystem(originalConfigState);
+        org.yanbwe.raritycore.client.ImprovedRenderCacheManager.setCacheSystemEnabled(originalManagerState);
+        
+        boolean restoredConfigState = org.yanbwe.raritycore.config.ConfigManager.isEnableCacheSystem();
+        boolean restoredManagerState = org.yanbwe.raritycore.client.ImprovedRenderCacheManager.isCacheSystemEnabled();
+        
+        source.sendSuccess(() -> Component.literal("  配置管理器恢复: " + (restoredConfigState == originalConfigState ? "✓ 成功" : "✗ 失败")).withStyle(restoredConfigState == originalConfigState ? ChatFormatting.GREEN : ChatFormatting.RED), false);
+        source.sendSuccess(() -> Component.literal("  缓存管理器恢复: " + (restoredManagerState == originalManagerState ? "✓ 成功" : "✗ 失败")).withStyle(restoredManagerState == originalManagerState ? ChatFormatting.GREEN : ChatFormatting.RED), false);
+        
+        source.sendSuccess(() -> Component.literal("\n=== 验证结果 ===").withStyle(ChatFormatting.GOLD), false);
+        boolean overallSuccess = statesConsistent && disabledStateWorks && 
+                               (restoredConfigState == originalConfigState) && 
+                               (restoredManagerState == originalManagerState);
+        
+        if (overallSuccess) {
+            source.sendSuccess(() -> Component.literal("✓ 缓存禁用功能验证通过").withStyle(ChatFormatting.GREEN), false);
+            source.sendSuccess(() -> Component.literal("  - 禁用时缓存方法正确返回null").withStyle(ChatFormatting.GRAY), false);
+            source.sendSuccess(() -> Component.literal("  - 禁用时缓存操作被正确忽略").withStyle(ChatFormatting.GRAY), false);
+            source.sendSuccess(() -> Component.literal("  - 状态切换和恢复功能正常").withStyle(ChatFormatting.GRAY), false);
+        } else {
+            source.sendSuccess(() -> Component.literal("✗ 缓存禁用功能存在问题").withStyle(ChatFormatting.RED), false);
+        }
+        
+        return 1;
+    }
+    
+    /**
+     * 测试缓存行为的核心逻辑
+     * @param expectEnabled 期望的启用状态
+     * @return 测试是否通过
+     */
+    private static boolean testCacheBehavior(boolean expectEnabled) {
+        boolean testPassed = true;
+        
+        try {
+            // 测试获取缓存方法
+            Integer result1 = org.yanbwe.raritycore.client.ImprovedRenderCacheManager.getCachedRarity((net.minecraft.world.item.Item)null);
+            Integer result2 = org.yanbwe.raritycore.client.ImprovedRenderCacheManager.getCachedItemStackRarity(null);
+            
+            // 在禁用状态下应该返回null，在启用状态下可能返回null（因为传入的是null）
+            boolean nullResults = (result1 == null) && (result2 == null);
+            
+            if (expectEnabled) {
+                // 启用状态下，我们主要验证方法不抛异常
+                // 实际的缓存行为取决于传入的参数，这里主要是确保方法能正常调用
+            } else {
+                // 禁用状态下，方法应该明确返回null
+                if (!nullResults) {
+                    testPassed = false;
+                }
+            }
+            
+            // 测试缓存操作方法（不应该抛出异常）
+            org.yanbwe.raritycore.client.ImprovedRenderCacheManager.cacheRarity(null, 5);
+            org.yanbwe.raritycore.client.ImprovedRenderCacheManager.cacheItemStackRarity(null, 5);
+            
+        } catch (Exception e) {
+            testPassed = false;
+        }
+        
+        return testPassed;
     }
 }

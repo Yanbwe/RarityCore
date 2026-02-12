@@ -116,15 +116,56 @@ public class ImprovedRenderCacheManager {
     private static final long KEEP_ALIVE_TIME = 60L;
     private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
     
+    // 缓存系统开关状态
+    private static volatile boolean cacheSystemEnabled = true;
+    
     /**
      * 缓存移除监听器
      */
     private static class CacheRemovalListener implements RemovalListener<Object, Object> {
         @Override
         public void onRemoval(RemovalNotification<Object, Object> notification) {
-            RarityCore.LOGGER.debug("Cache entry removed: {} - reason: {}", 
-                notification.getKey(), notification.getCause());
+            // 移除DEBUG日志以减少日志污染
+            // RarityCore.LOGGER.debug("Cache entry removed: {} - reason: {}", 
+            //     notification.getKey(), notification.getCause());
         }
+    }
+    
+    /**
+     * 获取缓存系统是否启用
+     */
+    public static boolean isCacheSystemEnabled() {
+        return cacheSystemEnabled;
+    }
+    
+    /**
+     * 设置缓存系统启用状态
+     */
+    public static void setCacheSystemEnabled(boolean enabled) {
+        boolean wasEnabled = cacheSystemEnabled;
+        cacheSystemEnabled = enabled;
+        
+        RarityCore.LOGGER.info("Cache system {}", enabled ? "enabled" : "disabled");
+        
+        // 如果从禁用变为启用，预加载缓存
+        if (enabled && !wasEnabled) {
+            preloadCache();
+        }
+        // 如果从启用变为禁用，清空缓存和重置计数器
+        else if (!enabled && wasEnabled) {
+            clearAllCache();
+            resetCounters(); // 重置计数器
+        }
+    }
+    
+    /**
+     * 重置缓存计数器
+     */
+    private static void resetCounters() {
+        cacheHits.set(0);
+        cacheMisses.set(0);
+        cacheClears.set(0);
+        RarityCore.LOGGER.debug("Cache counters reset");
     }
     
     /**
@@ -251,6 +292,11 @@ public class ImprovedRenderCacheManager {
      * @return 稀有度值，如果未缓存则返回null
      */
     public static Integer getCachedRarity(Item item) {
+        // 如果缓存系统被禁用，直接返回null，不进行计数
+        if (!cacheSystemEnabled || !org.yanbwe.raritycore.config.ConfigManager.isEnableCacheSystem()) {
+            return null;
+        }
+        
         if (item == null) {
             return null;
         }
@@ -315,6 +361,11 @@ public class ImprovedRenderCacheManager {
      * @return 缓存的稀有度，如果未缓存则返回null
      */
     public static Integer getCachedItemStackRarity(ItemStack itemStack) {
+        // 如果缓存系统被禁用，直接返回null
+        if (!cacheSystemEnabled || !org.yanbwe.raritycore.config.ConfigManager.isEnableCacheSystem()) {
+            return null;
+        }
+        
         if (itemStack == null || itemStack.isEmpty()) {
             return null;
         }
@@ -334,6 +385,11 @@ public class ImprovedRenderCacheManager {
      * @param rarity 稀有度
      */
     public static void cacheItemStackRarity(ItemStack itemStack, Integer rarity) {
+        // 如果缓存系统被禁用，不执行缓存操作
+        if (!cacheSystemEnabled || !org.yanbwe.raritycore.config.ConfigManager.isEnableCacheSystem()) {
+            return;
+        }
+        
         if (itemStack != null && !itemStack.isEmpty()) {
             try {
                 int hash = getItemStackHash(itemStack);
@@ -403,8 +459,8 @@ public class ImprovedRenderCacheManager {
                     cleaned = true;
                 } else if (currentRaritySize > targetRaritySize * WARNING_THRESHOLD) {
                     // 警告级别：达到80%阈值
-                    RarityCore.LOGGER.debug("Rarity cache size ({}) at warning level ({}), monitoring closely", 
-                        currentRaritySize, (long)(targetRaritySize * WARNING_THRESHOLD));
+                    // RarityCore.LOGGER.debug("Rarity cache size ({}) at warning level ({}), monitoring closely", 
+                    //     currentRaritySize, (long)(targetRaritySize * WARNING_THRESHOLD));
                 }
                 
                 if (currentItemStackSize > targetItemStackSize * FORCE_THRESHOLD) {
@@ -462,7 +518,7 @@ public class ImprovedRenderCacheManager {
                     cache.cleanUp();
                 } catch (Exception e) {
                     // 吞掉异常，不影响主线程
-                    RarityCore.LOGGER.debug("Background cleanup task encountered exception", e);
+                    // RarityCore.LOGGER.debug("Background cleanup task encountered exception", e);
                 }
             }, getCacheExecutor());
             
@@ -502,7 +558,7 @@ public class ImprovedRenderCacheManager {
                         Thread.yield(); // 使用yield让出CPU时间片
                         cache.cleanUp();
                     } catch (Exception e) {
-                        RarityCore.LOGGER.debug("Background progressive cleanup task encountered exception", e);
+                        // RarityCore.LOGGER.debug("Background progressive cleanup task encountered exception", e);
                     }
                 }, getCacheExecutor());
             }
@@ -845,6 +901,7 @@ public class ImprovedRenderCacheManager {
      * 清空所有缓存
      */
     public static void clearAllCache() {
+        // 即使缓存被禁用也允许手动清理（用于重置状态）
         try {
             rarityCache.invalidateAll();
             itemStackCache.invalidateAll();
@@ -908,13 +965,19 @@ public class ImprovedRenderCacheManager {
         try {
             RarityCore.LOGGER.debug("Handling client configuration change");
             
+            // 同步配置中的缓存开关状态
+            boolean configCacheEnabled = org.yanbwe.raritycore.config.ConfigManager.isEnableCacheSystem();
+            if (cacheSystemEnabled != configCacheEnabled) {
+                setCacheSystemEnabled(configCacheEnabled);
+            }
+            
             // 清理物品堆缓存（可能受渲染设置影响）
             itemStackCache.invalidateAll();
             
             // 重新预加载关键数据
             preloadEssentialCache();
             
-            RarityCore.LOGGER.debug("Client config change handled - ItemStack cache cleared and essential data preloaded");
+            RarityCore.LOGGER.debug("Client config change handled - Cache enabled: {}, ItemStack cache cleared and essential data preloaded", cacheSystemEnabled);
             
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling client config change", e);
@@ -1094,12 +1157,12 @@ public class ImprovedRenderCacheManager {
             
             double memoryUsagePercent = (double) usedMemory / maxMemory * 100;
             
-            RarityCore.LOGGER.debug("Memory usage: {}/{} MB ({:.1}%), Cache sizes: rarity={}, itemStack={}",
-                usedMemory / (1024 * 1024), maxMemory / (1024 * 1024), 
-                memoryUsagePercent, rarityCache.size(), itemStackCache.size());
+            // RarityCore.LOGGER.debug("Memory usage: {}/{} MB ({:.1}%), Cache sizes: rarity={}, itemStack={}",
+            //     usedMemory / (1024 * 1024), maxMemory / (1024 * 1024), 
+            //     memoryUsagePercent, rarityCache.size(), itemStackCache.size());
                 
         } catch (Exception e) {
-            RarityCore.LOGGER.debug("Failed to log memory usage", e);
+            // RarityCore.LOGGER.debug("Failed to log memory usage", e);
         }
     }
     

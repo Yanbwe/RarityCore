@@ -84,6 +84,12 @@ public class ConfigVersionManager {
                 RarityCore.LOGGER.info("Added enableBatchProcessing config option");
             }
             
+            // 版本2到3的升级：添加缓存系统配置
+            if (!oldConfig.has("enableCacheSystem")) {
+                oldConfig.addProperty("enableCacheSystem", RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM);
+                RarityCore.LOGGER.info("Added enableCacheSystem config option");
+            }
+            
             return oldConfig;
         });
     }

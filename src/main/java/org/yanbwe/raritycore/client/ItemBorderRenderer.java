@@ -32,13 +32,24 @@ public class ItemBorderRenderer {
             return;
         }
 
-        // 获取物品栈的稀有度（使用缓存）
-        Integer rarity = ImprovedRenderCacheManager.getCachedItemStackRarity(itemStack);
+        Integer rarity;
         
-        // 如果缓存未命中，则从注册表获取并缓存
-        if (rarity == null) {
+        // 检查缓存系统是否启用
+        boolean isCacheEnabled = ImprovedRenderCacheManager.isCacheSystemEnabled() && 
+                               ConfigManager.isEnableCacheSystem();
+        
+        if (isCacheEnabled) {
+            // 获取物品栈的稀有度（使用缓存）
+            rarity = ImprovedRenderCacheManager.getCachedItemStackRarity(itemStack);
+            
+            // 如果缓存未命中，则从注册表获取并缓存
+            if (rarity == null) {
+                rarity = RarityRegistry.getRarity(itemStack);
+                ImprovedRenderCacheManager.cacheItemStackRarity(itemStack, rarity);
+            }
+        } else {
+            // 缓存系统禁用时，直接从注册表获取
             rarity = RarityRegistry.getRarity(itemStack);
-            ImprovedRenderCacheManager.cacheItemStackRarity(itemStack, rarity);
         }
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度，则不渲染

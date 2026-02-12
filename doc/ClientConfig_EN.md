@@ -33,6 +33,11 @@ The client configuration file is located at:
 - **Default**: true
 - **Description**: Whether to enable tooltip insertion feature, displays rarity information in item tooltips
 
+### 6. enableCacheSystem
+- **Type**: Boolean
+- **Default**: true
+- **Description**: Whether to enable the cache system. Disable this if you encounter conflicts with other optimization mods
+
 ### How to Apply Configuration
 #### Method 1: Restart the game
 
@@ -52,6 +57,24 @@ You can use the following command to toggle the texture border enable/disable st
 ```
 /raritycore-client texture toggle
 ```
+
+### Cache System Control Commands
+The cache system can be controlled through the following commands:
+
+```
+/raritycore-client cache enable    # Enable cache system
+/raritycore-client cache disable   # Disable cache system
+/raritycore-client cache toggle    # Toggle cache system state
+```
+
+**When to disable cache system:**
+- When experiencing conflicts with other optimization mods
+- When encountering memory issues
+- When cache performance statistics show poor hit rates
+- For troubleshooting rendering issues
+
+### Configuration Version Management
+The mod automatically manages configuration versions. When new configuration options are added, the system will automatically upgrade existing configuration files to the latest version, preserving existing settings while adding new options with their default values.
 
 ### Notes
 If the configuration file becomes corrupted, you can delete the configuration file and restart the game to regenerate a default configuration file.

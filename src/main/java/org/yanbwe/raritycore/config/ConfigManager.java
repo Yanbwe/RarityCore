@@ -29,6 +29,7 @@ public class ConfigManager {
     private static boolean enableTooltipInsert = RarityConstants.DEFAULT_ENABLE_TOOLTIP_INSERT; // 是否启用工具提示插入
     private static boolean checkVanillaRarity = RarityConstants.DEFAULT_CHECK_VANILLA_RARITY; // 是否检查原版稀有度
     private static boolean skipUnconfiguredItems = RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS; // 是否跳过未配置物品的渲染
+    private static boolean enableCacheSystem = RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM; // 是否启用缓存系统
     
     // 配置文件路径
     private static final Path CONFIG_DIR = Paths.get(RarityConstants.CONFIG_DIR_PARENT).resolve(RarityConstants.CONFIG_DIR_NAME);
@@ -212,13 +213,14 @@ public class ConfigManager {
         configObject.addProperty("enableTooltipInsert", enableTooltipInsert);
         configObject.addProperty("checkVanillaRarity", checkVanillaRarity);
         configObject.addProperty("skipUnconfiguredItems", skipUnconfiguredItems);
+        configObject.addProperty("enableCacheSystem", enableCacheSystem);
         
         // 写入配置文件
         try {
             try (FileWriter writer = new FileWriter(CLIENT_CONFIG_FILE.toString())) {
                 GSON.toJson(configObject, writer);
-                RarityCore.LOGGER.info("Client config saved: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}, checkVanillaRarity={}, skipUnconfiguredItems={}", 
-                    enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert, checkVanillaRarity, skipUnconfiguredItems);
+                RarityCore.LOGGER.info("Client config saved: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}, checkVanillaRarity={}, skipUnconfiguredItems={}, enableCacheSystem={}", 
+                    enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert, checkVanillaRarity, skipUnconfiguredItems, enableCacheSystem);
             }
         } catch (IOException e) {
             RarityCore.LOGGER.error("Cannot save client config file: {}", CLIENT_CONFIG_FILE, e);
@@ -300,6 +302,22 @@ public class ConfigManager {
      */
     public static void setEnableTooltipInsert(boolean enable) {
         enableTooltipInsert = enable;
+    }
+    
+    /**
+     * 获取是否启用缓存系统
+     */
+    public static boolean isEnableCacheSystem() {
+        return enableCacheSystem;
+    }
+    
+    /**
+     * 设置是否启用缓存系统
+     */
+    public static void setEnableCacheSystem(boolean enable) {
+        enableCacheSystem = enable;
+        // 通知缓存系统配置变更
+        notifyCacheOfConfigChange();
     }
     
     /**

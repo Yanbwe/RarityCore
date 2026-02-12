@@ -45,4 +45,7 @@ public class RarityConstants {
     public static final int TEXTURE_WIDTH = 16;
     public static final int TEXTURE_HEIGHT = 16;
     public static final boolean DEFAULT_USE_TEXTURE_BORDER = true; // 默认使用纹理边框
+    
+    // 缓存系统相关常量
+    public static final boolean DEFAULT_ENABLE_CACHE_SYSTEM = true; // 默认启用缓存系统
 }

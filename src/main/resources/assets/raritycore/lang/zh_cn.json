@@ -79,5 +79,22 @@
   "rarity.core.config_version_info_failed": "获取配置版本信息失败: %s",
   "rarity.core.forcing_config_upgrade": "正在强制升级所有配置文件...",
   "rarity.core.config_upgrade_completed": "配置升级完成! 客户端版本: %d, 服务端版本: %d, 目标版本: %d",
-  "rarity.core.config_upgrade_failed": "配置升级失败: %s"
+  "rarity.core.config_upgrade_failed": "配置升级失败: %s",
+  "rarity.core.cache_system_enabled": "缓存系统已成功启用",
+  "rarity.core.cache_system_disabled": "缓存系统已成功禁用",
+  "rarity.core.cache_system_toggled": "缓存系统已切换为: %s",
+  "rarity.core.cache_system_status_title": "=== 缓存系统状态 ===",
+  "rarity.core.cache_system_config_status": "配置状态: %s",
+  "rarity.core.cache_system_manager_status": "管理器状态: %s",
+  "rarity.core.cache_system_active_note": "缓存系统当前处于活动状态， - 可能与其它优化模组冲突",
+  "rarity.core.cache_system_inactive_note": "缓存系统当前处于非活动状态",
+  "rarity.core.cache_counters_title": "=== 缓存计数器状态 ===",
+  "rarity.core.cache_system_enabled_status": "系统状态: %s",
+  "rarity.core.cache_config_enabled_status": "配置状态: %s",
+  "rarity.core.cache_total_requests": "总请求数: %d",
+  "rarity.core.cache_hits_detail": "缓存命中: %d",
+  "rarity.core.cache_misses_detail": "缓存未命中: %d",
+  "rarity.core.cache_hit_rate_detail": "命中率: %s%%",
+  "rarity.core.cache_clears_detail": "缓存清理次数: %d",
+  "rarity.core.cache_counters_disabled_note": "缓存系统禁用时计数器可能不会增加"
 }

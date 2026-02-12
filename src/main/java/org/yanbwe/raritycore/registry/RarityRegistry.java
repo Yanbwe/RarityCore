@@ -281,14 +281,18 @@ public class RarityRegistry {
         // 首先检查神化模组稀有度（最高优先级）
         if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity() && itemStack != null) {
             boolean hasApothRarity = org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.hasApotheosisRarity(itemStack);
-            RarityCore.LOGGER.debug("物品 {} 是否具有神化稀有度: {}", itemId, hasApothRarity);
+            // 减少神化稀有度检查的日志输出，只在必要时记录
+            // RarityCore.LOGGER.debug("物品 {} 是否具有神化稀有度: {}", itemId, hasApothRarity);
             
             Integer apothRarity = org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(itemStack);
             if (apothRarity != null) {
-                RarityCore.LOGGER.debug("物品 {} 使用神化稀有度: {}", itemId, apothRarity);
+                // RarityCore.LOGGER.debug("物品 {} 使用神化稀有度: {}", itemId, apothRarity);
                 return apothRarity;
             } else {
-                RarityCore.LOGGER.debug("物品 {} 神化稀有度映射失败", itemId);
+                // 只对特定物品记录映射失败（避免大量日志）
+                if (itemId.toString().contains("dragon_egg") || itemId.toString().contains("slime_ball")) {
+                    RarityCore.LOGGER.trace("物品 {} 神化稀有度映射失败", itemId);
+                }
             }
         } else {
             RarityCore.LOGGER.debug("神化稀有度检查已禁用或物品栈为空");
@@ -297,7 +301,7 @@ public class RarityRegistry {
         // 然后检查本模组的稀有度配置（包括配置文件和数据包）
         Integer configuredRarity = ITEM_RARITY_MAP.get(itemId);
         if (configuredRarity != null) {
-            RarityCore.LOGGER.debug("物品 {} 使用本模组稀有度: {}", itemId, configuredRarity);
+            // RarityCore.LOGGER.debug("物品 {} 使用本模组稀有度: {}", itemId, configuredRarity);
             return configuredRarity;
         }
         
@@ -306,14 +310,14 @@ public class RarityRegistry {
             net.minecraft.world.item.Rarity vanillaRarity = itemStack != null ? itemStack.getRarity() : item.getDefaultInstance().getRarity();
             Integer mappedVanilla = mapVanillaRarity(vanillaRarity);
             if (mappedVanilla > 1) { // 只有当原版稀有度不是普通时才使用
-                RarityCore.LOGGER.debug("物品 {} 使用原版稀有度映射: {} (原版: {})", 
-                    itemId, mappedVanilla, vanillaRarity);
+                // RarityCore.LOGGER.debug("物品 {} 使用原版稀有度映射: {} (原版: {})", 
+                //     itemId, mappedVanilla, vanillaRarity);
                 return mappedVanilla;
             }
         }
         
         // 默认返回普通稀有度
-        RarityCore.LOGGER.debug("物品 {} 使用默认稀有度: 1", itemId);
+        // RarityCore.LOGGER.debug("物品 {} 使用默认稀有度: 1", itemId);
         return 1;
     }
     
