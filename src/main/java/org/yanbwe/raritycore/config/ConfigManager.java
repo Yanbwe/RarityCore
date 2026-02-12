@@ -188,6 +188,7 @@ public class ConfigManager {
         configObject.addProperty("checkVanillaRarity", RarityConstants.DEFAULT_CHECK_VANILLA_RARITY);
         configObject.addProperty("skipUnconfiguredItems", RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS);
         configObject.addProperty("enableBatchProcessing", true);
+        configObject.addProperty("enableCacheSystem", RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM);
         
         // 写入默认配置文件
         try {
