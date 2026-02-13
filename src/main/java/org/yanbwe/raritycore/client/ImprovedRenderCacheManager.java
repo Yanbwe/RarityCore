@@ -503,10 +503,10 @@ public class ImprovedRenderCacheManager {
             if (entriesToRemove <= 0) {
                 return;
             }
-            
+
             RarityCore.LOGGER.debug("Performing light cleanup: removing {} entries ({:.1}% of cache)", 
                 entriesToRemove, (double) entriesToRemove / currentSize * 100);
-            
+
             // 触发Guava的自动清理机制
             cache.cleanUp();
             
@@ -545,8 +545,11 @@ public class ImprovedRenderCacheManager {
             // 计算需要移除的比例
             double removalRatio = (double) entriesToRemove / currentSize;
             
+            // 根据调试日志管理规范，注释掉高频触发的调试信息
+            /*
             RarityCore.LOGGER.debug("Performing progressive cleanup: removing {} entries ({:.1}% of cache)", 
                 entriesToRemove, removalRatio * 100);
+            */
             
             // 由于Guava Cache不直接暴露内部条目，通过触发清理来间接实现
             // Guava会根据LRU策略自动移除最少使用的条目
@@ -1189,7 +1192,6 @@ public class ImprovedRenderCacheManager {
                 // 获取注册表统计信息
                 int registrySize = RarityRegistry.ITEM_RARITY_MAP.size();
                 if (registrySize == 0) {
-                    RarityCore.LOGGER.debug("Registry is empty, skipping preload");
                     return;
                 }
                 
@@ -1366,8 +1368,7 @@ public class ImprovedRenderCacheManager {
                         },
                         new ThreadPoolExecutor.DiscardOldestPolicy() // 拒绝策略
                     );
-                    
-                    RarityCore.LOGGER.debug("Cache executor initialized/restarted");
+
                 }
             }
         }

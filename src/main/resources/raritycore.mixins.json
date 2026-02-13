@@ -11,7 +11,8 @@
   "client": [
     "AbstractContainerScreenMixin",
     "GuiGraphicsMixin",
-    "GuiMixin"
+    "GuiMixin",
+    "refinedstorage.BaseScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

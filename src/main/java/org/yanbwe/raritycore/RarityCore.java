@@ -96,7 +96,8 @@ public class RarityCore {
             try {
                 // Use smart cleanup instead of full cleanup, interval extended to 10 minutes
                 org.yanbwe.raritycore.client.ImprovedRenderCacheManager.smartCleanup();
-                LOGGER.debug("Executing smart cache cleanup");
+                // 根据调试日志管理规范，注释掉高频触发的调试信息
+                // LOGGER.debug("Executing smart cache cleanup");
             } catch (Exception e) {
                 LOGGER.error("Error occurred during cache cleanup", e);
             }

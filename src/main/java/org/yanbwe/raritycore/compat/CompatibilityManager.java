@@ -9,6 +9,17 @@ import org.yanbwe.raritycore.RarityCore;
 public class CompatibilityManager {
     
     /**
+     * 检查指定模组是否已加载
+     * @param modId 模组ID
+     * @return 如果模组已加载返回true
+     */
+    public static boolean isModLoaded(String modId) {
+        return net.minecraftforge.fml.ModList.get().isLoaded(modId);
+    }
+    
+
+    
+    /**
      * 初始化所有兼容性适配器
      */
     public static void initializeCompatibilityAdapters() {
