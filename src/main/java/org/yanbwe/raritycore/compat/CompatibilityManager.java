@@ -36,6 +36,17 @@ public class CompatibilityManager {
             RarityCore.LOGGER.error("Failed to initialize Apotheosis compatibility adapter", e);
         }
         
+        // 初始化精致存储适配器
+        try {
+            Class.forName("com.refinedmods.refinedstorage.screen.BaseScreen");
+            org.yanbwe.raritycore.compat.refinedstorage.RefinedStorageCompat.initialize();
+            RarityCore.LOGGER.info("Refined Storage compatibility adapter initialized");
+        } catch (ClassNotFoundException e) {
+            RarityCore.LOGGER.debug("Refined Storage not found, skipping compatibility adapter");
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Failed to initialize Refined Storage compatibility adapter", e);
+        }
+        
         // TODO: 在此处添加其他模组的兼容性检测和初始化
         /*
         // 示例：JEI兼容性

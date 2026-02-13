@@ -10,6 +10,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ScreenEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
@@ -23,7 +24,7 @@ import org.yanbwe.raritycore.mixin.AbstractContainerScreenAccessor;
 @Mod.EventBusSubscriber(value = Dist.CLIENT, modid = RarityCore.MODID)
 public class EditModeEventHandler {
     
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onKeyInput(ScreenEvent.KeyPressed.Pre event) {
         // 检查是否按下 Ctrl + 数字键组合
         if (isCtrlPressed()) {
@@ -37,7 +38,7 @@ public class EditModeEventHandler {
         }
     }
     
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onMouseClick(ScreenEvent.MouseButtonPressed.Pre event) {
         // 只在编辑模式下处理鼠标点击
         if (!EditModeManager.isEditModeEnabled()) {
