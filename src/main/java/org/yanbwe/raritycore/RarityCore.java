@@ -53,14 +53,21 @@ public class RarityCore {
     public void addReloadListeners(AddReloadListenerEvent event) {
         event.addListener(RarityDataLoader.INSTANCE);
         
+        // 注册NBT匹配配置加载器（支持数据包加载）
+        event.addListener(new org.yanbwe.raritycore.nbtmatching.NbtConfigLoader());
+        
         // 注册缓存失效监听器到事件总线
         MinecraftForge.EVENT_BUS.register(org.yanbwe.raritycore.client.CacheInvalidationListener.class);
+        
+        // 加载本地NBT匹配配置
+        org.yanbwe.raritycore.nbtmatching.NbtConfigLoader.loadAllConfigs();
     }
     
     private void commonSetup(final FMLCommonSetupEvent event) {
         // Initialize network packets
         event.enqueueWork(RaritySyncPacket::initialize);
         event.enqueueWork(IncrementalSyncPacket::initialize);
+        event.enqueueWork(org.yanbwe.raritycore.network.NbtSyncPacket::initialize);
         
         // Initialize all configurations (already handled in constructor, just to be safe)
         event.enqueueWork(ConfigManager::initializeConfigs);
@@ -139,12 +146,13 @@ public class RarityCore {
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         // Send full rarity data to player on login
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-            // Create a map containing all current data
+            // Send full rarity data
             java.util.Map<ResourceLocation, Integer> currentData = new java.util.HashMap<>(RarityRegistry.ITEM_RARITY_MAP);
             RaritySyncPacket packet = new RaritySyncPacket(currentData);
-            
-            // Send full data to newly logged-in player
             RaritySyncPacket.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), packet);
+            
+            // Send NBT matching rules
+            org.yanbwe.raritycore.network.NbtSyncManager.syncNbtRulesToPlayer(serverPlayer);
         }
     }
 }

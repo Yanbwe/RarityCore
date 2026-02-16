@@ -271,14 +271,23 @@ public class RarityRegistry {
     
     /**
      * 统一的稀有度获取逻辑
-     * 优先级顺序：神化模组稀有度 > 本模组稀有度（配置和数据包） > 原版稀有度映射
+     * 优先级顺序：NBT匹配 > 神化模组稀有度 > 本模组稀有度（配置和数据包） > 原版稀有度映射
      * @param itemId 物品资源位置
      * @param itemStack 物品栈（用于检查NBT数据）
      * @param item 物品
      * @return 物品的稀有度等级（1-7）
      */
     private static @NotNull Integer getRarityInternal(ResourceLocation itemId, @Nullable ItemStack itemStack, Item item) {
-        // 首先检查神化模组稀有度（最高优先级）
+        // 首先检查NBT匹配配置（最高优先级）
+        if (itemStack != null && itemStack.hasTag()) {
+            Integer nbtMatchedRarity = org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher.getNbtMatchedRarity(itemStack);
+            if (nbtMatchedRarity != null) {
+                // RarityCore.LOGGER.debug("物品 {} 使用NBT匹配稀有度: {}", itemId, nbtMatchedRarity);
+                return nbtMatchedRarity;
+            }
+        }
+        
+        // 然后检查神化模组稀有度
         if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity() && itemStack != null) {
             boolean hasApothRarity = org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.hasApotheosisRarity(itemStack);
             // 减少神化稀有度检查的日志输出，只在必要时记录

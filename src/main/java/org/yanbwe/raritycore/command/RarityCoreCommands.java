@@ -245,12 +245,21 @@ public class RarityCoreCommands {
     private static int reloadRarityData(CommandSourceStack source) {
         // 重新加载所有配置文件
         
-        // 按照加载顺序重新加载所有配置
-        // 1. FinalRarityConfig文件夹
+        // 1. 重新加载NBT匹配配置
+        source.sendSuccess(() -> Component.translatable("rarity.core.loading_nbt_config").withStyle(ChatFormatting.YELLOW), false);
+        org.yanbwe.raritycore.nbtmatching.NbtConfigLoader.loadAllConfigs();
+        
+        // 重新初始化NBT缓存
+        org.yanbwe.raritycore.nbtmatching.SimpleNbtCache.reinitializeCache();
+        
+        // 同步NBT规则到所有客户端
+        org.yanbwe.raritycore.network.NbtSyncManager.syncNbtRulesToAllPlayers();
+        
+        // 2. FinalRarityConfig文件夹
         source.sendSuccess(() -> Component.translatable("rarity.core.loading_final_rarity_config_folder").withStyle(ChatFormatting.YELLOW), false);
         FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
         
-        // 2. FinalRarity.json文件
+        // 3. FinalRarity.json文件
         source.sendSuccess(() -> Component.translatable("rarity.core.loading_final_rarity_file").withStyle(ChatFormatting.YELLOW), false);
         RarityConfigLoader.loadConfigRarityData();
         
