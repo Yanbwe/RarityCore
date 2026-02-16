@@ -137,7 +137,7 @@ public class ConfigVersionManager {
             
             // 添加版本信息
             upgradedConfig.addProperty(VERSION_KEY, CURRENT_CONFIG_VERSION);
-            upgradedConfig.addProperty(MOD_VERSION_KEY, RarityCore.MODID + "-" + RarityCore.class.getPackage().getImplementationVersion());
+            // 不再添加mod_version字段
             
             // 保存升级后的配置
             try (FileWriter writer = new FileWriter(configFile.toFile())) {
@@ -196,7 +196,7 @@ public class ConfigVersionManager {
     public static JsonObject createVersionedConfig() {
         JsonObject configObject = new JsonObject();
         configObject.addProperty(VERSION_KEY, CURRENT_CONFIG_VERSION);
-        configObject.addProperty(MOD_VERSION_KEY, RarityCore.MODID + "-" + RarityCore.class.getPackage().getImplementationVersion());
+        // 不再添加mod_version字段，只保留config_version就足够了
         return configObject;
     }
     
