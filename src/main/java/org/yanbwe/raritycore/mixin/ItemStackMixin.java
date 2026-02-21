@@ -22,18 +22,23 @@ public class ItemStackMixin {
     private void modifyHoverName(CallbackInfoReturnable<Component> cir) {
         ItemStack stack = (ItemStack) (Object) this;
         
-        // 获取物品的稀有度（使用缓存）
-        Item item = stack.getItem();
-        Integer rarity = org.yanbwe.raritycore.client.RenderCacheManager.getCachedRarity(item);
+        // 检查是否启用物品名称变色功能
+        if (!org.yanbwe.raritycore.config.ConfigManager.isEnableItemNameColor()) {
+            return;
+        }
+        
+        // 获取物品的稀有度（支持NBT匹配，使用物品堆缓存）
+        Integer rarity = org.yanbwe.raritycore.client.RenderCacheManager.getCachedRarity(stack);
         
         // 如果缓存未命中，则从注册表获取并缓存
         if (rarity == null) {
-            rarity = RarityRegistry.getRarity(item);
-            org.yanbwe.raritycore.client.RenderCacheManager.cacheRarity(item, rarity);
+            rarity = RarityRegistry.getRarity(stack);
+            org.yanbwe.raritycore.client.RenderCacheManager.cacheItemStackRarity(stack, rarity);
         }
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度，则不修改名称颜色
         // 注意：需要检查物品是否真的没有配置，而不是默认的稀有度1
+        Item item = stack.getItem();
         if (org.yanbwe.raritycore.config.ServerConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
             return;
         }
