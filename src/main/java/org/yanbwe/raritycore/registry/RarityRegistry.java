@@ -300,11 +300,11 @@ public class RarityRegistry {
             } else {
                 // 只对特定物品记录映射失败（避免大量日志）
                 if (itemId.toString().contains("dragon_egg") || itemId.toString().contains("slime_ball")) {
-                    RarityCore.LOGGER.trace("物品 {} 神化稀有度映射失败", itemId);
+                    RarityCore.LOGGER.trace("Item {} apotheosis rarity mapping failed", itemId);
                 }
             }
         } else {
-            RarityCore.LOGGER.debug("神化稀有度检查已禁用或物品栈为空");
+            RarityCore.LOGGER.debug("Apotheosis rarity check disabled or item stack is empty");
         }
         
         // 然后检查本模组的稀有度配置（包括配置文件和数据包）

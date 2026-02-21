@@ -85,7 +85,7 @@ public class NbtConfigLoader extends SimpleJsonResourceReloadListener {
         try {
             // 确保配置目录存在
             Files.createDirectories(configDir);
-            RarityCore.LOGGER.info("NBT匹配本地配置目录: {}", configDir.toAbsolutePath());
+            RarityCore.LOGGER.info("NBT local config directory: {}", configDir.toAbsolutePath());
             
             // 清空本地规则缓存
             LOCAL_RULES.clear();
@@ -98,15 +98,15 @@ public class NbtConfigLoader extends SimpleJsonResourceReloadListener {
                 NbtRarityMatcher.registerRule(rule);
             }
             
-            RarityCore.LOGGER.info("从本地配置目录加载了 {} 个NBT匹配规则", LOCAL_RULES.size());
+            RarityCore.LOGGER.info("Loaded {} NBT matching rules from local config directory", LOCAL_RULES.size());
             
         } catch (IOException e) {
-            RarityCore.LOGGER.error("创建或访问NBT本地配置目录失败: {}", configDir.toAbsolutePath(), e);
+            RarityCore.LOGGER.error("Failed to create or access NBT local config directory: {}", configDir.toAbsolutePath(), e);
         }
     }
     
     /**
-     * 加载本地配置目录下的所有配置文件
+     // 加载本地配置目录下的所有配置文件
      */
     private static void loadLocalConfigFiles(Path configDir) {
         try {
@@ -116,33 +116,33 @@ public class NbtConfigLoader extends SimpleJsonResourceReloadListener {
                  .forEach(NbtConfigLoader::loadLocalConfigFile);
                  
         } catch (IOException e) {
-            RarityCore.LOGGER.error("遍历本地配置文件目录失败: {}", configDir, e);
+            RarityCore.LOGGER.error("Failed to walk local config directory: {}", configDir, e);
         }
     }
     
     /**
-     * 加载单个本地配置文件
+     // 加载单个本地配置文件
      */
     private static void loadLocalConfigFile(Path configFile) {
         try (BufferedReader reader = Files.newBufferedReader(configFile)) {
             JsonObject config = GSON.fromJson(reader, JsonObject.class);
             
             if (config == null) {
-                RarityCore.LOGGER.warn("本地配置文件 {} 内容为空", configFile.getFileName());
+                RarityCore.LOGGER.warn("Local config file {} is empty", configFile.getFileName());
                 return;
             }
             
             parseLocalConfig(config, configFile.getFileName().toString());
             
         } catch (IOException e) {
-            RarityCore.LOGGER.error("读取本地配置文件失败: {}", configFile, e);
+            RarityCore.LOGGER.error("Failed to read local config file: {}", configFile, e);
         } catch (JsonSyntaxException e) {
-            RarityCore.LOGGER.error("本地配置文件 {} 格式错误: {}", configFile.getFileName(), e.getMessage());
+            RarityCore.LOGGER.error("Local config file {} has invalid format: {}", configFile.getFileName(), e.getMessage());
         }
     }
     
     /**
-     * 解析本地配置文件内容
+     // 解析本地配置文件内容
      */
     private static void parseLocalConfig(JsonObject config, String fileName) {
         // 使用简化验证器
@@ -150,10 +150,10 @@ public class NbtConfigLoader extends SimpleJsonResourceReloadListener {
         
         if (rule != null && NbtRarityMatcher.validateRule(rule)) {
             LOCAL_RULES.add(rule);
-            RarityCore.LOGGER.info("成功加载本地NBT匹配规则: {} -> 稀有度{} (文件: {})", 
+            RarityCore.LOGGER.info("Successfully loaded local NBT matching rule: {} -> rarity {} (file: {})", 
                 rule.getItemId(), rule.getRarity(), fileName);
         } else {
-            RarityCore.LOGGER.debug("本地配置文件 {} 中的规则无效或验证失败，已跳过", fileName);
+            RarityCore.LOGGER.debug("Rule in local config file {} is invalid or validation failed, skipped", fileName);
         }
     }
 }

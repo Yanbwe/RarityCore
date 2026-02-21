@@ -35,11 +35,11 @@ public class NbtSyncManager {
                     packet
                 );
                 
-                RarityCore.LOGGER.debug("已向玩家 {} 发送NBT规则同步包，规则数量: {}", 
+                RarityCore.LOGGER.debug("Sent NBT rules sync packet to player {}, rule count: {}", 
                     player.getName().getString(), ruleDataList.size());
                     
             } catch (Exception e) {
-                RarityCore.LOGGER.error("向玩家 {} 同步NBT规则时出错: {}", 
+                RarityCore.LOGGER.error("Error syncing NBT rules to player {}: {}", 
                     player.getName().getString(), e.getMessage());
             }
         });
@@ -53,7 +53,7 @@ public class NbtSyncManager {
             try {
                 MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
                 if (server == null) {
-                    RarityCore.LOGGER.warn("无法获取服务器实例，跳过NBT规则同步");
+                    RarityCore.LOGGER.warn("Cannot get server instance, skipping NBT rules sync");
                     return;
                 }
                 
@@ -68,11 +68,11 @@ public class NbtSyncManager {
                     );
                 }
                 
-                RarityCore.LOGGER.info("已向所有玩家发送NBT规则同步包，规则数量: {}", 
+                RarityCore.LOGGER.info("Sent NBT rules sync packet to all players, rule count: {}", 
                     ruleDataList.size());
                     
             } catch (Exception e) {
-                RarityCore.LOGGER.error("向所有玩家同步NBT规则时出错: {}", e.getMessage());
+                RarityCore.LOGGER.error("Error syncing NBT rules to all players: {}", e.getMessage());
             }
         });
     }
@@ -108,7 +108,7 @@ public class NbtSyncManager {
                 try {
                     syncNbtRulesToPlayer(player);
                     if (attempt > 1) {
-                        RarityCore.LOGGER.info("NBT规则同步重试成功，第 {} 次尝试", attempt);
+                        RarityCore.LOGGER.info("NBT rules sync retry successful, attempt {}", attempt);
                     }
                     return;
                     
@@ -116,7 +116,7 @@ public class NbtSyncManager {
                     lastException = e;
                     if (attempt < maxRetries) {
                         long delay = 1000L * attempt; // 递增延迟
-                        RarityCore.LOGGER.warn("NBT规则同步失败 (尝试 {}/{}), {}ms后重试: {}", 
+                        RarityCore.LOGGER.warn("NBT rules sync failed (attempt {}/{}), retrying in {}ms: {}", 
                             attempt, maxRetries, delay, e.getMessage());
                         
                         try {
@@ -129,8 +129,8 @@ public class NbtSyncManager {
                 }
             }
             
-            RarityCore.LOGGER.error("NBT规则同步最终失败，已重试 {} 次。最后错误: {}", 
-                maxRetries, lastException != null ? lastException.getMessage() : "未知错误");
+            RarityCore.LOGGER.error("NBT rules sync finally failed after {} retries. Last error: {}", 
+                maxRetries, lastException != null ? lastException.getMessage() : "Unknown error");
         });
     }
     
@@ -158,11 +158,11 @@ public class NbtSyncManager {
                     }
                 }
                 
-                RarityCore.LOGGER.debug("已发送增量NBT规则同步包，变更规则数量: {}", 
+                RarityCore.LOGGER.debug("Sent incremental NBT rules sync packet, changed rules count: {}", 
                     ruleDataList.size());
                     
             } catch (Exception e) {
-                RarityCore.LOGGER.error("增量同步NBT规则时出错: {}", e.getMessage());
+                RarityCore.LOGGER.error("Error in incremental NBT rules sync: {}", e.getMessage());
             }
         });
     }

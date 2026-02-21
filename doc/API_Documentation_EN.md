@@ -105,7 +105,7 @@ public static boolean isValidBorderStyle(int borderStyle)
 public static int validateBorderStyle(int borderStyle)
 ```
 
-### 4. ConfigManager (Configuration Manager Class)
+### 13. ConfigManager (Configuration Manager Class)
 **Package Path**: `org.yanbwe.raritycore.config.ConfigManager`
 
 #### Public Methods
@@ -180,7 +180,7 @@ public static void setSkipUnconfiguredItems(boolean skip)
 public static boolean isValidRarity(int rarity)
 ```
 
-### 5. EditModeManager (Edit Mode Manager Class)
+### 14. EditModeManager (Edit Mode Manager Class)
 **Package Path**: `org.yanbwe.raritycore.edit.EditModeManager`
 
 #### Public Methods
@@ -205,7 +205,7 @@ public static boolean modifyItemRarity(ItemStack itemStack)
 public static void reset()
 ```
 
-### 6. RarityCoreCommands (Command Utility Class)
+### 15. RarityCoreCommands (Command Utility Class)
 **Package Path**: `org.yanbwe.raritycore.command.RarityCoreCommands`
 
 #### Public Methods
@@ -214,7 +214,7 @@ public static void reset()
 public static void saveRarityToConfigPublic(String itemId, int rarity)
 ```
 
-### 7. SyncBatchManager (Synchronization Batch Manager)
+### 16. SyncBatchManager (Synchronization Batch Manager)
 **Package Path**: `org.yanbwe.raritycore.network.SyncBatchManager`
 
 #### Public Enums
@@ -255,7 +255,7 @@ public static List<ChangeOperation> optimizeOperations(List<ChangeOperation> ope
 public static BatchStats getBatchStats()
 ```
 
-### 8. NetworkRetryManager (Network Retry Manager)
+### 17. NetworkRetryManager (Network Retry Manager)
 **Package Path**: `org.yanbwe.raritycore.network.NetworkRetryManager`
 
 #### Public Methods
@@ -270,7 +270,7 @@ public static void sendFullSyncWithRetry(RaritySyncPacket packet)
 public static <T> void sendToPlayerWithRetry(Object channel, T packet, ServerPlayer player)
 ```
 
-### 9. DelayedSyncManager (Delayed Synchronization Manager)
+### 18. DelayedSyncManager (Delayed Synchronization Manager)
 **Package Path**: `org.yanbwe.raritycore.network.DelayedSyncManager`
 
 #### Public Methods
@@ -291,7 +291,97 @@ public static boolean hasPendingOperations()
 public static SyncStatus getStatus()
 ```
 
-### 10. ConfigFileUtils (Configuration File Utility Class)
+### 10. NbtRarityMatcher (NBT Matching Core Class)
+**Package Path**: `org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher`
+
+#### Public Methods
+```java
+// Get item's NBT matched rarity (with cache)
+public static Integer getNbtMatchedRarity(ItemStack itemStack)
+
+// Calculate rarity directly (without cache, for internal cache use)
+public static Integer calculateWithoutCache(ItemStack itemStack)
+
+// Register matching rule
+public static void registerRule(NbtMatchRule rule)
+
+// Clear all rules for specified item ID
+public static void clearRulesForResource(ResourceLocation itemId)
+
+// Reload all rules
+public static void reloadRules()
+
+// Get current cached rule statistics
+public static Map<ResourceLocation, Integer> getRuleStatistics()
+
+// Validate rule validity
+public static boolean validateRule(NbtMatchRule rule)
+
+// Get total rule count
+public static int getRuleCount()
+```
+
+### 11. NbtMatchRule (NBT Matching Rule Class)
+**Package Path**: `org.yanbwe.raritycore.nbtmatching.NbtMatchRule`
+
+#### Public Methods
+```java
+// Get item ID
+public ResourceLocation getItemId()
+
+// Get rarity level
+public int getRarity()
+
+// Get priority
+public int getPriority()
+
+// Check if rule is enabled
+public boolean isEnabled()
+
+// Check if item matches this rule
+public boolean matches(ItemStack itemStack)
+
+// Get matching conditions list
+public List<NbtCondition> getConditions()
+```
+
+### 19. ImprovedRenderCacheManager (Enhanced Render Cache Manager)
+**Package Path**: `org.yanbwe.raritycore.client.ImprovedRenderCacheManager`
+
+#### Public Methods
+```java
+// Smart cache preloading
+public static void smartPreloadCache()
+
+// Get cache statistics
+public static CacheStats getCacheStats()
+
+// Cache health check
+public static void checkCacheHealth()
+
+// Get cached item stack rarity
+public static Integer getCachedItemStackRarity(ItemStack itemStack)
+
+// Cache item stack rarity
+public static void cacheItemStackRarity(ItemStack itemStack, Integer rarity)
+
+// Smart cache cleanup
+public static void smartCleanup()
+```
+
+#### Cache Statistics Class
+```java
+public static class CacheStats {
+    public long getHits()
+    public long getMisses()
+    public long getClears()
+    public long getRarityCacheSize()
+    public long getItemStackCacheSize()
+    public double getHitRate()
+}
+```
+
+### 20. ConfigFileUtils (Configuration File Utility Class)
 **Package Path**: `org.yanbwe.raritycore.util.ConfigFileUtils`
 
 #### Public Methods
@@ -319,6 +409,40 @@ public interface JsonUpdater {
 ```
 
 ## Usage Examples
+
+### 6. NBT Matching System Usage
+```java
+import org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher;
+import org.yanbwe.raritycore.nbtmatching.NbtMatchRule;
+import net.minecraft.world.item.ItemStack;
+
+// Get item's NBT matched rarity
+ItemStack enchantedSword = player.getMainHandItem();
+Integer nbtRarity = NbtRarityMatcher.getNbtMatchedRarity(enchantedSword);
+
+// Create custom matching rule
+NbtMatchRule customRule = new NbtMatchRule();
+// Configure rule...
+NbtRarityMatcher.registerRule(customRule);
+
+// Reload all NBT rules
+NbtRarityMatcher.reloadRules();
+```
+
+### 7. Cache System Usage
+```java
+import org.yanbwe.raritycore.client.ImprovedRenderCacheManager;
+
+// Smart cache preloading
+ImprovedRenderCacheManager.smartPreloadCache();
+
+// Get cache statistics
+ImprovedRenderCacheManager.CacheStats stats = ImprovedRenderCacheManager.getCacheStats();
+System.out.println("Cache hit rate: " + stats.getHitRate() + "%");
+
+// Manual cache cleanup
+ImprovedRenderCacheManager.smartCleanup();
+```
 
 ### 1. Basic Rarity Query
 ```java
@@ -393,6 +517,9 @@ ConfigFileUtils.updateJsonConfig(configFile, jsonObject -> {
 6. Configuration files are automatically versioned and upgraded when the mod version changes
 7. Use `/raritycore config version` to check current configuration version information
 8. Use `/raritycore config upgrade` to force configuration file upgrades
+9. NBT matching system has highest priority and will override other rarity sources
+10. Cache system is enabled by default and can be disabled through configuration files
+11. NBT rules support complex condition matching including equals, contains, range conditions
 
 ## Dependencies
 
