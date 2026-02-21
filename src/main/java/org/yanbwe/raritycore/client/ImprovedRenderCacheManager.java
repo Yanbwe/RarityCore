@@ -853,8 +853,7 @@ public class ImprovedRenderCacheManager {
                 totalCalibrationSamples.incrementAndGet();
                 totalMemoryUsed.addAndGet(Math.abs(memoryDelta));
                 
-                RarityCore.LOGGER.debug("Memory calibration: {} entries, {:.1f} bytes/entry (avg: {:.1f}), memUsage: {:.1}%",
-                    currentCacheEntries, newAverageSize, averageEntrySizeBytes, memoryUsage * 100);
+                // 内存校准信息仅在需要时记录
             }
             
             lastCalibrationTime = currentTime;
@@ -937,7 +936,6 @@ public class ImprovedRenderCacheManager {
     public static void invalidateItemCache(Item item) {
         if (item != null) {
             rarityCache.invalidate(item);
-            RarityCore.LOGGER.debug("Invalidated cache for item: {}", item);
         }
     }
     
@@ -966,7 +964,7 @@ public class ImprovedRenderCacheManager {
      */
     public static void handleClientConfigChange() {
         try {
-            RarityCore.LOGGER.debug("Handling client configuration change");
+            // RarityCore.LOGGER.debug("Handling client configuration change");
             
             // 同步配置中的缓存开关状态
             boolean configCacheEnabled = org.yanbwe.raritycore.config.ConfigManager.isEnableCacheSystem();
@@ -980,7 +978,7 @@ public class ImprovedRenderCacheManager {
             // 重新预加载关键数据
             preloadEssentialCache();
             
-            RarityCore.LOGGER.debug("Client config change handled - Cache enabled: {}, ItemStack cache cleared and essential data preloaded", cacheSystemEnabled);
+            // RarityCore.LOGGER.debug("Client config change handled - Cache enabled: {}, ItemStack cache cleared and essential data preloaded", cacheSystemEnabled);
             
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling client config change", e);
@@ -992,7 +990,7 @@ public class ImprovedRenderCacheManager {
      */
     public static void handleNetworkSync() {
         try {
-            RarityCore.LOGGER.debug("Handling network synchronization");
+            // RarityCore.LOGGER.debug("Handling network synchronization");
             
             // 使所有缓存失效以确保数据一致性
             rarityCache.invalidateAll();
@@ -1001,7 +999,7 @@ public class ImprovedRenderCacheManager {
             // 预加载最新稀有度数据
             preloadCache();
             
-            RarityCore.LOGGER.debug("Network sync handled - All caches refreshed");
+            // RarityCore.LOGGER.debug("Network sync handled - All caches refreshed");
             
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling network sync", e);

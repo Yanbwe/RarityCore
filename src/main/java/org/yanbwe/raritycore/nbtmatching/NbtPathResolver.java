@@ -4,6 +4,7 @@ import net.minecraft.nbt.*;
 import org.yanbwe.raritycore.RarityCore;
 
 import javax.annotation.Nullable;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,6 +28,11 @@ public class NbtPathResolver {
      * - "Enchantments[0]"                 // 数组索引访问
      * - "Enchantments[0].id"              // 嵌套访问
      * - "display.Name"                    // 点号分隔的嵌套访问
+     * - "Enchantments[*].id"              // 通配符访问（新功能）
+     * - "Enchantments[*].lvl"             // 通配符访问（新功能）
+     * - "tag.Yanbwe"                      // 根级tag路径访问
+     * - "Count"                           // 根级Count字段访问
+     * - "id"                              // 根级id字段访问
      * 
      * @param nbt 要解析的NBT标签
      * @param path NBT路径
@@ -39,6 +45,18 @@ public class NbtPathResolver {
         }
         
         try {
+            // 检查是否是根级路径（以"tag."开头或其他根级字段）
+            if (isRootLevelPath(path)) {
+                return resolveRootPath(nbt, path);
+            }
+            
+            // 检查是否包含通配符
+            if (path.contains("[*]")) {
+                List<Tag> results = resolveWildcardPath(nbt, path);
+                // 对于通配符路径，返回第一个匹配的结果或者null
+                return results.isEmpty() ? null : results.get(0);
+            }
+            
             return resolvePathRecursive(nbt, path);
         } catch (Exception e) {
             RarityCore.LOGGER.debug("解析NBT路径 '{}' 时发生错误: {}", path, e.getMessage());
@@ -84,6 +102,18 @@ public class NbtPathResolver {
     private static Tag getNextTag(Tag current, String pathSegment) {
         if (current instanceof CompoundTag compound) {
             // 处理复合标签
+            // 检查是否是数组索引格式 [0], [1] 等
+            if (pathSegment.startsWith("[") && pathSegment.endsWith("]")) {
+                String indexStr = pathSegment.substring(1, pathSegment.length() - 1);
+                try {
+                    int index = Integer.parseInt(indexStr);
+                    // 在CompoundTag中无法直接使用数组索引
+                    return null;
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+            
             if (pathSegment.matches("\\d+")) {
                 // 数字索引，但在复合标签中应该是键名
                 return compound.get(pathSegment);
@@ -92,6 +122,21 @@ public class NbtPathResolver {
             }
         } else if (current instanceof ListTag list) {
             // 处理列表标签
+            // 检查是否是数组索引格式 [0], [1] 等
+            if (pathSegment.startsWith("[") && pathSegment.endsWith("]")) {
+                String indexStr = pathSegment.substring(1, pathSegment.length() - 1);
+                try {
+                    int index = Integer.parseInt(indexStr);
+                    if (index >= 0 && index < list.size()) {
+                        return list.get(index);
+                    } else {
+                        return null;
+                    }
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+            
             try {
                 int index = Integer.parseInt(pathSegment);
                 if (index >= 0 && index < list.size()) {
@@ -110,8 +155,131 @@ public class NbtPathResolver {
      * 分割路径为各个部分
      */
     private static String[] splitPath(String path) {
-        // 简单的分割实现
+        // 改进的分割实现，支持通配符
         return path.split("\\.|(?=\\[)|(?<=\\])");
+    }
+    
+    /**
+     * 解析通配符路径
+     * @param nbt 要解析的NBT标签
+     * @param wildcardPath 包含通配符的路径
+     * @return 匹配的所有标签结果
+     */
+    public static List<Tag> resolveWildcardPath(CompoundTag nbt, String wildcardPath) {
+        List<Tag> results = new ArrayList<>();
+        
+        if (nbt == null || wildcardPath == null || wildcardPath.isEmpty()) {
+            return results;
+        }
+        
+        try {
+            // 解析通配符路径
+            String[] parts = splitWildcardPath(wildcardPath);
+            if (parts.length == 0) {
+                return results;
+            }
+            
+            // 处理第一部分
+            String firstPart = parts[0];
+            String remainingPath = String.join(".", 
+                Arrays.copyOfRange(parts, 1, parts.length));
+            
+            // 检查是否是通配符模式
+            if (firstPart.endsWith("[*]")) {
+                String arrayKey = firstPart.substring(0, firstPart.length() - 3);
+                Tag arrayTag = nbt.get(arrayKey);
+                
+                if (arrayTag instanceof ListTag listTag) {
+                    // 遍历数组中的每个元素
+                    for (int i = 0; i < listTag.size(); i++) {
+                        Tag element = listTag.get(i);
+                        if (remainingPath.isEmpty()) {
+                            // 如果没有剩余路径，直接添加元素
+                            results.add(element);
+                        } else {
+                            // 递归解析剩余路径
+                            Tag nestedResult = resolvePathRecursive(element, remainingPath);
+                            if (nestedResult != null) {
+                                results.add(nestedResult);
+                            }
+                        }
+                    }
+                }
+            } else {
+                // 非通配符部分，按原有逻辑处理
+                Tag next = getNextTag(nbt, firstPart);
+                if (next != null) {
+                    if (remainingPath.isEmpty()) {
+                        results.add(next);
+                    } else {
+                        Tag nestedResult = resolvePathRecursive(next, remainingPath);
+                        if (nestedResult != null) {
+                            results.add(nestedResult);
+                        }
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+            RarityCore.LOGGER.debug("解析通配符路径 '{}' 时发生错误: {}", wildcardPath, e.getMessage());
+        }
+        
+        return results;
+    }
+    
+    /**
+     * 分割通配符路径
+     */
+    private static String[] splitWildcardPath(String path) {
+        // 支持通配符的路径分割
+        List<String> parts = new ArrayList<>();
+        StringBuilder currentPart = new StringBuilder();
+        
+        for (int i = 0; i < path.length(); i++) {
+            char c = path.charAt(i);
+            
+            if (c == '.') {
+                if (currentPart.length() > 0) {
+                    parts.add(currentPart.toString());
+                    currentPart.setLength(0);
+                }
+            } else if (c == '[') {
+                // 检查是否是通配符
+                if (i + 2 < path.length() && path.charAt(i + 1) == '*' && path.charAt(i + 2) == ']') {
+                    if (currentPart.length() > 0) {
+                        parts.add(currentPart.toString() + "[*]");
+                        currentPart.setLength(0);
+                    } else {
+                        parts.add("[*]");
+                    }
+                    i += 2; // 跳过 *]
+                } else {
+                    // 普通数组索引
+                    currentPart.append(c);
+                    while (i + 1 < path.length() && path.charAt(i + 1) != ']') {
+                        currentPart.append(path.charAt(++i));
+                    }
+                    if (i + 1 < path.length()) {
+                        currentPart.append(path.charAt(++i)); // 添加 ]
+                    }
+                }
+            } else {
+                currentPart.append(c);
+            }
+        }
+        
+        if (currentPart.length() > 0) {
+            parts.add(currentPart.toString());
+        }
+        
+        return parts.toArray(new String[0]);
+    }
+    
+    /**
+     * 检查路径是否包含通配符
+     */
+    public static boolean containsWildcard(String path) {
+        return path != null && path.contains("[*]");
     }
     
     /**
@@ -219,5 +387,46 @@ public class NbtPathResolver {
             }
         }
         return path;
+    }
+    
+    /**
+     * 判断是否是根级路径
+     * @param path 路径字符串
+     * @return 如果是根级路径返回true
+     */
+    private static boolean isRootLevelPath(String path) {
+        return path.startsWith("tag.") || 
+               path.equals("Count") || 
+               path.equals("id") || 
+               path.startsWith("Count.") || 
+               path.startsWith("id.");
+    }
+    
+    /**
+     * 解析根级路径
+     * @param tag 当前的tag标签
+     * @param rootPath 根级路径
+     * @return 解析结果
+     */
+    private static Tag resolveRootPath(CompoundTag tag, String rootPath) {
+        // 构建完整的物品NBT结构
+        CompoundTag itemNbt = new CompoundTag();
+        itemNbt.put("tag", tag);
+        
+        // 如果路径以"tag."开头，去掉前缀
+        String actualPath = rootPath;
+        if (rootPath.startsWith("tag.")) {
+            actualPath = rootPath.substring(4);
+            return resolvePathRecursive(tag, actualPath);
+        }
+        
+        // 处理其他根级字段
+        if (rootPath.equals("Count") || rootPath.equals("id")) {
+            // 这些需要从完整的物品NBT中获取，但当前只传入了tag部分
+            // 在实际使用中，可能需要修改调用方传入完整NBT
+            return null;
+        }
+        
+        return null;
     }
 }

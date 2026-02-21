@@ -90,6 +90,9 @@ public class NbtConfigLoader extends SimpleJsonResourceReloadListener {
             // 清空本地规则缓存
             LOCAL_RULES.clear();
             
+            // 关键：清空NBT匹配器的规则缓存
+            NbtRarityMatcher.clearAllRules();
+            
             // 加载所有本地配置文件
             loadLocalConfigFiles(configDir);
             

@@ -3,6 +3,8 @@ package org.yanbwe.raritycore.nbtmatching;
 import net.minecraft.nbt.*;
 import org.yanbwe.raritycore.RarityCore;
 
+import java.util.List;
+
 /**
  * 等值匹配条件
  * 检查NBT标签的值是否等于指定值
@@ -22,12 +24,38 @@ public class EqualsCondition extends NbtCondition {
     
     @Override
     public boolean matches(CompoundTag nbt) {
+        // 检查是否使用通配符
+        if (NbtPathResolver.containsWildcard(path)) {
+            return matchesWildcard(nbt);
+        }
+        
         Tag actualTag = NbtPathResolver.resolve(nbt, path);
         if (actualTag == null) {
             return false;
         }
         
         return compareTags(actualTag, expectedValue);
+    }
+    
+    /**
+     * 处理通配符路径的匹配逻辑
+     * @param nbt NBT标签
+     * @return 是否匹配成功
+     */
+    private boolean matchesWildcard(CompoundTag nbt) {
+        List<Tag> results = NbtPathResolver.resolveWildcardPath(nbt, path);
+        if (results.isEmpty()) {
+            return false;
+        }
+        
+        // 对于通配符，采用"任意匹配"策略：只要有一个元素匹配成功即返回true
+        for (Tag result : results) {
+            if (compareTags(result, expectedValue)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     private boolean compareTags(Tag actual, Object expected) {
