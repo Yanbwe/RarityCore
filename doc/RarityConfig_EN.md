@@ -1,4 +1,4 @@
-# RarityCore Rarity Configuration Documentation
+
 # Rarity Configuration Guide
 
 ## **Rarity Explanation**

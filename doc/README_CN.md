@@ -8,16 +8,7 @@
 
 ## **项目文档**
 
-### 配置指南
-- [稀有度配置说明 (中文)](RarityConfig_CN.md) - 稀有度配置方法
-- [客户端配置说明 (中文)](ClientConfig_CN.md) - 客户端配置选项
-- [服务端配置说明 (中文)](ServerConfig_CN.md) - 服务端配置选项
-
-### 参考文档
-- [已支持模组列表 (中文)](SupportedModsList.md) - 预置稀有度信息的模组列表
-
-### 开发文档
-- [API文档 (中文)](API_Documentation_CN.md) - API参考
+https://github.com/Yanbwe/RarityCore/wiki
 
 ## **项目构建说明**
 
