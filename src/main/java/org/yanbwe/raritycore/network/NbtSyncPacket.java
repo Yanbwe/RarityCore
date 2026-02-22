@@ -10,6 +10,8 @@ import org.yanbwe.raritycore.nbtmatching.NbtMatchRule;
 import org.yanbwe.raritycore.nbtmatching.NbtCondition;
 import org.yanbwe.raritycore.nbtmatching.SimpleNbtCache;
 
+import com.google.gson.JsonObject;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -238,42 +240,68 @@ public class NbtSyncPacket {
         }
 
         private String serializeConditionData(NbtCondition condition) {
-            // 简单的JSON序列化
-            StringBuilder sb = new StringBuilder("{");
+            // 使用Gson进行安全的JSON序列化，自动处理特殊字符转义
+            JsonObject data = new JsonObject();
             
             if (condition instanceof org.yanbwe.raritycore.nbtmatching.EqualsCondition) {
                 Object value = ((org.yanbwe.raritycore.nbtmatching.EqualsCondition) condition).getExpectedValue();
-                sb.append("\"value\":\"").append(value.toString()).append("\"");
+                // 根据值类型进行适当的序列化
+                if (value instanceof String) {
+                    data.addProperty("value", (String) value);
+                } else if (value instanceof Number) {
+                    data.addProperty("value", (Number) value);
+                } else if (value instanceof Boolean) {
+                    data.addProperty("value", (Boolean) value);
+                } else {
+                    data.addProperty("value", value.toString());
+                }
             } else if (condition instanceof org.yanbwe.raritycore.nbtmatching.RangeCondition) {
                 org.yanbwe.raritycore.nbtmatching.RangeCondition range = 
                     (org.yanbwe.raritycore.nbtmatching.RangeCondition) condition;
-                sb.append("\"min\":").append(range.getMinValue())
-                  .append(",\"max\":").append(range.getMaxValue());
+                data.addProperty("min", range.getMinValue());
+                data.addProperty("max", range.getMaxValue());
             } else if (condition instanceof org.yanbwe.raritycore.nbtmatching.ContainsCondition) {
                 String substring = ((org.yanbwe.raritycore.nbtmatching.ContainsCondition) condition).getSubstring();
-                sb.append("\"substring\":\"").append(substring).append("\"");
+                data.addProperty("substring", substring);
             }
             
-            sb.append("}");
-            return sb.toString();
+            return data.toString();
         }
 
         private NbtCondition deserializeEqualsCondition() {
-            // 简单解析value字段
-            String valueStr = valueData.replaceAll("[{}\"]", "").split(":")[1];
-            return new org.yanbwe.raritycore.nbtmatching.EqualsCondition(path, valueStr, description);
+            try {
+                // 使用Gson安全解析JSON数据
+                JsonObject data = com.google.gson.JsonParser.parseString(valueData).getAsJsonObject();
+                if (data.has("value")) {
+                    return new org.yanbwe.raritycore.nbtmatching.EqualsCondition(path, data.get("value").toString(), description);
+                }
+            } catch (Exception e) {
+                RarityCore.LOGGER.warn("反序列化等值条件时出错: {}", e.getMessage());
+            }
+            return null;
         }
 
         private NbtCondition deserializeRangeCondition() {
-            String[] parts = valueData.replaceAll("[{}\"]", "").split(",");
-            double min = Double.parseDouble(parts[0].split(":")[1]);
-            double max = Double.parseDouble(parts[1].split(":")[1]);
-            return new org.yanbwe.raritycore.nbtmatching.RangeCondition(path, min, max, description);
+            try {
+                JsonObject data = com.google.gson.JsonParser.parseString(valueData).getAsJsonObject();
+                double min = data.get("min").getAsDouble();
+                double max = data.get("max").getAsDouble();
+                return new org.yanbwe.raritycore.nbtmatching.RangeCondition(path, min, max, description);
+            } catch (Exception e) {
+                RarityCore.LOGGER.warn("反序列化范围条件时出错: {}", e.getMessage());
+                return null;
+            }
         }
 
         private NbtCondition deserializeContainsCondition() {
-            String substring = valueData.replaceAll("[{}\"]", "").split(":")[1];
-            return new org.yanbwe.raritycore.nbtmatching.ContainsCondition(path, substring, description);
+            try {
+                JsonObject data = com.google.gson.JsonParser.parseString(valueData).getAsJsonObject();
+                String substring = data.get("substring").getAsString();
+                return new org.yanbwe.raritycore.nbtmatching.ContainsCondition(path, substring, description);
+            } catch (Exception e) {
+                RarityCore.LOGGER.warn("反序列化包含条件时出错: {}", e.getMessage());
+                return null;
+            }
         }
     }
 }

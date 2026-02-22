@@ -63,9 +63,16 @@ public class EqualsCondition extends NbtCondition {
             return actual == null || actual.getId() == 0; // END tag
         }
         
-        // 使用Tag的getAsString方法进行比较，这是最安全的方式
+        // 获取实际NBT值
         String actualString = actual.getAsString();
-        String expectedString = expected.toString();
+        
+        // 正确处理期望值的字符串表示
+        String expectedString;
+        if (expected instanceof String) {
+            expectedString = (String) expected;
+        } else {
+            expectedString = expected.toString();
+        }
         
         // 对于数值类型，尝试数值比较
         if (expected instanceof Number) {
