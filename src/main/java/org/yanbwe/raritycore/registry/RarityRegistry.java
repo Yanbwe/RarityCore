@@ -175,6 +175,17 @@ public class RarityRegistry {
     }
     
     /**
+     * 获取物品栈的稀有度等级（标准化版本，支持NBT匹配）
+     * 遵循模组的包容性原则：小于1的值视为1，大于7的值视为7
+     * @param itemStack 要查稀有度的物品栈
+     * @return 标准化后的物品稀有度等级（1-7）
+     */
+    public static @NotNull Integer getNormalizedRarity(@Nullable ItemStack itemStack) {
+        Integer rawRarity = getRarity(itemStack);
+        return org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rawRarity);
+    }
+    
+    /**
      * 获取本地化文本
      * @param key 本地化键
      * @return 本地化文本
