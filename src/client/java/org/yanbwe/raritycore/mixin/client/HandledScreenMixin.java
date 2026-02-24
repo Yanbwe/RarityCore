@@ -14,6 +14,19 @@ import org.yanbwe.raritycore.client.RaritycoreClient;
 public class HandledScreenMixin {
     
     /**
+     * 当前正在处理的物品栈
+     */
+    private static ItemStack currentItemStack = ItemStack.EMPTY;
+    
+    /**
+     * 在物品槽渲染前设置当前物品栈
+     */
+    @Inject(method = "drawSlot", at = @At("HEAD"))
+    private void setCurrentItemStack(DrawContext context, Slot slot, CallbackInfo ci) {
+        currentItemStack = slot.getStack();
+    }
+    
+    /**
      * 在物品槽渲染后添加稀有度边框
      */
     @Inject(method = "drawSlot", at = @At("TAIL"))
@@ -28,5 +41,10 @@ public class HandledScreenMixin {
             // 渲染稀有度边框
             RaritycoreClient.renderItemRarityBorder(context, itemStack, x, y);
         }
+        // 清空当前物品栈
+        currentItemStack = ItemStack.EMPTY;
     }
+    
+    // 注意：由于drawSlot方法中可能没有直接调用drawText，
+    // 物品名称颜色功能将在其他地方实现
 }

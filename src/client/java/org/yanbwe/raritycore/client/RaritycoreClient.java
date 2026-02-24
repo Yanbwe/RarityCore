@@ -1,17 +1,14 @@
 package org.yanbwe.raritycore.client;
 
 import net.fabricmc.api.ClientModInitializer;
-
-
-import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import org.yanbwe.raritycore.Raritycore;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.util.SimpleCacheManager;
-import org.yanbwe.raritycore.network.client.ClientRaritySyncHandler;
 
 public class RaritycoreClient implements ClientModInitializer {
     
@@ -33,11 +30,11 @@ public class RaritycoreClient implements ClientModInitializer {
         SimpleCacheManager.preloadCommonItems();
         
         // 注册客户端网络处理器
-        ClientRaritySyncHandler.register();
+        org.yanbwe.raritycore.network.client.ClientRaritySyncHandler.register();
         
-        // 注册HUD渲染回调（用于测试显示）
+        // 注册HUD渲染回调
         HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
-            // 这里可以添加一些调试信息显示
+            // 空回调，保留接口但不执行任何操作
         });
         
         Raritycore.LOGGER.info("RarityCore Client initialized successfully!");
@@ -82,8 +79,29 @@ public class RaritycoreClient implements ClientModInitializer {
         Identifier texture = BORDER_TEXTURES[rarity];
         if (texture != null) {
             try {
-                // 渲染16x16的纹理边框
+                // 保存当前渲染状态
+                var matrices = context.getMatrices();
+                matrices.push();
+                
+                // 设置适当的渲染层级（调整Z值避免与其他GUI元素冲突）
+                matrices.translate(0, 0, 100);
+                
+                // 启用alpha混合以正确处理PNG透明度
+                // 保存当前渲染状态
+                var tessellator = net.minecraft.client.render.Tessellator.getInstance();
+                var buffer = tessellator.getBuffer();
+                
+                // 启用混合模式
+                com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+                com.mojang.blaze3d.systems.RenderSystem.defaultBlendFunc(); // 使用默认的SRC_ALPHA, ONE_MINUS_SRC_ALPHA
+                com.mojang.blaze3d.systems.RenderSystem.enableDepthTest();
+                
+                // 执行纹理绘制
                 context.drawTexture(texture, x, y, 0, 0, 16, 16, 16, 16);
+                
+                // 恢复渲染状态
+                matrices.pop();
+                
                 Raritycore.LOGGER.debug("Rendered texture border for rarity {} at ({}, {})", rarity, x, y);
             } catch (Exception e) {
                 Raritycore.LOGGER.warn("Failed to render texture border for rarity {}: {}", rarity, e.getMessage());
@@ -114,15 +132,31 @@ public class RaritycoreClient implements ClientModInitializer {
     /**
      * 根据稀有度获取对应颜色（用于颜色边框模式和纹理加载失败时的回退）
      */
-    private static int getRarityColor(int rarity) {
+    public static int getRarityColor(int rarity) {
         return switch (rarity) {
-            case 2 -> 0xFFAAAAAA; // 稀有 - 浅灰色
-            case 3 -> 0xFF55FF55; // 罕见 - 绿色
-            case 4 -> 0xFF5555FF; // 史诗 - 蓝色
-            case 5 -> 0xFFFF55FF; // 传说 - 紫色
-            case 6 -> 0xFFFFAA00; // 神话 - 橙色
-            case 7 -> 0xFFFF5555; // 唯一 - 红色
-            default -> 0xFFFFFFFF; // 普通 - 白色
+            case 1 -> 0xFFA0A0A0; // 普通 - 灰色
+            case 2 -> 0xFF00AA00; // 稀有 - 绿色
+            case 3 -> 0xFF00AAAA; // 罕见 - 青蓝色
+            case 4 -> 0xFFC870FF; // 史诗 - 浅紫色
+            case 5 -> 0xFFFFAA00; // 传说 - 金色
+            case 6 -> 0xFFFF5555; // 神话 - 红色
+            case 7 -> 0xFFAA0000; // 唯一 - 深红色
+            default -> 0xFFA0A0A0; // 默认灰色
+        };
+    }
+    
+    /**
+     * 根据稀有度获取对应的名称
+     */
+    public static String getRarityName(int rarity) {
+        return switch (rarity) {
+            case 2 -> "稀有";
+            case 3 -> "罕见";
+            case 4 -> "史诗";
+            case 5 -> "传说";
+            case 6 -> "神话";
+            case 7 -> "唯一";
+            default -> "普通";
         };
     }
     

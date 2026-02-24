@@ -123,6 +123,17 @@ public class RarityCoreCommands {
                         })
                     )
                 )
+                .then(CommandManager.literal("namecolor")
+                    .then(CommandManager.argument("enable", IntegerArgumentType.integer(0, 1))
+                        .executes(context -> {
+                            int enable = IntegerArgumentType.getInteger(context, "enable");
+                            ConfigManager.setEnableItemNameColor(enable == 1);
+                            context.getSource().sendFeedback(() -> 
+                                Text.literal("物品名称颜色已" + (enable == 1 ? "启用" : "禁用")), true);
+                            return 1;
+                        })
+                    )
+                )
             )
             
             // 设置手上物品稀有度

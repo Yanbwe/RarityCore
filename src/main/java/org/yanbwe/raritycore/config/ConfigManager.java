@@ -130,6 +130,11 @@ public class ConfigManager {
         return enableItemNameColor;
     }
     
+    public static void setEnableItemNameColor(boolean enable) {
+        enableItemNameColor = enable;
+        saveClientConfig();
+    }
+    
     public static boolean isEnableTooltipInsert() {
         return enableTooltipInsert;
     }
