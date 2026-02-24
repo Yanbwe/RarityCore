@@ -99,5 +99,11 @@
   "rarity.core.cache_hit_rate_detail": "Hit rate: %s%%",
   "rarity.core.cache_clears_detail": "Cache clears: %d",
   "rarity.core.cache_counters_disabled_note": "Counters may not increase when cache system is disabled",
-  "rarity.core.client_config_reloaded": "Client configuration reloaded successfully"
+  "rarity.core.client_config_reloaded": "Client configuration reloaded successfully",
+  "rarity.core.reload_starting_all": "Starting to reload all configurations...",
+  "rarity.core.config_reload_failed": "Config reload failed: %s",
+  "rarity.core.processing_batch_operations": "Processing %d batch operations...",
+  "rarity.core.batch_operations_processed": "Processed %d batch operations",
+  "rarity.core.batch_operation_error": "Error processing batch operations: %s",
+  "rarity.core.config_reload_complete": "✅ Config reload completed!"
 }

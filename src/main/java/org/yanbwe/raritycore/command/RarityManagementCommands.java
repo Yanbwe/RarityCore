@@ -209,7 +209,7 @@ public class RarityManagementCommands {
                         jsonObject = com.google.gson.JsonParser.parseString(content).getAsJsonObject();
                     } catch (Exception e) {
                         // 如果解析失败，创建新的空对象
-                        RarityCore.LOGGER.warn("解析配置文件失败，将重新创建", e);
+                        RarityCore.LOGGER.warn("Failed to parse config file, will recreate", e);
                         jsonObject = new com.google.gson.JsonObject();
                     }
                 } else {

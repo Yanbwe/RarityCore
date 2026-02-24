@@ -99,5 +99,11 @@
   "rarity.core.cache_hit_rate_detail": "命中率: %s%%",
   "rarity.core.cache_clears_detail": "缓存清理次数: %d",
   "rarity.core.cache_counters_disabled_note": "缓存系统禁用时计数器可能不会增加",
-  "rarity.core.client_config_reloaded": "客户端配置重载完成"
+  "rarity.core.client_config_reloaded": "客户端配置重载完成",
+  "rarity.core.reload_starting_all": "开始重载所有配置...",
+  "rarity.core.config_reload_failed": "配置重载失败: %s",
+  "rarity.core.processing_batch_operations": "处理%d个批处理操作...",
+  "rarity.core.batch_operations_processed": "已处理%d个批处理操作",
+  "rarity.core.batch_operation_error": "处理批处理操作时出错: %s",
+  "rarity.core.config_reload_complete": "✅ 配置重载完成!"
 }

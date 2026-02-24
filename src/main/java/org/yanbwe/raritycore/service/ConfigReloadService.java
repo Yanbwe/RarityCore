@@ -33,22 +33,22 @@ public class ConfigReloadService {
      */
     public static void reloadAllConfigs(CommandSourceStack source, boolean isStartup) {
         try {
-            RarityCore.LOGGER.info("开始{}配置重载流程", isStartup ? "游戏启动时" : "手动");
+            RarityCore.LOGGER.info("Starting {} config reload process", isStartup ? "startup" : "manual");
             
             // 发送进度消息（仅在命令调用时）
             if (source != null) {
-                sendProgressMessage(source, "开始重载所有配置...");
+                sendProgressMessage(source, Component.translatable("rarity.core.reload_starting_all"));
             }
             
             // 1. 加载服务端配置
             if (source != null) {
-                sendProgressMessage(source, "加载服务端配置...");
+                sendProgressMessage(source, Component.translatable("rarity.core.loading_server_config"));
             }
             ServerConfigManager.loadServerConfig();
             
             // 2. 加载NBT匹配配置（这是之前缺失的部分）
             if (source != null) {
-                sendProgressMessage(source, "加载NBT匹配配置...");
+                sendProgressMessage(source, Component.translatable("rarity.core.loading_nbt_config"));
             }
             NbtConfigLoader.loadAllConfigs();
             
@@ -62,13 +62,13 @@ public class ConfigReloadService {
             
             // 3. 加载FinalRarityConfig文件夹
             if (source != null) {
-                sendProgressMessage(source, "加载FinalRarityConfig文件夹...");
+                sendProgressMessage(source, Component.translatable("rarity.core.loading_final_rarity_config_folder"));
             }
             FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
             
             // 4. 加载FinalRarity.json文件
             if (source != null) {
-                sendProgressMessage(source, "加载FinalRarity.json文件...");
+                sendProgressMessage(source, Component.translatable("rarity.core.loading_final_rarity_file"));
             }
             RarityConfigLoader.loadConfigRarityData();
             
@@ -86,12 +86,12 @@ public class ConfigReloadService {
                 sendCompletionMessage(source);
             }
             
-            RarityCore.LOGGER.info("配置重载流程完成");
+            RarityCore.LOGGER.info("Config reload process completed");
             
         } catch (Exception e) {
-            RarityCore.LOGGER.error("配置重载过程中发生错误", e);
+            RarityCore.LOGGER.error("Error occurred during config reload process", e);
             if (source != null) {
-                source.sendFailure(Component.literal("配置重载失败: " + e.getMessage())
+                source.sendFailure(Component.translatable("rarity.core.config_reload_failed", e.getMessage())
                     .withStyle(ChatFormatting.RED));
             }
         }
@@ -108,7 +108,7 @@ public class ConfigReloadService {
             
             if (!pendingOps.isEmpty()) {
                 if (source != null) {
-                    sendProgressMessage(source, String.format("处理%d个批处理操作...", pendingOps.size()));
+                    sendProgressMessage(source, Component.translatable("rarity.core.processing_batch_operations", pendingOps.size()));
                 }
                 
                 RarityCore.LOGGER.info("Processing {} pending batch operations during reload", pendingOps.size());
@@ -140,14 +140,14 @@ public class ConfigReloadService {
                 
                 if (source != null) {
                     final int finalAppliedCount = appliedCount;
-                    source.sendSuccess(() -> Component.literal(String.format("已处理%d个批处理操作", finalAppliedCount))
+                    source.sendSuccess(() -> Component.translatable("rarity.core.batch_operations_processed", finalAppliedCount)
                         .withStyle(ChatFormatting.GREEN), false);
                 }
             }
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error processing pending batch operations during reload", e);
             if (source != null) {
-                source.sendFailure(Component.literal("处理批处理操作时出错: " + e.getMessage())
+                source.sendFailure(Component.translatable("rarity.core.batch_operation_error", e.getMessage())
                     .withStyle(ChatFormatting.RED));
             }
         }
@@ -171,7 +171,7 @@ public class ConfigReloadService {
             handleSkipUnconfiguredItemsChange();
             
         } catch (Exception e) {
-            RarityCore.LOGGER.error("处理客户端配置时出错", e);
+            RarityCore.LOGGER.error("Error processing client configuration", e);
         }
     }
     
@@ -189,24 +189,24 @@ public class ConfigReloadService {
             // 使相关缓存失效
             org.yanbwe.raritycore.client.RenderCacheManager.clearAllCache();
             
-            RarityCore.LOGGER.info("skipUnconfiguredItems配置变更已处理，相关系统已刷新");
+            RarityCore.LOGGER.info("skipUnconfiguredItems config change processed, related systems refreshed");
         } catch (Exception e) {
-            RarityCore.LOGGER.error("处理skipUnconfiguredItems配置变更时出错", e);
+            RarityCore.LOGGER.error("Error processing skipUnconfiguredItems config change", e);
         }
     }
     
     /**
      * 发送进度消息
      */
-    private static void sendProgressMessage(CommandSourceStack source, String message) {
-        source.sendSuccess(() -> Component.literal(message).withStyle(ChatFormatting.YELLOW), false);
+    private static void sendProgressMessage(CommandSourceStack source, Component message) {
+        source.sendSuccess(() -> message.copy().withStyle(ChatFormatting.YELLOW), false);
     }
     
     /**
      * 发送完成消息
      */
     private static void sendCompletionMessage(CommandSourceStack source) {
-        source.sendSuccess(() -> Component.literal("✅ 配置重载完成!")
+        source.sendSuccess(() -> Component.translatable("rarity.core.config_reload_complete")
             .withStyle(ChatFormatting.GREEN), false);
     }
     

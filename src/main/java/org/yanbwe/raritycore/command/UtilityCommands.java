@@ -169,7 +169,7 @@ public class UtilityCommands {
                     try {
                         jsonObject = JsonParser.parseString(content).getAsJsonObject();
                     } catch (Exception e) {
-                        RarityCore.LOGGER.warn("解析配置文件失败，将重新创建", e);
+                        RarityCore.LOGGER.warn("Failed to parse config file, will recreate", e);
                         jsonObject = new JsonObject();
                     }
                 } else {
