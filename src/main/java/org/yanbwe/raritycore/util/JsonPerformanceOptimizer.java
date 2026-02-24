@@ -41,8 +41,8 @@ public class JsonPerformanceOptimizer {
                 String itemIdString = jsonReader.nextName();
                 int rarity = jsonReader.nextInt();
                 
-                // 验证稀有度范围
-                if (rarity < 0 || rarity > RarityConstants.MAX_RARITY) { // 允许0表示删除
+                // 验证稀有度范围 - 支持高级稀有度（大于7）以符合模组包容性设计
+                if (rarity < 0) { // 只限制负数，允许0表示删除，不限制上限
                     RarityCore.LOGGER.debug("Skipping invalid rarity {} for item {}", rarity, itemIdString);
                     continue;
                 }
@@ -100,9 +100,9 @@ public class JsonPerformanceOptimizer {
             if (validCount >= sampleSize) break;
             
             try {
-                // 检查值是否为有效的整数
+                // 检查值是否为有效的整数 - 支持高级稀有度（大于7）
                 int value = jsonObject.get(key).getAsInt();
-                if (value >= 0 && value <= RarityConstants.MAX_RARITY) { // 允许0表示删除
+                if (value >= 0) { // 只验证非负数，不限制上限
                     validCount++;
                 }
             } catch (Exception e) {

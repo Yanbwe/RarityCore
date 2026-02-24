@@ -214,14 +214,18 @@ public class RarityRegistry {
             rarity = RarityConstants.RARITY_COMMON;
         }
         
-        // 标准化稀有度值
+        // 先检查是否为特殊稀有度（大于7），保存原始值用于显示
+        boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;
+        int displayRarity = rarity; // 保存用于显示的原始稀有度值
+        
+        // 标准化稀有度值用于内部处理
         rarity = org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rarity);
         
         // 构建工具提示字符串
-        if (rarity > RarityConstants.RARITY_UNIQUE) {
+        if (isSpecialRarity) {
             // 特殊稀有度（大于7级）
-            String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(rarity);
-            return "[" + rarity + "级稀有度-" + stars + "]";
+            String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(displayRarity);
+            return "[" + displayRarity + "级稀有度-" + stars + "]";
         } else {
             // 标准稀有度（1-7级）
             String rarityKey;

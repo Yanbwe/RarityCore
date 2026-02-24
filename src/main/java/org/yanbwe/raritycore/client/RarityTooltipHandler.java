@@ -59,18 +59,22 @@ public class RarityTooltipHandler {
         if (rarity == null) {
             rarity = RarityConstants.RARITY_COMMON;
         }
-
-        // 标准化稀有度值，遵循模组的包容性原则
+        
+        // 先检查是否为特殊稀有度（大于7），保存原始值用于显示
+        boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;
+        int displayRarity = rarity; // 保存用于显示的原始稀有度值
+        
+        // 标准化稀有度值用于颜色获取等内部处理
         rarity = RarityValidator.normalizeRarity(rarity);
         
         // 处理超出范围的稀有度值
         ChatFormatting color = RarityColorUtil.getRarityChatColor(rarity);
         MutableComponent prefixComponent;
         
-        if (rarity > RarityConstants.RARITY_UNIQUE) {
+        if (isSpecialRarity) {
             // 如果稀有度大于7，显示为 [x级稀有度-x(星星)]
             ChatFormatting uniqueColor = RarityColorUtil.getRarityChatColor(RarityConstants.RARITY_UNIQUE);
-            MutableComponent rarityComponent = ComponentBuilder.buildSpecialRarityComponent(rarity, uniqueColor);
+            MutableComponent rarityComponent = ComponentBuilder.buildSpecialRarityComponent(displayRarity, uniqueColor);
             
             // 高效插入到工具提示
             ComponentBuilder.insertIntoTooltip(event.getToolTip(), rarityComponent);

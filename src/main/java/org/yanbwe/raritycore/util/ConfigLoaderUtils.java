@@ -44,12 +44,13 @@ public class ConfigLoaderUtils {
                     if (rarityElement.isJsonPrimitive() && rarityElement.getAsJsonPrimitive().isNumber()) {
                         int rarity = rarityElement.getAsInt();
                         
-                        // 验证稀有度范围
-                        if (rarity < RarityConstants.MIN_RARITY || rarity > RarityConstants.MAX_RARITY) {
+                        // 验证稀有度范围 - 支持高级稀有度（大于7）以符合模组包容性设计
+                        if (rarity < RarityConstants.MIN_RARITY) {
                             RarityCore.LOGGER.warn("Invalid rarity value {} for item '{}' in file '{}'", 
                                 rarity, itemIdString, fileName);
                             continue;
                         }
+                        // 注意：不再限制最大稀有度值，允许8-10级等高级稀有度
                         
                         ResourceLocation itemId = new ResourceLocation(itemIdString);
                         net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);

@@ -13,12 +13,15 @@ import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.nbtmatching.NbtConfigLoader;
 import org.yanbwe.raritycore.nbtmatching.SimpleNbtCache;
+import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.NbtSyncManager;
+import org.yanbwe.raritycore.network.SyncBatchManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.io.BufferedReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * 配置管理命令类
@@ -57,6 +60,10 @@ public class ConfigManagementCommands {
     private static int reloadRarityData(CommandSourceStack source) {
         // 重新加载所有配置文件
         
+        // 0. 确保服务端配置文件存在并加载
+        source.sendSuccess(() -> Component.translatable("rarity.core.loading_server_config").withStyle(ChatFormatting.YELLOW), false);
+        ServerConfigManager.loadServerConfig();
+        
         // 1. 重新加载NBT匹配配置
         source.sendSuccess(() -> Component.translatable("rarity.core.loading_nbt_config").withStyle(ChatFormatting.YELLOW), false);
         NbtConfigLoader.loadAllConfigs();
@@ -74,6 +81,9 @@ public class ConfigManagementCommands {
         // 3. FinalRarity.json文件
         source.sendSuccess(() -> Component.translatable("rarity.core.loading_final_rarity_file").withStyle(ChatFormatting.YELLOW), false);
         RarityConfigLoader.loadConfigRarityData();
+        
+        // 强制处理批处理队列中的操作
+        processPendingBatchOperations();
         
         // 同步数据到所有客户端
         RarityRegistry.syncRarityToClientsWithRetry();
@@ -209,6 +219,44 @@ public class ConfigManagementCommands {
             source.sendSuccess(() -> Component.translatable("rarity.core.config_upgrade_failed", e.getMessage())
                 .withStyle(ChatFormatting.RED), false);
             return 0;
+        }
+    }
+    
+    /**
+     * 强制处理批处理队列中的待处理操作
+     * 确保稀有度为0的删除操作能够正确应用
+     */
+    private static void processPendingBatchOperations() {
+        try {
+            // 获取并清空待处理的操作
+            List<ChangeOperation> pendingOps = SyncBatchManager.getAndClearPendingOperations();
+            
+            if (!pendingOps.isEmpty()) {
+                RarityCore.LOGGER.info("Processing {} pending batch operations during reload", pendingOps.size());
+                
+                // 应用所有待处理操作
+                for (ChangeOperation op : pendingOps) {
+                    net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(op.getItemId());
+                    if (item != null && !op.getItemId().equals(net.minecraftforge.registries.ForgeRegistries.ITEMS.getDefaultKey())) {
+                        switch (op.getType()) {
+                            case ADD:
+                            case UPDATE:
+                                RarityRegistry.register(item, op.getRarity(), false);
+                                RarityCore.LOGGER.debug("Applied batch ADD/UPDATE operation for item: {} -> rarity {}", 
+                                    op.getItemId(), op.getRarity());
+                                break;
+                            case DELETE:
+                                RarityRegistry.unregister(item, false);
+                                RarityCore.LOGGER.debug("Applied batch DELETE operation for item: {}", op.getItemId());
+                                break;
+                        }
+                    }
+                }
+                
+                RarityCore.LOGGER.info("Successfully processed {} batch operations", pendingOps.size());
+            }
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Error processing pending batch operations during reload", e);
         }
     }
 }
