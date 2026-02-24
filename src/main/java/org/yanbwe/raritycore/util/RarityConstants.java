@@ -40,18 +40,19 @@ public class RarityConstants {
     public static final String DEFAULT_STAR_EMOJI = "⭐"; // 默认星星emoji
     
     // 新星星显示系统常量
-    public static final String DEFAULT_STAR_MODE = "custom"; // 默认使用custom模式
+    public static final String DEFAULT_STAR_MODE = "repeat";
     public static final String DEFAULT_REPEAT_CHARACTER = "⭐"; // 默认重复字符
     
     // 默认自定义字符串配置
     public static final String[] DEFAULT_CUSTOM_STRINGS = {
-        "·",        // 稀有度1
-        "••",       // 稀有度2
-        "●●●",      // 稀有度3
-        "◆◆◆◆",    // 稀有度4
-        "◇◇◇◇◇",  // 稀有度5
-        "◈◈◈◈◈◈",  // 稀有度6
-        "✦✦✦✦✦✦✦"  // 稀有度7
+        "·",
+        "••",
+        "●●●",
+        "◆◆◆◆",
+        "◇◇◇◇◇",
+        "◈◈◈◈◈◈",
+        "✦✦✦✦✦✦✦",
+        "✦✦✦✦✦✦✦✦"
     };
     
     // 纹理相关常量
