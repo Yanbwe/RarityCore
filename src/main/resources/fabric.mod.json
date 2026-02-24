@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "raritycore",
+  "version": "${version}",
+  "name": "RarityCore",
+  "description": "Yanbweeeeeeeeeeeeeee",
+  "authors": [],
+  "contact": {},
+  "license": "GPL-3.0",
+  "icon": "assets/raritycore/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-datagen": [
+      "org.yanbwe.raritycore.client.RaritycoreDataGenerator"
+    ],
+    "client": [
+      "org.yanbwe.raritycore.client.RaritycoreClient"
+    ],
+    "main": [
+      "org.yanbwe.raritycore.Raritycore"
+    ]
+  },
+  "mixins": [
+    "raritycore.mixins.json",
+    {
+      "config": "raritycore.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
