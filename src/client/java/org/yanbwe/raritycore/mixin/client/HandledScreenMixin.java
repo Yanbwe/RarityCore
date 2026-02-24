@@ -44,7 +44,4 @@ public class HandledScreenMixin {
         // 清空当前物品栈
         currentItemStack = ItemStack.EMPTY;
     }
-    
-    // 注意：由于drawSlot方法中可能没有直接调用drawText，
-    // 物品名称颜色功能将在其他地方实现
 }

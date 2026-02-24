@@ -46,23 +46,23 @@ public class RarityRegistry {
     
     /**
      * 获取物品的稀有度等级
-     * 优先级：直接注册 > 数据包配置
+     * 优先级：直接注册 > FinalRarity.json配置 > FinalRarityConfig文件夹配置 > 数据包配置
      * @param item 要查询稀有度的物品
      * @return 稀有度等级，未注册则返回1(普通)
      */
     public static int getRarity(Item item) {
         Identifier itemId = Registries.ITEM.getId(item);
         if (itemId != null) {
-            // 首先检查直接注册的数据
+            // 1. 首先检查直接注册的数据（最高优先级）
             Integer directRarity = ITEM_RARITY_MAP.get(itemId);
             if (directRarity != null) {
                 return directRarity;
             }
             
-            // 然后检查数据包配置
-            Integer datapackRarity = DATAPACK_RARITY_MAP.get(itemId);
-            if (datapackRarity != null) {
-                return datapackRarity;
+            // 2. 检查FinalRarity.json配置（通过命令设置的，较高优先级）
+            Integer finalRarity = DATAPACK_RARITY_MAP.get(itemId);
+            if (finalRarity != null) {
+                return finalRarity;
             }
         }
         return 1;
@@ -98,6 +98,31 @@ public class RarityRegistry {
         if (rarity >= 1 && rarity <= 7) {
             DATAPACK_RARITY_MAP.put(itemId, rarity);
             Raritycore.LOGGER.debug("Registered datapack rarity {} for item {}", rarity, itemId);
+        }
+    }
+    
+    /**
+     * 移除物品的稀有度配置
+     * @param item 要移除稀有度的物品
+     */
+    public static void removeRarity(Item item) {
+        Identifier itemId = Registries.ITEM.getId(item);
+        if (itemId != null && !itemId.equals(Registries.ITEM.getDefaultId())) {
+            ITEM_RARITY_MAP.remove(itemId);
+            DATAPACK_RARITY_MAP.remove(itemId);
+            Raritycore.LOGGER.debug("Removed rarity configuration for item {}", itemId);
+        }
+    }
+    
+    /**
+     * 移除指定物品ID的稀有度配置
+     * @param itemId 物品ID
+     */
+    public static void removeRarity(Identifier itemId) {
+        if (itemId != null) {
+            ITEM_RARITY_MAP.remove(itemId);
+            DATAPACK_RARITY_MAP.remove(itemId);
+            Raritycore.LOGGER.debug("Removed rarity configuration for item {}", itemId);
         }
     }
     

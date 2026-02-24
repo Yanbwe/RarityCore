@@ -3,6 +3,7 @@ package org.yanbwe.raritycore.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -11,10 +12,16 @@ import net.minecraft.util.Identifier;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
+import net.minecraft.server.network.ServerPlayerEntity;
 import org.yanbwe.raritycore.Raritycore;
 import org.yanbwe.raritycore.client.RarityClientData;
 import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.config.FinalRarityConfigLoader;
 import org.yanbwe.raritycore.registry.RarityRegistry;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class RarityCoreCommands {
     
@@ -51,8 +58,10 @@ public class RarityCoreCommands {
                             try {
                                 Identifier itemId = new Identifier(itemIdString);
                                 RarityRegistry.registerDatapackRarity(itemId, rarity);
+                                // 同时保存到FinalRarity.json文件
+                                FinalRarityConfigLoader.saveRarityToFinalRarity(itemIdString, rarity);
                                 context.getSource().sendFeedback(() -> 
-                                    Text.literal("已设置物品 " + itemId + " 的稀有度为: " + rarity), true);
+                                    Text.literal("已设置物品 " + itemId + " 的稀有度为: " + rarity + " 并保存到FinalRarity.json"), true);
                                 
                                 // 通知所有玩家更新
                                 context.getSource().getServer().getPlayerManager().getPlayerList().forEach(player -> 
@@ -72,8 +81,11 @@ public class RarityCoreCommands {
             .then(CommandManager.literal("reload")
                 .executes(context -> {
                     ConfigManager.initializeConfigs();
+                    // 按照正确的优先级顺序重载所有配置
+                    FinalRarityConfigLoader.loadFinalRarityConfigFolder();
+                    FinalRarityConfigLoader.loadFinalRarityConfig();
                     context.getSource().sendFeedback(() -> 
-                        Text.literal("稀有度配置已重载"), true);
+                        Text.literal("稀有度配置已按优先级重载：数据包 > FinalRarityConfig文件夹 > FinalRarity.json"), true);
                     return 1;
                 })
             )
@@ -160,8 +172,10 @@ public class RarityCoreCommands {
                         
                         try {
                             RarityRegistry.registerDatapackRarity(itemId, rarity);
+                            // 同时保存到FinalRarity.json文件
+                            FinalRarityConfigLoader.saveRarityToFinalRarity(itemId.toString(), rarity);
                             context.getSource().sendFeedback(() -> 
-                                Text.literal("已将手上物品 " + itemId + " 设置为稀有度 " + rarity), true);
+                                Text.literal("已将手上物品 " + itemId + " 设置为稀有度 " + rarity + " 并保存到FinalRarity.json"), true);
                             
                             // 通知所有玩家更新
                             context.getSource().getServer().getPlayerManager().getPlayerList().forEach(player -> 

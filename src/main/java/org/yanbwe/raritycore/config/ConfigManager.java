@@ -20,7 +20,6 @@ public class ConfigManager {
     private static int itemBorderStyle = 0; // 0: 空心, 1: 实心
     private static boolean useTextureBorder = true; // 默认启用纹理边框
     private static boolean enableItemNameColor = true;
-    private static boolean enableTooltipInsert = true;
     
     public static void initializeConfigs() {
         try {
@@ -54,12 +53,10 @@ public class ConfigManager {
                     config.get("useTextureBorder").getAsBoolean() : true;
                 enableItemNameColor = config.has("enableItemNameColor") ? 
                     config.get("enableItemNameColor").getAsBoolean() : true;
-                enableTooltipInsert = config.has("enableTooltipInsert") ? 
-                    config.get("enableTooltipInsert").getAsBoolean() : true;
             }
             
-            Raritycore.LOGGER.info("Client config loaded: border rendering={}, style={}, texture={}, name color={}, tooltip={}",
-                enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert);
+            Raritycore.LOGGER.info("Client config loaded: border rendering={}, style={}, texture={}, name color={}",
+                enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor);
         } catch (Exception e) {
             Raritycore.LOGGER.error("Failed to load client config, using defaults", e);
             createDefaultClientConfig();
@@ -72,7 +69,6 @@ public class ConfigManager {
         config.addProperty("itemBorderStyle", 0);
         config.addProperty("useTextureBorder", true);
         config.addProperty("enableItemNameColor", true);
-        config.addProperty("enableTooltipInsert", true);
         
         try {
             Files.writeString(CLIENT_CONFIG_FILE, GSON.toJson(config));
@@ -88,7 +84,6 @@ public class ConfigManager {
         config.addProperty("itemBorderStyle", itemBorderStyle);
         config.addProperty("useTextureBorder", useTextureBorder);
         config.addProperty("enableItemNameColor", enableItemNameColor);
-        config.addProperty("enableTooltipInsert", enableTooltipInsert);
         
         try {
             Files.writeString(CLIENT_CONFIG_FILE, GSON.toJson(config));
@@ -133,9 +128,5 @@ public class ConfigManager {
     public static void setEnableItemNameColor(boolean enable) {
         enableItemNameColor = enable;
         saveClientConfig();
-    }
-    
-    public static boolean isEnableTooltipInsert() {
-        return enableTooltipInsert;
     }
 }

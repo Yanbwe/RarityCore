@@ -47,6 +47,14 @@ public class RarityDatapackLoader implements SimpleSynchronousResourceReloadList
         
         Raritycore.LOGGER.info("Loaded {} rarity entries from {} datapack files", 
             RarityRegistry.getDatapackEntryCount(), loadedCount);
+        
+        // 模拟Forge版本的行为：在数据包加载完成后，加载FinalRarityConfig文件夹和FinalRarity.json
+        // 这样确保了正确的优先级顺序：数据包 > FinalRarityConfig文件夹 > FinalRarity.json
+        Raritycore.LOGGER.info("Loading FinalRarityConfig folder...");
+        org.yanbwe.raritycore.config.FinalRarityConfigLoader.loadFinalRarityConfigFolder();
+        
+        Raritycore.LOGGER.info("Loading FinalRarity.json file...");
+        org.yanbwe.raritycore.config.FinalRarityConfigLoader.loadFinalRarityConfig();
     }
     
     private int loadRarityFile(ResourceManager manager, Identifier fileId) throws IOException {

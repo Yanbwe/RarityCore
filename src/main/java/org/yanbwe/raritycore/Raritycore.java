@@ -11,6 +11,7 @@ import net.minecraft.resource.ResourceType;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
 import org.yanbwe.raritycore.datapack.RarityDatapackLoader;
 import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.config.FinalRarityConfigLoader;
 import org.yanbwe.raritycore.network.RaritySyncPacket;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
@@ -26,11 +27,19 @@ public class Raritycore implements ModInitializer {
         // 初始化配置系统
         ConfigManager.initializeConfigs();
         
-        // 初始化网络包
-        RaritySyncPacket.register();
+        // 按照Forge版本的真实加载顺序：
+        // 1. 注册数据包加载器（最高优先级，通过Minecraft的资源重载系统自动加载）
+        // 2. 在数据包加载完成后，依次加载FinalRarityConfig文件夹和FinalRarity.json
+        // 3. 后加载的配置会覆盖先加载的同名物品配置
         
         // 注册数据包加载器
         ResourceManagerHelper.get(ResourceType.SERVER_DATA).registerReloadListener(new RarityDatapackLoader());
+        
+        // FinalRarityConfig文件夹和FinalRarity.json将在数据包加载完成后手动加载
+        // 这模拟了Forge版本RarityDataLoader.apply()中的加载顺序
+        
+        // 初始化网络包
+        RaritySyncPacket.register();
         
         // 注册命令
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> 
