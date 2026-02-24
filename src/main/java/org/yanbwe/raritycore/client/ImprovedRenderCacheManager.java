@@ -406,11 +406,68 @@ public class ImprovedRenderCacheManager {
      * @return 哈希值
      */
     private static int getItemStackHash(ItemStack itemStack) {
-        int hash = itemStack.getItem().hashCode();
-        hash = 31 * hash + itemStack.getCount();
-        if (itemStack.hasTag()) {
-            hash = 31 * hash + itemStack.getTag().hashCode();
+        // 使用物品ID作为主要键，避免ItemStack实例差异
+        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(itemStack.getItem());
+        if (itemId == null) {
+            return itemStack.getItem().hashCode(); // 回退方案
         }
+        
+        int hash = itemId.hashCode();
+        hash = 31 * hash + itemStack.getCount();
+        
+        // 只有当有重要NBT数据时才加入哈希计算
+        if (itemStack.hasTag() && shouldIncludeNbtInCache(itemStack)) {
+            hash = 31 * hash + getImportantNbtHash(itemStack.getTag());
+        }
+        
+        return hash;
+    }
+    
+    /**
+     * 判断NBT数据是否应该影响缓存键
+     * @param itemStack 物品堆
+     * @return 是否应该包含NBT
+     */
+    private static boolean shouldIncludeNbtInCache(ItemStack itemStack) {
+        // 对于大多数物品，基础属性足以确定稀有度
+        // 只有特殊物品（如附魔书、药水等）才需要考虑NBT
+        Item item = itemStack.getItem();
+        
+        // 检查是否是需要NBT的特殊物品类型
+        return item instanceof net.minecraft.world.item.EnchantedBookItem ||
+               item instanceof net.minecraft.world.item.PotionItem ||
+               item instanceof net.minecraft.world.item.TippedArrowItem ||
+               itemStack.hasTag() && itemStack.getTag().contains("Damage") || // 耐久度
+               itemStack.hasTag() && itemStack.getTag().contains("display");  // 显示属性
+    }
+    
+    /**
+     * 获取重要的NBT数据哈希值
+     * @param tag NBT标签
+     * @return 哈希值
+     */
+    private static int getImportantNbtHash(CompoundTag tag) {
+        if (tag == null) return 0;
+        
+        int hash = 0;
+        
+        // 只考虑影响稀有度的重要字段
+        if (tag.contains("Damage")) {
+            hash = 31 * hash + Integer.hashCode(tag.getInt("Damage"));
+        }
+        
+        if (tag.contains("display")) {
+            CompoundTag display = tag.getCompound("display");
+            if (display.contains("Name")) {
+                hash = 31 * hash + display.getString("Name").hashCode();
+            }
+        }
+        
+        // 对于附魔书等特殊物品
+        if (tag.contains("StoredEnchantments")) {
+            hash = 31 * hash + tag.getList("StoredEnchantments", 10).hashCode();
+        }
+        
         return hash;
     }
     
@@ -830,9 +887,10 @@ public class ImprovedRenderCacheManager {
             long maxMemory = runtime.maxMemory();
             double memoryUsage = (double) usedMemoryBefore / maxMemory;
             
-            if (memoryUsage > 0.85) { // 内存使用超过85%时才考虑清理
-                // 建议JVM进行垃圾回收，但不强制等待
-                System.gc();
+            if (memoryUsage > 0.85) { // 内存使用超过85%时记录警告
+                // 依赖JVM自动内存管理，记录内存使用情况供监控
+                RarityCore.LOGGER.warn("High memory usage detected: {}%, relying on JVM automatic GC", 
+                    String.format("%.1f", memoryUsage * 100));
             }
             
             long usedMemoryAfter = runtime.totalMemory() - runtime.freeMemory();

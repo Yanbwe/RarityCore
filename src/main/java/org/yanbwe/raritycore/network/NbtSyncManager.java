@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import net.minecraft.resources.ResourceLocation;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * NBT匹配规则同步管理器
@@ -119,12 +120,11 @@ public class NbtSyncManager {
                         RarityCore.LOGGER.warn("NBT rules sync failed (attempt {}/{}), retrying in {}ms: {}", 
                             attempt, maxRetries, delay, e.getMessage());
                         
-                        try {
-                            Thread.sleep(delay);
-                        } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt();
-                            break;
-                        }
+                        // 使用CompletableFuture延迟执行替代Thread.sleep
+                        CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS).execute(() -> {
+                            syncNbtRulesToAllPlayers(); // 重新尝试同步
+                        });
+                        return;
                     }
                 }
             }

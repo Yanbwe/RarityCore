@@ -7,6 +7,9 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 import org.yanbwe.raritycore.RarityCore;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 网络重试管理器
@@ -17,6 +20,20 @@ public class NetworkRetryManager {
     private static final int MAX_RETRY_ATTEMPTS = 3;
     private static final long BASE_RETRY_DELAY_MS = 500;
     private static final double EXPONENTIAL_BACKOFF_MULTIPLIER = 2.0;
+    
+    // 用于延迟重试的调度器
+    private static final ScheduledExecutorService retryScheduler = Executors.newScheduledThreadPool(2, r -> {
+        Thread t = new Thread(r, "RarityCore-Network-Retry");
+        t.setDaemon(true);
+        return t;
+    });
+    
+    /**
+     * 调度延迟重试任务
+     */
+    private static void scheduleRetry(Runnable task, long delayMs) {
+        retryScheduler.schedule(task, delayMs, TimeUnit.MILLISECONDS);
+    }
     
     /**
      * 带重试机制的增量同步包发送
@@ -89,13 +106,11 @@ public class NetworkRetryManager {
                     RarityCore.LOGGER.warn("Packet sending failed (attempt {}/{}), retrying in {}ms: {}", 
                         attempts, maxRetries, delay, e.getMessage());
                     
-                    try {
-                        Thread.sleep(delay);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        RarityCore.LOGGER.error("Retry thread interrupted", ie);
-                        break;
-                    }
+                    // 使用ScheduledExecutorService进行延迟重试
+                    scheduleRetry(() -> {
+                        sendPacketWithRetry(channel, packet, maxRetries, baseDelay);
+                    }, delay);
+                    return;
                 }
             }
         }
@@ -148,12 +163,11 @@ public class NetworkRetryManager {
                     RarityCore.LOGGER.warn("Packet sending to player {} failed (attempt {}/{}), retrying in {}ms: {}", 
                         player.getName().getString(), attempts, maxRetries, delay, e.getMessage());
                     
-                    try {
-                        Thread.sleep(delay);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
+                    // 使用ScheduledExecutorService进行延迟重试
+                    scheduleRetry(() -> {
+                        sendToPlayerWithRetryInternal(channel, packet, player, maxRetries, baseDelay);
+                    }, delay);
+                    return;
                 }
             }
         }
