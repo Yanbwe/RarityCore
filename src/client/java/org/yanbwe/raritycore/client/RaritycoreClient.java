@@ -2,7 +2,6 @@ package org.yanbwe.raritycore.client;
 
 import net.fabricmc.api.ClientModInitializer;
 
-package org.yanbwe.raritycore.client;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
@@ -12,6 +11,7 @@ import net.minecraft.util.Identifier;
 import org.yanbwe.raritycore.Raritycore;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.util.SimpleCacheManager;
+import org.yanbwe.raritycore.network.client.ClientRaritySyncHandler;
 
 public class RaritycoreClient implements ClientModInitializer {
     
@@ -31,6 +31,9 @@ public class RaritycoreClient implements ClientModInitializer {
         
         // 预加载常用物品缓存
         SimpleCacheManager.preloadCommonItems();
+        
+        // 注册客户端网络处理器
+        ClientRaritySyncHandler.register();
         
         // 注册HUD渲染回调（用于测试显示）
         HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {

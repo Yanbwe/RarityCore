@@ -85,8 +85,7 @@ public class RarityRegistry {
      * @param player 目标玩家
      */
     public static void syncRarityToClient(ServerPlayerEntity player) {
-        Map<Identifier, Integer> rarityData = new HashMap<>(ITEM_RARITY_MAP);
-        RaritySyncPacket.send(player, rarityData);
+        RaritySyncPacket.sendToClient(player);
         Raritycore.LOGGER.debug("Synced rarity data to player {}", player.getName().getString());
     }
     
@@ -108,6 +107,19 @@ public class RarityRegistry {
     public static void clearDatapackData() {
         DATAPACK_RARITY_MAP.clear();
         Raritycore.LOGGER.debug("Cleared datapack rarity data");
+    }
+    
+    /**
+     * 获取所有稀有度数据
+     * @return 包含所有注册稀有度的映射
+     */
+    public static Map<Identifier, Integer> getAllRarities() {
+        Map<Identifier, Integer> allRarities = new HashMap<>(ITEM_RARITY_MAP);
+        // 添加数据包数据（直接注册的优先级更高）
+        for (Map.Entry<Identifier, Integer> entry : DATAPACK_RARITY_MAP.entrySet()) {
+            allRarities.putIfAbsent(entry.getKey(), entry.getValue());
+        }
+        return allRarities;
     }
     
     /**

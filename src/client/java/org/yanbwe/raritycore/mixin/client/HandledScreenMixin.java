@@ -20,10 +20,10 @@ public class HandledScreenMixin {
     private void drawRarityBorder(DrawContext context, Slot slot, CallbackInfo ci) {
         ItemStack itemStack = slot.getStack();
         if (!itemStack.isEmpty()) {
-            // 获取槽位在屏幕上的实际坐标
-            HandledScreen<?> screen = (HandledScreen<?>) (Object) this;
-            int x = slot.x + screen.getX();
-            int y = slot.y + screen.getY();
+            // 直接使用slot的坐标（相对于屏幕）
+            // 在drawSlot方法中，坐标已经是屏幕坐标了
+            int x = slot.x;
+            int y = slot.y;
             
             // 渲染稀有度边框
             RaritycoreClient.renderItemRarityBorder(context, itemStack, x, y);

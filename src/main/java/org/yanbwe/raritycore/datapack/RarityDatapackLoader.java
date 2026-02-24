@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
+import java.util.Set;
 
 public class RarityDatapackLoader implements SimpleSynchronousResourceReloadListener {
     private static final Gson GSON = new Gson();
@@ -33,8 +33,8 @@ public class RarityDatapackLoader implements SimpleSynchronousResourceReloadList
         RarityRegistry.clearDatapackData();
         
         // 加载所有稀有度配置文件
-        Collection<Identifier> resources = manager.findResources("rarity", 
-            id -> id.getPath().endsWith(".json"));
+        Set<Identifier> resources = manager.findResources("rarity", 
+            id -> id.getPath().endsWith(".json")).keySet();
         
         int loadedCount = 0;
         for (Identifier resourceId : resources) {

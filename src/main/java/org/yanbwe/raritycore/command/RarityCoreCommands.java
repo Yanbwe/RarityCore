@@ -8,6 +8,9 @@ import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
 import org.yanbwe.raritycore.Raritycore;
 import org.yanbwe.raritycore.client.RarityClientData;
 import org.yanbwe.raritycore.config.ConfigManager;
@@ -16,7 +19,7 @@ import org.yanbwe.raritycore.registry.RarityRegistry;
 public class RarityCoreCommands {
     
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
-        dispatcher.register(CommandManager.literal("rarity")
+        dispatcher.register(CommandManager.literal("raritycore")
             .requires(source -> source.hasPermissionLevel(2))
             
             // 查询物品稀有度
@@ -47,7 +50,7 @@ public class RarityCoreCommands {
                             
                             try {
                                 Identifier itemId = new Identifier(itemIdString);
-                                RarityRegistry.loadFromConfig(itemId, rarity);
+                                RarityRegistry.registerDatapackRarity(itemId, rarity);
                                 context.getSource().sendFeedback(() -> 
                                     Text.literal("已设置物品 " + itemId + " 的稀有度为: " + rarity), true);
                                 
@@ -81,16 +84,6 @@ public class RarityCoreCommands {
                     int cacheSize = RarityClientData.getCachedEntriesCount();
                     context.getSource().sendFeedback(() -> 
                         Text.literal("客户端缓存条目数: " + cacheSize), false);
-                    return 1;
-                })
-            )
-            
-            // 查看数据包状态
-            .then(CommandManager.literal("datapack")
-                .executes(context -> {
-                    int datapackCount = RarityRegistry.getDatapackEntryCount();
-                    context.getSource().sendFeedback(() -> 
-                        Text.literal("数据包稀有度条目数: " + datapackCount), false);
                     return 1;
                 })
             )
@@ -132,26 +125,43 @@ public class RarityCoreCommands {
                 )
             )
             
-            // 纹理测试命令
-            .then(CommandManager.literal("texture")
-                .then(CommandManager.literal("test")
+            // 设置手上物品稀有度
+            .then(CommandManager.literal("sethand")
+                .then(CommandManager.argument("rarity", IntegerArgumentType.integer(1, 7))
                     .executes(context -> {
-                        boolean usingTextures = ConfigManager.isUseTextureBorder();
-                        context.getSource().sendFeedback(() -> 
-                            Text.literal("当前使用" + (usingTextures ? "纹理" : "颜色") + "边框"), false);
-                        return 1;
-                    })
-                )
-                .then(CommandManager.literal("list")
-                    .executes(context -> {
-                        StringBuilder sb = new StringBuilder("可用纹理边框:");
-                        for (int i = 1; i <= 7; i++) {
-                            boolean available = org.yanbwe.raritycore.client.RaritycoreClient.isTextureBorderAvailable(i);
-                            sb.append("\n稀有度 ").append(i).append(": ")
-                              .append(available ? "✓ 可用" : "✗ 不可用");
+                        int rarity = IntegerArgumentType.getInteger(context, "rarity");
+                        
+                        // 获取执行命令的玩家手上的物品
+                        ItemStack heldItem = context.getSource().getPlayer().getMainHandStack();
+                        
+                        if (heldItem.isEmpty()) {
+                            context.getSource().sendError(Text.literal("你手上没有物品！"));
+                            return 0;
                         }
-                        context.getSource().sendFeedback(() -> Text.literal(sb.toString()), false);
-                        return 1;
+                        
+                        Item item = heldItem.getItem();
+                        Identifier itemId = Registries.ITEM.getId(item);
+                        
+                        if (itemId == null || itemId.equals(Registries.ITEM.getDefaultId())) {
+                            context.getSource().sendError(Text.literal("无法识别的物品！"));
+                            return 0;
+                        }
+                        
+                        try {
+                            RarityRegistry.registerDatapackRarity(itemId, rarity);
+                            context.getSource().sendFeedback(() -> 
+                                Text.literal("已将手上物品 " + itemId + " 设置为稀有度 " + rarity), true);
+                            
+                            // 通知所有玩家更新
+                            context.getSource().getServer().getPlayerManager().getPlayerList().forEach(player -> 
+                                RarityRegistry.syncRarityToClient(player)
+                            );
+                            
+                            return 1;
+                        } catch (Exception e) {
+                            context.getSource().sendError(Text.literal("设置稀有度失败: " + e.getMessage()));
+                            return 0;
+                        }
                     })
                 )
             )
