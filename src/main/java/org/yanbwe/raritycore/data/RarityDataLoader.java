@@ -82,29 +82,7 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener {
             }
         }
         
-        // 按照顺序：
-        // 1. 数据包（已完成加载）
-        // 2. FinalRarityConfig文件夹
-        RarityCore.LOGGER.info("Loading FinalRarityConfig folder...");
-        FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
-        
-        // 3. FinalRarity.json文件
-        RarityCore.LOGGER.info("Loading FinalRarity.json file...");
-        RarityConfigLoader.loadConfigRarityData();
-        
-        // 使用批处理管理器进行同步
-        List<ChangeOperation> pendingOps = SyncBatchManager.getAndClearPendingOperations();
-        if (!pendingOps.isEmpty()) {
-            List<ChangeOperation> optimizedOps = SyncBatchManager.optimizeOperations(pendingOps);
-            if (!optimizedOps.isEmpty()) {
-                IncrementalSyncPacket packet = new IncrementalSyncPacket(optimizedOps);
-                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-                if (server != null) {
-                    for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                        IncrementalSyncPacket.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
-                    }
-                }
-            }
-        }
+        // 使用统一的配置重载服务进行完整加载
+        org.yanbwe.raritycore.service.ConfigReloadService.reloadOnStartup();
     }
 }
