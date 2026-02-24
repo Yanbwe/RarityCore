@@ -164,7 +164,8 @@ public class ApotheosisAdapter {
             case "ancient":
                 return 6;    // Ancient → 稀有度6
             default:
-                RarityCore.LOGGER.debug("Unknown Apotheosis rarity: {}", rarityString);
+                // 根据调试日志管理规范，删除高频触发的未知稀有度日志输出
+                // 神化模组稀有度种类不可控，避免日志刷屏
                 return null;
         }
     }
