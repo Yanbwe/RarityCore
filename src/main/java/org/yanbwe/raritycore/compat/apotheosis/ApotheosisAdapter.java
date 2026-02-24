@@ -163,9 +163,14 @@ public class ApotheosisAdapter {
                 return 5;    // Mythic → 稀有度5
             case "ancient":
                 return 6;    // Ancient → 稀有度6
+            // Apotheotic Additions 稀有度支持
+            case "artifact":
+                return 7;    // Artifact → 稀有度7
+            case "heirloom":
+                return 8;    // Heirloom → 稀有度8
+            case "esoteric":
+                return 9;    // Esoteric → 稀有度9
             default:
-                // 根据调试日志管理规范，删除高频触发的未知稀有度日志输出
-                // 神化模组稀有度种类不可控，避免日志刷屏
                 return null;
         }
     }
