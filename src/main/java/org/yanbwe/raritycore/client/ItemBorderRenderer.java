@@ -55,7 +55,7 @@ public class ItemBorderRenderer {
         // 如果启用了跳过未配置物品且物品没有配置稀有度，则不渲染
         // 注意：需要检查物品是否真的没有配置，而不是默认的稀有度1
         Item item = itemStack.getItem();
-        if (org.yanbwe.raritycore.config.ServerConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
+        if (org.yanbwe.raritycore.config.ConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
             return;
         }
         
@@ -149,6 +149,16 @@ public class ItemBorderRenderer {
         
         // 检查是否在注册表中有配置
         return RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId);
+    }
+    
+    /**
+     * 处理skipUnconfiguredItems配置变更
+     * 当配置改变时调用此方法来刷新渲染状态
+     */
+    public static void handleSkipConfigChange() {
+        // 使边框渲染缓存失效
+        RenderCacheManager.clearAllCache();
+        RarityCore.LOGGER.debug("ItemBorderRenderer: skipUnconfiguredItems配置变更处理完成");
     }
     
     /**

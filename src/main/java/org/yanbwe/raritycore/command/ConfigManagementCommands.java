@@ -87,21 +87,40 @@ public class ConfigManagementCommands {
      */
     private static int reloadClientConfig(CommandSourceStack source) {
         ConfigManager.loadClientConfig();
-        String borderStyleText = ConfigManager.getItemBorderStyle() == 0 ? 
-            Component.translatable("rarity.core.border_style_hollow").getString() : 
-            Component.translatable("rarity.core.border_style_solid").getString();
-        String textureBorderStatus = ConfigManager.isUseTextureBorder() ? 
-            Component.translatable("rarity.core.enabled").getString() : 
-            Component.translatable("rarity.core.disabled").getString();
+        
+        // 通知星星显示管理器重新加载配置
+        org.yanbwe.raritycore.util.StarDisplayManager.getInstance().reloadConfiguration();
         
         // 处理客户端配置变更对缓存的影响
         org.yanbwe.raritycore.client.ImprovedRenderCacheManager.handleClientConfigChange();
         
-        source.sendSuccess(() -> Component.translatable("rarity.core.reload_client_config_with_texture", 
-                ConfigManager.isEnableItemBorderRendering(), 
-                borderStyleText,
-                textureBorderStatus).withStyle(ChatFormatting.GREEN), false);
+        // 特别处理skipUnconfiguredItems配置变更 - 通知相关渲染系统
+        handleSkipUnconfiguredItemsChange();
+        
+        // 简单的重载完成提示
+        source.sendSuccess(() -> Component.translatable("rarity.core.client_config_reloaded").withStyle(ChatFormatting.GREEN), false);
         return 1;
+    }
+    
+    /**
+     * 处理skipUnconfiguredItems配置变更
+     * 当此配置改变时，需要通知相关渲染系统刷新状态
+     */
+    private static void handleSkipUnconfiguredItemsChange() {
+        try {
+            // 通知边框渲染器重新评估渲染逻辑
+            org.yanbwe.raritycore.client.ItemBorderRenderer.handleSkipConfigChange();
+            
+            // 通知工具提示处理器重新评估插入逻辑
+            org.yanbwe.raritycore.client.RarityTooltipHandler.handleSkipConfigChange();
+            
+            // 使相关缓存失效
+            org.yanbwe.raritycore.client.RenderCacheManager.clearAllCache();
+            
+            RarityCore.LOGGER.info("skipUnconfiguredItems配置变更已处理，相关系统已刷新");
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("处理skipUnconfiguredItems配置变更时出错", e);
+        }
     }
     
     /**

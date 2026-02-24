@@ -39,6 +39,21 @@ public class RarityConstants {
     public static final boolean DEFAULT_ENABLE_STAR_DISPLAY = true; // 默认启用星星显示
     public static final String DEFAULT_STAR_EMOJI = "⭐"; // 默认星星emoji
     
+    // 新星星显示系统常量
+    public static final String DEFAULT_STAR_MODE = "custom"; // 默认使用custom模式
+    public static final String DEFAULT_REPEAT_CHARACTER = "⭐"; // 默认重复字符
+    
+    // 默认自定义字符串配置
+    public static final String[] DEFAULT_CUSTOM_STRINGS = {
+        "·",        // 稀有度1
+        "••",       // 稀有度2
+        "●●●",      // 稀有度3
+        "◆◆◆◆",    // 稀有度4
+        "◇◇◇◇◇",  // 稀有度5
+        "◈◈◈◈◈◈",  // 稀有度6
+        "✦✦✦✦✦✦✦"  // 稀有度7
+    };
+    
     // 纹理相关常量
     public static final String BORDER_TEXTURE_PATH = "raritycore:textures/border/";
     public static final String TEXTURE_SUFFIX = ".png";
@@ -48,4 +63,7 @@ public class RarityConstants {
     
     // 缓存系统相关常量
     public static final boolean DEFAULT_ENABLE_CACHE_SYSTEM = true; // 默认启用缓存系统
+    
+    // 服务端配置默认值
+    public static final boolean DEFAULT_CHECK_APOTHEOSIS_RARITY = true; // 默认启用神化模组稀有度检查
 }

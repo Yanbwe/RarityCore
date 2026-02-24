@@ -97,5 +97,6 @@
   "rarity.core.cache_misses_detail": "缓存未命中: %d",
   "rarity.core.cache_hit_rate_detail": "命中率: %s%%",
   "rarity.core.cache_clears_detail": "缓存清理次数: %d",
-  "rarity.core.cache_counters_disabled_note": "缓存系统禁用时计数器可能不会增加"
+  "rarity.core.cache_counters_disabled_note": "缓存系统禁用时计数器可能不会增加",
+  "rarity.core.client_config_reloaded": "客户端配置重载完成"
 }

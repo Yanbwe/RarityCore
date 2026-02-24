@@ -23,7 +23,7 @@ public class ConfigVersionManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     
     // 当前配置版本号
-    public static final int CURRENT_CONFIG_VERSION = 3;
+    public static final int CURRENT_CONFIG_VERSION = 4;
     
     // 版本升级处理器映射
     private static final Map<Integer, ConfigUpgradeHandler> UPGRADE_HANDLERS = new HashMap<>();
@@ -89,6 +89,34 @@ public class ConfigVersionManager {
                 oldConfig.addProperty("enableCacheSystem", RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM);
                 RarityCore.LOGGER.info("Added enableCacheSystem config option");
             }
+            
+            return oldConfig;
+        });
+        
+        // 从版本3升级到版本4的处理器
+        UPGRADE_HANDLERS.put(3, (oldConfig, from, to) -> {
+            RarityCore.LOGGER.info("Upgrading config from version {} to {}", from, to);
+            
+            // 版本3到4的升级：添加星星显示配置
+            JsonObject starDisplay = new JsonObject();
+            starDisplay.addProperty("enabled", true);
+            starDisplay.addProperty("mode", RarityConstants.DEFAULT_STAR_MODE); // 引用常量
+            
+            JsonObject repeatConfig = new JsonObject();
+            repeatConfig.addProperty("character", RarityConstants.DEFAULT_REPEAT_CHARACTER);
+            starDisplay.add("repeat", repeatConfig);
+            
+            JsonObject customConfig = new JsonObject();
+            JsonObject customStrings = new JsonObject();
+            // 使用常量数组添加默认的自定义字符串配置
+            for (int i = 0; i < RarityConstants.DEFAULT_CUSTOM_STRINGS.length; i++) {
+                customStrings.addProperty(String.valueOf(i + 1), RarityConstants.DEFAULT_CUSTOM_STRINGS[i]);
+            }
+            customConfig.add("strings", customStrings);
+            starDisplay.add("custom", customConfig);
+            
+            oldConfig.add("starDisplay", starDisplay);
+            RarityCore.LOGGER.info("Added star display configuration");
             
             return oldConfig;
         });

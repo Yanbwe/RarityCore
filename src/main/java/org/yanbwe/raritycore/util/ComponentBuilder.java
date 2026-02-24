@@ -42,16 +42,24 @@ public class ComponentBuilder {
      * @return 星星字符串
      */
     public static String getStars(int count) {
-        if (count <= 0) {
-            return "";
+        // 使用新的星星显示管理器
+        try {
+            org.yanbwe.raritycore.util.StarDisplayManager manager = 
+                org.yanbwe.raritycore.util.StarDisplayManager.getInstance();
+            return manager.getStarDisplayString(count);
+        } catch (Exception e) {
+            // 回退到旧的实现方式
+            if (count <= 0) {
+                return "";
+            }
+            
+            // 简单直接构建星星字符串
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < count; i++) {
+                sb.append("⭐");
+            }
+            return sb.toString();
         }
-        
-        // 简单直接构建星星字符串
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < count; i++) {
-            sb.append("⭐");
-        }
-        return sb.toString();
     }
     
     /**

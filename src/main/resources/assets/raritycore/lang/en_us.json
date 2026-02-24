@@ -97,5 +97,6 @@
   "rarity.core.cache_misses_detail": "Cache misses: %d",
   "rarity.core.cache_hit_rate_detail": "Hit rate: %s%%",
   "rarity.core.cache_clears_detail": "Cache clears: %d",
-  "rarity.core.cache_counters_disabled_note": "Counters may not increase when cache system is disabled"
+  "rarity.core.cache_counters_disabled_note": "Counters may not increase when cache system is disabled",
+  "rarity.core.client_config_reloaded": "Client configuration reloaded successfully"
 }
