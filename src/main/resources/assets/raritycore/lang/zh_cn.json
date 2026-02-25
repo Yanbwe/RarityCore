@@ -105,5 +105,15 @@
   "rarity.core.processing_batch_operations": "处理%d个批处理操作...",
   "rarity.core.batch_operations_processed": "已处理%d个批处理操作",
   "rarity.core.batch_operation_error": "处理批处理操作时出错: %s",
-  "rarity.core.config_reload_complete": "✅ 配置重载完成!"
+  "rarity.core.config_reload_complete": "✅ 配置重载完成!",
+  "rarity.core.cache_stats_header": "=== 缓存统计信息 ===",
+  "rarity.core.cache_config_header": "=== 缓存配置信息 ===",
+  "rarity.core.cache_enabled_status": "缓存启用状态: %s",
+  "rarity.core.cache_hit_rate_display": "命中率: %.2f%%",
+  "rarity.core.id_cache_size": "ID缓存大小: %d",
+  "rarity.core.nbt_cache_size": "NBT缓存大小: %d",
+  "rarity.core.nbt_cache_capacity": "NBT缓存容量: %d",
+  "rarity.core.dynamic_multiplier": "动态容量倍数: %.1f",
+  "rarity.core.capacity_range": "容量范围: %d - %d",
+  "rarity.core.current_item_count": "当前物品总数: %d"
 }

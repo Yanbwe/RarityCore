@@ -105,5 +105,15 @@
   "rarity.core.processing_batch_operations": "Processing %d batch operations...",
   "rarity.core.batch_operations_processed": "Processed %d batch operations",
   "rarity.core.batch_operation_error": "Error processing batch operations: %s",
-  "rarity.core.config_reload_complete": "✅ Config reload completed!"
+  "rarity.core.config_reload_complete": "✅ Config reload completed!",
+  "rarity.core.cache_stats_header": "=== Cache Statistics ===",
+  "rarity.core.cache_config_header": "=== Cache Configuration ===",
+  "rarity.core.cache_enabled_status": "Cache enabled status: %s",
+  "rarity.core.cache_hit_rate_display": "Hit rate: %.2f%%",
+  "rarity.core.id_cache_size": "ID cache size: %d",
+  "rarity.core.nbt_cache_size": "NBT cache size: %d",
+  "rarity.core.nbt_cache_capacity": "NBT cache capacity: %d",
+  "rarity.core.dynamic_multiplier": "Dynamic multiplier: %.1f",
+  "rarity.core.capacity_range": "Capacity range: %d - %d",
+  "rarity.core.current_item_count": "Current item count: %d"
 }

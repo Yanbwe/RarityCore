@@ -29,6 +29,13 @@ public class DualCacheManager {
     private static CacheConfig config;
     
     /**
+     * 获取缓存配置实例
+     */
+    public static CacheConfig getConfig() {
+        return config;
+    }
+    
+    /**
      * 初始化双缓存系统
      */
     public static void initialize() {
@@ -47,15 +54,18 @@ public class DualCacheManager {
         idCache = CacheBuilder.newBuilder()
             .build();
         
-        // NBT缓存：LRU策略，大小限制
+        // NBT缓存：LRU策略，使用动态容量
+        int actualNbtCacheSize = config.getActualMaxNbtCacheSize();
         nbtCache = CacheBuilder.newBuilder()
-            .maximumSize(config.getMaxNbtCacheSize())
+            .maximumSize(actualNbtCacheSize)
             .expireAfterWrite(60, TimeUnit.MINUTES)
             .expireAfterAccess(30, TimeUnit.MINUTES)
             .removalListener(notification -> {
                 RarityCore.LOGGER.debug("NBT cache entry removed: {}", notification.getKey());
             })
             .build();
+        
+        RarityCore.LOGGER.info("NBT cache created with dynamic capacity: {} entries", actualNbtCacheSize);
     }
     
     /**
@@ -137,9 +147,34 @@ public class DualCacheManager {
         // 重建ID缓存
         preloadIdCache();
         
-        // NBT缓存保持空状态，按需填充
+        // 重新创建NBT缓存以应用新的容量设置
+        recreateNbtCache();
+        
         RarityCore.LOGGER.info("Dual cache system reloaded - ID cache: {}, NBT cache: {}", 
             idCache.size(), nbtCache.size());
+    }
+    
+    /**
+     * 重新创建NBT缓存（用于配置变更时）
+     */
+    private static void recreateNbtCache() {
+        // 获取新的动态容量
+        int newCapacity = config.getActualMaxNbtCacheSize();
+        
+        // 创建新的NBT缓存
+        Cache<String, Integer> newNbtCache = CacheBuilder.newBuilder()
+            .maximumSize(newCapacity)
+            .expireAfterWrite(60, TimeUnit.MINUTES)
+            .expireAfterAccess(30, TimeUnit.MINUTES)
+            .removalListener(notification -> {
+                RarityCore.LOGGER.debug("NBT cache entry removed: {}", notification.getKey());
+            })
+            .build();
+        
+        // 替换旧的缓存引用
+        nbtCache = newNbtCache;
+        
+        RarityCore.LOGGER.info("NBT cache recreated with new capacity: {} entries", newCapacity);
     }
     
     /**
