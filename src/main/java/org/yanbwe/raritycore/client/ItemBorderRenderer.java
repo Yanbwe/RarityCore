@@ -35,20 +35,18 @@ public class ItemBorderRenderer {
         Integer rarity;
         
         // 检查缓存系统是否启用
-        boolean isCacheEnabled = ImprovedRenderCacheManager.isCacheSystemEnabled() && 
-                               ConfigManager.isEnableCacheSystem();
+        boolean isCacheEnabled = org.yanbwe.raritycore.config.ConfigManager.isEnableCacheSystem();
         
         if (isCacheEnabled) {
             // 获取物品栈的稀有度（使用缓存）
-            rarity = ImprovedRenderCacheManager.getCachedItemStackRarity(itemStack);
-            
-            // 如果缓存未命中，则从注册表获取并缓存
+            rarity = org.yanbwe.raritycore.client.RenderCacheManager.getCachedRarity(itemStack);
+            // 如果缓存没有命中，则从注册表获取并缓存
             if (rarity == null) {
                 rarity = RarityRegistry.getRarity(itemStack);
-                ImprovedRenderCacheManager.cacheItemStackRarity(itemStack, rarity);
+                org.yanbwe.raritycore.client.RenderCacheManager.cacheItemStackRarity(itemStack, rarity);
             }
         } else {
-            // 缓存系统禁用时，直接从注册表获取
+            // 缓存系统禁用时直接获取稀有度
             rarity = RarityRegistry.getRarity(itemStack);
         }
         

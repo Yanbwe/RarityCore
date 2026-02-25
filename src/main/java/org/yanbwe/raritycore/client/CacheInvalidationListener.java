@@ -23,7 +23,8 @@ public class CacheInvalidationListener {
             Item item = event.getItem();
             if (item != null) {
                 // 使用缓存管理器使缓存失效
-                ImprovedRenderCacheManager.invalidateItemCache(item);
+                // 使用新双缓存系统
+                org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
                 // RarityCore.LOGGER.debug("Cache invalidated for item {} due to rarity change", item);
             }
         } catch (Exception e) {
@@ -38,7 +39,8 @@ public class CacheInvalidationListener {
     public static void onResourceReload(AddReloadListenerEvent event) {
         try {
             // 资源重载时使所有缓存失效
-            ImprovedRenderCacheManager.invalidateAllCachesOnConfigReload();
+            // 资源重载时重载双缓存系统
+            org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
             RarityCore.LOGGER.info("All caches invalidated due to resource reload");
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling resource reload event", e);
@@ -52,7 +54,8 @@ public class CacheInvalidationListener {
     public static void onClientConfigChange() {
         try {
             // 客户端配置变更时处理相关缓存
-            ImprovedRenderCacheManager.handleClientConfigChange();
+            // 客户端配置变更时重载双缓存系统
+            org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
             // RarityCore.LOGGER.debug("Handled client config change for cache");
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling client config change", e);
@@ -65,7 +68,8 @@ public class CacheInvalidationListener {
     public static void onNetworkSync() {
         try {
             // 网络同步时刷新缓存
-            ImprovedRenderCacheManager.handleNetworkSync();
+            // 网络同步时重载双缓存系统
+            org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
             // RarityCore.LOGGER.debug("Handled network sync for cache");
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling network sync", e);

@@ -2,100 +2,63 @@ package org.yanbwe.raritycore.client;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import org.yanbwe.raritycore.cache.DualCacheManager;
 
 /**
- * 渲染缓存管理器（代理类）
- * 代理到缓存管理器以保持向后兼容性
+ * 渲染缓存管理器 - 适配器模式
+ * 委托所有操作给DualCacheManager以保持API兼容性
  */
 public class RenderCacheManager {
     
-    // 代理到缓存管理器
-    
     /**
      * 获取物品的缓存稀有度
-     * @param item 物品
-     * @return 稀有度值，如果未缓存则返回null
      */
     public static Integer getCachedRarity(Item item) {
-        return ImprovedRenderCacheManager.getCachedRarity(item);
+        if (item == null) return null;
+        return DualCacheManager.getCachedRarity(new ItemStack(item));
     }
     
     /**
      * 获取物品堆的缓存稀有度
-     * @param itemStack 物品堆
-     * @return 稀有度值，如果未缓存则返回null
      */
     public static Integer getCachedRarity(ItemStack itemStack) {
-        return ImprovedRenderCacheManager.getCachedRarity(itemStack);
+        return DualCacheManager.getCachedRarity(itemStack);
     }
     
     /**
      * 缓存物品稀有度
-     * @param item 物品
-     * @param rarity 稀有度
      */
     public static void cacheRarity(Item item, Integer rarity) {
-        ImprovedRenderCacheManager.cacheRarity(item, rarity);
+        if (item == null || rarity == null) return;
+        DualCacheManager.cacheRarity(new ItemStack(item), rarity);
     }
     
     /**
      * 缓存物品堆稀有度
-     * @param itemStack 物品堆
-     * @param rarity 稀有度
      */
     public static void cacheItemStackRarity(ItemStack itemStack, Integer rarity) {
-        ImprovedRenderCacheManager.cacheItemStackRarity(itemStack, rarity);
+        DualCacheManager.cacheRarity(itemStack, rarity);
     }
     
     /**
      * 清空所有缓存
      */
     public static void clearAllCache() {
-        ImprovedRenderCacheManager.clearAllCache();
-    }
-    
-    /**
-     * 清空特定物品的缓存
-     * @param item 物品
-     */
-    public static void clearItemCache(Item item) {
-        ImprovedRenderCacheManager.clearItemCache(item);
-    }
-    
-    /**
-     * 使特定物品的缓存失效
-     * @param item 物品
-     */
-    public static void invalidateItemCache(Item item) {
-        ImprovedRenderCacheManager.invalidateItemCache(item);
-    }
-    
-    /**
-     * 执行智能清理
-     */
-    public static void smartCleanup() {
-        ImprovedRenderCacheManager.smartCleanup();
-    }
-    
-    /**
-     * 预加载缓存
-     */
-    public static void preloadCache() {
-        ImprovedRenderCacheManager.preloadCache();
+        DualCacheManager.handleConfigReload();
     }
     
     /**
      * 获取缓存统计信息
      */
     public static CacheStats getCacheStats() {
-        ImprovedRenderCacheManager.CacheStats improvedStats = ImprovedRenderCacheManager.getCacheStats();
+        DualCacheManager.CacheStatistics dualStats = DualCacheManager.getStatistics();
         return new CacheStats(
-            improvedStats.getHits(),
-            improvedStats.getMisses(),
-            improvedStats.getClears(),
-            (int)improvedStats.getRarityCacheSize(),
-            (int)improvedStats.getItemStackCacheSize(),
-            improvedStats.getHitRate()
+            0, // hits - 通过DualCacheManager内部统计
+            0, // misses - 通过DualCacheManager内部统计
+            0, // clears - 暂时为0
+            (int) dualStats.getIdCacheSize(),
+            (int) dualStats.getNbtCacheSize(),
+            dualStats.getOverallHitRate()
         );
     }
     
@@ -129,9 +92,8 @@ public class RenderCacheManager {
         
         @Override
         public String toString() {
-            return String.format("CacheStats{hits=%d, misses=%d, hitRate=%.2f%%, " +
-                               "rarityCache=%d, itemStackCache=%d, clears=%d}",
-                hits, misses, hitRate, rarityCacheSize, itemStackCacheSize, clears);
+            return String.format("CacheStats{hitRate=%.2f%%, rarityCache=%d, itemStackCache=%d}", 
+                hitRate, rarityCacheSize, itemStackCacheSize);
         }
     }
 }

@@ -16,6 +16,7 @@ import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.NbtSyncManager;
 import org.yanbwe.raritycore.network.SyncBatchManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
+import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.util.StarDisplayManager;
 
 import java.util.List;
@@ -86,6 +87,9 @@ public class ConfigReloadService {
                 sendCompletionMessage(source);
             }
             
+            // 8. 处理双缓存系统重载
+            handleCacheSystems();
+            
             RarityCore.LOGGER.info("Config reload process completed");
             
         } catch (Exception e) {
@@ -154,6 +158,19 @@ public class ConfigReloadService {
     }
     
     /**
+     * 处理双缓存系统
+     */
+    private static void handleCacheSystems() {
+        try {
+            // 初始化或重载双缓存系统
+            DualCacheManager.handleConfigReload();
+            RarityCore.LOGGER.info("Dual cache system reloaded successfully");
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Error handling cache systems during reload", e);
+        }
+    }
+    
+    /**
      * 处理客户端侧配置
      */
     private static void handleClientSideConfigs() {
@@ -165,7 +182,7 @@ public class ConfigReloadService {
             StarDisplayManager.getInstance().reloadConfiguration();
             
             // 处理客户端配置变更对缓存的影响
-            org.yanbwe.raritycore.client.ImprovedRenderCacheManager.handleClientConfigChange();
+            org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
             
             // 特别处理skipUnconfiguredItems配置变更
             handleSkipUnconfiguredItemsChange();

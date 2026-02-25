@@ -47,6 +47,9 @@ public class RarityCore {
         // Ensure configuration initialization in constructor
         ConfigManager.initializeConfigs();
         org.yanbwe.raritycore.config.ServerConfigManager.initializeServerConfigs();
+        
+        // 初始化双缓存系统
+        org.yanbwe.raritycore.cache.DualCacheManager.initialize();
     }
     
     @SubscribeEvent
@@ -102,7 +105,7 @@ public class RarityCore {
         syncScheduler.scheduleAtFixedRate(() -> {
             try {
                 // Use smart cleanup instead of full cleanup, interval extended to 10 minutes
-                org.yanbwe.raritycore.client.ImprovedRenderCacheManager.smartCleanup();
+                // 新缓存系统不需要手动清理
                 // 根据调试日志管理规范，注释掉高频触发的调试信息
                 // LOGGER.debug("Executing smart cache cleanup");
             } catch (Exception e) {

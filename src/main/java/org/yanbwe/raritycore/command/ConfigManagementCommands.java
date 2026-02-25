@@ -73,7 +73,7 @@ public class ConfigManagementCommands {
         org.yanbwe.raritycore.util.StarDisplayManager.getInstance().reloadConfiguration();
         
         // 处理客户端配置变更对缓存的影响
-        org.yanbwe.raritycore.client.ImprovedRenderCacheManager.handleClientConfigChange();
+        org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
         
         // 特别处理skipUnconfiguredItems配置变更 - 通知相关渲染系统
         handleSkipUnconfiguredItemsChange();

@@ -11,12 +11,15 @@ import net.minecraft.commands.Commands;
 public class RarityCoreCommands {
     
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        // 注册各个功能模块的命令
+        // 注册服务端命令（需要OP权限）
         RarityManagementCommands.register(dispatcher);
         ConfigManagementCommands.register(dispatcher);
-        CacheManagementCommands.register(dispatcher);
         ExportManagementCommands.register(dispatcher);
         UtilityCommands.register(dispatcher);
+        
+        // 注册客户端命令（无需OP权限）
+        org.yanbwe.raritycore.client.ClientCommands.register(dispatcher);
+        org.yanbwe.raritycore.client.CacheManagementCommands.register(dispatcher);
     }
     
     /**
