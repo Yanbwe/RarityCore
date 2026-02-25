@@ -61,7 +61,7 @@ public class DualCacheManager {
             .expireAfterWrite(60, TimeUnit.MINUTES)
             .expireAfterAccess(30, TimeUnit.MINUTES)
             .removalListener(notification -> {
-                RarityCore.LOGGER.debug("NBT cache entry removed: {}", notification.getKey());
+                // Removed debug log to reduce log spam
             })
             .build();
         
@@ -167,7 +167,7 @@ public class DualCacheManager {
             .expireAfterWrite(60, TimeUnit.MINUTES)
             .expireAfterAccess(30, TimeUnit.MINUTES)
             .removalListener(notification -> {
-                RarityCore.LOGGER.debug("NBT cache entry removed: {}", notification.getKey());
+                // Removed debug log to reduce log spam
             })
             .build();
         

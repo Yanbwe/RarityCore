@@ -144,6 +144,6 @@ public class RarityTooltipHandler {
     public static void handleSkipConfigChange() {
         // 使工具提示缓存失效
         RenderCacheManager.clearAllCache();
-        RarityCore.LOGGER.debug("RarityTooltipHandler: skipUnconfiguredItems配置变更处理完成");
+        // RarityTooltipHandler: skipUnconfiguredItems config change handled
     }
 }

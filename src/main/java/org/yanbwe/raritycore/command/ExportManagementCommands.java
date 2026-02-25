@@ -110,7 +110,7 @@ public class ExportManagementCommands {
             source.sendSuccess(() -> Component.literal(response.toString().trim()).withStyle(ChatFormatting.AQUA), false);
             return 1;
         } catch (Exception e) {
-            RarityCore.LOGGER.error("获取NBT配置详情时出错", e);
+            RarityCore.LOGGER.error("Error getting NBT config details", e);
             source.sendSuccess(() -> Component.translatable("rarity.core.command_failed").withStyle(ChatFormatting.RED), false);
             return 0;
         }

@@ -98,9 +98,9 @@ public class ConfigManagementCommands {
             // 使相关缓存失效
             org.yanbwe.raritycore.client.RenderCacheManager.clearAllCache();
             
-            RarityCore.LOGGER.info("skipUnconfiguredItems配置变更已处理，相关系统已刷新");
+            RarityCore.LOGGER.info("skipUnconfiguredItems config change handled, related systems refreshed");
         } catch (Exception e) {
-            RarityCore.LOGGER.error("处理skipUnconfiguredItems配置变更时出错", e);
+            RarityCore.LOGGER.error("Error handling skipUnconfiguredItems config change", e);
         }
     }
     

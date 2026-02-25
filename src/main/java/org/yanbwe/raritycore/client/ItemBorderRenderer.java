@@ -156,7 +156,7 @@ public class ItemBorderRenderer {
     public static void handleSkipConfigChange() {
         // 使边框渲染缓存失效
         RenderCacheManager.clearAllCache();
-        RarityCore.LOGGER.debug("ItemBorderRenderer: skipUnconfiguredItems配置变更处理完成");
+        // ItemBorderRenderer: skipUnconfiguredItems config change handled
     }
     
     /**

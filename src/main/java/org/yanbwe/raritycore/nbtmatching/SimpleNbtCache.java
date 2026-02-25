@@ -32,7 +32,7 @@ public class SimpleNbtCache {
             .expireAfterWrite(3, TimeUnit.MINUTES)
             .build();
         
-        RarityCore.LOGGER.info("NBT匹配缓存初始化完成，容量: {}", dynamicSize);
+        RarityCore.LOGGER.info("NBT cache initialized with capacity: {}", dynamicSize);
     }
     
     /**
@@ -52,7 +52,7 @@ public class SimpleNbtCache {
     public static void reinitializeCache() {
         itemCache.invalidateAll();
         initializeCache();
-        RarityCore.LOGGER.info("NBT匹配缓存已重新初始化");
+        RarityCore.LOGGER.info("NBT cache reinitialized");
     }
     
     /**
@@ -70,7 +70,7 @@ public class SimpleNbtCache {
             // 将特殊值-1转换回null
             return result != -1 ? result : null;
         } catch (ExecutionException e) {
-            RarityCore.LOGGER.debug("缓存获取失败: {}", e.getMessage());
+            // Cache retrieval failed, returning null
             return null;
         }
     }
@@ -110,7 +110,7 @@ public class SimpleNbtCache {
      */
     public static void invalidateAll() {
         itemCache.invalidateAll();
-        RarityCore.LOGGER.debug("NBT匹配缓存已清空");
+        // NBT cache cleared
     }
     
     /**
