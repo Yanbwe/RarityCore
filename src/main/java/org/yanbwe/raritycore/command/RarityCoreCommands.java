@@ -19,7 +19,6 @@ public class RarityCoreCommands {
         
         // 注册客户端命令（无需OP权限）
         org.yanbwe.raritycore.client.ClientCommands.register(dispatcher);
-        org.yanbwe.raritycore.client.CacheManagementCommands.register(dispatcher);
     }
     
     /**
