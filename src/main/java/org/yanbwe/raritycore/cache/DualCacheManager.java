@@ -160,14 +160,12 @@ public class DualCacheManager {
         
         // 防抖检查：如果正在重载或者距离上次重载时间太短，则跳过
         if (isReloading || (currentTime - lastReloadTime) < MIN_RELOAD_INTERVAL) {
-            RarityCore.LOGGER.debug("Cache reload skipped due to debounce protection");
             return;
         }
         
         synchronized (DualCacheManager.class) {
             // 双重检查锁定
             if (isReloading || (currentTime - lastReloadTime) < MIN_RELOAD_INTERVAL) {
-                RarityCore.LOGGER.debug("Cache reload skipped due to concurrent debounce");
                 return;
             }
             
