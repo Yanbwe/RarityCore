@@ -376,9 +376,13 @@ public class RarityRegistry {
                 
                 // 首先检查神化模组稀有度（最高优先级）
                 if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity()) {
-                    Integer apotheosisRarity = org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(tempStack);
-                    if (apotheosisRarity != null) {
-                        return apotheosisRarity; // 返回映射后的神化稀有度
+                    try {
+                        Integer apotheosisRarity = org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(tempStack);
+                        if (apotheosisRarity != null) {
+                            return apotheosisRarity; // 返回映射后的神化稀有度
+                        }
+                    } catch (Exception e) {
+                        RarityCore.LOGGER.debug("Apotheosis compatibility check failed for item: {}", itemId, e);
                     }
                 }
                 
@@ -390,13 +394,17 @@ public class RarityRegistry {
                 
                 // 最后检查原版稀有度映射（最低优先级）
                 if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
-                    net.minecraft.world.item.Rarity vanillaRarity = tempStack.getRarity();
-                    if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
-                        return 3; // 罕见
-                    } else if (vanillaRarity == net.minecraft.world.item.Rarity.RARE) {
-                        return 4; // 史诗
-                    } else if (vanillaRarity == net.minecraft.world.item.Rarity.EPIC) {
-                        return 5; // 传说
+                    try {
+                        net.minecraft.world.item.Rarity vanillaRarity = tempStack.getRarity();
+                        if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
+                            return 3; // 罕见
+                        } else if (vanillaRarity == net.minecraft.world.item.Rarity.RARE) {
+                            return 4; // 史诗
+                        } else if (vanillaRarity == net.minecraft.world.item.Rarity.EPIC) {
+                            return 5; // 传说
+                        }
+                    } catch (Exception e) {
+                        RarityCore.LOGGER.debug("Vanilla rarity check failed for item: {}", itemId, e);
                     }
                 }
             }

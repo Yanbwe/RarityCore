@@ -28,6 +28,11 @@ public class DualCacheManager {
     // 缓存配置
     private static CacheConfig config;
     
+    // 防抖相关变量
+    private static volatile boolean isReloading = false;
+    private static volatile long lastReloadTime = 0;
+    private static final long MIN_RELOAD_INTERVAL = 1000; // 最小重载间隔1秒
+    
     /**
      * 获取缓存配置实例
      */
@@ -72,15 +77,26 @@ public class DualCacheManager {
      * 预加载ID缓存
      */
     private static void preloadIdCache() {
-        ForgeRegistries.ITEMS.getValues().forEach(item -> {
-            ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-            if (itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-                Integer baseRarity = RarityRegistry.getRarity(item);
-                idCache.put(itemId, baseRarity);
-            }
-        });
+        int successCount = 0;
+        int errorCount = 0;
         
-        RarityCore.LOGGER.info("ID cache preloaded with {} items", idCache.size());
+        for (Item item : ForgeRegistries.ITEMS.getValues()) {
+            try {
+                ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+                if (itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+                    Integer baseRarity = RarityRegistry.getRarity(item);
+                    idCache.put(itemId, baseRarity);
+                    successCount++;
+                }
+            } catch (Exception e) {
+                errorCount++;
+                // 记录错误但不中断整个预加载过程
+                RarityCore.LOGGER.debug("Failed to preload rarity for item during cache initialization", e);
+            }
+        }
+        
+        RarityCore.LOGGER.info("ID cache preloaded: {} items successful, {} items failed", 
+            successCount, errorCount);
     }
     
     /**
@@ -137,21 +153,44 @@ public class DualCacheManager {
     }
     
     /**
-     * 处理配置重载
+     * 处理配置重载（带防抖机制）
      */
     public static void handleConfigReload() {
-        // 清空所有缓存
-        idCache.invalidateAll();
-        nbtCache.invalidateAll();
+        long currentTime = System.currentTimeMillis();
         
-        // 重建ID缓存
-        preloadIdCache();
+        // 防抖检查：如果正在重载或者距离上次重载时间太短，则跳过
+        if (isReloading || (currentTime - lastReloadTime) < MIN_RELOAD_INTERVAL) {
+            RarityCore.LOGGER.debug("Cache reload skipped due to debounce protection");
+            return;
+        }
         
-        // 重新创建NBT缓存以应用新的容量设置
-        recreateNbtCache();
+        synchronized (DualCacheManager.class) {
+            // 双重检查锁定
+            if (isReloading || (currentTime - lastReloadTime) < MIN_RELOAD_INTERVAL) {
+                RarityCore.LOGGER.debug("Cache reload skipped due to concurrent debounce");
+                return;
+            }
+            
+            isReloading = true;
+            lastReloadTime = currentTime;
+        }
         
-        RarityCore.LOGGER.info("Dual cache system reloaded - ID cache: {}, NBT cache: {}", 
-            idCache.size(), nbtCache.size());
+        try {
+            // 清空所有缓存
+            idCache.invalidateAll();
+            nbtCache.invalidateAll();
+            
+            // 重建ID缓存
+            preloadIdCache();
+            
+            // 重新创建NBT缓存以应用新的容量设置
+            recreateNbtCache();
+            
+            RarityCore.LOGGER.info("Dual cache system reloaded - ID cache: {}, NBT cache: {}", 
+                idCache.size(), nbtCache.size());
+        } finally {
+            isReloading = false;
+        }
     }
     
     /**
