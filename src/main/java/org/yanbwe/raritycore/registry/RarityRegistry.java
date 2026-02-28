@@ -24,6 +24,11 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RarityRegistry {
+    // 环境兼容性检测标志
+    private static boolean vanillaRarityApiChecked = false;
+    private static boolean isVanillaRarityApiSupported = true;
+    private static String compatibilityFailureReason = null;
+    
     /**
      * 物品稀有度映射
      */
@@ -35,12 +40,67 @@ public class RarityRegistry {
     private static final List<ChangeOperation> CHANGE_OPERATIONS_BUFFER = new ArrayList<>();
 
     /**
+     * 检测原版稀有度API是否可用
+     * @return API是否可用
+     */
+    private static boolean isVanillaRarityApiAvailable() {
+        if (vanillaRarityApiChecked) {
+            return isVanillaRarityApiSupported;
+        }
+        
+        try {
+            // 测试API调用
+            ItemStack testStack = ItemStack.EMPTY;
+            Rarity testRarity = testStack.getRarity(); // 这会触发NoSuchMethodError如果API不可用
+            
+            // 验证返回值
+            if (testRarity == null) {
+                throw new IllegalStateException("getRarity() returned null");
+            }
+            
+            vanillaRarityApiChecked = true;
+            isVanillaRarityApiSupported = true;
+            compatibilityFailureReason = null;
+            return true;
+        } catch (NoSuchMethodError e) {
+            vanillaRarityApiChecked = true;
+            isVanillaRarityApiSupported = false;
+            compatibilityFailureReason = "NoSuchMethodError: " + e.getMessage();
+
+            return false;
+        } catch (LinkageError e) {
+            vanillaRarityApiChecked = true;
+            isVanillaRarityApiSupported = false;
+            compatibilityFailureReason = "LinkageError: " + e.getMessage();
+
+            return false;
+        } catch (Throwable e) {
+            vanillaRarityApiChecked = true;
+            isVanillaRarityApiSupported = false;
+            compatibilityFailureReason = "Unexpected error: " + e.getClass().getSimpleName() + ": " + e.getMessage();
+
+            return false;
+        }
+    }
+    /**
      * 注册物品的稀有度等级
      * 1普通，2稀有，3罕见，4史诗，5传说，6神话，7唯一
      * 不注册视为普通品质
      * @param item 要注册稀有度的物品
      * @param rarity 稀有度等级
      */
+    /**
+     * 执行兼容性检查并记录诊断信息
+     */
+    public static void performCompatibilityCheck() {
+        // 静默执行兼容性检查，只在DEBUG级别记录必要信息
+        boolean apiAvailable = isVanillaRarityApiAvailable();
+        
+        if (!apiAvailable) {
+            // 只在DEBUG级别输出基本信息
+            RarityCore.LOGGER.debug("Vanilla rarity API unavailable - operating in reduced functionality mode");
+        }
+    }
     public static void register(@Nullable Item item, int rarity) {
         register(item, rarity, true);
     }
@@ -331,12 +391,19 @@ public class RarityRegistry {
         
         // 最后检查原版稀有度映射（最低优先级）
         if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
-            net.minecraft.world.item.Rarity vanillaRarity = itemStack != null ? itemStack.getRarity() : item.getDefaultInstance().getRarity();
-            Integer mappedVanilla = mapVanillaRarity(vanillaRarity);
-            if (mappedVanilla > 1) { // 只有当原版稀有度不是普通时才使用
-                // RarityCore.LOGGER.debug("物品 {} 使用原版稀有度映射: {} (原版: {})", 
-                //     itemId, mappedVanilla, vanillaRarity);
-                return mappedVanilla;
+            // 先检测API可用性
+            if (isVanillaRarityApiAvailable()) {
+                try {
+                    net.minecraft.world.item.Rarity vanillaRarity = itemStack != null ? itemStack.getRarity() : item.getDefaultInstance().getRarity();
+                    Integer mappedVanilla = mapVanillaRarity(vanillaRarity);
+                    if (mappedVanilla > 1) { // 只有当原版稀有度不是普通时才使用
+                        // RarityCore.LOGGER.debug("物品 {} 使用原版稀有度映射: {} (原版: {})", 
+                        //     itemId, mappedVanilla, vanillaRarity);
+                        return mappedVanilla;
+                    }
+                } catch (Throwable e) { // 捕获所有异常包括Error
+                }
+            } else {
             }
         }
         
@@ -394,17 +461,22 @@ public class RarityRegistry {
                 
                 // 最后检查原版稀有度映射（最低优先级）
                 if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
-                    try {
-                        net.minecraft.world.item.Rarity vanillaRarity = tempStack.getRarity();
-                        if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
-                            return 3; // 罕见
-                        } else if (vanillaRarity == net.minecraft.world.item.Rarity.RARE) {
-                            return 4; // 史诗
-                        } else if (vanillaRarity == net.minecraft.world.item.Rarity.EPIC) {
-                            return 5; // 传说
+                    // 先检测API可用性
+                    if (isVanillaRarityApiAvailable()) {
+                        try {
+                            net.minecraft.world.item.Rarity vanillaRarity = tempStack.getRarity();
+                            if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
+                                return 3; // 罕见
+                            } else if (vanillaRarity == net.minecraft.world.item.Rarity.RARE) {
+                                return 4; // 史诗
+                            } else if (vanillaRarity == net.minecraft.world.item.Rarity.EPIC) {
+                                return 5; // 传说
+                            }
+                        } catch (Throwable e) { // 捕获所有异常包括Error
+                            RarityCore.LOGGER.debug("Vanilla rarity check failed for item: {}", itemId, e);
                         }
-                    } catch (Exception e) {
-                        RarityCore.LOGGER.debug("Vanilla rarity check failed for item: {}", itemId, e);
+                    } else {
+                        RarityCore.LOGGER.debug("Skipping vanilla rarity check for item {} - API not available", itemId);
                     }
                 }
             }

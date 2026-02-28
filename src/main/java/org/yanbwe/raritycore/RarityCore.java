@@ -67,6 +67,9 @@ public class RarityCore {
     }
     
     private void commonSetup(final FMLCommonSetupEvent event) {
+        // Perform compatibility diagnostics early
+        event.enqueueWork(RarityRegistry::performCompatibilityCheck);
+        
         // Initialize network packets
         event.enqueueWork(RaritySyncPacket::initialize);
         event.enqueueWork(IncrementalSyncPacket::initialize);

@@ -88,7 +88,7 @@ public class DualCacheManager {
                     idCache.put(itemId, baseRarity);
                     successCount++;
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) { // 改为捕获Throwable以处理Error类型的异常
                 errorCount++;
                 // 记录错误但不中断整个预加载过程
                 RarityCore.LOGGER.debug("Failed to preload rarity for item during cache initialization", e);
