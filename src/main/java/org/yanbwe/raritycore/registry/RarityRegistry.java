@@ -28,6 +28,7 @@ public class RarityRegistry {
     private static boolean vanillaRarityApiChecked = false;
     private static boolean isVanillaRarityApiSupported = true;
     private static String compatibilityFailureReason = null;
+    private static boolean hasNotifiedPlayer = false; // 添加玩家通知状态
     
     /**
      * 物品稀有度映射
@@ -39,6 +40,27 @@ public class RarityRegistry {
      */
     private static final List<ChangeOperation> CHANGE_OPERATIONS_BUFFER = new ArrayList<>();
 
+    /**
+     * 向所有在线玩家发送兼容性提示消息
+     */
+    public static void notifyPlayersOfCompatibilityIssue() {
+        if (!isVanillaRarityApiSupported && !hasNotifiedPlayer) {
+            net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
+            if (server != null) {
+                // 向所有玩家发送世界消息（使用本地化字符串）
+                server.getPlayerList().broadcastSystemMessage(
+                    net.minecraft.network.chat.Component.translatable("raritycore.message.vanilla_rarity_unavailable"),
+                    false
+                );
+                server.getPlayerList().broadcastSystemMessage(
+                    net.minecraft.network.chat.Component.translatable("raritycore.message.vanilla_rarity_cause"),
+                    false
+                );
+                hasNotifiedPlayer = true;
+            }
+        }
+    }
+    
     /**
      * 检测原版稀有度API是否可用
      * @return API是否可用
