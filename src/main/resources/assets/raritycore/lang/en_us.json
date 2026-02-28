@@ -115,5 +115,7 @@
   "rarity.core.nbt_cache_capacity": "NBT cache capacity: %d",
   "rarity.core.dynamic_multiplier": "Dynamic multiplier: %.1f",
   "rarity.core.capacity_range": "Capacity range: %d - %d",
-  "rarity.core.current_item_count": "Current item count: %d"
+  "rarity.core.current_item_count": "Current item count: %d",
+  "raritycore.message.vanilla_rarity_unavailable": "§c[RarityCore] Vanilla rarity check module is unavailable in current environment, functionality automatically degraded",
+  "raritycore.message.vanilla_rarity_cause": "§7This is typically caused by other mods modifying Minecraft's internal APIs"
 }

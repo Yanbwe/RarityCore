@@ -115,5 +115,7 @@
   "rarity.core.nbt_cache_capacity": "NBT缓存容量: %d",
   "rarity.core.dynamic_multiplier": "动态容量倍数: %.1f",
   "rarity.core.capacity_range": "容量范围: %d - %d",
-  "rarity.core.current_item_count": "当前物品总数: %d"
+  "rarity.core.current_item_count": "当前物品总数: %d",
+  "raritycore.message.vanilla_rarity_unavailable": "§c[稀有度核心] <原版稀有度检查功能> 在当前环境中不可用，功能已自动关闭",
+  "raritycore.message.vanilla_rarity_cause": "§7这通常是由于其它模组修改了原版API导致的"
 }

@@ -92,6 +92,15 @@ public class RarityCore {
             return t;
         });
         
+        // 延时发送兼容性提示（等待世界完全加载）
+        syncScheduler.schedule(() -> {
+            try {
+                RarityRegistry.notifyPlayersOfCompatibilityIssue();
+            } catch (Exception e) {
+                LOGGER.debug("Failed to send compatibility notification", e);
+            }
+        }, 5, TimeUnit.SECONDS); // 5秒后发送提示
+        
         syncScheduler.scheduleAtFixedRate(() -> {
             try {
                 // Check if sync is needed using batch manager
