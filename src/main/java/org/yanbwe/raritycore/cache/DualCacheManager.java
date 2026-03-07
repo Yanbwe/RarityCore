@@ -9,6 +9,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.CacheMetrics.CacheType;
 import org.yanbwe.raritycore.registry.RarityRegistry;
+import org.yanbwe.raritycore.util.RarityConstants;
 
 import java.util.concurrent.TimeUnit;
 
@@ -74,28 +75,30 @@ public class DualCacheManager {
     }
     
     /**
-     * 预加载ID缓存
+     * 预加载 ID 缓存
+     * 注意：仅从配置映射中读取已配置的稀有度，不调用 RarityRegistry.getRarity()
+     * 以避免触发某些物品的 getRarity() 方法导致 ClientLevel 数组越界
      */
     private static void preloadIdCache() {
         int successCount = 0;
         int errorCount = 0;
-        
-        for (Item item : ForgeRegistries.ITEMS.getValues()) {
-            try {
-                ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-                if (itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-                    Integer baseRarity = RarityRegistry.getRarity(item);
-                    idCache.put(itemId, baseRarity);
+            
+        // 直接从配置映射中预加载，避免调用物品的 getRarity() 方法
+        try {
+            for (var entry : org.yanbwe.raritycore.registry.RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
+                try {
+                    idCache.put(entry.getKey(), entry.getValue());
                     successCount++;
+                } catch (Throwable e) {
+                    errorCount++;
+                    RarityCore.LOGGER.debug("Failed to cache rarity for item: {}", entry.getKey(), e);
                 }
-            } catch (Throwable e) { // 改为捕获Throwable以处理Error类型的异常
-                errorCount++;
-                // 记录错误但不中断整个预加载过程
-                RarityCore.LOGGER.debug("Failed to preload rarity for item during cache initialization", e);
             }
+        } catch (Throwable e) {
+            RarityCore.LOGGER.error("Error loading ITEM_RARITY_MAP during cache preload", e);
         }
-        
-        RarityCore.LOGGER.info("ID cache preloaded: {} items successful, {} items failed", 
+            
+        RarityCore.LOGGER.info("ID cache preloaded: {} items from config, {} items failed", 
             successCount, errorCount);
     }
     
@@ -117,15 +120,13 @@ public class DualCacheManager {
             }
         }
         
-        // 回退到ID缓存
+        // 回退到 ID 缓存
         ResourceLocation idKey = generateIdKey(itemStack);
         Integer idResult = idCache.getIfPresent(idKey);
         if (idResult != null) {
             CacheMetrics.recordHit(CacheType.ID);
-            // 关键修改：如果有NBT数据但ID缓存命中，仍然返回null以触发填充
-            if (itemStack.hasTag() && config.isNbtCacheEnabled()) {
-                return null;
-            }
+            // 关键修复：移除强制返回 null 的逻辑，直接返回 ID 缓存结果
+            // 这样可以让没有 NBT 配置的物品直接使用 ID 缓存，避免重复计算
             return idResult;
         }
         

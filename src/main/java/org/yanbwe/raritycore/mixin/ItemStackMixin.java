@@ -27,13 +27,20 @@ public class ItemStackMixin {
             return;
         }
         
-        // 获取物品的稀有度（支持NBT匹配，使用物品堆缓存）
+        // 获取物品的稀有度（支持 NBT 匹配，使用物品堆缓存）
         Integer rarity = org.yanbwe.raritycore.client.RenderCacheManager.getCachedRarity(stack);
-        
+                
         // 如果缓存未命中，则从注册表获取并缓存
         if (rarity == null) {
             rarity = RarityRegistry.getRarity(stack);
-            org.yanbwe.raritycore.client.RenderCacheManager.cacheItemStackRarity(stack, rarity);
+            if (rarity != null) {
+                org.yanbwe.raritycore.client.RenderCacheManager.cacheItemStackRarity(stack, rarity);
+            }
+        }
+                
+        // 如果仍然没有获取到稀有度，使用默认值
+        if (rarity == null || rarity < 1) {
+            return; // 直接返回，不修改名称颜色
         }
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度，则不修改名称颜色

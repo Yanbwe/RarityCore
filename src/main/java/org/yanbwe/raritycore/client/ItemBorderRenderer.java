@@ -43,11 +43,18 @@ public class ItemBorderRenderer {
             // 如果缓存没有命中，则从注册表获取并缓存
             if (rarity == null) {
                 rarity = RarityRegistry.getRarity(itemStack);
-                org.yanbwe.raritycore.client.RenderCacheManager.cacheItemStackRarity(itemStack, rarity);
+                if (rarity != null) {
+                    org.yanbwe.raritycore.client.RenderCacheManager.cacheItemStackRarity(itemStack, rarity);
+                }
             }
         } else {
             // 缓存系统禁用时直接获取稀有度
             rarity = RarityRegistry.getRarity(itemStack);
+        }
+        
+        // 如果仍然没有获取到稀有度，使用默认值
+        if (rarity == null) {
+            rarity = RarityConstants.RARITY_COMMON;
         }
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度，则不渲染

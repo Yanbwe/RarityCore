@@ -167,10 +167,26 @@ public class AutoRarityCalculator {
      * 判断是否是支持的配方类型
      */
     private static boolean isSupportedRecipeType(Recipe<?> recipe) {
-        return recipe instanceof ShapedRecipe || 
-               recipe instanceof ShapelessRecipe ||
-               recipe instanceof AbstractCookingRecipe; // 包括熔炉、 smoker、 blast furnace
-        // 不支持铁砧，锻造台暂时不包含（产物通常不变）
+        // 支持工作台配方
+        if (recipe instanceof ShapedRecipe || recipe instanceof ShapelessRecipe) {
+            return true;
+        }
+            
+        // 支持熔炉类配方（包括熔炉、smoker、blast furnace）
+        if (recipe instanceof AbstractCookingRecipe) {
+            return true;
+        }
+            
+        // 支持锻造台配方，但排除盔甲纹饰
+        if (recipe instanceof net.minecraft.world.item.crafting.SmithingTransformRecipe) {
+            // 双重检查：通过配方 ID 排除纹饰配方
+            String recipeId = recipe.getId().toString();
+            if (!recipeId.contains("trim")) {
+                return true;
+            }
+        }
+            
+        return false;
     }
     
     /**

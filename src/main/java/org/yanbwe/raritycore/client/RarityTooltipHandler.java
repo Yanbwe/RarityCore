@@ -40,13 +40,20 @@ public class RarityTooltipHandler {
         ItemStack itemStack = event.getItemStack();
         Item item = itemStack.getItem();
         
-        // 获取物品的稀有度（支持NBT匹配，使用物品堆缓存）
+        // 获取物品的稀有度（支持 NBT 匹配，使用物品堆缓存）
         Integer rarity = RenderCacheManager.getCachedRarity(itemStack);
-        
+                
         // 如果缓存未命中，则从注册表获取并缓存
         if (rarity == null) {
             rarity = RarityRegistry.getRarity(itemStack);
-            RenderCacheManager.cacheItemStackRarity(itemStack, rarity);
+            if (rarity != null) {
+                RenderCacheManager.cacheItemStackRarity(itemStack, rarity);
+            }
+        }
+                
+        // 如果仍然没有获取到稀有度，使用默认值
+        if (rarity == null) {
+            rarity = RarityConstants.RARITY_COMMON;
         }
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度，则不插入工具提示

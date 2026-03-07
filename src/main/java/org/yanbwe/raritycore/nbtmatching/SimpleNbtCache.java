@@ -56,23 +56,25 @@ public class SimpleNbtCache {
     }
     
     /**
-     * 获取缓存的稀有度值
+     * 获取缓存的稀有度值（非阻塞版本）
      * @param stack 物品堆
-     * @return 缓存的稀有度，如果未缓存或未匹配到规则则返回null
+     * @return 缓存的稀有度，如果未缓存或未匹配到规则则返回 null
      */
     public static Integer getCachedRarity(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             return null;
         }
-        
-        try {
-            Integer result = itemCache.get(stack, () -> calculateRarity(stack));
-            // 将特殊值-1转换回null
+            
+        // 先尝试从缓存获取，不阻塞
+        Integer result = itemCache.getIfPresent(stack);
+        if (result != null) {
+            // 将特殊值 -1 转换回 null
             return result != -1 ? result : null;
-        } catch (ExecutionException e) {
-            // Cache retrieval failed, returning null
-            return null;
         }
+            
+        // 缓存未命中，直接计算但不填充缓存（避免阻塞渲染线程）
+        // 让 RarityRegistry 的计算结果来填充缓存
+        return null;
     }
     
     /**
@@ -87,13 +89,16 @@ public class SimpleNbtCache {
     }
     
     /**
-     * 手动添加缓存条目
+     * 手动添加缓存条目（异步填充）
      * @param stack 物品堆
      * @param rarity 稀有度值
      */
     public static void put(ItemStack stack, Integer rarity) {
         if (stack != null && !stack.isEmpty() && rarity != null) {
             itemCache.put(stack, rarity);
+        } else if (stack != null && !stack.isEmpty() && rarity == null) {
+            // 存储 -1 表示未找到匹配，避免重复计算
+            itemCache.put(stack, -1);
         }
     }
     
