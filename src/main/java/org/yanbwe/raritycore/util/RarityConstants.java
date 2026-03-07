@@ -43,7 +43,7 @@ public class RarityConstants {
     public static final String DEFAULT_STAR_MODE = "repeat";
     public static final String DEFAULT_REPEAT_CHARACTER = "⭐"; // 默认重复字符
     
-    // 默认自定义字符串配置
+    // 星星显示自定义字符串默认值
     public static final String[] DEFAULT_CUSTOM_STRINGS = {
         "·",
         "••",

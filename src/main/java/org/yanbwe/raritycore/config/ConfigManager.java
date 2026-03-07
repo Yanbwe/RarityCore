@@ -36,6 +36,7 @@ public class ConfigManager {
     private static String starMode = RarityConstants.DEFAULT_STAR_MODE; // 星星显示模式
     private static String repeatCharacter = RarityConstants.DEFAULT_REPEAT_CHARACTER; // 重复模式字符
     private static java.util.Map<Integer, String> customStarStrings = new java.util.HashMap<>(); // 自定义模式字符串映射
+    private static java.util.Map<Integer, String> customSpecialRarityTexts = new java.util.HashMap<>(); // 特殊稀有度文本映射（大于 7 级）
     
     // 配置文件路径
     private static final Path CONFIG_DIR = Paths.get(RarityConstants.CONFIG_DIR_PARENT).resolve(RarityConstants.CONFIG_DIR_NAME);
@@ -231,7 +232,7 @@ public class ConfigManager {
                         JsonObject stringsObj = customObj.getAsJsonObject("strings");
                         customStarStrings.clear();
                         
-                        // 解析自定义字符串映射
+                        // 解析自定义字符串映射（用于星星显示）
                         for (String key : stringsObj.keySet()) {
                             try {
                                 int rarity = Integer.parseInt(key);
@@ -244,10 +245,29 @@ public class ConfigManager {
                             }
                         }
                     }
+                    
+                    // 读取特殊稀有度文本配置（大于 7 级）
+                    if (customObj.has("specialRarityTexts")) {
+                        JsonObject specialTextsObj = customObj.getAsJsonObject("specialRarityTexts");
+                        customSpecialRarityTexts.clear();
+                        
+                        // 解析特殊稀有度文本映射
+                        for (String key : specialTextsObj.keySet()) {
+                            try {
+                                int rarity = Integer.parseInt(key);
+                                String textValue = specialTextsObj.get(key).getAsString();
+                                if (textValue != null && !textValue.isEmpty()) {
+                                    customSpecialRarityTexts.put(rarity, textValue);
+                                }
+                            } catch (NumberFormatException e) {
+                                RarityCore.LOGGER.warn("Invalid rarity key in special rarity texts: {}", key);
+                            }
+                        }
+                    }
                 }
                 
-                RarityCore.LOGGER.info("Loaded star display config: enabled={}, mode={}, repeatChar='{}', customStrings={}", 
-                    enableStarDisplay, starMode, repeatCharacter, customStarStrings.size());
+                RarityCore.LOGGER.info("Loaded star display config: enabled={}, mode={}, repeatChar='{}', customStrings={}, specialRarityTexts={}", 
+                    enableStarDisplay, starMode, repeatCharacter, customStarStrings.size(), customSpecialRarityTexts.size());
             } else {
                 // 如果没有starDisplay配置，使用默认值
                 enableStarDisplay = RarityConstants.DEFAULT_ENABLE_STAR_DISPLAY;
@@ -316,12 +336,16 @@ public class ConfigManager {
         JsonObject customConfig = new JsonObject();
         JsonObject customStrings = new JsonObject();
         
-        // 使用常量数组添加默认的自定义字符串配置
+        // 使用常量数组添加默认的自定义字符串配置（用于星星显示）
         for (int i = 0; i < RarityConstants.DEFAULT_CUSTOM_STRINGS.length; i++) {
             customStrings.addProperty(String.valueOf(i + 1), RarityConstants.DEFAULT_CUSTOM_STRINGS[i]);
         }
         
+        // 添加空的特殊稀有度文本配置对象（大于 7 级，由用户自行定义）
+        JsonObject specialRarityTexts = new JsonObject();
+        
         customConfig.add("strings", customStrings);
+        customConfig.add("specialRarityTexts", specialRarityTexts);
         starDisplay.add("custom", customConfig);
         
         return starDisplay;
@@ -539,5 +563,28 @@ public class ConfigManager {
         } else {
             customStarStrings.remove(rarity);
         }
+    }
+    
+    /**
+     * 获取特殊稀有度文本映射（大于 7 级）
+     */
+    public static java.util.Map<Integer, String> getCustomSpecialRarityTexts() {
+        return new java.util.HashMap<>(customSpecialRarityTexts);
+    }
+    
+    /**
+     * 获取指定稀有度的自定义特殊文本
+     * @param rarity 稀有度等级（大于 7）
+     * @return 自定义文本，如果没有配置则返回 null
+     */
+    public static String getCustomSpecialRarityText(int rarity) {
+        return customSpecialRarityTexts.get(rarity);
+    }
+    
+    /**
+     * 设置特殊稀有度文本映射
+     */
+    public static void setCustomSpecialRarityTexts(java.util.Map<Integer, String> texts) {
+        customSpecialRarityTexts = texts != null ? new java.util.HashMap<>(texts) : new java.util.HashMap<>();
     }
 }

@@ -310,9 +310,19 @@ public class RarityRegistry {
         
         // 构建工具提示字符串
         if (isSpecialRarity) {
-            // 特殊稀有度（大于7级）
+            // 特殊稀有度（大于 7 级）
             String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(displayRarity);
-            return "[" + displayRarity + "级稀有度-" + stars + "]";
+            
+            // 检查是否有自定义特殊稀有度文本
+            String customText = org.yanbwe.raritycore.config.ConfigManager.getCustomSpecialRarityText(displayRarity);
+            
+            if (customText != null && !customText.isEmpty()) {
+                // 使用自定义文本，但保持完整格式：[自定义文本 - 星星]
+                return "[" + customText + "-" + stars + "]";
+            } else {
+                // 使用默认格式：[xx 级稀有度 - 星星]
+                return "[" + displayRarity + "级稀有度-" + stars + "]";
+            }
         } else {
             // 标准稀有度（1-7级）
             String rarityKey;

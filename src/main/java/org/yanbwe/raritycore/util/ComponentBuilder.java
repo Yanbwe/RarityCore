@@ -78,21 +78,27 @@ public class ComponentBuilder {
     }
     
     /**
-     * 构建特殊稀有度组件（大于7级的情况）
+     * 构建特殊稀有度组件（大于 7 级的情况）
      * @param rarity 稀有度等级
      * @param color 颜色格式
      * @return 构建好的组件
      */
     public static MutableComponent buildSpecialRarityComponent(int rarity, ChatFormatting color) {
-        String stars = getStars(rarity);
-        MutableComponent numberComponent = Component.literal("[" + rarity).withStyle(color);
-        MutableComponent tipsComponent = Component.translatable("rarity.core.unusual.tips").withStyle(color);
-        MutableComponent starsComponent = Component.literal(stars + "]").withStyle(color);
-        
-        return Component.empty()
-            .append(numberComponent)
-            .append(tipsComponent)
-            .append(starsComponent);
+        // 检查是否有自定义特殊稀有度文本
+        String customText = org.yanbwe.raritycore.config.ConfigManager.getCustomSpecialRarityText(rarity);
+            
+        String textToShow;
+        if (customText != null && !customText.isEmpty()) {
+            // 使用自定义文本，但保持完整格式：[自定义文本 - 星星]
+            String stars = getStars(rarity);
+            textToShow = "[" + customText + "-" + stars + "]";
+        } else {
+            // 使用默认格式：[xx 级稀有度 - 星星]
+            String stars = getStars(rarity);
+            textToShow = "[" + rarity + "级稀有度-" + stars + "]";
+        }
+            
+        return Component.literal(textToShow).withStyle(color);
     }
     
     /**

@@ -23,7 +23,7 @@ public class ConfigVersionManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     
     // 当前配置版本号
-    public static final int CURRENT_CONFIG_VERSION = 5;
+    public static final int CURRENT_CONFIG_VERSION = 6;
     
     // 版本升级处理器映射
     private static final Map<Integer, ConfigUpgradeHandler> UPGRADE_HANDLERS = new HashMap<>();
@@ -131,6 +131,29 @@ public class ConfigVersionManager {
                 RarityCore.LOGGER.info("Added enableGetRarityWarning config option");
             }
                     
+            return oldConfig;
+        });
+        
+        // 从版本 5 升级到版本 6 的处理器
+        UPGRADE_HANDLERS.put(5, (oldConfig, from, to) -> {
+            RarityCore.LOGGER.info("Upgrading config from version {} to {}", from, to);
+            
+            // 版本 5 到 6 的升级：添加特殊稀有度文本自定义配置
+            if (oldConfig.has("starDisplay")) {
+                JsonObject starDisplayObj = oldConfig.getAsJsonObject("starDisplay");
+                
+                if (starDisplayObj.has("custom")) {
+                    JsonObject customObj = starDisplayObj.getAsJsonObject("custom");
+                    
+                    // 添加空的特殊稀有度文本配置对象（如果不存在）
+                    if (!customObj.has("specialRarityTexts")) {
+                        JsonObject specialRarityTexts = new JsonObject();
+                        customObj.add("specialRarityTexts", specialRarityTexts);
+                        RarityCore.LOGGER.info("Added specialRarityTexts config for custom rarity display (> level 7)");
+                    }
+                }
+            }
+            
             return oldConfig;
         });
     }
