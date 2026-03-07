@@ -23,7 +23,7 @@ public class ConfigVersionManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     
     // 当前配置版本号
-    public static final int CURRENT_CONFIG_VERSION = 4;
+    public static final int CURRENT_CONFIG_VERSION = 5;
     
     // 版本升级处理器映射
     private static final Map<Integer, ConfigUpgradeHandler> UPGRADE_HANDLERS = new HashMap<>();
@@ -93,19 +93,19 @@ public class ConfigVersionManager {
             return oldConfig;
         });
         
-        // 从版本3升级到版本4的处理器
+        // 从版本 3 升级到版本 4 的处理器
         UPGRADE_HANDLERS.put(3, (oldConfig, from, to) -> {
             RarityCore.LOGGER.info("Upgrading config from version {} to {}", from, to);
-            
-            // 版本3到4的升级：添加星星显示配置
+                    
+            // 版本 3 到 4 的升级：添加星星显示配置
             JsonObject starDisplay = new JsonObject();
             starDisplay.addProperty("enabled", true);
             starDisplay.addProperty("mode", RarityConstants.DEFAULT_STAR_MODE); // 引用常量
-            
+                    
             JsonObject repeatConfig = new JsonObject();
             repeatConfig.addProperty("character", RarityConstants.DEFAULT_REPEAT_CHARACTER);
             starDisplay.add("repeat", repeatConfig);
-            
+                    
             JsonObject customConfig = new JsonObject();
             JsonObject customStrings = new JsonObject();
             // 使用常量数组添加默认的自定义字符串配置
@@ -114,10 +114,23 @@ public class ConfigVersionManager {
             }
             customConfig.add("strings", customStrings);
             starDisplay.add("custom", customConfig);
-            
+                    
             oldConfig.add("starDisplay", starDisplay);
             RarityCore.LOGGER.info("Added star display configuration");
-            
+                    
+            return oldConfig;
+        });
+                
+        // 从版本 4 升级到版本 5 的处理器
+        UPGRADE_HANDLERS.put(4, (oldConfig, from, to) -> {
+            RarityCore.LOGGER.info("Upgrading config from version {} to {}", from, to);
+                    
+            // 版本 4 到 5 的升级：添加 enableGetRarityWarning 配置项（服务端）
+            if (!oldConfig.has("enableGetRarityWarning")) {
+                oldConfig.addProperty("enableGetRarityWarning", RarityConstants.DEFAULT_ENABLE_GET_RARITY_WARNING);
+                RarityCore.LOGGER.info("Added enableGetRarityWarning config option");
+            }
+                    
             return oldConfig;
         });
     }

@@ -44,6 +44,11 @@ public class RarityRegistry {
      * 向所有在线玩家发送兼容性提示消息
      */
     public static void notifyPlayersOfCompatibilityIssue() {
+        // 检查配置是否启用警告
+        if (!org.yanbwe.raritycore.config.ServerConfigManager.isEnableGetRarityWarning()) {
+            return; // 配置禁用则不发送警告
+        }
+        
         if (!isVanillaRarityApiSupported && !hasNotifiedPlayer) {
             net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
             if (server != null) {
