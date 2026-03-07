@@ -33,6 +33,35 @@ public class AutoRarityCalculator {
     
     // 计算状态
     private static boolean isCalculating = false;
+    
+    /**
+     * 判断物品是否为 A 类物品（已有配置的稀有度）
+     * @param itemId 物品 ID
+     * @return 如果是 A 类返回 true
+     */
+    private static boolean isTypeA(ResourceLocation itemId) {
+        return RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId);
+    }
+    
+    /**
+     * 判断物品是否已计算过（C 类物品）
+     * @param item 物品对象
+     * @return 如果已计算返回 true
+     */
+    private static boolean isTypeC(Item item) {
+        return tempComputedRarities.containsKey(item);
+    }
+    
+    /**
+     * 判断物品是否为 B 类物品（无配置，可以计算）
+     * @param itemId 物品 ID
+     * @param item 物品对象
+     * @return 如果是 B 类返回 true
+     */
+    private static boolean isTypeB(ResourceLocation itemId, Item item) {
+        // 不是 A 类且不是 C 类，就是 B 类
+        return !isTypeA(itemId) && !isTypeC(item);
+    }
     private static int currentRound = 0;
     private static int itemsProcessedThisTick = 0;
     
@@ -49,6 +78,9 @@ public class AutoRarityCalculator {
     private static int roundTotalTasks = 0; // 本轮总任务数
     private static int roundProcessedTasks = 0; // 本轮已处理任务数
     private static long lastProgressUpdateTime = 0; // 上次进度更新时间（毫秒）
+    
+    // 记录本轮新计算的物品（用于多轮迭代）
+    private static Set<Item> currentRoundNewItems = new HashSet<>();
     
     /**
      * NBT 规则打包类
@@ -96,6 +128,7 @@ public class AutoRarityCalculator {
         isCalculating = true;
         currentRound = 1;
         newlyAddedCount = 0;
+        currentRoundNewItems.clear();
         tempComputedRarities.clear();
         visitedRecipes.clear();
         pendingNbtRules.clear();
@@ -135,10 +168,16 @@ public class AutoRarityCalculator {
         
         // 遍历所有配方
         int taskCount = 0;
+        int smithingCount = 0;
         for (Recipe<?> recipe : recipeManager.getRecipes()) {
             // 只处理工作台、熔炉、锻造台配方
             if (!isSupportedRecipeType(recipe)) {
                 continue;
+            }
+            
+            // 记录锻造台配方数量
+            if (recipe instanceof net.minecraft.world.item.crafting.SmithingTransformRecipe) {
+                smithingCount++;
             }
             
             // 跳过已访问的配方
@@ -149,12 +188,16 @@ public class AutoRarityCalculator {
             
             // 检查配料是否都已知
             List<Integer> rarities = getIngredientRarities(recipe, knownRarityItems);
-            if (rarities != null && !rarities.isEmpty()) {
+            // 关键修复：getIngredientRarities 现在总是返回列表（可能为空），不再返回 null
+            // 所以只需要检查列表是否为空即可
+            if (!rarities.isEmpty()) {
                 pendingTasks.offer(new CalculationTask(recipe, rarities));
                 visitedRecipes.add(recipeId);
                 taskCount++;
             }
         }
+        
+        RarityCore.LOGGER.info("Round 1: Found {} smithing recipes, queued {} total tasks", smithingCount, taskCount);
         
         sendToAllPlayers(Component.translatable("rarity.core.auto_calculation_round_scan_complete", currentRound, taskCount)
             .withStyle(net.minecraft.ChatFormatting.YELLOW));
@@ -177,13 +220,11 @@ public class AutoRarityCalculator {
             return true;
         }
             
-        // 支持锻造台配方，但排除盔甲纹饰
+        // 支持锻造台升级配方（排除盔甲纹饰）
+        // SmithingTransformRecipe 用于物品升级（如下界合金升级）
+        // SmithingTrimRecipe 用于盔甲纹饰（仅改变外观，不处理）
         if (recipe instanceof net.minecraft.world.item.crafting.SmithingTransformRecipe) {
-            // 双重检查：通过配方 ID 排除纹饰配方
-            String recipeId = recipe.getId().toString();
-            if (!recipeId.contains("trim")) {
-                return true;
-            }
+            return true;
         }
             
         return false;
@@ -191,47 +232,156 @@ public class AutoRarityCalculator {
     
     /**
      * 获取配料的稀有度列表
+     * @param recipe 配方
+     * @param knownItems 已知稀有度的物品集合（用于检查配料是否有稀有度）
      * @return 如果所有配料都有稀有度则返回列表，否则返回 null
      */
     private static List<Integer> getIngredientRarities(Recipe<?> recipe, Set<Item> knownItems) {
         List<Integer> rarities = new ArrayList<>();
         
-        for (Ingredient ingredient : recipe.getIngredients()) {
-            if (ingredient.isEmpty()) {
+        // 特殊处理锻造台配方
+        if (recipe instanceof net.minecraft.world.item.crafting.SmithingTransformRecipe smithingRecipe) {
+            try {
+                // 尝试使用不同的字段名（可能是映射名）
+                Ingredient template = null, base = null, addition = null;
+                
+                // 可能的字段名列表 - 根据实际日志，字段名应该是 f_265xxx_ 格式
+                String[] possibleTemplateNames = {"template", "f_44139_", "field_17786_a", "f_265949_"};
+                String[] possibleBaseNames = {"base", "f_44140_", "field_17787_b", "f_265888_"};
+                String[] possibleAdditionNames = {"addition", "f_44141_", "field_17788_c", "f_265907_"};
+                
+                for (String name : possibleTemplateNames) {
+                    try {
+                        java.lang.reflect.Field field = recipe.getClass().getDeclaredField(name);
+                        field.setAccessible(true);
+                        template = (Ingredient) field.get(recipe);
+                        break;
+                    } catch (NoSuchFieldException ignored) {}
+                }
+                
+                for (String name : possibleBaseNames) {
+                    try {
+                        java.lang.reflect.Field field = recipe.getClass().getDeclaredField(name);
+                        field.setAccessible(true);
+                        base = (Ingredient) field.get(recipe);
+                        break;
+                    } catch (NoSuchFieldException ignored) {}
+                }
+                
+                for (String name : possibleAdditionNames) {
+                    try {
+                        java.lang.reflect.Field field = recipe.getClass().getDeclaredField(name);
+                        field.setAccessible(true);
+                        addition = (Ingredient) field.get(recipe);
+                        break;
+                    } catch (NoSuchFieldException ignored) {}
+                }
+                
+                if (template != null || base != null || addition != null) {
+                    // 处理 template
+                    if (template != null && !template.isEmpty()) {
+                        processIngredient(template, "template", rarities, knownItems);
+                    } else {
+                        rarities.add(1);
+                    }
+                    
+                    // 处理 base
+                    if (base != null && !base.isEmpty()) {
+                        processIngredient(base, "base", rarities, knownItems);
+                    } else {
+                        rarities.add(1);
+                    }
+                    
+                    // 处理 addition
+                    if (addition != null && !addition.isEmpty()) {
+                        processIngredient(addition, "addition", rarities, knownItems);
+                    } else {
+                        rarities.add(1);
+                    }
+                    
+                    return rarities;
+                } else {
+                    RarityCore.LOGGER.error("Could not find any ingredient fields for smithing recipe {}", recipe.getId());
+                }
+                
+            } catch (Exception e) {
+                RarityCore.LOGGER.error("Failed to get ingredients for smithing recipe {} via reflection: {}", 
+                    recipe.getId(), e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        
+        // 默认处理：使用 getIngredients()
+        Ingredient[] ingredients = recipe.getIngredients().toArray(new Ingredient[0]);
+        for (int i = 0; i < ingredients.length; i++) {
+            Ingredient ingredient = ingredients[i];
+            
+            if (ingredient == null || ingredient.isEmpty()) {
+                rarities.add(1);
                 continue;
             }
             
-            // 获取此配料中的所有物品
             ItemStack[] stacks = ingredient.getItems();
             if (stacks.length == 0) {
+                rarities.add(1);
                 continue;
             }
             
-            // 检查是否有至少一个物品已知稀有度
             boolean found = false;
             for (ItemStack stack : stacks) {
                 Item item = stack.getItem();
+                ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
                 
-                // 优先使用已计算的临时稀有度
                 Integer rarity = tempComputedRarities.get(item);
                 if (rarity == null) {
-                    rarity = RarityRegistry.ITEM_RARITY_MAP.get(ForgeRegistries.ITEMS.getKey(item));
+                    rarity = RarityRegistry.ITEM_RARITY_MAP.get(itemId);
                 }
                 
                 if (rarity != null) {
                     rarities.add(rarity);
                     found = true;
-                    break; // 只需要一个已知稀有度
+                    break;
                 }
             }
             
             if (!found) {
-                // 配料中没有已知稀有度的物品，视为 1 级
                 rarities.add(1);
             }
         }
         
-        return rarities.isEmpty() ? null : rarities;
+        return rarities;
+    }
+    
+    /**
+     * 处理单个配料，添加其稀有度到列表中
+     */
+    private static void processIngredient(Ingredient ingredient, String name, List<Integer> rarities, Set<Item> knownItems) {
+        ItemStack[] stacks = ingredient.getItems();
+        if (stacks.length == 0) {
+            rarities.add(1);
+            return;
+        }
+        
+        boolean found = false;
+        for (ItemStack stack : stacks) {
+            Item item = stack.getItem();
+            ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+            
+            Integer rarity = tempComputedRarities.get(item);
+            if (rarity == null) {
+                rarity = RarityRegistry.ITEM_RARITY_MAP.get(itemId);
+            }
+            
+            if (rarity != null) {
+                rarities.add(rarity);
+                found = true;
+                break;
+            }
+        }
+        
+        if (!found) {
+            rarities.add(1);
+        }
     }
     
     /**
@@ -281,18 +431,43 @@ public class AutoRarityCalculator {
             Item outputItem = result.getItem();
             ResourceLocation outputId = ForgeRegistries.ITEMS.getKey(outputItem);
             
-            // 检查产物是否已经计算过或已有配置
-            if (tempComputedRarities.containsKey(outputItem) || 
-                RarityRegistry.ITEM_RARITY_MAP.containsKey(outputId)) {
+            if (outputId == null) {
+                RarityCore.LOGGER.debug("Skipping item with null ID: {}", outputItem);
                 return;
             }
+            
+            // 关键修复：只计算 B 类物品
+            // A 类物品（已有配置）→ 跳过，不触碰
+            // C 类物品（已计算过）→ 跳过，避免重复
+            // B 类物品（无配置）→ 开始计算
+            if (isTypeA(outputId)) {
+                // A 类物品：已有配置，绝对不触碰
+                return;
+            }
+            
+            if (isTypeC(outputItem)) {
+                // C 类物品：本轮已计算过，跳过
+                return;
+            }
+            
+            // B 类物品：开始计算
             
             // 计算产物稀有度
             int outputRarity = calculateOutputRarity(task.ingredientRarities);
             
-            // 保存到临时缓存
-            tempComputedRarities.put(outputItem, outputRarity);
-            newlyAddedCount++;
+            // 关键修复：如果物品已经被计算过（有多个配方），只保留最高稀有度
+            Integer existingRarity = tempComputedRarities.get(outputItem);
+            if (existingRarity != null) {
+                // 物品已经有稀有度，只在新计算的稀有度更高时才覆盖
+                if (outputRarity > existingRarity) {
+                    tempComputedRarities.put(outputItem, outputRarity);
+                }
+            } else {
+                // 第一次计算此物品，直接保存
+                tempComputedRarities.put(outputItem, outputRarity);
+                newlyAddedCount++;
+                currentRoundNewItems.add(outputItem); // 记录为本轮新物品
+            }
             
             // 如果产物有 NBT，生成 NBT 规则
             if (result.hasTag()) {
@@ -300,7 +475,6 @@ public class AutoRarityCalculator {
             }
             
         } catch (Exception e) {
-            RarityCore.LOGGER.debug("Failed to process recipe task", e);
             // 跳过此物品
         }
     }
@@ -342,7 +516,7 @@ public class AutoRarityCalculator {
                 pendingNbtRules.add(new NbtRuleWithItem(itemId, nbtTag, conditions, rarity));
             }
         } catch (Exception e) {
-            RarityCore.LOGGER.debug("Failed to generate NBT rule for item: {}", itemId, e);
+            // 忽略 NBT 规则生成失败
         }
     }
     
@@ -350,7 +524,8 @@ public class AutoRarityCalculator {
      * 检查并开始下一轮
      */
     private static void checkAndStartNextRound() {
-        if (newlyAddedCount == 0) {
+        // 检查本轮是否有新物品
+        if (currentRoundNewItems.isEmpty()) {
             // 没有新物品，计算完成
             finishCalculation();
             return;
@@ -367,28 +542,62 @@ public class AutoRarityCalculator {
         }
         
         RecipeManager recipeManager = server.getRecipeManager();
-        Set<Item> newlyAddedItems = new HashSet<>(tempComputedRarities.keySet());
+        // 使用本轮新计算的物品集合
+        Set<Item> newlyAddedItems = new HashSet<>(currentRoundNewItems);
         
-        // 重新扫描所有配方
+        // 清空本轮新物品记录，为下一轮准备
+        currentRoundNewItems.clear();
+        
+        // 重新扫描所有配方，找到所有产物仍然是 B 类的配方
         int taskCount = 0;
+        int checkedRecipes = 0;
+        int skippedHasConfig = 0;
+        int skippedNoNewIngredient = 0;
         for (Recipe<?> recipe : recipeManager.getRecipes()) {
             if (!isSupportedRecipeType(recipe)) {
                 continue;
             }
             
-            // 跳过已访问的配方
-            ResourceLocation recipeId = recipe.getId();
-            if (visitedRecipes.contains(recipeId)) {
+            checkedRecipes++;
+            
+            // 检查产物的稀有度是否已经确定（包括临时缓存和注册表）
+            ItemStack result = recipe.getResultItem(null);
+            if (result.isEmpty()) {
                 continue;
             }
             
+            Item outputItem = result.getItem();
+            ResourceLocation outputId = ForgeRegistries.ITEMS.getKey(outputItem);
+            
+            // 如果产物已经有稀有度，跳过此配方
+            if (tempComputedRarities.containsKey(outputItem) || 
+                RarityRegistry.ITEM_RARITY_MAP.containsKey(outputId)) {
+                skippedHasConfig++;
+                continue;
+            }
+            
+            // 关键修复：不再检查是否包含新配料，只要产物是 B 类就计算
+            // 因为配料的稀有度可能在之前的轮次中已经获得
+            
+            // 获取配料的稀有度列表
             List<Integer> rarities = getIngredientRarities(recipe, newlyAddedItems);
-            if (rarities != null && !rarities.isEmpty()) {
+            // 关键修复：getIngredientRarities 现在总是返回列表（可能为空），不再返回 null
+            if (!rarities.isEmpty()) {
                 pendingTasks.offer(new CalculationTask(recipe, rarities));
-                visitedRecipes.add(recipeId);
                 taskCount++;
+            } else {
+                // 配料中有无法确定稀有度的，暂时跳过
+                skippedNoNewIngredient++;
+                // 锻造台配方配料为空是常见的（如 KubeJS 修改），不输出警告
+                if (!(recipe instanceof net.minecraft.world.item.crafting.SmithingTransformRecipe)) {
+                    RarityCore.LOGGER.warn("Skipped recipe {} for product {}: ingredients returned empty list", 
+                        recipe.getId(), outputId);
+                }
             }
         }
+        
+        RarityCore.LOGGER.info("Round {} scan: checked {} recipes, skipped {} (has config), skipped {} (missing ingredient rarity), queued {} tasks", 
+            currentRound, checkedRecipes, skippedHasConfig, skippedNoNewIngredient, taskCount);
         
         if (taskCount > 0) {
             roundTotalTasks = taskCount;
@@ -396,6 +605,7 @@ public class AutoRarityCalculator {
             sendToAllPlayers(Component.translatable("rarity.core.auto_calculation_round_scan_complete", currentRound, taskCount)
                 .withStyle(net.minecraft.ChatFormatting.YELLOW));
         } else {
+            // 没有新任务，计算完成
             finishCalculation();
         }
     }
@@ -406,15 +616,34 @@ public class AutoRarityCalculator {
     private static void finishCalculation() {
         isCalculating = false;
         
-        sendToAllPlayers(Component.translatable("rarity.core.auto_calculation_complete", newlyAddedCount)
-            .withStyle(net.minecraft.ChatFormatting.YELLOW));
+        // 统计信息
+        int totalCalculated = newlyAddedCount;
+        int nbtRulesGenerated = pendingNbtRules.size();
         
-        // 写入配置
-        writeAutoConfigs();
+        RarityCore.LOGGER.info("Auto rarity calculation completed: {} items calculated, {} NBT rules generated", 
+            totalCalculated, nbtRulesGenerated);
         
-        // 提示玩家需要手动执行 reload 指令
-        sendToAllPlayers(Component.translatable("rarity.core.auto_calculation_manual_reload_required")
-            .withStyle(net.minecraft.ChatFormatting.GREEN));
+        if (totalCalculated > 0 || nbtRulesGenerated > 0) {
+            sendToAllPlayers(Component.translatable("rarity.core.auto_calculation_complete", totalCalculated)
+                .withStyle(net.minecraft.ChatFormatting.YELLOW));
+            
+            // 写入配置
+            RarityCore.LOGGER.info("Writing auto configs...");
+            writeAutoConfigs();
+            
+            // 提示玩家需要手动执行 reload 指令
+            sendToAllPlayers(Component.translatable("rarity.core.auto_calculation_manual_reload_required")
+                .withStyle(net.minecraft.ChatFormatting.GREEN));
+        } else {
+            // 没有计算出任何物品
+            sendToAllPlayers(Component.translatable("rarity.core.auto_calculation_no_items_calculated")
+                .withStyle(net.minecraft.ChatFormatting.YELLOW));
+            RarityCore.LOGGER.warn("No items were calculated during auto rarity calculation");
+            
+            // 清空临时数据，不写入空文件
+            tempComputedRarities.clear();
+            pendingNbtRules.clear();
+        }
     }
     
     /**
@@ -422,22 +651,37 @@ public class AutoRarityCalculator {
      */
     private static void writeAutoConfigs() {
         try {
-            // 清理旧的 auto_*.json
+            RarityCore.LOGGER.info("Starting to write auto configs: {} items, {} NBT rules", 
+                tempComputedRarities.size(), pendingNbtRules.size());
+            
+            // 如果没有要写入的数据，直接返回
+            if (tempComputedRarities.isEmpty() && pendingNbtRules.isEmpty()) {
+                RarityCore.LOGGER.warn("No data to write, skipping auto config write");
+                return;
+            }
+            
+            // 清理旧的 auto_*.json（只在有新数据时才清理）
             AutoRarityConfigManager.cleanupAutoNbtFiles();
             
             // 写入 auto_rarity.json
-            AutoRarityConfigManager.writeAutoRarityJson(tempComputedRarities);
+            if (!tempComputedRarities.isEmpty()) {
+                AutoRarityConfigManager.writeAutoRarityJson(tempComputedRarities);
+            } else {
+                RarityCore.LOGGER.debug("No rarity data to write to auto_rarity.json");
+            }
             
             // 写入 auto_*.json (NBT 规则)
+            int nbtFilesWritten = 0;
             for (NbtRuleWithItem rule : pendingNbtRules) {
                 AutoRarityConfigManager.writeNbtRuleFile(rule.itemId, rule.conditions, rule.rarity);
+                nbtFilesWritten++;
             }
+            
+            RarityCore.LOGGER.info("Config write completed: {} items written to auto_rarity.json, {} NBT rule files created", 
+                tempComputedRarities.size(), nbtFilesWritten);
             
             // 写入完成后清空临时缓存
             tempComputedRarities.clear();
-            
-            RarityCore.LOGGER.info("Auto rarity calculation completed: {} items calculated, {} NBT rules generated", 
-                tempComputedRarities.size(), pendingNbtRules.size());
             
         } catch (Exception e) {
             RarityCore.LOGGER.error("Failed to write auto rarity configs", e);

@@ -80,8 +80,8 @@ public class AutoRarityConfigManager {
                     
                     net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
                     if (item != null) {
-                        // 直接写入注册表，不触发任何同步操作
-                        org.yanbwe.raritycore.registry.RarityRegistry.ITEM_RARITY_MAP.put(itemId, rarity);
+                        // 写入自动计算的稀有度映射（优先级低于 FinalRarity.json）
+                        org.yanbwe.raritycore.registry.RarityRegistry.putAutoRarity(itemId, rarity);
                         lastLoadedAutoItems.add(itemId); // 记录已加载的物品
                         loadedCount++;
                     }
@@ -105,10 +105,8 @@ public class AutoRarityConfigManager {
      */
     private static void clearAutoLoadedItems() {
         for (ResourceLocation itemId : lastLoadedAutoItems) {
-            net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
-            if (item != null) {
-                RarityRegistry.ITEM_RARITY_MAP.remove(itemId);
-            }
+            // 从自动计算映射中移除
+            RarityRegistry.removeAutoRarity(itemId);
         }
         lastLoadedAutoItems.clear();
         RarityCore.LOGGER.debug("Cleared {} auto-loaded items", lastLoadedAutoItems.size());
@@ -188,12 +186,21 @@ public class AutoRarityConfigManager {
         try {
             Files.createDirectories(AUTO_CONFIG_DIR);
             
+            if (computedRarities.isEmpty()) {
+                RarityCore.LOGGER.warn("No items to write in auto_rarity.json!");
+                return;
+            }
+            
             JsonObject jsonObject = new JsonObject();
+            int writtenCount = 0;
             
             for (Map.Entry<net.minecraft.world.item.Item, Integer> entry : computedRarities.entrySet()) {
                 ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(entry.getKey());
                 if (itemId != null) {
                     jsonObject.addProperty(itemId.toString(), entry.getValue());
+                    writtenCount++;
+                } else {
+                    RarityCore.LOGGER.debug("Skipping item with null ID: {}", entry.getKey());
                 }
             }
             
@@ -201,7 +208,7 @@ public class AutoRarityConfigManager {
                 GSON.toJson(jsonObject, writer);
             }
             
-            RarityCore.LOGGER.info("Wrote auto rarity config: {} items", computedRarities.size());
+            RarityCore.LOGGER.info("Wrote auto rarity config: {} items to {}", writtenCount, AUTO_RARITY_FILE);
             
         } catch (IOException e) {
             RarityCore.LOGGER.error("Failed to write auto rarity config", e);
@@ -266,11 +273,11 @@ public class AutoRarityConfigManager {
     private static JsonObject serializeCondition(NbtCondition condition) {
         try {
             JsonObject obj = new JsonObject();
-            
-            // 使用 getter 方法获取条件字段
-            obj.addProperty("nbtPath", condition.getPath());
-            obj.addProperty("conditionType", condition.getType().name());
-            
+                
+            // 使用正确的字段名：path 和 type（与 SimpleConfigValidator 一致）
+            obj.addProperty("path", condition.getPath());
+            obj.addProperty("type", condition.getType().name().toLowerCase());
+                
             // 根据条件类型序列化特定值
             if (condition instanceof EqualsCondition) {
                 Object value = ((EqualsCondition) condition).getExpectedValue();
@@ -285,15 +292,15 @@ public class AutoRarityConfigManager {
                 }
             } else if (condition instanceof RangeCondition) {
                 RangeCondition rangeCond = (RangeCondition) condition;
-                obj.addProperty("minValue", rangeCond.getMinValue());
-                obj.addProperty("maxValue", rangeCond.getMaxValue());
+                obj.addProperty("min", rangeCond.getMinValue());
+                obj.addProperty("max", rangeCond.getMaxValue());
             } else if (condition instanceof ContainsCondition) {
                 obj.addProperty("substring", ((ContainsCondition) condition).getSubstring());
             }
             // ExistsCondition 不需要额外的值
-            
+                
             return obj;
-            
+                
         } catch (Exception e) {
             RarityCore.LOGGER.debug("Failed to serialize NBT condition", e);
             return null;

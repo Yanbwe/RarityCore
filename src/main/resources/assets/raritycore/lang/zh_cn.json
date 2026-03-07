@@ -122,6 +122,7 @@
   "rarity.core.auto_calculation_progress": "[第%d轮计算]%d/%d (%d%%)",
   "rarity.core.auto_calculation_new_items_found": "扫描到新的未计算物品，开始第%d轮计算",
   "rarity.core.auto_calculation_complete": "计算完成，本次使%d个没有稀有度的物品获得稀有度，正在写入配置...",
+  "rarity.core.auto_calculation_no_items_calculated": "§e没有物品需要计算，所有可计算的物品都已有稀有度配置",
   "rarity.core.auto_calculation_manual_reload_required": "⚠ 配置已写入文件，请执行 /raritycore reload 命令以应用新的配置！但是注意要用两次命令才行！",
   "rarity.core.auto_reload_complete": "自动重载完成，新的稀有度配置已生效",
   "rarity.core.auto_reload_failed": "自动重载失败，请手动执行 /raritycore reload",

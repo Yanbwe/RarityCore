@@ -31,14 +31,36 @@ public class RarityRegistry {
     private static boolean hasNotifiedPlayer = false; // 添加玩家通知状态
     
     /**
-     * 物品稀有度映射
+     * 物品稀有度映射（来自 FinalRarity.json、数据包等用户手动配置）
      */
     public static final ConcurrentHashMap<ResourceLocation, Integer> ITEM_RARITY_MAP = new ConcurrentHashMap<>();
+    
+    /**
+     * 自动计算的稀有度映射（来自 auto_rarity.json，优先级低于 ITEM_RARITY_MAP）
+     */
+    private static final ConcurrentHashMap<ResourceLocation, Integer> AUTO_RARITY_MAP = new ConcurrentHashMap<>();
     
     /**
      * 变更操作缓冲区
      */
     private static final List<ChangeOperation> CHANGE_OPERATIONS_BUFFER = new ArrayList<>();
+    
+    /**
+     * 放入自动计算的稀有度配置
+     * @param itemId 物品资源位置
+     * @param rarity 稀有度等级
+     */
+    public static void putAutoRarity(ResourceLocation itemId, int rarity) {
+        AUTO_RARITY_MAP.put(itemId, rarity);
+    }
+    
+    /**
+     * 移除自动计算的稀有度配置
+     * @param itemId 物品资源位置
+     */
+    public static void removeAutoRarity(ResourceLocation itemId) {
+        AUTO_RARITY_MAP.remove(itemId);
+    }
 
     /**
      * 向所有在线玩家发送兼容性提示消息
@@ -419,10 +441,16 @@ public class RarityRegistry {
             RarityCore.LOGGER.debug("Apotheosis rarity check disabled or item stack is empty");
         }
         
-        // 然后检查本模组的稀有度配置（包括配置文件和数据包）
+        // 然后检查本模组的稀有度配置（包括配置文件和数据包）- 最高优先级
         Integer configuredRarity = ITEM_RARITY_MAP.get(itemId);
         if (configuredRarity != null) {
             return configuredRarity;
+        }
+        
+        // 然后检查自动计算的稀有度配置 - 中等优先级（低于 FinalRarity，高于原版）
+        Integer autoRarity = AUTO_RARITY_MAP.get(itemId);
+        if (autoRarity != null) {
+            return autoRarity;
         }
         
         // 最后检查原版稀有度映射（最低优先级）
@@ -489,10 +517,16 @@ public class RarityRegistry {
                     }
                 }
                 
-                // 然后检查本模组的稀有度配置（包括配置文件和数据包）
+                // 然后检查本模组的稀有度配置（包括配置文件和数据包）- 最高优先级
                 Integer configuredRarity = ITEM_RARITY_MAP.get(itemId);
                 if (configuredRarity != null) {
                     return configuredRarity;
+                }
+                
+                // 然后检查自动计算的稀有度配置 - 中等优先级（低于 FinalRarity，高于原版）
+                Integer autoRarity = AUTO_RARITY_MAP.get(itemId);
+                if (autoRarity != null) {
+                    return autoRarity;
                 }
                 
                 // 最后检查原版稀有度映射（最低优先级）
