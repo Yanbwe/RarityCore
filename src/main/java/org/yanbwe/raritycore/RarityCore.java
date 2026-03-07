@@ -91,7 +91,7 @@ public class RarityCore {
             t.setDaemon(true);  // Set as daemon thread
             return t;
         });
-        
+            
         // 延时发送兼容性提示（等待世界完全加载）
         syncScheduler.schedule(() -> {
             try {
@@ -99,8 +99,17 @@ public class RarityCore {
             } catch (Exception e) {
                 LOGGER.debug("Failed to send compatibility notification", e);
             }
-        }, 5, TimeUnit.SECONDS); // 5秒后发送提示
-        
+        }, 5, TimeUnit.SECONDS); // 5 秒后发送提示
+            
+        // 延时启动自动稀有度计算（世界启动 5 秒后检测）
+        syncScheduler.schedule(() -> {
+            try {
+                checkAndStartAutoCalculation();
+            } catch (Exception e) {
+                LOGGER.error("Failed to start auto rarity calculation", e);
+            }
+        }, 5, TimeUnit.SECONDS);
+            
         syncScheduler.scheduleAtFixedRate(() -> {
             try {
                 // Check if sync is needed using batch manager
@@ -112,7 +121,17 @@ public class RarityCore {
                 LOGGER.error("Error occurred during incremental sync", e);
             }
         }, 0, 2000, TimeUnit.MILLISECONDS); // Check every 2 seconds, matching batch processing window
-        
+            
+        // 添加自动稀有度计算的 tick 任务
+        syncScheduler.scheduleAtFixedRate(() -> {
+            try {
+                // 每 tick 调用计算器
+                org.yanbwe.raritycore.calc.AutoRarityCalculator.tick();
+            } catch (Exception e) {
+                LOGGER.error("Error occurred during auto rarity calculation tick", e);
+            }
+        }, 100, 50, TimeUnit.MILLISECONDS); // 100ms 后开始，每 50ms(1tick) 执行一次
+            
         // Add cache cleanup task (using longer interval)
         syncScheduler.scheduleAtFixedRate(() -> {
             try {
@@ -150,6 +169,20 @@ public class RarityCore {
         
         // Shutdown delayed sync manager
         org.yanbwe.raritycore.network.DelayedSyncManager.shutdown();
+    }
+    
+    /**
+     * 检查并启动自动稀有度计算
+     */
+    private void checkAndStartAutoCalculation() {
+        // 检查 auto_rarity.json 是否存在
+        java.nio.file.Path autoRarityFile = org.yanbwe.raritycore.calc.AutoRarityConfigManager.getAutoRarityFilePath();
+        if (!java.nio.file.Files.exists(autoRarityFile)) {
+            // 文件不存在，开始自动计算
+            org.yanbwe.raritycore.calc.AutoRarityCalculator.startAutoCalculation();
+        } else {
+            LOGGER.debug("Auto rarity config already exists, skipping calculation: {}", autoRarityFile);
+        }
     }
     
     @SubscribeEvent

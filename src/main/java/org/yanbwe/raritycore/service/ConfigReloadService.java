@@ -67,27 +67,33 @@ public class ConfigReloadService {
             }
             FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
             
-            // 4. 加载FinalRarity.json文件
+            // 4. 加载 FinalRarity.json 文件
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_final_rarity_file"));
             }
             RarityConfigLoader.loadConfigRarityData();
+                        
+            // 5. 加载自动计算的稀有度配置
+            if (source != null) {
+                sendProgressMessage(source, Component.translatable("rarity.core.loading_auto_rarity_config"));
+            }
+            org.yanbwe.raritycore.calc.AutoRarityConfigManager.loadAutoRarityConfig();
             
-            // 5. 强制处理批处理队列中的操作（关键步骤）
+            // 6. 强制处理批处理队列中的操作（关键步骤）
             processPendingBatchOperations(source);
             
-            // 6. 同步数据到所有客户端
+            // 7. 同步数据到所有客户端
             if (!isStartup) { // 启动时不需要同步，会在玩家登录时处理
                 RarityRegistry.syncRarityToClientsWithRetry();
             }
             
-            // 7. 处理客户端相关配置（仅在命令调用时）
+            // 8. 处理客户端相关配置（仅在命令调用时）
             if (source != null) {
                 handleClientSideConfigs();
                 sendCompletionMessage(source);
             }
             
-            // 8. 处理双缓存系统重载
+            // 9. 处理双缓存系统重载
             handleCacheSystems();
             
             RarityCore.LOGGER.info("Config reload process completed");
@@ -127,13 +133,10 @@ public class ConfigReloadService {
                             case UPDATE:
                                 RarityRegistry.register(item, op.getRarity(), false);
                                 appliedCount++;
-                                RarityCore.LOGGER.debug("Applied batch ADD/UPDATE operation for item: {} -> rarity {}", 
-                                    op.getItemId(), op.getRarity());
                                 break;
                             case DELETE:
                                 RarityRegistry.unregister(item, false);
                                 appliedCount++;
-                                RarityCore.LOGGER.debug("Applied batch DELETE operation for item: {}", op.getItemId());
                                 break;
                         }
                     }

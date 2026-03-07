@@ -60,6 +60,9 @@ public class RarityManagementCommands {
                     )
                 )
             )
+            .then(Commands.literal("recalculate-auto")
+                .executes(context -> recalculateAutoRarity(context.getSource()))
+            )
         );
     }
     
@@ -205,7 +208,7 @@ public class RarityManagementCommands {
                 String content = Files.readString(configFile);
                 if (!content.trim().isEmpty()) {
                     try {
-                        // 使用JsonParser解析现有配置
+                        // 使用 JsonParser 解析现有配置
                         jsonObject = com.google.gson.JsonParser.parseString(content).getAsJsonObject();
                     } catch (Exception e) {
                         // 如果解析失败，创建新的空对象
@@ -219,7 +222,7 @@ public class RarityManagementCommands {
                 jsonObject = new com.google.gson.JsonObject();
             }
             
-            // 更新配置 - 添加或修改指定的物品ID和稀有度
+            // 更新配置 - 添加或修改指定的物品 ID 和稀有度
             jsonObject.addProperty(itemId, rarity);
             
             // 写入配置文件
@@ -229,6 +232,23 @@ public class RarityManagementCommands {
             }
         } catch (IOException e) {
             RarityCore.LOGGER.error("Failed to save rarity config", e);
+        }
+    }
+    
+    /**
+     * 重新计算自动稀有度
+     */
+    private static int recalculateAutoRarity(CommandSourceStack source) {
+        try {
+            // 强制重新计算
+            org.yanbwe.raritycore.calc.AutoRarityCalculator.forceRecalculate();
+            
+            source.sendSuccess(() -> Component.literal("已启动自动稀有度重新计算，请稍候..."), true);
+            return 1;
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Failed to recalculate auto rarity", e);
+            source.sendSuccess(() -> Component.literal("重新计算失败：" + e.getMessage()).withStyle(ChatFormatting.RED), false);
+            return 0;
         }
     }
 }

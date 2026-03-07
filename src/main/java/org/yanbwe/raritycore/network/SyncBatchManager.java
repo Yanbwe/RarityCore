@@ -58,7 +58,6 @@ public class SyncBatchManager {
         synchronized (batchLock) {
             // 检查是否超过最大容量
             if (pendingOperations.size() >= MAX_PENDING_OPERATIONS) {
-                RarityCore.LOGGER.warn("Sync batch buffer is full, forcing immediate sync");
                 return true; // 立即发送
             }
             
@@ -70,26 +69,20 @@ public class SyncBatchManager {
             
             // 根据优先级决定是否立即发送
             if (priority == SyncPriority.IMMEDIATE) {
-                RarityCore.LOGGER.debug("Immediate priority operation added, triggering sync");
                 return true;
             } else if (priority == SyncPriority.HIGH && 
                       pendingOperations.size() >= HIGH_PRIORITY_THRESHOLD) {
-                RarityCore.LOGGER.debug("High priority threshold reached: {} operations", 
-                    pendingOperations.size());
                 return true;
             }
             
             // 检查是否达到批量阈值
             if (pendingOperations.size() >= BATCH_SIZE_THRESHOLD) {
-                RarityCore.LOGGER.debug("Batch threshold reached: {} operations", pendingOperations.size());
                 return true;
             }
             
             // 检查时间窗口是否超时
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastBatchTime >= BATCH_TIME_WINDOW_MS && !pendingOperations.isEmpty()) {
-                RarityCore.LOGGER.debug("Batch time window expired: {}ms since last batch", 
-                    currentTime - lastBatchTime);
                 return true;
             }
             
@@ -135,8 +128,6 @@ public class SyncBatchManager {
             pendingOperations.clear();
             lastBatchTime = System.currentTimeMillis();
             
-            RarityCore.LOGGER.debug("Sending batch of {} operations (sorted by priority: {})", 
-                operationsToSend.size(), sortByPriority);
             return operationsToSend;
         }
     }
@@ -196,9 +187,6 @@ public class SyncBatchManager {
         }
         
         List<ChangeOperation> optimized = new ArrayList<>(latestOperations.values());
-        if (optimized.size() < operations.size()) {
-            RarityCore.LOGGER.debug("Optimized operations: {} -> {}", operations.size(), optimized.size());
-        }
         
         return optimized;
     }

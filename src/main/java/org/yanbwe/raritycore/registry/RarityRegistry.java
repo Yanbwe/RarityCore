@@ -422,7 +422,6 @@ public class RarityRegistry {
         // 然后检查本模组的稀有度配置（包括配置文件和数据包）
         Integer configuredRarity = ITEM_RARITY_MAP.get(itemId);
         if (configuredRarity != null) {
-            // RarityCore.LOGGER.debug("物品 {} 使用本模组稀有度: {}", itemId, configuredRarity);
             return configuredRarity;
         }
         

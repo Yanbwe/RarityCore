@@ -42,6 +42,7 @@
   "rarity.core.loading_nbt_config": "Loading NBT matching configuration...",
   "rarity.core.loading_final_rarity_config_folder": "Loading FinalRarityConfig folder...",
   "rarity.core.loading_final_rarity_file": "Loading FinalRarity.json file...",
+  "rarity.core.loading_auto_rarity_config": "Loading auto-calculated rarity configuration...",
   "rarity.core.cache_stats_title": "=== Render Cache Statistics ===",
   "rarity.core.cache_hits": "Cache hits: %d",
   "rarity.core.cache_misses": "Cache misses: %d",
@@ -116,6 +117,14 @@
   "rarity.core.dynamic_multiplier": "Dynamic multiplier: %.1f",
   "rarity.core.capacity_range": "Capacity range: %d - %d",
   "rarity.core.current_item_count": "Current item count: %d",
+  "rarity.core.auto_calculation_starting": "Starting rarity calculation, please do not close the game",
+  "rarity.core.auto_calculation_round_scan_complete": "[Round %d] Scan complete, %d items need rarity calculation",
+  "rarity.core.auto_calculation_progress": "[Round %d] %d/%d (%d%%)",
+  "rarity.core.auto_calculation_new_items_found": "New uncalculated items found, starting round %d",
+  "rarity.core.auto_calculation_complete": "Calculation complete! %d items without rarity have been assigned rarity levels, writing configuration...",
+  "rarity.core.auto_calculation_manual_reload_required": "⚠ Configuration written to file. Please execute /raritycore reload command to apply new rarity configurations.But be sure to use the command twice!",
+  "rarity.core.auto_reload_complete": "Auto reload complete, new rarity configuration is now active",
+  "rarity.core.auto_reload_failed": "Auto reload failed, please manually execute /raritycore reload",
   "raritycore.message.vanilla_rarity_unavailable": "§c[RarityCore] Vanilla rarity check module is unavailable in current environment, functionality automatically degraded",
   "raritycore.message.vanilla_rarity_cause": "§7This is typically caused by other mods modifying Minecraft's internal APIs"
 }
