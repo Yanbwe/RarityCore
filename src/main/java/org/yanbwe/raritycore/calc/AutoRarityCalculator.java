@@ -306,19 +306,6 @@ public class AutoRarityCalculator {
                 // 获取所有配料的稀有度
                 List<Integer> ingredientRarities = getIngredientRaritiesForNewAlgorithm(recipe);
                 
-                // 检查是否所有配料都有稀有度
-                boolean hasAllRarities = true;
-                for (Integer rarity : ingredientRarities) {
-                    if (rarity == null) {
-                        hasAllRarities = false;
-                        break;
-                    }
-                }
-                
-                if (!hasAllRarities) {
-                    continue; // 有配料缺少稀有度，跳过此配方
-                }
-                
                 // 计算产物稀有度
                 ItemStack result = recipe.getResultItem(null);
                 if (result.isEmpty()) {
@@ -378,17 +365,36 @@ public class AutoRarityCalculator {
             for (ItemStack stack : ingredient.getItems()) {
                 Item item = stack.getItem();
                 
-                // 优先查全局缓存
-                Integer rarity = maxRarityCache.get(item);
-                if (rarity == null) {
-                    // 再查本轮已计算的物品
-                    rarity = currentRoundResults.get(item);
+                // 先查注册表（数据包、FinalRarity.json、FinalRarityConfig文件夹）
+                ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+                Integer rarity = null;
+                if (itemId != null) {
+                    rarity = RarityRegistry.ITEM_RARITY_MAP.get(itemId);
                 }
+                
+                // 如果注册表没有，再查之前轮次计算的稀有度（E1, E2...）
                 if (rarity == null) {
-                    // 最后查注册表
-                    ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-                    if (itemId != null) {
-                        rarity = RarityRegistry.ITEM_RARITY_MAP.get(itemId);
+                    // 优先查全局缓存（包括之前轮次计算的物品）
+                    rarity = maxRarityCache.get(item);
+                    if (rarity == null) {
+                        // 再查本轮已计算的物品
+                        rarity = currentRoundResults.get(item);
+                    }
+                }
+                
+                // 如果还没有，最后检查原版稀有度
+                if (rarity == null && org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
+                    try {
+                        net.minecraft.world.item.Rarity vanillaRarity = stack.getRarity();
+                        if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
+                            rarity = 3; // 罕见
+                        } else if (vanillaRarity == net.minecraft.world.item.Rarity.RARE) {
+                            rarity = 4; // 史诗
+                        } else if (vanillaRarity == net.minecraft.world.item.Rarity.EPIC) {
+                            rarity = 5; // 传说
+                        }
+                    } catch (Throwable e) {
+                        // 忽略异常，继续返回 null
                     }
                 }
                 
@@ -398,9 +404,9 @@ public class AutoRarityCalculator {
                 }
             }
             
-            // 关键修复：如果找不到稀有度，返回空列表表示此配方还不能计算
+            // 如果找不到稀有度，视为 1（普通物品）
             if (foundRarity == null) {
-                return Collections.emptyList();
+                foundRarity = 1;
             }
             
             rarities.add(foundRarity);
@@ -425,15 +431,10 @@ public class AutoRarityCalculator {
             Ingredient base = accessor.getBase();
             Ingredient addition = accessor.getAddition();
             
-            // 处理三个配料
+            // 处理三个配料（如果找不到稀有度则视为 1）
             int templateRarity = processSmithingIngredient(template);
             int baseRarity = processSmithingIngredient(base);
             int additionRarity = processSmithingIngredient(addition);
-            
-            // 如果有任何一个配料没有稀有度，返回空列表表示此配方还不能计算
-            if (templateRarity == -1 || baseRarity == -1 || additionRarity == -1) {
-                return Collections.emptyList();
-            }
             
             rarities.add(templateRarity);
             rarities.add(baseRarity);
@@ -457,26 +458,47 @@ public class AutoRarityCalculator {
         
         for (ItemStack stack : ingredient.getItems()) {
             Item item = stack.getItem();
-            // 优先查全局缓存（包括之前轮次计算的物品）
-            Integer rarity = maxRarityCache.get(item);
-            if (rarity == null) {
-                // 再查本轮已计算的物品（关键修复：允许使用本轮刚计算出的稀有度）
-                rarity = currentRoundResults.get(item);
+            
+            // 先查注册表（数据包、FinalRarity.json、FinalRarityConfig文件夹）
+            ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+            Integer rarity = null;
+            if (itemId != null) {
+                rarity = RarityRegistry.ITEM_RARITY_MAP.get(itemId);
             }
+            
+            // 如果注册表没有，再查之前轮次计算的稀有度（E1, E2...）
             if (rarity == null) {
-                // 最后查注册表（手动配置的物品）
-                ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-                if (itemId != null) {
-                    rarity = RarityRegistry.ITEM_RARITY_MAP.get(itemId);
+                // 优先查全局缓存（包括之前轮次计算的物品）
+                rarity = maxRarityCache.get(item);
+                if (rarity == null) {
+                    // 再查本轮已计算的物品
+                    rarity = currentRoundResults.get(item);
                 }
             }
+            
+            // 如果还没有，最后检查原版稀有度
+            if (rarity == null && org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
+                try {
+                    net.minecraft.world.item.Rarity vanillaRarity = stack.getRarity();
+                    if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
+                        return 3; // 罕见
+                    } else if (vanillaRarity == net.minecraft.world.item.Rarity.RARE) {
+                        return 4; // 史诗
+                    } else if (vanillaRarity == net.minecraft.world.item.Rarity.EPIC) {
+                        return 5; // 传说
+                    }
+                } catch (Throwable e) {
+                    // 忽略异常
+                }
+            }
+            
             if (rarity != null) {
                 return rarity;
             }
         }
         
-        // 没找到稀有度，返回 -1 表示失败
-        return -1;
+        // 没找到稀有度，返回 1（普通物品）而不是 -1
+        return 1;
     }
     
     /**
@@ -487,10 +509,30 @@ public class AutoRarityCalculator {
             return 1;
         }
         
-        // 过滤掉空配料的默认值 1，只统计有效配料
-        List<Integer> validRarities = new ArrayList<>();
+        // 不直接过滤，而是先收集所有配料的稀有度（包括 1）
+        List<Integer> allIngredientRarities = new ArrayList<>();
         for (Integer rarity : ingredientRarities) {
-            if (rarity != null && rarity > 1) {  // 只统计大于 1 的稀有度
+            if (rarity != null) {
+                allIngredientRarities.add(rarity);
+            }
+        }
+        
+        if (allIngredientRarities.isEmpty()) {
+            return 1;
+        }
+        
+        // 检查是否全部相同
+        boolean allSame = allIngredientRarities.stream().distinct().count() == 1;
+        
+        if (!allSame) {
+            // 情况 1: 不完全相同 → 继承最高
+            return Collections.max(allIngredientRarities);
+        }
+        
+        // 全部相同，检查有效稀有度（排除 1）
+        List<Integer> validRarities = new ArrayList<>();
+        for (Integer rarity : allIngredientRarities) {
+            if (rarity > 1) {  // 只统计大于 1 的稀有度
                 validRarities.add(rarity);
             }
         }
@@ -498,14 +540,6 @@ public class AutoRarityCalculator {
         // 如果所有配料都是 1（空配料），返回 1
         if (validRarities.isEmpty()) {
             return 1;
-        }
-        
-        // 检查是否全部相同
-        boolean allSame = validRarities.stream().distinct().count() == 1;
-        
-        if (!allSame) {
-            // 情况 1: 不完全相同 → 继承最高
-            return Collections.max(validRarities);
         }
         
         // 全部相同，检查配方类型
@@ -516,7 +550,8 @@ public class AutoRarityCalculator {
             int ingredientCount = recipe.getIngredients().size();
             int outputCount = recipe.getResultItem(null).getCount();
             
-            if (outputCount > 0 && ingredientCount / outputCount >= 2) {
+            // 使用浮点数除法避免精度丢失
+            if (outputCount > 0 && (double) ingredientCount / outputCount >= 2.0) {
                 return baseRarity + 1; // 配料数量/产物数量 >= 2 → +1
             } else {
                 return baseRarity; // 否则继承

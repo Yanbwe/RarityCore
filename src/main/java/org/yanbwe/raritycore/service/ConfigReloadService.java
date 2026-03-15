@@ -41,39 +41,39 @@ public class ConfigReloadService {
                 sendProgressMessage(source, Component.translatable("rarity.core.reload_starting_all"));
             }
             
-            // 1. 加载服务端配置
+            // 1. 加载服务端配置（包含神化稀有度检测开关）
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_server_config"));
             }
             ServerConfigManager.loadServerConfig();
-            
-            // 2. 加载NBT匹配配置（这是之前缺失的部分）
+                        
+            // 2. 加载 NBT 匹配配置（最高优先级）
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_nbt_config"));
             }
             NbtConfigLoader.loadAllConfigs();
-            
-            // 重新初始化NBT缓存
+                        
+            // 重新初始化 NBT 缓存
             SimpleNbtCache.reinitializeCache();
-            
-            // 同步NBT规则到所有客户端
+                        
+            // 同步 NBT 规则到所有客户端
             if (!isStartup) { // 启动时不需要同步，会在玩家登录时处理
                 NbtSyncManager.syncNbtRulesToAllPlayers();
             }
-            
-            // 3. 加载FinalRarityConfig文件夹
+                        
+            // 3. 加载 FinalRarityConfig文件夹（第三优先级）
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_final_rarity_config_folder"));
             }
             FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
-            
-            // 4. 加载 FinalRarity.json 文件
+                        
+            // 4. 加载 FinalRarity.json 文件（第三优先级）
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_final_rarity_file"));
             }
             RarityConfigLoader.loadConfigRarityData();
                         
-            // 5. 加载自动计算的稀有度配置
+            // 5. 加载自动计算的稀有度配置（第四优先级）
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_auto_rarity_config"));
             }
