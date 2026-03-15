@@ -6,7 +6,8 @@
   "refmap": "raritycore.refmap.json",
   "mixins": [
     "AbstractContainerScreenAccessor",
-    "ItemStackMixin"
+    "ItemStackMixin",
+    "SmithingTransformRecipeAccessor"
   ],
   "client": [
     "AbstractContainerScreenMixin",

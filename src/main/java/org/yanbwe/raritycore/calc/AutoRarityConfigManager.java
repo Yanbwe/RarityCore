@@ -2,16 +2,10 @@ package org.yanbwe.raritycore.calc;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.nbtmatching.ContainsCondition;
-import org.yanbwe.raritycore.nbtmatching.EqualsCondition;
-import org.yanbwe.raritycore.nbtmatching.NbtCondition;
-import org.yanbwe.raritycore.nbtmatching.RangeCondition;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.io.FileWriter;
@@ -19,19 +13,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Map;
 
 /**
  * 自动稀有度配置管理器
- * 管理 auto_rarity.json 和 nbt_matches 中的 auto_*.json 文件
+ * 管理 auto_rarity.json 配置文件
  */
 public class AutoRarityConfigManager {
     
     private static final com.google.gson.Gson GSON = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
     private static final Path AUTO_CONFIG_DIR = Paths.get("config/raritycore/auto");
     private static final Path AUTO_RARITY_FILE = AUTO_CONFIG_DIR.resolve("auto_rarity.json");
-    private static final Path NBT_MATCHES_DIR = Paths.get("config/raritycore/nbt_matches"); // NBT 匹配配置目录
     
     // 跟踪上次加载的 auto 配置物品 ID（用于 reload 时清理）
     private static java.util.Set<ResourceLocation> lastLoadedAutoItems = new java.util.HashSet<>();
@@ -113,7 +105,7 @@ public class AutoRarityConfigManager {
     }
     
     /**
-     * 清理旧的 auto_*.json 文件（包括 nbt_matches 目录）
+     * 清理旧的 auto_*.json 文件
      */
     public static void cleanupAutoNbtFiles() {
         try {
@@ -127,19 +119,6 @@ public class AutoRarityConfigManager {
                             Files.delete(p);
                         } catch (IOException e) {
                             RarityCore.LOGGER.debug("Failed to delete old auto file: {}", p, e);
-                        }
-                    });
-            }
-            
-            // 清理 nbt_matches 目录下的 auto_*.json
-            if (Files.exists(NBT_MATCHES_DIR)) {
-                Files.list(NBT_MATCHES_DIR)
-                    .filter(p -> p.getFileName().toString().startsWith("auto_"))
-                    .forEach(p -> {
-                        try {
-                            Files.delete(p);
-                        } catch (IOException e) {
-                            RarityCore.LOGGER.debug("Failed to delete old NBT file: {}", p, e);
                         }
                     });
             }
@@ -212,98 +191,6 @@ public class AutoRarityConfigManager {
             
         } catch (IOException e) {
             RarityCore.LOGGER.error("Failed to write auto rarity config", e);
-        }
-    }
-    
-    /**
-     * 写入单个 NBT 规则文件到 nbt_matches 目录
-     */
-    public static void writeNbtRuleFile(ResourceLocation itemId, List<NbtCondition> conditions, int rarity) {
-        try {
-            Files.createDirectories(NBT_MATCHES_DIR);
-            
-            // 生成文件名：auto_itemid.json
-            String safeItemId = itemId.toString().replace(":", "_").replace("/", "_");
-            String fileName = "auto_" + safeItemId + ".json";
-            Path filePath = NBT_MATCHES_DIR.resolve(fileName);
-            
-            // 创建符合 SimpleConfigValidator 格式的 JSON
-            JsonObject rootObject = new JsonObject();
-            
-            // 添加 item_id
-            rootObject.addProperty("item_id", itemId.toString());
-            
-            // 添加 rarity（使用传入的值）
-            rootObject.addProperty("rarity", rarity);
-            
-            // 添加 fuzzy_match
-            rootObject.addProperty("fuzzy_match", true);
-            
-            // 添加 priority
-            rootObject.addProperty("priority", 100);
-            
-            // 添加 enabled
-            rootObject.addProperty("enabled", true);
-            
-            // 添加 conditions 数组
-            JsonArray conditionsArray = new JsonArray();
-            for (NbtCondition condition : conditions) {
-                JsonObject conditionObj = serializeCondition(condition);
-                if (conditionObj != null) {
-                    conditionsArray.add(conditionObj);
-                }
-            }
-            
-            rootObject.add("conditions", conditionsArray);
-            
-            try (FileWriter writer = new FileWriter(filePath.toFile())) {
-                GSON.toJson(rootObject, writer);
-            }
-            
-            RarityCore.LOGGER.debug("Wrote auto NBT rule for item: {} to {}", itemId, filePath);
-            
-        } catch (Exception e) {
-            RarityCore.LOGGER.debug("Failed to write NBT rule file for item: {}", itemId, e);
-        }
-    }
-    
-    /**
-     * 序列化 NBT 条件为 JSON 对象
-     */
-    private static JsonObject serializeCondition(NbtCondition condition) {
-        try {
-            JsonObject obj = new JsonObject();
-                
-            // 使用正确的字段名：path 和 type（与 SimpleConfigValidator 一致）
-            obj.addProperty("path", condition.getPath());
-            obj.addProperty("type", condition.getType().name().toLowerCase());
-                
-            // 根据条件类型序列化特定值
-            if (condition instanceof EqualsCondition) {
-                Object value = ((EqualsCondition) condition).getExpectedValue();
-                if (value instanceof String) {
-                    obj.addProperty("value", (String) value);
-                } else if (value instanceof Number) {
-                    obj.addProperty("value", (Number) value);
-                } else if (value instanceof Boolean) {
-                    obj.addProperty("value", (Boolean) value);
-                } else {
-                    obj.addProperty("value", value != null ? value.toString() : "");
-                }
-            } else if (condition instanceof RangeCondition) {
-                RangeCondition rangeCond = (RangeCondition) condition;
-                obj.addProperty("min", rangeCond.getMinValue());
-                obj.addProperty("max", rangeCond.getMaxValue());
-            } else if (condition instanceof ContainsCondition) {
-                obj.addProperty("substring", ((ContainsCondition) condition).getSubstring());
-            }
-            // ExistsCondition 不需要额外的值
-                
-            return obj;
-                
-        } catch (Exception e) {
-            RarityCore.LOGGER.debug("Failed to serialize NBT condition", e);
-            return null;
         }
     }
 }
