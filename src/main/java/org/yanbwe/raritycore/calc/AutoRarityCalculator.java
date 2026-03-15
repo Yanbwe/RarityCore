@@ -361,7 +361,8 @@ public class AutoRarityCalculator {
                 continue;
             }
             
-            Integer foundRarity = null;
+            // 遍历配料的所有物品，取最低稀有度
+            Integer minRarity = null;
             for (ItemStack stack : ingredient.getItems()) {
                 Item item = stack.getItem();
                 
@@ -399,17 +400,19 @@ public class AutoRarityCalculator {
                 }
                 
                 if (rarity != null) {
-                    foundRarity = rarity;
-                    break;
+                    // 取最低稀有度
+                    if (minRarity == null || rarity < minRarity) {
+                        minRarity = rarity;
+                    }
                 }
             }
             
             // 如果找不到稀有度，视为 1（普通物品）
-            if (foundRarity == null) {
-                foundRarity = 1;
+            if (minRarity == null) {
+                minRarity = 1;
             }
             
-            rarities.add(foundRarity);
+            rarities.add(minRarity);
         }
         
         return rarities;
@@ -449,13 +452,15 @@ public class AutoRarityCalculator {
     
     /**
      * 处理锻造台单个配料
-     * @return 如果找到稀有度返回该值，否则返回 -1 表示未找到
+     * @return 如果找到稀有度返回该值，否则返回 1（普通物品）
      */
     private static int processSmithingIngredient(Ingredient ingredient) {
         if (ingredient == null || ingredient.isEmpty()) {
             return 1; // 空配料视为 1
         }
         
+        // 遍历配料的所有物品，取最低稀有度
+        Integer minRarity = null;
         for (ItemStack stack : ingredient.getItems()) {
             Item item = stack.getItem();
             
@@ -481,11 +486,11 @@ public class AutoRarityCalculator {
                 try {
                     net.minecraft.world.item.Rarity vanillaRarity = stack.getRarity();
                     if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
-                        return 3; // 罕见
+                        rarity = 3; // 罕见
                     } else if (vanillaRarity == net.minecraft.world.item.Rarity.RARE) {
-                        return 4; // 史诗
+                        rarity = 4; // 史诗
                     } else if (vanillaRarity == net.minecraft.world.item.Rarity.EPIC) {
-                        return 5; // 传说
+                        rarity = 5; // 传说
                     }
                 } catch (Throwable e) {
                     // 忽略异常
@@ -493,12 +498,15 @@ public class AutoRarityCalculator {
             }
             
             if (rarity != null) {
-                return rarity;
+                // 取最低稀有度
+                if (minRarity == null || rarity < minRarity) {
+                    minRarity = rarity;
+                }
             }
         }
         
-        // 没找到稀有度，返回 1（普通物品）而不是 -1
-        return 1;
+        // 没找到稀有度，返回 1（普通物品）
+        return minRarity != null ? minRarity : 1;
     }
     
     /**
