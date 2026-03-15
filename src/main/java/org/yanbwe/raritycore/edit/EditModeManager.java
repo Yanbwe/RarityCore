@@ -1,12 +1,15 @@
 package org.yanbwe.raritycore.edit;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.registries.ForgeRegistries;
+import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
+import org.yanbwe.raritycore.network.EditModeRequestPacket;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.ArrayList;
@@ -154,36 +157,66 @@ public class EditModeManager {
         if (!editModeEnabled || itemStack.isEmpty()) {
             return false;
         }
-        
+            
         Item item = itemStack.getItem();
         if (item == null) {
             return false;
         }
-        
-        // 获取物品ID
+            
+        // 获取物品 ID
         ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
         if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
             return false;
         }
-        
-        if (deleteModeEnabled) {
-            // 删除模式：删除物品稀有度
-            RarityRegistry.unregister(item, false);
             
-            // 保存到配置文件（稀有度为0表示删除）
-            RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), 0);
+        // 检查是否在多人游戏中
+        Minecraft mc = Minecraft.getInstance();
+        boolean isMultiplayer = mc.getConnection() != null;
+        
+        if (isMultiplayer) {
+            // 多人游戏：发送请求包到服务端，由服务端保存配置并同步
+            EditModeRequestPacket packet = new EditModeRequestPacket(
+                itemId, 
+                deleteModeEnabled ? 0 : currentRarity, 
+                deleteModeEnabled
+            );
+            EditModeRequestPacket.INSTANCE.sendToServer(packet);
         } else {
-            // 正常模式：设置物品稀有度
-            RarityRegistry.register(item, currentRarity, false);
-            
-            // 保存到配置文件
-            RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), currentRarity);
+            // 单人游戏：本地处理并保存配置
+            if (deleteModeEnabled) {
+                RarityRegistry.unregister(item, false);
+                RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), 0);
+            } else {
+                RarityRegistry.register(item, currentRarity, false);
+                RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), currentRarity);
+            }
+            RarityRegistry.syncRarityToClientsWithRetry();
         }
-        
-        // 使用重试机制手动同步到所有客户端
-        RarityRegistry.syncRarityToClientsWithRetry();
-        
+                    
+        // 立即刷新本地缓存，确保显示效果立即生效
+        forceClientCacheUpdate(item, deleteModeEnabled ? 0 : currentRarity);
+            
         return true;
+    }
+        
+    /**
+     * 强制更新客户端本地缓存
+     * 在网络同步之前立即刷新显示效果
+     * @param item 要更新的物品
+     * @param rarity 新的稀有度等级
+     */
+    @OnlyIn(Dist.CLIENT)
+    private static void forceClientCacheUpdate(Item item, int rarity) {
+        try {
+            // 清空旧缓存
+            org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
+                
+            // 立即重新缓存新稀有度
+            ItemStack itemStack = new ItemStack(item);
+            org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+        } catch (Exception e) {
+            // 静默失败，等待网络同步后自动更新
+        }
     }
     
     /**

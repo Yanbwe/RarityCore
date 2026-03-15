@@ -74,6 +74,7 @@ public class RarityCore {
         event.enqueueWork(RaritySyncPacket::initialize);
         event.enqueueWork(IncrementalSyncPacket::initialize);
         event.enqueueWork(org.yanbwe.raritycore.network.NbtSyncPacket::initialize);
+        event.enqueueWork(org.yanbwe.raritycore.network.EditModeRequestPacket::initialize);
         
         // Initialize all configurations (already handled in constructor, just to be safe)
         event.enqueueWork(ConfigManager::initializeConfigs);
