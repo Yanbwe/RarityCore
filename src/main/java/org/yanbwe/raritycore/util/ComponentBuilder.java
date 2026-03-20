@@ -10,31 +10,6 @@ import net.minecraft.network.chat.MutableComponent;
  */
 public class ComponentBuilder {
     
-    // 预构建的星星字符串，避免重复创建
-    private static final String[] STAR_CACHE = new String[16]; // 支持最多15颗星
-    private static String currentStarEmoji = "⭐";
-    
-    static {
-        // 预填充星星缓存
-        updateStarCache();
-    }
-    
-    /**
-     * 更新星星缓存
-     */
-    public static void updateStarCache() {
-        String starEmoji = "⭐"; // 硬编码星星符号
-        if (!starEmoji.equals(currentStarEmoji)) {
-            currentStarEmoji = starEmoji;
-            for (int i = 0; i < STAR_CACHE.length; i++) {
-                StringBuilder sb = new StringBuilder();
-                for (int j = 0; j < i; j++) {
-                    sb.append(starEmoji);
-                }
-                STAR_CACHE[i] = sb.toString();
-            }
-        }
-    }
     
     /**
      * 获取预构建的星星字符串
