@@ -5,6 +5,7 @@ import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.util.CacheRefreshCoordinator;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
 
 /**
@@ -22,9 +23,8 @@ public class CacheInvalidationListener {
         try {
             Item item = event.getItem();
             if (item != null) {
-                // 使用缓存管理器使缓存失效
-                // 使用新双缓存系统
-                org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
+                // 协调并执行缓存刷新
+                CacheRefreshCoordinator.coordinateRefresh();
                 // RarityCore.LOGGER.debug("Cache invalidated for item {} due to rarity change", item);
             }
         } catch (Exception e) {
@@ -38,9 +38,8 @@ public class CacheInvalidationListener {
     @SubscribeEvent
     public static void onResourceReload(AddReloadListenerEvent event) {
         try {
-            // 资源重载时使所有缓存失效
-            // 资源重载时重载双缓存系统
-            org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
+            // 协调并执行缓存刷新
+            CacheRefreshCoordinator.coordinateRefresh();
             RarityCore.LOGGER.info("All caches invalidated due to resource reload");
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling resource reload event", e);
@@ -53,9 +52,8 @@ public class CacheInvalidationListener {
      */
     public static void onClientConfigChange() {
         try {
-            // 客户端配置变更时处理相关缓存
-            // 客户端配置变更时重载双缓存系统
-            org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
+            // 协调并执行缓存刷新
+            CacheRefreshCoordinator.coordinateRefresh();
             // RarityCore.LOGGER.debug("Handled client config change for cache");
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling client config change", e);
@@ -67,9 +65,8 @@ public class CacheInvalidationListener {
      */
     public static void onNetworkSync() {
         try {
-            // 网络同步时刷新缓存
-            // 网络同步时重载双缓存系统
-            org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
+            // 协调并执行缓存刷新
+            CacheRefreshCoordinator.coordinateRefresh();
             // RarityCore.LOGGER.debug("Handled network sync for cache");
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling network sync", e);

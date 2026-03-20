@@ -17,6 +17,7 @@ import org.yanbwe.raritycore.network.NbtSyncManager;
 import org.yanbwe.raritycore.network.SyncBatchManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.cache.DualCacheManager;
+import org.yanbwe.raritycore.util.CacheRefreshCoordinator;
 import org.yanbwe.raritycore.util.StarDisplayManager;
 
 import java.util.List;
@@ -165,8 +166,8 @@ public class ConfigReloadService {
      */
     private static void handleCacheSystems() {
         try {
-            // 初始化或重载双缓存系统
-            DualCacheManager.handleConfigReload();
+            // 协调并执行缓存刷新
+            CacheRefreshCoordinator.coordinateRefresh();
             RarityCore.LOGGER.info("Dual cache system reloaded successfully");
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling cache systems during reload", e);
@@ -184,8 +185,8 @@ public class ConfigReloadService {
             // 通知星星显示管理器重新加载配置
             StarDisplayManager.getInstance().reloadConfiguration();
             
-            // 处理客户端配置变更对缓存的影响
-            org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
+            // 协调并执行缓存刷新
+            CacheRefreshCoordinator.coordinateRefresh();
             
             // 特别处理skipUnconfiguredItems配置变更
             handleSkipUnconfiguredItemsChange();
