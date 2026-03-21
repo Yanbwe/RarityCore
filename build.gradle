@@ -5,18 +5,34 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.140'
 }
 
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.jvm.toolchain.JvmVendorSpec
+
 version = mod_version
 group = mod_group_id
 
 repositories {
     mavenLocal()
+    mavenCentral()
+    maven {
+        name = "NeoForge"
+        url = "https://maven.neoforged.net/releases/"
+    }
+    maven {
+        name = "Mojang"
+        url = "https://maven.minecraft.net/"
+    }
 }
 
 base {
     archivesName = mod_id
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
 
 neoForge {
     // Specify the version of NeoForge to use.
