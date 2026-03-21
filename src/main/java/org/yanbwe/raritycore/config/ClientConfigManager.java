@@ -7,8 +7,11 @@ import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.util.RarityConstants;
 
 import java.io.BufferedReader;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -135,14 +138,26 @@ public class ClientConfigManager {
                     skipUnconfiguredItems = RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS;
                 }
                 
-                RarityCore.LOGGER.info("Client config loaded successfully: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}, skipUnconfiguredItems={}", 
-                    enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert, skipUnconfiguredItems);
+                // 读取启用缓存系统设置
+                if (jsonObject.has("enableCacheSystem")) {
+                    enableCacheSystem = jsonObject.get("enableCacheSystem").getAsBoolean();
+                } else {
+                    // If the config option doesn't exist, use default value
+                    enableCacheSystem = RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM;
+                }
+                
+                // 加载星星显示配置
+                StarDisplayConfigManager.loadStarDisplayConfig(jsonObject);
+                
+                RarityCore.LOGGER.info("Client config loaded successfully: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}, skipUnconfiguredItems={}, enableCacheSystem={}", 
+                    enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert, skipUnconfiguredItems, enableCacheSystem);
             }
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error loading client config file, using default config: {}", CLIENT_CONFIG_FILE, e);
             // 出错时使用默认值
             enableItemBorderRendering = RarityConstants.DEFAULT_ENABLE_ITEM_BORDER_RENDERING;
             itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE;
+            enableCacheSystem = RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM;
             // 重新创建配置文件以恢复默认设置
             createDefaultClientConfig();
         }
@@ -157,7 +172,7 @@ public class ClientConfigManager {
         
         // 写入默认配置文件
         try {
-            try (FileWriter writer = new FileWriter(CLIENT_CONFIG_FILE.toString())) {
+            try (Writer writer = new OutputStreamWriter(new FileOutputStream(CLIENT_CONFIG_FILE.toFile()), StandardCharsets.UTF_8)) {
                 GSON.toJson(configObject, writer);
                 RarityCore.LOGGER.info("Created default client config file: {}", CLIENT_CONFIG_FILE);
             }
@@ -181,7 +196,7 @@ public class ClientConfigManager {
         
         // 写入配置文件
         try {
-            try (FileWriter writer = new FileWriter(CLIENT_CONFIG_FILE.toString())) {
+            try (Writer writer = new OutputStreamWriter(new FileOutputStream(CLIENT_CONFIG_FILE.toFile()), StandardCharsets.UTF_8)) {
                 GSON.toJson(configObject, writer);
                 RarityCore.LOGGER.info("Client config saved: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}, skipUnconfiguredItems={}, enableCacheSystem={}", 
                     enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert, skipUnconfiguredItems, enableCacheSystem);

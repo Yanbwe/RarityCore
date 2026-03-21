@@ -6,7 +6,10 @@ import com.google.gson.JsonObject;
 import org.yanbwe.raritycore.RarityCore;
 
 import java.io.BufferedReader;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -52,7 +55,7 @@ public class ConfigValidator {
 
             // 如果有缺失项,保存更新后的配置
             if (hasMissingItems[0]) {
-                try (FileWriter writer = new FileWriter(configFile.toFile())) {
+                try (Writer writer = new OutputStreamWriter(new FileOutputStream(configFile.toFile()), StandardCharsets.UTF_8)) {
                     GSON.toJson(updatedConfig, writer);
                     RarityCore.LOGGER.info("{} config updated with missing options", configType);
                 }
@@ -74,7 +77,7 @@ public class ConfigValidator {
     private static void saveConfigFile(Path configFile, JsonObject config) {
         try {
             Files.createDirectories(configFile.getParent());
-            try (FileWriter writer = new FileWriter(configFile.toFile())) {
+            try (Writer writer = new OutputStreamWriter(new FileOutputStream(configFile.toFile()), StandardCharsets.UTF_8)) {
                 GSON.toJson(config, writer);
             }
             RarityCore.LOGGER.info("Config file saved: {}", configFile);
