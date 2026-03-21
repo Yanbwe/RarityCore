@@ -9,6 +9,8 @@ import org.yanbwe.raritycore.util.RarityConstants;
 import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -122,7 +124,7 @@ public class ServerConfigManager {
         
         // 写入默认配置文件
         try {
-            try (FileWriter writer = new FileWriter(SERVER_CONFIG_FILE.toString())) {
+            try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(SERVER_CONFIG_FILE), StandardCharsets.UTF_8)) {
                 GSON.toJson(configObject, writer);
                 RarityCore.LOGGER.info("Created default server config file: {}", SERVER_CONFIG_FILE);
             }
@@ -143,7 +145,7 @@ public class ServerConfigManager {
         
         // 写入配置文件
         try {
-            try (FileWriter writer = new FileWriter(SERVER_CONFIG_FILE.toString())) {
+            try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(SERVER_CONFIG_FILE), StandardCharsets.UTF_8)) {
                 GSON.toJson(configObject, writer);
                 RarityCore.LOGGER.info("Server config saved: checkVanillaRarity={}, checkApotheosisRarity={}, enableGetRarityWarning={}", 
                     checkVanillaRarity, checkApotheosisRarity, enableGetRarityWarning);

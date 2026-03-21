@@ -9,6 +9,8 @@ import org.yanbwe.raritycore.util.RarityConstants;
 import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -83,6 +85,10 @@ public class ClientConfigManager {
             
             if (jsonObject != null) {
                 RarityCore.LOGGER.info("Loading client config from {}", CLIENT_CONFIG_FILE.getFileName());
+                
+                // 加载星星显示配置
+                StarDisplayConfigManager.loadStarDisplayConfig(jsonObject);
+                
                 // 读取边框渲染开关
                 if (jsonObject.has("enableItemBorderRendering")) {
                     enableItemBorderRendering = jsonObject.get("enableItemBorderRendering").getAsBoolean();
@@ -157,7 +163,7 @@ public class ClientConfigManager {
         
         // 写入默认配置文件
         try {
-            try (FileWriter writer = new FileWriter(CLIENT_CONFIG_FILE.toString())) {
+            try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(CLIENT_CONFIG_FILE), StandardCharsets.UTF_8)) {
                 GSON.toJson(configObject, writer);
                 RarityCore.LOGGER.info("Created default client config file: {}", CLIENT_CONFIG_FILE);
             }
@@ -181,7 +187,7 @@ public class ClientConfigManager {
         
         // 写入配置文件
         try {
-            try (FileWriter writer = new FileWriter(CLIENT_CONFIG_FILE.toString())) {
+            try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(CLIENT_CONFIG_FILE), StandardCharsets.UTF_8)) {
                 GSON.toJson(configObject, writer);
                 RarityCore.LOGGER.info("Client config saved: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}, skipUnconfiguredItems={}, enableCacheSystem={}", 
                     enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert, skipUnconfiguredItems, enableCacheSystem);

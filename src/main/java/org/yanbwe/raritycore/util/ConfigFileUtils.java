@@ -9,6 +9,8 @@ import org.yanbwe.raritycore.RarityCore;
 import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -70,7 +72,7 @@ public class ConfigFileUtils {
      * @return 是否写入成功
      */
     public static boolean writeJsonConfig(Path configFile, JsonObject jsonObject, String operationName) {
-        try (FileWriter writer = new FileWriter(configFile.toFile())) {
+        try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(configFile), StandardCharsets.UTF_8)) {
             GSON.toJson(jsonObject, writer);
             RarityCore.LOGGER.info("Successfully wrote {} config file: {}", operationName, configFile);
             return true;

@@ -14,6 +14,8 @@ import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
@@ -205,7 +207,7 @@ public class ExportManagementCommands {
                 
                 Path modExportFile = exportDir.resolve(modId + "_" + mcVersion + ".json");
                 
-                try (FileWriter writer = new FileWriter(modExportFile.toFile())) {
+                try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(modExportFile), StandardCharsets.UTF_8)) {
                     gson.toJson(modData, writer);
                 }
             }
@@ -233,7 +235,7 @@ public class ExportManagementCommands {
         
         // 写入导出文件
         com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
-        try (FileWriter writer = new FileWriter(exportFile.toFile())) {
+        try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(exportFile), StandardCharsets.UTF_8)) {
             gson.toJson(exportData, writer);
         }
     }
@@ -254,7 +256,7 @@ public class ExportManagementCommands {
         
         // 写入导出文件
         com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
-        try (FileWriter writer = new FileWriter(exportFile.toFile())) {
+        try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(exportFile), StandardCharsets.UTF_8)) {
             gson.toJson(exportData, writer);
         }
     }

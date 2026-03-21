@@ -9,6 +9,8 @@ import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -184,7 +186,7 @@ public class AutoRarityConfigManager {
                 }
             }
             
-            try (FileWriter writer = new FileWriter(AUTO_RARITY_FILE.toFile())) {
+            try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(AUTO_RARITY_FILE), StandardCharsets.UTF_8)) {
                 GSON.toJson(jsonObject, writer);
             }
             
