@@ -23,7 +23,7 @@ public class ConfigManager {
     
     // 客户端配置
     private static boolean enableItemBorderRendering = RarityConstants.DEFAULT_ENABLE_ITEM_BORDER_RENDERING;
-    private static int itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE; // 0为空心，1为实心
+    private static int itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE; // 0为空心,1为实心
     private static boolean useTextureBorder = RarityConstants.DEFAULT_USE_TEXTURE_BORDER; // 是否使用纹理边框
     private static boolean enableItemNameColor = RarityConstants.DEFAULT_ENABLE_ITEM_NAME_COLOR; // 是否启用物品名称变色
     private static boolean enableTooltipInsert = RarityConstants.DEFAULT_ENABLE_TOOLTIP_INSERT; // 是否启用工具提示插入
@@ -36,7 +36,7 @@ public class ConfigManager {
     private static String starMode = RarityConstants.DEFAULT_STAR_MODE; // 星星显示模式
     private static String repeatCharacter = RarityConstants.DEFAULT_REPEAT_CHARACTER; // 重复模式字符
     private static java.util.Map<Integer, String> customStarStrings = new java.util.HashMap<>(); // 自定义模式字符串映射
-    private static java.util.Map<Integer, String> customSpecialRarityTexts = new java.util.HashMap<>(); // 特殊稀有度文本映射（大于 7 级）
+    private static java.util.Map<Integer, String> customSpecialRarityTexts = new java.util.HashMap<>(); // 特殊稀有度文本映射(大于 7 级)
     
     // 配置文件路径
     private static final Path CONFIG_DIR = Paths.get(RarityConstants.CONFIG_DIR_PARENT).resolve(RarityConstants.CONFIG_DIR_NAME);
@@ -90,10 +90,11 @@ public class ConfigManager {
      * 加载客户端配置
      */
     public static void loadClientConfig() {
-        // 检查并升级配置文件
-        ConfigVersionManager.checkAndUpgradeConfig(CLIENT_CONFIG_FILE, "client");
+        // 验证并更新配置文件
+        JsonObject defaultConfig = ConfigValidator.createDefaultClientConfig();
+        ConfigValidator.validateConfig(CLIENT_CONFIG_FILE, defaultConfig, "client");
         
-        // 如果配置文件不存在，则创建一个默认的
+        // 如果配置文件不存在,则创建一个默认的
         if (!Files.exists(CLIENT_CONFIG_FILE)) {
             createDefaultClientConfig();
         }
@@ -110,18 +111,7 @@ public class ConfigManager {
             JsonObject jsonObject = GSON.fromJson(reader, JsonObject.class);
             
             if (jsonObject != null) {
-                // 记录配置版本信息
-                int configVersion = 0;
-                String modVersion = "unknown";
-                if (jsonObject.has("config_version")) {
-                    configVersion = jsonObject.get("config_version").getAsInt();
-                }
-                if (jsonObject.has("mod_version")) {
-                    modVersion = jsonObject.get("mod_version").getAsString();
-                }
-                
-                RarityCore.LOGGER.info("Loading client config version {} (mod version: {}) from {}", 
-                    configVersion, modVersion, CLIENT_CONFIG_FILE.getFileName());
+                RarityCore.LOGGER.info("Loading client config from {}", CLIENT_CONFIG_FILE.getFileName());
                 // 读取边框渲染开关
                 if (jsonObject.has("enableItemBorderRendering")) {
                     enableItemBorderRendering = jsonObject.get("enableItemBorderRendering").getAsBoolean();
@@ -177,8 +167,8 @@ public class ConfigManager {
                 // 读取星星显示配置
                 loadStarDisplayConfig(jsonObject);
                 
-                RarityCore.LOGGER.info("Client config loaded successfully: version={}, enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}, skipUnconfiguredItems={}, enableStarDisplay={}, starMode={}", 
-                    configVersion, enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert, skipUnconfiguredItems, enableStarDisplay, starMode);
+                RarityCore.LOGGER.info("Client config loaded successfully: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}, skipUnconfiguredItems={}, enableStarDisplay={}, starMode={}", 
+                    enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert, skipUnconfiguredItems, enableStarDisplay, starMode);
             }
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error loading client config file, using default config: {}", CLIENT_CONFIG_FILE, e);
@@ -232,7 +222,7 @@ public class ConfigManager {
                         JsonObject stringsObj = customObj.getAsJsonObject("strings");
                         customStarStrings.clear();
                         
-                        // 解析自定义字符串映射（用于星星显示）
+                        // 解析自定义字符串映射(用于星星显示)
                         for (String key : stringsObj.keySet()) {
                             try {
                                 int rarity = Integer.parseInt(key);
@@ -246,7 +236,7 @@ public class ConfigManager {
                         }
                     }
                     
-                    // 读取特殊稀有度文本配置（大于 7 级）
+                    // 读取特殊稀有度文本配置(大于 7 级)
                     if (customObj.has("specialRarityTexts")) {
                         JsonObject specialTextsObj = customObj.getAsJsonObject("specialRarityTexts");
                         customSpecialRarityTexts.clear();
@@ -269,7 +259,7 @@ public class ConfigManager {
                 RarityCore.LOGGER.info("Loaded star display config: enabled={}, mode={}, repeatChar='{}', customStrings={}, specialRarityTexts={}", 
                     enableStarDisplay, starMode, repeatCharacter, customStarStrings.size(), customSpecialRarityTexts.size());
             } else {
-                // 如果没有starDisplay配置，使用默认值
+                // 如果没有starDisplay配置,使用默认值
                 enableStarDisplay = RarityConstants.DEFAULT_ENABLE_STAR_DISPLAY;
                 starMode = RarityConstants.DEFAULT_STAR_MODE;
                 repeatCharacter = RarityConstants.DEFAULT_REPEAT_CHARACTER;
@@ -290,29 +280,14 @@ public class ConfigManager {
      * 创建默认客户端配置文件
      */
     private static void createDefaultClientConfig() {
-        // 创建带版本信息的配置对象
-        JsonObject configObject = ConfigVersionManager.createVersionedConfig();
-        
-        // 添加所有默认配置项
-        configObject.addProperty("enableItemBorderRendering", RarityConstants.DEFAULT_ENABLE_ITEM_BORDER_RENDERING);
-        configObject.addProperty("itemBorderStyle", RarityConstants.DEFAULT_ITEM_BORDER_STYLE);
-        configObject.addProperty("useTextureBorder", RarityConstants.DEFAULT_USE_TEXTURE_BORDER);
-        configObject.addProperty("enableItemNameColor", RarityConstants.DEFAULT_ENABLE_ITEM_NAME_COLOR);
-        configObject.addProperty("enableTooltipInsert", RarityConstants.DEFAULT_ENABLE_TOOLTIP_INSERT);
-        configObject.addProperty("checkVanillaRarity", RarityConstants.DEFAULT_CHECK_VANILLA_RARITY);
-        configObject.addProperty("skipUnconfiguredItems", RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS);
-        configObject.addProperty("enableBatchProcessing", true);
-        configObject.addProperty("enableCacheSystem", RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM);
-        
-        // 添加默认星星显示配置
-        configObject.add("starDisplay", createDefaultStarDisplayConfig());
+        // 创建默认配置对象
+        JsonObject configObject = ConfigValidator.createDefaultClientConfig();
         
         // 写入默认配置文件
         try {
             try (FileWriter writer = new FileWriter(CLIENT_CONFIG_FILE.toString())) {
                 GSON.toJson(configObject, writer);
-                RarityCore.LOGGER.info("Created default client config file with version {}: {}", 
-                    ConfigVersionManager.CURRENT_CONFIG_VERSION, CLIENT_CONFIG_FILE);
+                RarityCore.LOGGER.info("Created default client config file: {}", CLIENT_CONFIG_FILE);
             }
         } catch (IOException e) {
             RarityCore.LOGGER.error("Cannot create default client config file: {}", CLIENT_CONFIG_FILE, e);
@@ -336,12 +311,12 @@ public class ConfigManager {
         JsonObject customConfig = new JsonObject();
         JsonObject customStrings = new JsonObject();
         
-        // 使用常量数组添加默认的自定义字符串配置（用于星星显示）
+        // 使用常量数组添加默认的自定义字符串配置(用于星星显示)
         for (int i = 0; i < RarityConstants.DEFAULT_CUSTOM_STRINGS.length; i++) {
             customStrings.addProperty(String.valueOf(i + 1), RarityConstants.DEFAULT_CUSTOM_STRINGS[i]);
         }
         
-        // 添加空的特殊稀有度文本配置对象（大于 7 级，由用户自行定义）
+        // 添加空的特殊稀有度文本配置对象(大于 7 级,由用户自行定义)
         JsonObject specialRarityTexts = new JsonObject();
         
         customConfig.add("strings", customStrings);
@@ -566,7 +541,7 @@ public class ConfigManager {
     }
     
     /**
-     * 获取特殊稀有度文本映射（大于 7 级）
+     * 获取特殊稀有度文本映射(大于 7 级)
      */
     public static java.util.Map<Integer, String> getCustomSpecialRarityTexts() {
         return new java.util.HashMap<>(customSpecialRarityTexts);
@@ -574,8 +549,8 @@ public class ConfigManager {
     
     /**
      * 获取指定稀有度的自定义特殊文本
-     * @param rarity 稀有度等级（大于 7）
-     * @return 自定义文本，如果没有配置则返回 null
+     * @param rarity 稀有度等级(大于 7)
+     * @return 自定义文本,如果没有配置则返回 null
      */
     public static String getCustomSpecialRarityText(int rarity) {
         return customSpecialRarityTexts.get(rarity);

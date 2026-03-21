@@ -57,7 +57,11 @@ public class ServerConfigManager {
      * 加载服务端配置
      */
     public static void loadServerConfig() {
-        // 如果配置文件不存在，则创建一个默认的
+        // 验证并更新配置文件
+        JsonObject defaultConfig = ConfigValidator.createDefaultServerConfig();
+        ConfigValidator.validateConfig(SERVER_CONFIG_FILE, defaultConfig, "server");
+        
+        // 如果配置文件不存在,则创建一个默认的
         if (!Files.exists(SERVER_CONFIG_FILE)) {
             createDefaultServerConfig();
         }
@@ -113,19 +117,14 @@ public class ServerConfigManager {
      * 创建默认服务端配置文件
      */
     private static void createDefaultServerConfig() {
-        // 创建带版本信息的配置对象
-        JsonObject configObject = ConfigVersionManager.createVersionedConfig();
-        
-        configObject.addProperty("checkVanillaRarity", RarityConstants.DEFAULT_CHECK_VANILLA_RARITY);
-        configObject.addProperty("checkApotheosisRarity", RarityConstants.DEFAULT_CHECK_APOTHEOSIS_RARITY);
-        configObject.addProperty("enableGetRarityWarning", RarityConstants.DEFAULT_ENABLE_GET_RARITY_WARNING);
+        // 创建默认配置对象
+        JsonObject configObject = ConfigValidator.createDefaultServerConfig();
         
         // 写入默认配置文件
         try {
             try (FileWriter writer = new FileWriter(SERVER_CONFIG_FILE.toString())) {
                 GSON.toJson(configObject, writer);
-                RarityCore.LOGGER.info("Created default server config file with version {}: {}", 
-                    ConfigVersionManager.CURRENT_CONFIG_VERSION, SERVER_CONFIG_FILE);
+                RarityCore.LOGGER.info("Created default server config file: {}", SERVER_CONFIG_FILE);
             }
         } catch (IOException e) {
             RarityCore.LOGGER.error("Cannot create default server config file: {}", SERVER_CONFIG_FILE, e);
@@ -136,8 +135,8 @@ public class ServerConfigManager {
      * 保存服务端配置到文件
      */
     public static void saveServerConfig() {
-        // 创建带版本信息的配置对象
-        JsonObject configObject = ConfigVersionManager.createVersionedConfig();
+        // 创建配置对象
+        JsonObject configObject = new JsonObject();
         configObject.addProperty("checkVanillaRarity", checkVanillaRarity);
         configObject.addProperty("checkApotheosisRarity", checkApotheosisRarity);
         configObject.addProperty("enableGetRarityWarning", enableGetRarityWarning);
@@ -146,8 +145,8 @@ public class ServerConfigManager {
         try {
             try (FileWriter writer = new FileWriter(SERVER_CONFIG_FILE.toString())) {
                 GSON.toJson(configObject, writer);
-                RarityCore.LOGGER.info("Server config saved with version {}: checkVanillaRarity={}, checkApotheosisRarity={}, enableGetRarityWarning={}", 
-                    ConfigVersionManager.CURRENT_CONFIG_VERSION, checkVanillaRarity, checkApotheosisRarity, enableGetRarityWarning);
+                RarityCore.LOGGER.info("Server config saved: checkVanillaRarity={}, checkApotheosisRarity={}, enableGetRarityWarning={}", 
+                    checkVanillaRarity, checkApotheosisRarity, enableGetRarityWarning);
             }
         } catch (IOException e) {
             RarityCore.LOGGER.error("Cannot save server config file: {}", SERVER_CONFIG_FILE, e);
@@ -214,7 +213,7 @@ public class ServerConfigManager {
      * 通知配置变更
      */
     private static void notifyConfigChange() {
-        // 简单的日志记录，实际的重新加载将在下次数据加载时发生
+        // 简单的日志记录,实际的重新加载将在下次数据加载时发生
         RarityCore.LOGGER.info("Server configuration changed, will apply on next data reload");
     }
 }

@@ -7,7 +7,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
-import org.yanbwe.raritycore.config.ConfigVersionManager;
+import org.yanbwe.raritycore.config.ConfigValidator;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import java.io.BufferedReader;
 import java.nio.file.Files;
@@ -100,48 +100,20 @@ public class ConfigManagementCommands {
     private static int showConfigVersionInfo(CommandSourceStack source) {
         try {
             source.sendSuccess(() -> Component.translatable("rarity.core.config_version_info_title").withStyle(ChatFormatting.GOLD), false);
-            source.sendSuccess(() -> Component.translatable("rarity.core.current_config_version", 
-                ConfigVersionManager.CURRENT_CONFIG_VERSION)
-                .withStyle(ChatFormatting.YELLOW), false);
+            source.sendSuccess(() -> Component.translatable("rarity.core.config_version_deprecated").withStyle(ChatFormatting.YELLOW), false);
             
-            // 显示客户端配置版本
+            // 显示客户端配置状态
             Path clientConfigPath = ConfigManager.getClientConfigPath();
             if (Files.exists(clientConfigPath)) {
-                try (BufferedReader reader = Files.newBufferedReader(clientConfigPath)) {
-                    com.google.gson.JsonObject clientConfig = new com.google.gson.Gson().fromJson(reader, com.google.gson.JsonObject.class);
-                    final int clientVersion;
-                    final String clientModVersion;
-                    if (clientConfig != null) {
-                        clientVersion = clientConfig.has("config_version") ? clientConfig.get("config_version").getAsInt() : 0;
-                        clientModVersion = clientConfig.has("mod_version") ? clientConfig.get("mod_version").getAsString() : "unknown";
-                    } else {
-                        clientVersion = 0;
-                        clientModVersion = "unknown";
-                    }
-                    source.sendSuccess(() -> Component.translatable("rarity.core.client_config_version", 
-                        clientVersion, clientModVersion).withStyle(ChatFormatting.GREEN), false);
-                }
+                source.sendSuccess(() -> Component.translatable("rarity.core.client_config_exists").withStyle(ChatFormatting.GREEN), false);
             } else {
                 source.sendSuccess(() -> Component.translatable("rarity.core.client_config_not_found").withStyle(ChatFormatting.RED), false);
             }
             
-            // 显示服务端配置版本
+            // 显示服务端配置状态
             Path serverConfigPath = ServerConfigManager.getServerConfigPath();
             if (Files.exists(serverConfigPath)) {
-                try (BufferedReader reader = Files.newBufferedReader(serverConfigPath)) {
-                    com.google.gson.JsonObject serverConfig = new com.google.gson.Gson().fromJson(reader, com.google.gson.JsonObject.class);
-                    final int serverVersion;
-                    final String serverModVersion;
-                    if (serverConfig != null) {
-                        serverVersion = serverConfig.has("config_version") ? serverConfig.get("config_version").getAsInt() : 0;
-                        serverModVersion = serverConfig.has("mod_version") ? serverConfig.get("mod_version").getAsString() : "unknown";
-                    } else {
-                        serverVersion = 0;
-                        serverModVersion = "unknown";
-                    }
-                    source.sendSuccess(() -> Component.translatable("rarity.core.server_config_version", 
-                        serverVersion, serverModVersion).withStyle(ChatFormatting.GREEN), false);
-                }
+                source.sendSuccess(() -> Component.translatable("rarity.core.server_config_exists").withStyle(ChatFormatting.GREEN), false);
             } else {
                 source.sendSuccess(() -> Component.translatable("rarity.core.server_config_not_found").withStyle(ChatFormatting.RED), false);
             }
@@ -156,28 +128,27 @@ public class ConfigManagementCommands {
     }
     
     /**
-     * 强制配置升级
+     * 强制配置验证
      */
     private static int forceConfigUpgrade(CommandSourceStack source) {
         try {
-            source.sendSuccess(() -> Component.translatable("rarity.core.forcing_config_upgrade").withStyle(ChatFormatting.YELLOW), false);
+            source.sendSuccess(() -> Component.translatable("rarity.core.forcing_config_validation").withStyle(ChatFormatting.YELLOW), false);
             
-            // 强制升级客户端配置
-            int clientResult = ConfigVersionManager.checkAndUpgradeConfig(
-                ConfigManager.getClientConfigPath(), "client (forced)");
+            // 强制验证客户端配置
+            com.google.gson.JsonObject defaultClientConfig = ConfigValidator.createDefaultClientConfig();
+            ConfigValidator.validateConfig(ConfigManager.getClientConfigPath(), defaultClientConfig, "client (forced)");
             
-            // 强制升级服务端配置
-            int serverResult = ConfigVersionManager.checkAndUpgradeConfig(
-                ServerConfigManager.getServerConfigPath(), "server (forced)");
+            // 强制验证服务端配置
+            com.google.gson.JsonObject defaultServerConfig = ConfigValidator.createDefaultServerConfig();
+            ConfigValidator.validateConfig(ServerConfigManager.getServerConfigPath(), defaultServerConfig, "server (forced)");
             
-            source.sendSuccess(() -> Component.translatable("rarity.core.config_upgrade_completed", 
-                clientResult, serverResult, ConfigVersionManager.CURRENT_CONFIG_VERSION)
+            source.sendSuccess(() -> Component.translatable("rarity.core.config_validation_completed")
                 .withStyle(ChatFormatting.GREEN), false);
             
             return 1;
         } catch (Exception e) {
-            RarityCore.LOGGER.error("Failed to force config upgrade", e);
-            source.sendSuccess(() -> Component.translatable("rarity.core.config_upgrade_failed", e.getMessage())
+            RarityCore.LOGGER.error("Failed to force config validation", e);
+            source.sendSuccess(() -> Component.translatable("rarity.core.config_validation_failed", e.getMessage())
                 .withStyle(ChatFormatting.RED), false);
             return 0;
         }
