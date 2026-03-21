@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 /**
  * 配置加载工具类
  * 统一封装JSON配置文件的加载、解析和验证逻辑
- * 消除重复代码，提高代码可维护性
+ * 消除重复代码,提高代码可维护性
  */
 public class ConfigLoaderUtils {
     private static final Gson GSON = new Gson();
@@ -27,7 +27,7 @@ public class ConfigLoaderUtils {
     /**
      * 通用的JSON配置文件加载方法
      * @param configFile 配置文件路径
-     * @param fileName 文件名（用于日志）
+     * @param fileName 文件名(用于日志)
      * @param itemProcessor 物品处理回调函数 (itemId, rarity) -> void
      * @return 成功加载的物品数量
      */
@@ -44,13 +44,13 @@ public class ConfigLoaderUtils {
                     if (rarityElement.isJsonPrimitive() && rarityElement.getAsJsonPrimitive().isNumber()) {
                         int rarity = rarityElement.getAsInt();
                         
-                        // 验证稀有度范围 - 支持高级稀有度（大于7）以符合模组包容性设计
+                        // 验证稀有度范围 - 支持高级稀有度(大于7)以符合模组包容性设计
                         if (rarity < RarityConstants.MIN_RARITY) {
                             RarityCore.LOGGER.warn("Invalid rarity value {} for item '{}' in file '{}'", 
                                 rarity, itemIdString, fileName);
                             continue;
                         }
-                        // 注意：不再限制最大稀有度值，允许8-10级等高级稀有度
+                        // 注意:不再限制最大稀有度值,允许8-10级等高级稀有度
                         
                         ResourceLocation itemId = new ResourceLocation(itemIdString);
                         net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
@@ -146,7 +146,7 @@ public class ConfigLoaderUtils {
     }
     
     /**
-     * 验证配置文件是否存在，不存在则创建
+     * 验证配置文件是否存在,不存在则创建
      * @param configFile 配置文件路径
      * @param defaultContent 默认内容生成函数
      * @return 配置文件是否准备就绪

@@ -1,13 +1,12 @@
 package org.yanbwe.raritycore.network;
 
 import net.minecraft.resources.ResourceLocation;
-import org.yanbwe.raritycore.RarityCore;
 
 import java.util.*;
 
 /**
  * 网络同步批处理管理器
- * 网络包发送优化器，减少频繁的小数据包传输
+ * 网络包发送优化器,减少频繁的小数据包传输
  * 支持优先级调度和智能批处理
  */
 public class SyncBatchManager {
@@ -40,7 +39,7 @@ public class SyncBatchManager {
     }
     
     /**
-     * 添加变更操作到批处理队列（默认正常优先级）
+     * 添加变更操作到批处理队列(默认正常优先级)
      * @param operation 变更操作
      * @return 是否需要立即发送批次
      */
@@ -49,7 +48,7 @@ public class SyncBatchManager {
     }
     
     /**
-     * 添加变更操作到批处理队列（指定优先级）
+     * 添加变更操作到批处理队列(指定优先级)
      * @param operation 变更操作
      * @param priority 同步优先级
      * @return 是否需要立即发送批次
@@ -91,7 +90,7 @@ public class SyncBatchManager {
     }
     
     /**
-     * 获取并清空待处理的操作列表（按优先级排序）
+     * 获取并清空待处理的操作列表(按优先级排序)
      * @return 待处理的操作列表副本
      */
     public static List<ChangeOperation> getAndClearPendingOperations() {
@@ -112,7 +111,7 @@ public class SyncBatchManager {
             List<ChangeOperation> operationsToSend;
             
             if (sortByPriority) {
-                // 按优先级排序：IMMEDIATE > HIGH > NORMAL > LOW
+                // 按优先级排序:IMMEDIATE > HIGH > NORMAL > LOW
                 operationsToSend = new ArrayList<>();
                 for (SyncPriority priority : SyncPriority.values()) {
                     List<ChangeOperation> priorityOps = priorityQueues.get(priority);
@@ -173,7 +172,7 @@ public class SyncBatchManager {
             switch (op.getType()) {
                 case ADD:
                 case UPDATE:
-                    // ADD和UPDATE操作可以合并，保留最新的
+                    // ADD和UPDATE操作可以合并,保留最新的
                     latestOperations.put(itemId, op);
                     break;
                     

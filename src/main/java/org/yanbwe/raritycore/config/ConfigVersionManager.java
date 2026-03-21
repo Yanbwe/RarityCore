@@ -8,7 +8,6 @@ import org.yanbwe.raritycore.util.RarityConstants;
 
 import java.io.BufferedReader;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -60,7 +59,7 @@ public class ConfigVersionManager {
         UPGRADE_HANDLERS.put(1, (oldConfig, from, to) -> {
             RarityCore.LOGGER.info("Upgrading config from version {} to {}", from, to);
             
-            // 版本1到2的升级：添加checkVanillaRarity配置项
+            // 版本1到2的升级:添加checkVanillaRarity配置项
             if (!oldConfig.has("checkVanillaRarity")) {
                 oldConfig.addProperty("checkVanillaRarity", RarityConstants.DEFAULT_CHECK_VANILLA_RARITY);
                 RarityCore.LOGGER.info("Added checkVanillaRarity config option");
@@ -78,13 +77,13 @@ public class ConfigVersionManager {
         // 从版本2升级到版本3的处理器
         UPGRADE_HANDLERS.put(2, (oldConfig, from, to) -> {
             RarityCore.LOGGER.info("Upgrading config from version {} to {}", from, to);
-            // 版本2到3的升级：添加批量处理配置（客户端）
+            // 版本2到3的升级:添加批量处理配置(客户端)
             if (!oldConfig.has("enableBatchProcessing")) {
                 oldConfig.addProperty("enableBatchProcessing", true);
                 RarityCore.LOGGER.info("Added enableBatchProcessing config option");
             }
             
-            // 版本2到3的升级：添加缓存系统配置
+            // 版本2到3的升级:添加缓存系统配置
             if (!oldConfig.has("enableCacheSystem")) {
                 oldConfig.addProperty("enableCacheSystem", RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM);
                 RarityCore.LOGGER.info("Added enableCacheSystem config option");
@@ -97,7 +96,7 @@ public class ConfigVersionManager {
         UPGRADE_HANDLERS.put(3, (oldConfig, from, to) -> {
             RarityCore.LOGGER.info("Upgrading config from version {} to {}", from, to);
                     
-            // 版本 3 到 4 的升级：添加星星显示配置
+            // 版本 3 到 4 的升级:添加星星显示配置
             JsonObject starDisplay = new JsonObject();
             starDisplay.addProperty("enabled", true);
             starDisplay.addProperty("mode", RarityConstants.DEFAULT_STAR_MODE); // 引用常量
@@ -125,7 +124,7 @@ public class ConfigVersionManager {
         UPGRADE_HANDLERS.put(4, (oldConfig, from, to) -> {
             RarityCore.LOGGER.info("Upgrading config from version {} to {}", from, to);
                     
-            // 版本 4 到 5 的升级：添加 enableGetRarityWarning 配置项（服务端）
+            // 版本 4 到 5 的升级:添加 enableGetRarityWarning 配置项(服务端)
             if (!oldConfig.has("enableGetRarityWarning")) {
                 oldConfig.addProperty("enableGetRarityWarning", RarityConstants.DEFAULT_ENABLE_GET_RARITY_WARNING);
                 RarityCore.LOGGER.info("Added enableGetRarityWarning config option");
@@ -138,14 +137,14 @@ public class ConfigVersionManager {
         UPGRADE_HANDLERS.put(5, (oldConfig, from, to) -> {
             RarityCore.LOGGER.info("Upgrading config from version {} to {}", from, to);
             
-            // 版本 5 到 6 的升级：添加特殊稀有度文本自定义配置
+            // 版本 5 到 6 的升级:添加特殊稀有度文本自定义配置
             if (oldConfig.has("starDisplay")) {
                 JsonObject starDisplayObj = oldConfig.getAsJsonObject("starDisplay");
                 
                 if (starDisplayObj.has("custom")) {
                     JsonObject customObj = starDisplayObj.getAsJsonObject("custom");
                     
-                    // 添加空的特殊稀有度文本配置对象（如果不存在）
+                    // 添加空的特殊稀有度文本配置对象(如果不存在)
                     if (!customObj.has("specialRarityTexts")) {
                         JsonObject specialRarityTexts = new JsonObject();
                         customObj.add("specialRarityTexts", specialRarityTexts);
@@ -161,12 +160,12 @@ public class ConfigVersionManager {
     /**
      * 检查并升级配置文件
      * @param configFile 配置文件路径
-     * @param configType 配置类型描述（用于日志）
+     * @param configType 配置类型描述(用于日志)
      * @return 升级后的配置版本号
      */
     public static int checkAndUpgradeConfig(Path configFile, String configType) {
         try {
-            // 如果配置文件不存在，直接返回当前版本（将创建默认配置）
+            // 如果配置文件不存在,直接返回当前版本(将创建默认配置)
             if (!Files.exists(configFile)) {
                 RarityCore.LOGGER.info("Config file {} does not exist, will create with version {}", 
                     configType, CURRENT_CONFIG_VERSION);
@@ -187,7 +186,7 @@ public class ConfigVersionManager {
             // 获取当前配置版本
             int currentVersion = getConfigVersion(configObject);
             
-            // 如果已经是最新版本，无需升级
+            // 如果已经是最新版本,无需升级
             if (currentVersion >= CURRENT_CONFIG_VERSION) {
                 RarityCore.LOGGER.debug("Config {} is already at latest version {}", configType, currentVersion);
                 return currentVersion;
@@ -220,13 +219,13 @@ public class ConfigVersionManager {
     /**
      * 获取配置对象的版本号
      * @param configObject 配置对象
-     * @return 配置版本号，如果不存在则返回0
+     * @return 配置版本号,如果不存在则返回0
      */
     private static int getConfigVersion(JsonObject configObject) {
         if (configObject.has(VERSION_KEY)) {
             return configObject.get(VERSION_KEY).getAsInt();
         }
-        // 如果没有版本号，默认为版本0（最老的版本）
+        // 如果没有版本号,默认为版本0(最老的版本)
         return 0;
     }
     
@@ -240,7 +239,7 @@ public class ConfigVersionManager {
     private static JsonObject upgradeConfig(JsonObject configObject, int fromVersion, int toVersion) {
         JsonObject currentConfig = configObject.deepCopy();
         
-        // 逐步升级，从fromVersion到toVersion
+        // 逐步升级,从fromVersion到toVersion
         for (int version = fromVersion + 1; version <= toVersion; version++) {
             ConfigUpgradeHandler handler = UPGRADE_HANDLERS.get(version - 1);
             if (handler != null) {
@@ -260,7 +259,7 @@ public class ConfigVersionManager {
     public static JsonObject createVersionedConfig() {
         JsonObject configObject = new JsonObject();
         configObject.addProperty(VERSION_KEY, CURRENT_CONFIG_VERSION);
-        // 不再添加mod_version字段，只保留config_version就足够了
+        // 不再添加mod_version字段,只保留config_version就足够了
         return configObject;
     }
     
@@ -270,7 +269,7 @@ public class ConfigVersionManager {
      * @return 是否兼容
      */
     public static boolean isVersionCompatible(int configVersion) {
-        // 当前实现：只要配置版本不超过当前版本就是兼容的
+        // 当前实现:只要配置版本不超过当前版本就是兼容的
         // 未来可以实现更复杂的兼容性检查
         return configVersion <= CURRENT_CONFIG_VERSION;
     }

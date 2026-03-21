@@ -40,7 +40,7 @@ public class NbtSyncPacket {
     }
 
     private List<NbtRuleData> rules;
-    private boolean isFullSync; // true为全量同步，false为增量同步
+    private boolean isFullSync; // true为全量同步,false为增量同步
 
     public NbtSyncPacket(List<NbtRuleData> rules, boolean isFullSync) {
         this.rules = rules;
@@ -67,11 +67,11 @@ public class NbtSyncPacket {
 
     public boolean handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
-            RarityCore.LOGGER.debug("接收NBT匹配规则同步包，规则数量: {}, 全量同步: {}", 
+            RarityCore.LOGGER.debug("接收NBT匹配规则同步包,规则数量: {}, 全量同步: {}", 
                 rules.size(), isFullSync);
             
             if (isFullSync) {
-                // 全量同步：清空现有规则并重新加载
+                // 全量同步:清空现有规则并重新加载
                 org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher.clearAllRules();
             }
             
@@ -240,7 +240,7 @@ public class NbtSyncPacket {
         }
 
         private String serializeConditionData(NbtCondition condition) {
-            // 使用Gson进行安全的JSON序列化，自动处理特殊字符转义
+            // 使用Gson进行安全的JSON序列化,自动处理特殊字符转义
             JsonObject data = new JsonObject();
             
             if (condition instanceof org.yanbwe.raritycore.nbtmatching.EqualsCondition) {

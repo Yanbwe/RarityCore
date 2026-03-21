@@ -12,8 +12,6 @@ import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher;
-import org.yanbwe.raritycore.nbtmatching.NbtConfigLoader;
-
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -196,7 +194,7 @@ public class ExportManagementCommands {
                 modBasedData.computeIfAbsent(modId, k -> new HashMap<>()).put(itemId, rarity);
             }
             
-            // 为每个模组创建单独的文件（包含时间戳）
+            // 为每个模组创建单独的文件(包含时间戳)
             com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
             for (Map.Entry<String, Map<String, Integer>> modEntry : modBasedData.entrySet()) {
                 String modId = modEntry.getKey();

@@ -1,7 +1,5 @@
 package org.yanbwe.raritycore.calc;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -25,7 +23,7 @@ public class AutoRarityConfigManager {
     private static final Path AUTO_CONFIG_DIR = Paths.get("config/raritycore/auto");
     private static final Path AUTO_RARITY_FILE = AUTO_CONFIG_DIR.resolve("auto_rarity.json");
     
-    // 跟踪上次加载的 auto 配置物品 ID（用于 reload 时清理）
+    // 跟踪上次加载的 auto 配置物品 ID(用于 reload 时清理)
     private static java.util.Set<ResourceLocation> lastLoadedAutoItems = new java.util.HashSet<>();
     
     /**
@@ -50,7 +48,7 @@ public class AutoRarityConfigManager {
             // 1. 先清理上次加载的 auto 配置
             clearAutoLoadedItems();
             
-            // 2. 如果文件不存在，直接返回
+            // 2. 如果文件不存在,直接返回
             if (!Files.exists(AUTO_RARITY_FILE)) {
                 RarityCore.LOGGER.debug("Auto rarity config file not found: {}", AUTO_RARITY_FILE);
                 return;
@@ -72,7 +70,7 @@ public class AutoRarityConfigManager {
                     
                     net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
                     if (item != null) {
-                        // 写入自动计算的稀有度映射（优先级低于 FinalRarity.json）
+                        // 写入自动计算的稀有度映射(优先级低于 FinalRarity.json)
                         org.yanbwe.raritycore.registry.RarityRegistry.putAutoRarity(itemId, rarity);
                         lastLoadedAutoItems.add(itemId); // 记录已加载的物品
                         loadedCount++;
@@ -84,7 +82,7 @@ public class AutoRarityConfigManager {
             
             RarityCore.LOGGER.info("Loaded {} auto rarity configurations from {}", loadedCount, AUTO_RARITY_FILE);
             
-            // 3. 清空批处理缓冲区（避免之前的操作影响）
+            // 3. 清空批处理缓冲区(避免之前的操作影响)
             org.yanbwe.raritycore.registry.RarityRegistry.clearChangeBuffer();
             
         } catch (IOException e) {
@@ -129,14 +127,14 @@ public class AutoRarityConfigManager {
     }
     
     /**
-     * 删除自动稀有度文件，并返回被删除的物品 ID 列表
+     * 删除自动稀有度文件,并返回被删除的物品 ID 列表
      * @return 被删除的物品 ID 列表
      */
     public static java.util.List<ResourceLocation> deleteAutoRarityFile() {
         java.util.List<ResourceLocation> removedIds = new java.util.ArrayList<>();
         try {
             if (Files.exists(AUTO_RARITY_FILE)) {
-                // 读取文件内容，获取所有物品 ID
+                // 读取文件内容,获取所有物品 ID
                 String content = Files.readString(AUTO_RARITY_FILE);
                 if (!content.trim().isEmpty()) {
                     com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(content).getAsJsonObject();

@@ -18,7 +18,7 @@ public class FinalRarityConfigFolderLoader {
 
     /**
      * 加载FinalRarityConfig文件夹中的所有JSON文件
-     * 文件按字母顺序加载，后加载的会覆盖先加载的同名物品配置
+     * 文件按字母顺序加载,后加载的会覆盖先加载的同名物品配置
      */
     public static void loadFinalRarityConfigFolder() {
         Path configFolder = ConfigManager.getFinalRarityConfigFolderPath();

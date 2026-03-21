@@ -38,7 +38,7 @@ public class ComponentBuilder {
     }
     
     /**
-     * 构建稀有度组件（高性能版本）
+     * 构建稀有度组件(高性能版本)
      * @param rarity 稀有度等级
      * @param color 颜色格式
      * @return 构建好的组件
@@ -53,7 +53,7 @@ public class ComponentBuilder {
     }
     
     /**
-     * 构建特殊稀有度组件（大于 7 级的情况）
+     * 构建特殊稀有度组件(大于 7 级的情况)
      * @param rarity 稀有度等级
      * @param color 颜色格式
      * @return 构建好的组件
@@ -64,11 +64,11 @@ public class ComponentBuilder {
             
         String textToShow;
         if (customText != null && !customText.isEmpty()) {
-            // 使用自定义文本，但保持完整格式：[自定义文本 - 星星]
+            // 使用自定义文本,但保持完整格式:[自定义文本 - 星星]
             String stars = getStars(rarity);
             textToShow = "[" + customText + "-" + stars + "]";
         } else {
-            // 使用默认格式：[xx 级稀有度 - 星星]
+            // 使用默认格式:[xx 级稀有度 - 星星]
             String stars = getStars(rarity);
             textToShow = "[" + rarity + "级稀有度-" + stars + "]";
         }

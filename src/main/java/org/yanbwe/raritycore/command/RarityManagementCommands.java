@@ -87,7 +87,7 @@ public class RarityManagementCommands {
                 return 0;
             }
             
-            // 注册稀有度（不自动同步，因为后面会手动同步）
+            // 注册稀有度(不自动同步,因为后面会手动同步)
             RarityRegistry.register(item, rarity, false);
             
             // 保存到配置文件
@@ -116,7 +116,7 @@ public class RarityManagementCommands {
             return 0;
         }
         
-        // 注册稀有度（不自动同步，因为后面会手动同步）
+        // 注册稀有度(不自动同步,因为后面会手动同步)
         RarityRegistry.register(item, rarity, false);
         
         // 保存到配置文件
@@ -150,10 +150,10 @@ public class RarityManagementCommands {
                 return 0;
             }
             
-            // 删除稀有度（不自动同步，因为后面会手动同步）
+            // 删除稀有度(不自动同步,因为后面会手动同步)
             RarityRegistry.unregister(item, false);
             
-            // 保存到配置文件（稀有度为0表示删除）
+            // 保存到配置文件(稀有度为0表示删除)
             saveRarityToConfig(itemId.toString(), 0);
             
             // 手动同步到所有客户端
@@ -179,10 +179,10 @@ public class RarityManagementCommands {
             return 0;
         }
         
-        // 删除稀有度（不自动同步，因为后面会手动同步）
+        // 删除稀有度(不自动同步,因为后面会手动同步)
         RarityRegistry.unregister(item, false);
         
-        // 保存到配置文件（稀有度为0表示删除）
+        // 保存到配置文件(稀有度为0表示删除)
         saveRarityToConfig(itemId.toString(), 0);
         
         // 手动同步到所有客户端
@@ -211,7 +211,7 @@ public class RarityManagementCommands {
                         // 使用 JsonParser 解析现有配置
                         jsonObject = com.google.gson.JsonParser.parseString(content).getAsJsonObject();
                     } catch (Exception e) {
-                        // 如果解析失败，创建新的空对象
+                        // 如果解析失败,创建新的空对象
                         RarityCore.LOGGER.warn("Failed to parse config file, will recreate", e);
                         jsonObject = new com.google.gson.JsonObject();
                     }
@@ -243,11 +243,11 @@ public class RarityManagementCommands {
             // 强制重新计算
             org.yanbwe.raritycore.calc.AutoRarityCalculator.forceRecalculate();
             
-            source.sendSuccess(() -> Component.literal("已启动自动稀有度重新计算，请稍候..."), true);
+            source.sendSuccess(() -> Component.literal("已启动自动稀有度重新计算,请稍候..."), true);
             return 1;
         } catch (Exception e) {
             RarityCore.LOGGER.error("Failed to recalculate auto rarity", e);
-            source.sendSuccess(() -> Component.literal("重新计算失败：" + e.getMessage()).withStyle(ChatFormatting.RED), false);
+            source.sendSuccess(() -> Component.literal("重新计算失败:" + e.getMessage()).withStyle(ChatFormatting.RED), false);
             return 0;
         }
     }

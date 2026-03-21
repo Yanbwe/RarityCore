@@ -5,7 +5,6 @@ import org.yanbwe.raritycore.RarityCore;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -23,20 +22,20 @@ public class NbtPathResolver {
     
     /**
      * 根据路径解析NBT标签
-     * 支持的路径格式：
+     * 支持的路径格式:
      * - "Enchantments"                    // 简单键访问
      * - "Enchantments[0]"                 // 数组索引访问
      * - "Enchantments[0].id"              // 嵌套访问
      * - "display.Name"                    // 点号分隔的嵌套访问
-     * - "Enchantments[*].id"              // 通配符访问（新功能）
-     * - "Enchantments[*].lvl"             // 通配符访问（新功能）
+     * - "Enchantments[*].id"              // 通配符访问(新功能)
+     * - "Enchantments[*].lvl"             // 通配符访问(新功能)
      * - "tag.Yanbwe"                      // 根级tag路径访问
      * - "Count"                           // 根级Count字段访问
      * - "id"                              // 根级id字段访问
      * 
      * @param nbt 要解析的NBT标签
      * @param path NBT路径
-     * @return 解析到的标签，如果路径无效则返回null
+     * @return 解析到的标签,如果路径无效则返回null
      */
     @Nullable
     public static Tag resolve(CompoundTag nbt, String path) {
@@ -45,7 +44,7 @@ public class NbtPathResolver {
         }
         
         try {
-            // 检查是否是根级路径（以"tag."开头或其他根级字段）
+            // 检查是否是根级路径(以"tag."开头或其他根级字段)
             if (isRootLevelPath(path)) {
                 return resolveRootPath(nbt, path);
             }
@@ -53,7 +52,7 @@ public class NbtPathResolver {
             // 检查是否包含通配符
             if (path.contains("[*]")) {
                 List<Tag> results = resolveWildcardPath(nbt, path);
-                // 对于通配符路径，返回第一个匹配的结果或者null
+                // 对于通配符路径,返回第一个匹配的结果或者null
                 return results.isEmpty() ? null : results.get(0);
             }
             
@@ -115,7 +114,7 @@ public class NbtPathResolver {
             }
             
             if (pathSegment.matches("\\d+")) {
-                // 数字索引，但在复合标签中应该是键名
+                // 数字索引,但在复合标签中应该是键名
                 return compound.get(pathSegment);
             } else {
                 return compound.get(pathSegment);
@@ -155,7 +154,7 @@ public class NbtPathResolver {
      * 分割路径为各个部分
      */
     private static String[] splitPath(String path) {
-        // 改进的分割实现，支持通配符
+        // 改进的分割实现,支持通配符
         return path.split("\\.|(?=\\[)|(?<=\\])");
     }
     
@@ -194,7 +193,7 @@ public class NbtPathResolver {
                     for (int i = 0; i < listTag.size(); i++) {
                         Tag element = listTag.get(i);
                         if (remainingPath.isEmpty()) {
-                            // 如果没有剩余路径，直接添加元素
+                            // 如果没有剩余路径,直接添加元素
                             results.add(element);
                         } else {
                             // 递归解析剩余路径
@@ -206,7 +205,7 @@ public class NbtPathResolver {
                     }
                 }
             } else {
-                // 非通配符部分，按原有逻辑处理
+                // 非通配符部分,按原有逻辑处理
                 Tag next = getNextTag(nbt, firstPart);
                 if (next != null) {
                     if (remainingPath.isEmpty()) {
@@ -283,7 +282,7 @@ public class NbtPathResolver {
     }
     
     /**
-     * 获取标签的值（转换为适当的Java类型）
+     * 获取标签的值(转换为适当的Java类型)
      */
     @Nullable
     public static Object getTagValue(Tag tag) {
@@ -291,7 +290,7 @@ public class NbtPathResolver {
             return null;
         }
         
-        // 使用最安全的方式：通过ID判断类型并转换
+        // 使用最安全的方式:通过ID判断类型并转换
         switch (tag.getId()) {
             case 1: // BYTE
             case 2: // SHORT  
@@ -373,7 +372,7 @@ public class NbtPathResolver {
     }
     
     /**
-     * 获取路径的最后一个部分（用于调试）
+     * 获取路径的最后一个部分(用于调试)
      */
     public static String getLastPathSegment(String path) {
         if (path == null || path.isEmpty()) {
@@ -413,7 +412,7 @@ public class NbtPathResolver {
         CompoundTag itemNbt = new CompoundTag();
         itemNbt.put("tag", tag);
         
-        // 如果路径以"tag."开头，去掉前缀
+        // 如果路径以"tag."开头,去掉前缀
         String actualPath = rootPath;
         if (rootPath.startsWith("tag.")) {
             actualPath = rootPath.substring(4);
@@ -422,8 +421,8 @@ public class NbtPathResolver {
         
         // 处理其他根级字段
         if (rootPath.equals("Count") || rootPath.equals("id")) {
-            // 这些需要从完整的物品NBT中获取，但当前只传入了tag部分
-            // 在实际使用中，可能需要修改调用方传入完整NBT
+            // 这些需要从完整的物品NBT中获取,但当前只传入了tag部分
+            // 在实际使用中,可能需要修改调用方传入完整NBT
             return null;
         }
         

@@ -8,20 +8,10 @@ import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.config.ConfigVersionManager;
-import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
-import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.config.ServerConfigManager;
-import org.yanbwe.raritycore.nbtmatching.NbtConfigLoader;
-import org.yanbwe.raritycore.nbtmatching.SimpleNbtCache;
-import org.yanbwe.raritycore.network.ChangeOperation;
-import org.yanbwe.raritycore.network.NbtSyncManager;
-import org.yanbwe.raritycore.network.SyncBatchManager;
-import org.yanbwe.raritycore.registry.RarityRegistry;
-
 import java.io.BufferedReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 /**
  * 配置管理命令类
@@ -85,7 +75,7 @@ public class ConfigManagementCommands {
     
     /**
      * 处理skipUnconfiguredItems配置变更
-     * 当此配置改变时，需要通知相关渲染系统刷新状态
+     * 当此配置改变时,需要通知相关渲染系统刷新状态
      */
     private static void handleSkipUnconfiguredItemsChange() {
         try {

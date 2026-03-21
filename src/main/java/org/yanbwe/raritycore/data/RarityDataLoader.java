@@ -4,24 +4,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
-import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.server.ServerLifecycleHooks;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
-import org.yanbwe.raritycore.config.RarityConfigLoader;
-import org.yanbwe.raritycore.network.ChangeOperation;
-import org.yanbwe.raritycore.network.IncrementalSyncPacket;
-import org.yanbwe.raritycore.network.SyncBatchManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityConstants;
 
-import java.util.List;
 import java.util.Map;
 
 public class RarityDataLoader extends SimpleJsonResourceReloadListener {
@@ -37,7 +27,7 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener {
     /**
      * 从资源包加载JSON里的数据然后应用
      * 
-     * @param jsons 包含物品稀有度配置的JSON元素映射，键为资源位置，值为JSON元素
+     * @param jsons 包含物品稀有度配置的JSON元素映射,键为资源位置,值为JSON元素
      * @param resourceManager 资源管理器
      * @param profiler 性能统计器
      */

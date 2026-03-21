@@ -5,12 +5,11 @@ import com.google.common.cache.CacheBuilder;
 import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.RarityCore;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
  * 简化版NBT匹配缓存
- * 提供高效的物品稀有度缓存机制，支持动态容量调整
+ * 提供高效的物品稀有度缓存机制,支持动态容量调整
  */
 public class SimpleNbtCache {
     
@@ -23,7 +22,7 @@ public class SimpleNbtCache {
     }
     
     /**
-     * 初始化缓存，根据配置数量动态调整大小
+     * 初始化缓存,根据配置数量动态调整大小
      */
     private static void initializeCache() {
         int dynamicSize = calculateDynamicCacheSize();
@@ -41,13 +40,13 @@ public class SimpleNbtCache {
      */
     private static int calculateDynamicCacheSize() {
         int ruleCount = NbtRarityMatcher.getRuleCount();
-        // 基础大小 + 规则数量 × 10，但不超过最大限制
+        // 基础大小 + 规则数量 × 10,但不超过最大限制
         int calculatedSize = BASE_CACHE_SIZE + (ruleCount * 10);
         return Math.min(calculatedSize, MAX_CACHE_SIZE);
     }
     
     /**
-     * 重新初始化缓存（在配置重载后调用）
+     * 重新初始化缓存(在配置重载后调用)
      */
     public static void reinitializeCache() {
         itemCache.invalidateAll();
@@ -56,40 +55,40 @@ public class SimpleNbtCache {
     }
     
     /**
-     * 获取缓存的稀有度值（非阻塞版本）
+     * 获取缓存的稀有度值(非阻塞版本)
      * @param stack 物品堆
-     * @return 缓存的稀有度，如果未缓存或未匹配到规则则返回 null
+     * @return 缓存的稀有度,如果未缓存或未匹配到规则则返回 null
      */
     public static Integer getCachedRarity(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
             return null;
         }
             
-        // 先尝试从缓存获取，不阻塞
+        // 先尝试从缓存获取,不阻塞
         Integer result = itemCache.getIfPresent(stack);
         if (result != null) {
             // 将特殊值 -1 转换回 null
             return result != -1 ? result : null;
         }
             
-        // 缓存未命中，直接计算但不填充缓存（避免阻塞渲染线程）
+        // 缓存未命中,直接计算但不填充缓存(避免阻塞渲染线程)
         // 让 RarityRegistry 的计算结果来填充缓存
         return null;
     }
     
     /**
-     * 直接计算稀有度（不使用缓存）
+     * 直接计算稀有度(不使用缓存)
      * @param stack 物品堆
-     * @return 计算得到的稀有度，如果无法计算则返回-1（特殊值）
+     * @return 计算得到的稀有度,如果无法计算则返回-1(特殊值)
      */
     private static Integer calculateRarity(ItemStack stack) {
         Integer result = NbtRarityMatcher.calculateWithoutCache(stack);
-        // Guava缓存不允许返回null，返回-1表示未找到匹配
+        // Guava缓存不允许返回null,返回-1表示未找到匹配
         return result != null ? result : -1;
     }
     
     /**
-     * 手动添加缓存条目（异步填充）
+     * 手动添加缓存条目(异步填充)
      * @param stack 物品堆
      * @param rarity 稀有度值
      */
@@ -97,7 +96,7 @@ public class SimpleNbtCache {
         if (stack != null && !stack.isEmpty() && rarity != null) {
             itemCache.put(stack, rarity);
         } else if (stack != null && !stack.isEmpty() && rarity == null) {
-            // 存储 -1 表示未找到匹配，避免重复计算
+            // 存储 -1 表示未找到匹配,避免重复计算
             itemCache.put(stack, -1);
         }
     }

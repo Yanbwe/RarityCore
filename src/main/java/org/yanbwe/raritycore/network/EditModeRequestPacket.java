@@ -14,7 +14,7 @@ import java.util.function.Supplier;
 
 /**
  * 客户端编辑模式请求包
- * 用于在多人游戏中，客户端向服务端发送编辑模式修改请求
+ * 用于在多人游戏中,客户端向服务端发送编辑模式修改请求
  */
 public class EditModeRequestPacket {
     public static final String PROTOCOL_VERSION = "1.0";
@@ -70,7 +70,7 @@ public class EditModeRequestPacket {
                 return;
             }
             
-            // 检查玩家是否有权限（需要 OP 权限）
+            // 检查玩家是否有权限(需要 OP 权限)
             if (!player.hasPermissions(2)) {
                 RarityCore.LOGGER.warn("Player {} without sufficient permissions tried to use edit mode", 
                     player.getName().getString());
@@ -98,7 +98,7 @@ public class EditModeRequestPacket {
                             rarity, itemId, player.getName().getString());
                     }
                     
-                    // 同步到所有客户端（包括请求者）
+                    // 同步到所有客户端(包括请求者)
                     RarityRegistry.syncRarityToClientsWithRetry();
                 } else {
                     RarityCore.LOGGER.warn("Invalid item received in edit mode request: {}", itemId);

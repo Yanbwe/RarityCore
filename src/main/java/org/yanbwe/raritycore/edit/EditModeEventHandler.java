@@ -124,7 +124,7 @@ public class EditModeEventHandler {
     }
     
     /**
-     * 处理0键按下事件（切换删除模式）
+     * 处理0键按下事件(切换删除模式)
      */
     private static void handleZeroKeyPress() {
         if (!EditModeManager.isEditModeEnabled()) {
@@ -158,7 +158,7 @@ public class EditModeEventHandler {
             return accessor.getHoveredSlot();
         }
         
-        // 备用方法：手动计算槽位
+        // 备用方法:手动计算槽位
         try {
             // 获取屏幕左上角坐标
             int leftPos = ((AbstractContainerScreen<?>) screen).getGuiLeft();

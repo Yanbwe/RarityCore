@@ -3,8 +3,6 @@ package org.yanbwe.raritycore.compat.apotheosis;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.ModList;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.registry.RarityRegistry;
-
 import java.lang.reflect.Method;
 
 /**
@@ -60,12 +58,12 @@ public class ApotheosisAdapter {
         }
         
         try {
-            // 首先检查是否有NBT数据中的稀有度信息（适用于装备）
+            // 首先检查是否有NBT数据中的稀有度信息(适用于装备)
             if (itemStack.hasTag() && itemStack.getTag().contains("affix_data")) {
                 return true;
             }
             
-            // 检查物品是否是稀有度材料（适用于材料物品）
+            // 检查物品是否是稀有度材料(适用于材料物品)
             Object item = itemStack.getItem();
             Boolean isMaterial = (Boolean) isMaterialMethod.invoke(null, item);
             return isMaterial != null && isMaterial;
@@ -79,7 +77,7 @@ public class ApotheosisAdapter {
     /**
      * 获取物品的神化稀有度并映射到本模组稀有度
      * @param itemStack 要检查的物品
-     * @return 映射后的稀有度等级 (1-6)，如果没有神化稀有度则返回null
+     * @return 映射后的稀有度等级 (1-6),如果没有神化稀有度则返回null
      */
     public static Integer getMappedRarity(ItemStack itemStack) {
         if (!isInitialized || itemStack.isEmpty()) {
@@ -87,7 +85,7 @@ public class ApotheosisAdapter {
         }
         
         try {
-            // 首先尝试从NBT数据中获取稀有度（适用于装备、宝石等所有物品）
+            // 首先尝试从NBT数据中获取稀有度(适用于装备、宝石等所有物品)
             if (itemStack.hasTag() && itemStack.getTag().contains("affix_data")) {
                 net.minecraft.nbt.CompoundTag affixData = itemStack.getTag().getCompound("affix_data");
                 if (affixData.contains("rarity")) {
@@ -96,7 +94,7 @@ public class ApotheosisAdapter {
                 }
             }
             
-            // 如果NBT中没有，则回退到材料稀有度检查（适用于特殊材料物品）
+            // 如果NBT中没有,则回退到材料稀有度检查(适用于特殊材料物品)
             Object item = itemStack.getItem();
             Boolean isMaterial = (Boolean) isMaterialMethod.invoke(null, item);
             
@@ -135,7 +133,7 @@ public class ApotheosisAdapter {
     
     /**
      * 根据神化稀有字符串映射到本模组稀有度
-     * @param rarityString 神化稀有度字符串，格式如 "apotheosis:common", "apotheosis:epic" 等
+     * @param rarityString 神化稀有度字符串,格式如 "apotheosis:common", "apotheosis:epic" 等
      * @return 对应的本模组稀有度等级 (1-6)
      */
     private static Integer mapApotheosisRarityString(String rarityString) {
@@ -176,7 +174,7 @@ public class ApotheosisAdapter {
     }
     
     /**
-     * 重置初始化状态（主要用于测试）
+     * 重置初始化状态(主要用于测试)
      */
     public static void reset() {
         isInitialized = false;

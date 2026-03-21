@@ -1,6 +1,5 @@
 package org.yanbwe.raritycore.nbtmatching;
 
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -24,9 +23,9 @@ public class NbtRarityMatcher {
         new ConcurrentHashMap<>();
     
     /**
-     * 获取物品的NBT匹配稀有度（带缓存）
+     * 获取物品的NBT匹配稀有度(带缓存)
      * @param itemStack 要检查的物品堆
-     * @return 匹配的稀有度等级，如果没有匹配则返回null
+     * @return 匹配的稀有度等级,如果没有匹配则返回null
      */
     @Nullable
     public static Integer getNbtMatchedRarity(ItemStack itemStack) {
@@ -39,7 +38,7 @@ public class NbtRarityMatcher {
     }
     
     /**
-     * 直接计算稀有度（不使用缓存，供缓存内部调用）
+     * 直接计算稀有度(不使用缓存,供缓存内部调用)
      * @param itemStack 物品堆
      * @return 计算的稀有度
      */
@@ -59,7 +58,7 @@ public class NbtRarityMatcher {
             return null;
         }
         
-        // 按优先级降序排列（数值大的优先级高）
+        // 按优先级降序排列(数值大的优先级高)
         List<NbtMatchRule> sortedRules = new ArrayList<>(rules);
         sortedRules.sort((a, b) -> Integer.compare(b.getPriority(), a.getPriority()));
         
@@ -100,11 +99,11 @@ public class NbtRarityMatcher {
     }
     
     /**
-     * 重新加载所有规则（通常在配置文件更改后调用）
+     * 重新加载所有规则(通常在配置文件更改后调用)
      */
     public static void reloadRules() {
         RULES_CACHE.clear();
-        RarityCore.LOGGER.info("NBT匹配规则缓存已清空，等待重新加载配置");
+        RarityCore.LOGGER.info("NBT匹配规则缓存已清空,等待重新加载配置");
         
         // 触发配置重新加载
         NbtConfigLoader.loadAllConfigs();
@@ -162,7 +161,7 @@ public class NbtRarityMatcher {
     }
     
     /**
-     * 获取规则缓存（仅供同步使用）
+     * 获取规则缓存(仅供同步使用)
      * @return 规则缓存的副本
      */
     public static Map<ResourceLocation, List<NbtMatchRule>> getRulesCacheForSync() {
@@ -170,7 +169,7 @@ public class NbtRarityMatcher {
     }
     
     /**
-     * 清空所有规则（仅供同步使用）
+     * 清空所有规则(仅供同步使用)
      */
     public static void clearAllRules() {
         RULES_CACHE.clear();

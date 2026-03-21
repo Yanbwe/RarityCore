@@ -56,7 +56,7 @@ public class RarityCore {
     public void addReloadListeners(AddReloadListenerEvent event) {
         event.addListener(RarityDataLoader.INSTANCE);
         
-        // 注册NBT匹配配置加载器（支持数据包加载）
+        // 注册NBT匹配配置加载器(支持数据包加载)
         event.addListener(new org.yanbwe.raritycore.nbtmatching.NbtConfigLoader());
         
         // 注册缓存失效监听器到事件总线
@@ -93,7 +93,7 @@ public class RarityCore {
             return t;
         });
             
-        // 延时发送兼容性提示（等待世界完全加载）
+        // 延时发送兼容性提示(等待世界完全加载)
         syncScheduler.schedule(() -> {
             try {
                 RarityRegistry.notifyPlayersOfCompatibilityIssue();
@@ -102,7 +102,7 @@ public class RarityCore {
             }
         }, 5, TimeUnit.SECONDS); // 5 秒后发送提示
             
-        // 延时启动自动稀有度计算（世界启动 5 秒后检测）
+        // 延时启动自动稀有度计算(世界启动 5 秒后检测)
         syncScheduler.schedule(() -> {
             try {
                 checkAndStartAutoCalculation();
@@ -131,14 +131,14 @@ public class RarityCore {
             } catch (Exception e) {
                 LOGGER.error("Error occurred during auto rarity calculation tick", e);
             }
-        }, 100, 50, TimeUnit.MILLISECONDS); // 100ms 后开始，每 50ms(1tick) 执行一次
+        }, 100, 50, TimeUnit.MILLISECONDS); // 100ms 后开始,每 50ms(1tick) 执行一次
             
         // Add cache cleanup task (using longer interval)
         syncScheduler.scheduleAtFixedRate(() -> {
             try {
                 // Use smart cleanup instead of full cleanup, interval extended to 10 minutes
                 // 新缓存系统不需要手动清理
-                // 根据调试日志管理规范，注释掉高频触发的调试信息
+                // 根据调试日志管理规范,注释掉高频触发的调试信息
                 // LOGGER.debug("Executing smart cache cleanup");
             } catch (Exception e) {
                 LOGGER.error("Error occurred during cache cleanup", e);
@@ -179,7 +179,7 @@ public class RarityCore {
         // 检查 auto_rarity.json 是否存在
         java.nio.file.Path autoRarityFile = org.yanbwe.raritycore.calc.AutoRarityConfigManager.getAutoRarityFilePath();
         if (!java.nio.file.Files.exists(autoRarityFile)) {
-            // 文件不存在，开始自动计算
+            // 文件不存在,开始自动计算
             org.yanbwe.raritycore.calc.AutoRarityCalculator.startAutoCalculation();
         } else {
             LOGGER.debug("Auto rarity config already exists, skipping calculation: {}", autoRarityFile);

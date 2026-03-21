@@ -25,7 +25,7 @@ public class NbtConfigLoader extends SimpleJsonResourceReloadListener {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final String DATA_PACK_FOLDER = "nbt_matches"; // 数据包中的文件夹名
     
-    // 本地配置规则缓存（来自config目录）
+    // 本地配置规则缓存(来自config目录)
     private static final List<NbtMatchRule> LOCAL_RULES = new ArrayList<>();
     
     public NbtConfigLoader() {
@@ -33,11 +33,11 @@ public class NbtConfigLoader extends SimpleJsonResourceReloadListener {
     }
     
     /**
-     * 从数据包加载配置（由Minecraft资源系统调用）
+     * 从数据包加载配置(由Minecraft资源系统调用)
      */
     @Override
     protected void apply(Map<ResourceLocation, JsonElement> jsons, ResourceManager resourceManager, ProfilerFiller profiler) {
-        RarityCore.LOGGER.info("开始从数据包加载NBT匹配配置，找到 {} 个配置文件", jsons.size());
+        RarityCore.LOGGER.info("开始从数据包加载NBT匹配配置,找到 {} 个配置文件", jsons.size());
         
         // 清空现有数据包规则
         NbtRarityMatcher.clearAllRules();
@@ -64,12 +64,12 @@ public class NbtConfigLoader extends SimpleJsonResourceReloadListener {
         
         RarityCore.LOGGER.info("从数据包成功加载 {} 个NBT匹配规则", loadedCount);
         
-        // 加载本地配置文件（优先级更高）
+        // 加载本地配置文件(优先级更高)
         loadLocalConfigs();
     }
     
     /**
-     * 加载所有配置（包括数据包和本地配置）
+     * 加载所有配置(包括数据包和本地配置)
      */
     public static void loadAllConfigs() {
         // 本地配置会在这个方法中加载
@@ -77,7 +77,7 @@ public class NbtConfigLoader extends SimpleJsonResourceReloadListener {
     }
     
     /**
-     * 仅加载本地配置文件（config目录）
+     * 仅加载本地配置文件(config目录)
      */
     private static void loadLocalConfigs() {
         Path configDir = ConfigManager.getConfigDirPath().resolve("nbt_matches");
@@ -90,13 +90,13 @@ public class NbtConfigLoader extends SimpleJsonResourceReloadListener {
             // 清空本地规则缓存
             LOCAL_RULES.clear();
             
-            // 关键：清空NBT匹配器的规则缓存
+            // 关键:清空NBT匹配器的规则缓存
             NbtRarityMatcher.clearAllRules();
             
             // 加载所有本地配置文件
             loadLocalConfigFiles(configDir);
             
-            // 注册本地规则（覆盖数据包规则）
+            // 注册本地规则(覆盖数据包规则)
             for (NbtMatchRule rule : LOCAL_RULES) {
                 NbtRarityMatcher.registerRule(rule);
             }

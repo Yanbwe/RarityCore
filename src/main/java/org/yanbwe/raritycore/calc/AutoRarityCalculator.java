@@ -1,13 +1,9 @@
  package org.yanbwe.raritycore.calc;
 
-import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.ChatFormatting;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
@@ -30,7 +26,7 @@ public class AutoRarityCalculator {
     private static boolean isCalculating = false;
     
     /**
-     * 判断物品是否为 A 类物品（已有配置的稀有度）
+     * 判断物品是否为 A 类物品(已有配置的稀有度)
      * @param itemId 物品 ID
      * @return 如果是 A 类返回 true
      */
@@ -39,7 +35,7 @@ public class AutoRarityCalculator {
     }
     
     /**
-     * 判断物品是否已计算过（C 类物品）
+     * 判断物品是否已计算过(C 类物品)
      * @param item 物品对象
      * @return 如果已计算返回 true
      */
@@ -48,35 +44,35 @@ public class AutoRarityCalculator {
     }
     
     /**
-     * 判断物品是否为 B 类物品（无配置，可以计算）
+     * 判断物品是否为 B 类物品(无配置,可以计算)
      * @param itemId 物品 ID
      * @param item 物品对象
      * @return 如果是 B 类返回 true
      */
     private static boolean isTypeB(ResourceLocation itemId, Item item) {
-        // 不是 A 类且不是 C 类，就是 B 类
+        // 不是 A 类且不是 C 类,就是 B 类
         return !isTypeA(itemId) && !isTypeC(item);
     }
     
     // 轮次计数器
     private static int currentRound = 0;
     
-    // C 列表：待处理物品队列
+    // C 列表:待处理物品队列
     private static List<Item> pendingItemList = new ArrayList<>();
     
-    // 所有轮次的结果 Map（E1, E2, E3...）
+    // 所有轮次的结果 Map(E1, E2, E3...)
     private static Map<Integer, Map<Item, Integer>> allRoundResults = new HashMap<>();
     
-    // 当前轮次的结果 Map（En）
+    // 当前轮次的结果 Map(En)
     private static Map<Item, Integer> currentRoundResults = new HashMap<>();
     
-    // 物品首次出现的轮次（用于定位更新哪个 E）
+    // 物品首次出现的轮次(用于定位更新哪个 E)
     private static Map<Item, Integer> itemFirstRoundMap = new HashMap<>();
     
-    // 全局最高稀有度缓存（用于快速比较）
+    // 全局最高稀有度缓存(用于快速比较)
     private static Map<Item, Integer> maxRarityCache = new HashMap<>();
     
-    // 预构建的配料→配方映射（性能优化）
+    // 预构建的配料→配方映射(性能优化)
     private static Map<ResourceLocation, List<Recipe<?>>> ingredientToRecipesMap = new HashMap<>();
     
     // 统计信息
@@ -85,10 +81,10 @@ public class AutoRarityCalculator {
     // 进度跟踪
     private static int totalItemsInRound = 0; // 本轮总物品数
     private static int processedItemsInRound = 0; // 本轮已处理物品数
-    private static long lastProgressUpdateTime = 0; // 上次进度更新时间（毫秒）
+    private static long lastProgressUpdateTime = 0; // 上次进度更新时间(毫秒)
     
     /**
-     * 计算任务单元（保留用于兼容性）
+     * 计算任务单元(保留用于兼容性)
      */
     public static class CalculationTask {
         public final Recipe<?> recipe;
@@ -101,7 +97,7 @@ public class AutoRarityCalculator {
     }
     
     /**
-     * 开始自动计算（在世界启动后调用）
+     * 开始自动计算(在世界启动后调用)
      */
     public static void startAutoCalculation() {
         if (isCalculating) {
@@ -132,12 +128,12 @@ public class AutoRarityCalculator {
         // 预构建配料→配方映射
         buildIngredientRecipeMap(server.getRecipeManager());
         
-        // 第一轮：将所有 A 类物品加入 C 列表
+        // 第一轮:将所有 A 类物品加入 C 列表
         initFirstRound();
     }
     
     /**
-     * 第一轮初始化：将所有 A 类物品加入 C 列表
+     * 第一轮初始化:将所有 A 类物品加入 C 列表
      */
     private static void initFirstRound() {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
@@ -160,7 +156,7 @@ public class AutoRarityCalculator {
     }
     
     /**
-     * 预构建配料→配方映射（性能优化）
+     * 预构建配料→配方映射(性能优化)
      */
     private static void buildIngredientRecipeMap(RecipeManager recipeManager) {
         ingredientToRecipesMap.clear();
@@ -172,7 +168,7 @@ public class AutoRarityCalculator {
                 continue;
             }
             
-            // 特殊处理锻造台配方（使用 Mixin 获取配料）
+            // 特殊处理锻造台配方(使用 Mixin 获取配料)
             if (recipe instanceof net.minecraft.world.item.crafting.SmithingTransformRecipe smithingRecipe) {
                 try {
                     // 使用 Mixin 访问器获取配料
@@ -246,14 +242,14 @@ public class AutoRarityCalculator {
         
         RarityCore.LOGGER.info("Starting round {}: processing {} items", currentRound, pendingItemList.size());
         
-        // 发送聊天栏消息：开始处理回合，包含待处理物品数量
+        // 发送聊天栏消息:开始处理回合,包含待处理物品数量
         sendToAllPlayers(Component.translatable("rarity.core.auto_calculation_round_start", 
                 currentRound, pendingItemList.size())
             .withStyle(net.minecraft.ChatFormatting.YELLOW));
     }
     
     /**
-     * Tick 更新（每 tick 调用）
+     * Tick 更新(每 tick 调用)
      */
     public static void tick() {
         if (!isCalculating || pendingItemList.isEmpty()) {
@@ -298,7 +294,7 @@ public class AutoRarityCalculator {
         // 从缓存中查找包含该配料的所有配方
         List<Recipe<?>> recipes = ingredientToRecipesMap.get(materialId);
         if (recipes == null || recipes.isEmpty()) {
-            return; // 没有使用该配料的配方，跳过
+            return; // 没有使用该配料的配方,跳过
         }
         
         for (Recipe<?> recipe : recipes) {
@@ -319,7 +315,7 @@ public class AutoRarityCalculator {
                     continue;
                 }
                 
-                // 跳过 A 类物品（已有手动配置）
+                // 跳过 A 类物品(已有手动配置)
                 if (isTypeA(outputId)) {
                     continue;
                 }
@@ -327,7 +323,7 @@ public class AutoRarityCalculator {
                 // 计算新的稀有度
                 int outputRarity = calculateOutputRarityNew(recipe, ingredientRarities);
                 
-                // 保留最高稀有度，并记录首次出现的轮次
+                // 保留最高稀有度,并记录首次出现的轮次
                 updateRarityWithMax(outputItem, outputRarity);
                 
             } catch (Exception e) {
@@ -337,8 +333,8 @@ public class AutoRarityCalculator {
     }
     
     /**
-     * 获取配料的稀有度列表（新算法版本）
-     * @return 如果所有配料都有稀有度则返回列表，否则返回空列表
+     * 获取配料的稀有度列表(新算法版本)
+     * @return 如果所有配料都有稀有度则返回列表,否则返回空列表
      */
     private static List<Integer> getIngredientRaritiesForNewAlgorithm(Recipe<?> recipe) {
         List<Integer> rarities = new ArrayList<>();
@@ -351,7 +347,7 @@ public class AutoRarityCalculator {
         // 检查是否是其他类型的锻造台配方
         String recipeClassName = recipe.getClass().getName();
         if (recipeClassName.contains("Smithing")) {
-            // 非标准锻造台配方，跳过不处理
+            // 非标准锻造台配方,跳过不处理
         }
         
         // 默认处理
@@ -361,21 +357,21 @@ public class AutoRarityCalculator {
                 continue;
             }
             
-            // 遍历配料的所有物品，取最低稀有度
+            // 遍历配料的所有物品,取最低稀有度
             Integer minRarity = null;
             for (ItemStack stack : ingredient.getItems()) {
                 Item item = stack.getItem();
                 
-                // 先查注册表（数据包、FinalRarity.json、FinalRarityConfig文件夹）
+                // 先查注册表(数据包、FinalRarity.json、FinalRarityConfig文件夹)
                 ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
                 Integer rarity = null;
                 if (itemId != null) {
                     rarity = RarityRegistry.ITEM_RARITY_MAP.get(itemId);
                 }
                 
-                // 如果注册表没有，再查之前轮次计算的稀有度（E1, E2...）
+                // 如果注册表没有,再查之前轮次计算的稀有度(E1, E2...)
                 if (rarity == null) {
-                    // 优先查全局缓存（包括之前轮次计算的物品）
+                    // 优先查全局缓存(包括之前轮次计算的物品)
                     rarity = maxRarityCache.get(item);
                     if (rarity == null) {
                         // 再查本轮已计算的物品
@@ -383,7 +379,7 @@ public class AutoRarityCalculator {
                     }
                 }
                 
-                // 如果还没有，最后检查原版稀有度
+                // 如果还没有,最后检查原版稀有度
                 if (rarity == null && org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
                     try {
                         net.minecraft.world.item.Rarity vanillaRarity = stack.getRarity();
@@ -395,7 +391,7 @@ public class AutoRarityCalculator {
                             rarity = 5; // 传说
                         }
                     } catch (Throwable e) {
-                        // 忽略异常，继续返回 null
+                        // 忽略异常,继续返回 null
                     }
                 }
                 
@@ -407,7 +403,7 @@ public class AutoRarityCalculator {
                 }
             }
             
-            // 如果找不到稀有度，视为 1（普通物品）
+            // 如果找不到稀有度,视为 1(普通物品)
             if (minRarity == null) {
                 minRarity = 1;
             }
@@ -419,8 +415,8 @@ public class AutoRarityCalculator {
     }
     
     /**
-     * 处理锻造台配方（使用 Mixin 获取配料）
-     * @return 如果所有配料都有稀有度则返回列表，否则返回空列表
+     * 处理锻造台配方(使用 Mixin 获取配料)
+     * @return 如果所有配料都有稀有度则返回列表,否则返回空列表
      */
     private static List<Integer> handleSmithingRecipe(Recipe<?> recipe) {
         List<Integer> rarities = new ArrayList<>();
@@ -434,7 +430,7 @@ public class AutoRarityCalculator {
             Ingredient base = accessor.getBase();
             Ingredient addition = accessor.getAddition();
             
-            // 处理三个配料（如果找不到稀有度则视为 1）
+            // 处理三个配料(如果找不到稀有度则视为 1)
             int templateRarity = processSmithingIngredient(template);
             int baseRarity = processSmithingIngredient(base);
             int additionRarity = processSmithingIngredient(addition);
@@ -452,28 +448,28 @@ public class AutoRarityCalculator {
     
     /**
      * 处理锻造台单个配料
-     * @return 如果找到稀有度返回该值，否则返回 1（普通物品）
+     * @return 如果找到稀有度返回该值,否则返回 1(普通物品)
      */
     private static int processSmithingIngredient(Ingredient ingredient) {
         if (ingredient == null || ingredient.isEmpty()) {
             return 1; // 空配料视为 1
         }
         
-        // 遍历配料的所有物品，取最低稀有度
+        // 遍历配料的所有物品,取最低稀有度
         Integer minRarity = null;
         for (ItemStack stack : ingredient.getItems()) {
             Item item = stack.getItem();
             
-            // 先查注册表（数据包、FinalRarity.json、FinalRarityConfig文件夹）
+            // 先查注册表(数据包、FinalRarity.json、FinalRarityConfig文件夹)
             ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
             Integer rarity = null;
             if (itemId != null) {
                 rarity = RarityRegistry.ITEM_RARITY_MAP.get(itemId);
             }
             
-            // 如果注册表没有，再查之前轮次计算的稀有度（E1, E2...）
+            // 如果注册表没有,再查之前轮次计算的稀有度(E1, E2...)
             if (rarity == null) {
-                // 优先查全局缓存（包括之前轮次计算的物品）
+                // 优先查全局缓存(包括之前轮次计算的物品)
                 rarity = maxRarityCache.get(item);
                 if (rarity == null) {
                     // 再查本轮已计算的物品
@@ -481,7 +477,7 @@ public class AutoRarityCalculator {
                 }
             }
             
-            // 如果还没有，最后检查原版稀有度
+            // 如果还没有,最后检查原版稀有度
             if (rarity == null && org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
                 try {
                     net.minecraft.world.item.Rarity vanillaRarity = stack.getRarity();
@@ -505,7 +501,7 @@ public class AutoRarityCalculator {
             }
         }
         
-        // 没找到稀有度，返回 1（普通物品）
+        // 没找到稀有度,返回 1(普通物品)
         return minRarity != null ? minRarity : 1;
     }
     
@@ -517,7 +513,7 @@ public class AutoRarityCalculator {
             return 1;
         }
         
-        // 不直接过滤，而是先收集所有配料的稀有度（包括 1）
+        // 不直接过滤,而是先收集所有配料的稀有度(包括 1)
         List<Integer> allIngredientRarities = new ArrayList<>();
         for (Integer rarity : ingredientRarities) {
             if (rarity != null) {
@@ -537,7 +533,7 @@ public class AutoRarityCalculator {
             return Collections.max(allIngredientRarities);
         }
         
-        // 全部相同，检查有效稀有度（排除 1）
+        // 全部相同,检查有效稀有度(排除 1)
         List<Integer> validRarities = new ArrayList<>();
         for (Integer rarity : allIngredientRarities) {
             if (rarity > 1) {  // 只统计大于 1 的稀有度
@@ -545,16 +541,16 @@ public class AutoRarityCalculator {
             }
         }
         
-        // 如果所有配料都是 1（空配料），返回 1
+        // 如果所有配料都是 1(空配料),返回 1
         if (validRarities.isEmpty()) {
             return 1;
         }
         
-        // 全部相同，检查配方类型
+        // 全部相同,检查配方类型
         int baseRarity = validRarities.get(0);
         
         if (recipe instanceof ShapedRecipe || recipe instanceof ShapelessRecipe) {
-            // 工作台配方：检查数量比例
+            // 工作台配方:检查数量比例
             int ingredientCount = recipe.getIngredients().size();
             int outputCount = recipe.getResultItem(null).getCount();
             
@@ -568,20 +564,20 @@ public class AutoRarityCalculator {
             // 烧制配方 → 继承
             return baseRarity;
         } else {
-            // 其他配方（锻造台等）→ +1
+            // 其他配方(锻造台等)→ +1
             return baseRarity + 1;
         }
     }
     
     /**
-     * 更新稀有度（保留最高值，并记录首次轮次）
+     * 更新稀有度(保留最高值,并记录首次轮次)
      */
     private static void updateRarityWithMax(Item outputItem, int newRarity) {
         // 检查是否已经有稀有度
         Integer existingRarity = maxRarityCache.get(outputItem);
         
         if (existingRarity == null || newRarity > existingRarity) {
-            // 找到更高的稀有度，更新全局缓存
+            // 找到更高的稀有度,更新全局缓存
             maxRarityCache.put(outputItem, newRarity);
             
             // 记录物品首次出现的轮次
@@ -590,13 +586,13 @@ public class AutoRarityCalculator {
                 itemFirstRoundMap.put(outputItem, currentRound);
             }
             
-            // 更新或创建对应轮次的 Map（历史归档）
+            // 更新或创建对应轮次的 Map(历史归档)
             int firstRound = itemFirstRoundMap.get(outputItem);
             Map<Item, Integer> roundMap = allRoundResults.computeIfAbsent(firstRound, k -> new HashMap<>());
             roundMap.put(outputItem, newRarity);
             
-            // 关键修复：只有首次计算的物品才加入当前轮结果（用于下一轮传播）
-            // 非首次计算仅更新历史记录，不加入当前轮结果，避免无限循环
+            // 关键修复:只有首次计算的物品才加入当前轮结果(用于下一轮传播)
+            // 非首次计算仅更新历史记录,不加入当前轮结果,避免无限循环
             if (isFirstTime) {
                 currentRoundResults.put(outputItem, newRarity);
                 newlyAddedCount++;
@@ -627,7 +623,7 @@ public class AutoRarityCalculator {
         RarityCore.LOGGER.info("Round {} complete, {} new items calculated. Starting round {}", 
             currentRound - 1, pendingItemList.size(), currentRound);
         
-        // 发送聊天栏消息：本回合完成
+        // 发送聊天栏消息:本回合完成
         sendToAllPlayers(Component.translatable("rarity.core.auto_calculation_round_complete", 
                 currentRound - 1)
             .withStyle(net.minecraft.ChatFormatting.GREEN));
@@ -644,14 +640,14 @@ public class AutoRarityCalculator {
             return true;
         }
             
-        // 支持熔炉类配方（包括熔炉、smoker、blast furnace）
+        // 支持熔炉类配方(包括熔炉、smoker、blast furnace)
         if (recipe instanceof AbstractCookingRecipe) {
             return true;
         }
             
-        // 支持锻造台升级配方（排除盔甲纹饰）
-        // SmithingTransformRecipe 用于物品升级（如下界合金升级）
-        // SmithingTrimRecipe 用于盔甲纹饰（仅改变外观，不处理）
+        // 支持锻造台升级配方(排除盔甲纹饰)
+        // SmithingTransformRecipe 用于物品升级(如下界合金升级)
+        // SmithingTrimRecipe 用于盔甲纹饰(仅改变外观,不处理)
         if (recipe instanceof net.minecraft.world.item.crafting.SmithingTransformRecipe) {
             return true;
         }
@@ -659,7 +655,7 @@ public class AutoRarityCalculator {
         // 检查是否是非标准的锻造台配方
         String recipeClassName = recipe.getClass().getName();
         if (recipeClassName.contains("Smithing")) {
-            // 非标准锻造台配方，跳过
+            // 非标准锻造台配方,跳过
         }
             
         return false;
@@ -671,7 +667,7 @@ public class AutoRarityCalculator {
     private static void finishCalculation() {
         isCalculating = false;
         
-        // 合并所有轮次的结果，保留最高稀有度
+        // 合并所有轮次的结果,保留最高稀有度
         Map<Item, Integer> finalResults = mergeAllRoundResults();
         
         RarityCore.LOGGER.info("Auto rarity calculation completed: {} items calculated across {} rounds", 
@@ -685,7 +681,7 @@ public class AutoRarityCalculator {
             RarityCore.LOGGER.info("Writing auto configs...");
             writeAutoConfigs(finalResults);
             
-            // 发送聊天栏消息：计算完毕，将在 10 秒后自动重载
+            // 发送聊天栏消息:计算完毕,将在 10 秒后自动重载
             sendToAllPlayers(Component.translatable("rarity.core.auto_calculation_will_auto_reload")
                 .withStyle(ChatFormatting.YELLOW).withStyle(ChatFormatting.BOLD));
             
@@ -700,7 +696,7 @@ public class AutoRarityCalculator {
     }
     
     /**
-     * 合并所有轮次的结果（保留最高稀有度）
+     * 合并所有轮次的结果(保留最高稀有度)
      */
     private static Map<Item, Integer> mergeAllRoundResults() {
         Map<Item, Integer> merged = new HashMap<>();
@@ -733,16 +729,16 @@ public class AutoRarityCalculator {
         try {
             RarityCore.LOGGER.info("Starting to write auto config: {} items", finalResults.size());
             
-            // 如果没有要写入的数据，直接返回
+            // 如果没有要写入的数据,直接返回
             if (finalResults.isEmpty()) {
                 RarityCore.LOGGER.warn("No data to write, skipping auto config write");
                 return;
             }
             
-            // 清理旧的 auto_*.json（NBT 文件已废弃）
+            // 清理旧的 auto_*.json(NBT 文件已废弃)
             AutoRarityConfigManager.cleanupAutoNbtFiles();
             
-            // 写入 auto_rarity.json（仅 ID 匹配）
+            // 写入 auto_rarity.json(仅 ID 匹配)
             AutoRarityConfigManager.writeAutoRarityJson(finalResults);
             
             RarityCore.LOGGER.info("Config write completed: {} items written to auto_rarity.json", 
@@ -764,7 +760,7 @@ public class AutoRarityCalculator {
     }
     
     /**
-     * 安排自动重载（10 秒后执行两次重载）
+     * 安排自动重载(10 秒后执行两次重载)
      */
     private static void scheduleAutoReload() {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
@@ -779,7 +775,7 @@ public class AutoRarityCalculator {
         server.addTickable(new Runnable() {
             @Override
             public void run() {
-                // 如果已执行，直接返回并移除 tickable
+                // 如果已执行,直接返回并移除 tickable
                 if (executed[0]) {
                     return;
                 }
@@ -797,14 +793,14 @@ public class AutoRarityCalculator {
                     org.yanbwe.raritycore.service.ConfigReloadService.reloadFromCommand(null);
                     RarityCore.LOGGER.info("First auto reload completed");
                     
-                    // 短暂延迟后执行第二次重载（确保所有配置完全应用）
+                    // 短暂延迟后执行第二次重载(确保所有配置完全应用)
                     final int[] innerDelay = {20}; // 1 秒 = 20 tick
                     final boolean[] innerExecuted = {false};
                     
                     server.addTickable(new Runnable() {
                         @Override
                         public void run() {
-                            // 如果已执行，直接返回
+                            // 如果已执行,直接返回
                             if (innerExecuted[0]) {
                                 return;
                             }
@@ -849,7 +845,7 @@ public class AutoRarityCalculator {
     }
     
     /**
-     * 强制重新计算（删除旧文件并重新开始）
+     * 强制重新计算(删除旧文件并重新开始)
      */
     public static void forceRecalculate() {
         if (isCalculating) {

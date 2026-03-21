@@ -57,13 +57,13 @@ public class RaritySyncPacket {
 
     public boolean handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
-            // 在客户端更新稀有度数据，但不修改配置文件，也不同步回服务端
-            // 这个包用于全量同步，会替换客户端的所有数据
+            // 在客户端更新稀有度数据,但不修改配置文件,也不同步回服务端
+            // 这个包用于全量同步,会替换客户端的所有数据
             RarityRegistry.ITEM_RARITY_MAP.clear(); // 先清空现有数据
             for (Map.Entry<ResourceLocation, Integer> entry : rarityData.entrySet()) {
                 net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(entry.getKey());
                 if (item != null && !entry.getKey().equals(net.minecraftforge.registries.ForgeRegistries.ITEMS.getDefaultKey())) {
-                    RarityRegistry.ITEM_RARITY_MAP.put(entry.getKey(), entry.getValue()); // 直接放入映射，不记录变更
+                    RarityRegistry.ITEM_RARITY_MAP.put(entry.getKey(), entry.getValue()); // 直接放入映射,不记录变更
                 }
             }
             

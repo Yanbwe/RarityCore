@@ -7,7 +7,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.registries.ForgeRegistries;
-import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
 import org.yanbwe.raritycore.network.EditModeRequestPacket;
 import org.yanbwe.raritycore.registry.RarityRegistry;
@@ -174,7 +173,7 @@ public class EditModeManager {
         boolean isMultiplayer = mc.getConnection() != null;
         
         if (isMultiplayer) {
-            // 多人游戏：发送请求包到服务端，由服务端保存配置并同步
+            // 多人游戏:发送请求包到服务端,由服务端保存配置并同步
             EditModeRequestPacket packet = new EditModeRequestPacket(
                 itemId, 
                 deleteModeEnabled ? 0 : currentRarity, 
@@ -182,7 +181,7 @@ public class EditModeManager {
             );
             EditModeRequestPacket.INSTANCE.sendToServer(packet);
         } else {
-            // 单人游戏：本地处理并保存配置
+            // 单人游戏:本地处理并保存配置
             if (deleteModeEnabled) {
                 RarityRegistry.unregister(item, false);
                 RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), 0);
@@ -193,7 +192,7 @@ public class EditModeManager {
             RarityRegistry.syncRarityToClientsWithRetry();
         }
                     
-        // 立即刷新本地缓存，确保显示效果立即生效
+        // 立即刷新本地缓存,确保显示效果立即生效
         forceClientCacheUpdate(item, deleteModeEnabled ? 0 : currentRarity);
             
         return true;
@@ -215,7 +214,7 @@ public class EditModeManager {
             ItemStack itemStack = new ItemStack(item);
             org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
         } catch (Exception e) {
-            // 静默失败，等待网络同步后自动更新
+            // 静默失败,等待网络同步后自动更新
         }
     }
     

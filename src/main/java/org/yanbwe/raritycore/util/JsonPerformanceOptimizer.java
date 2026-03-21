@@ -20,7 +20,7 @@ import java.nio.file.Path;
  */
 public class JsonPerformanceOptimizer {
     
-    // 预配置的Gson实例，避免重复创建
+    // 预配置的Gson实例,避免重复创建
     private static final Gson OPTIMIZED_GSON = new GsonBuilder()
         .setPrettyPrinting()
         .disableHtmlEscaping()  // 禁用HTML转义以提升性能
@@ -41,8 +41,8 @@ public class JsonPerformanceOptimizer {
                 String itemIdString = jsonReader.nextName();
                 int rarity = jsonReader.nextInt();
                 
-                // 验证稀有度范围 - 支持高级稀有度（大于7）以符合模组包容性设计
-                if (rarity < 0) { // 只限制负数，允许0表示删除，不限制上限
+                // 验证稀有度范围 - 支持高级稀有度(大于7)以符合模组包容性设计
+                if (rarity < 0) { // 只限制负数,允许0表示删除,不限制上限
                     RarityCore.LOGGER.debug("Skipping invalid rarity {} for item {}", rarity, itemIdString);
                     continue;
                 }
@@ -92,7 +92,7 @@ public class JsonPerformanceOptimizer {
             return false;
         }
         
-        // 快速验证：检查前几个条目格式
+        // 快速验证:检查前几个条目格式
         int sampleSize = Math.min(5, jsonObject.size());
         int validCount = 0;
         
@@ -100,9 +100,9 @@ public class JsonPerformanceOptimizer {
             if (validCount >= sampleSize) break;
             
             try {
-                // 检查值是否为有效的整数 - 支持高级稀有度（大于7）
+                // 检查值是否为有效的整数 - 支持高级稀有度(大于7)
                 int value = jsonObject.get(key).getAsInt();
-                if (value >= 0) { // 只验证非负数，不限制上限
+                if (value >= 0) { // 只验证非负数,不限制上限
                     validCount++;
                 }
             } catch (Exception e) {
@@ -110,7 +110,7 @@ public class JsonPerformanceOptimizer {
             }
         }
         
-        // 如果样本中有足够的有效条目，则认为格式正确
+        // 如果样本中有足够的有效条目,则认为格式正确
         return validCount > 0;
     }
 }

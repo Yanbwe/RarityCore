@@ -83,7 +83,7 @@ public class IncrementalSyncPacket {
                     case ADD:
                     case UPDATE:
                         if (item != null && !op.getItemId().equals(net.minecraftforge.registries.ForgeRegistries.ITEMS.getDefaultKey())) {
-                            // 直接操作底层映射，不触发变更记录，避免循环
+                            // 直接操作底层映射,不触发变更记录,避免循环
                             RarityRegistry.ITEM_RARITY_MAP.put(op.getItemId(), op.getRarity());
                             appliedCount++;
                         } else {

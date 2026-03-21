@@ -27,10 +27,10 @@ public class ItemStackMixin {
             return;
         }
         
-        // 获取物品的稀有度（支持 NBT 匹配，使用物品堆缓存）
+        // 获取物品的稀有度(支持 NBT 匹配,使用物品堆缓存)
         Integer rarity = org.yanbwe.raritycore.client.RenderCacheManager.getCachedRarity(stack);
                 
-        // 如果缓存未命中，则从注册表获取并缓存
+        // 如果缓存未命中,则从注册表获取并缓存
         if (rarity == null) {
             rarity = RarityRegistry.getRarity(stack);
             if (rarity != null) {
@@ -38,27 +38,27 @@ public class ItemStackMixin {
             }
         }
                 
-        // 如果仍然没有获取到稀有度，使用默认值
+        // 如果仍然没有获取到稀有度,使用默认值
         if (rarity == null || rarity < 1) {
-            return; // 直接返回，不修改名称颜色
+            return; // 直接返回,不修改名称颜色
         }
         
-        // 如果启用了跳过未配置物品且物品没有配置稀有度，则不修改名称颜色
-        // 注意：需要检查物品是否真的没有配置，而不是默认的稀有度1
+        // 如果启用了跳过未配置物品且物品没有配置稀有度,则不修改名称颜色
+        // 注意:需要检查物品是否真的没有配置,而不是默认的稀有度1
         Item item = stack.getItem();
         if (org.yanbwe.raritycore.config.ConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
             return;
         }
         
-        // 如果没有注册稀有度，则不修改名称颜色
+        // 如果没有注册稀有度,则不修改名称颜色
         if (rarity == null) {
             return;
         }
 
-        // 标准化稀有度值，遵循模组的包容性原则
+        // 标准化稀有度值,遵循模组的包容性原则
         rarity = RarityValidator.normalizeRarity(rarity);
         
-        // 如果是普通稀有度（1），则使用白色，但不添加格式化代码（默认颜色）
+        // 如果是普通稀有度(1),则使用白色,但不添加格式化代码(默认颜色)
         if (rarity == RarityConstants.RARITY_COMMON) {
             return;
         }
@@ -74,7 +74,7 @@ public class ItemStackMixin {
     /**
      * 检查物品是否有配置的稀有度
      * @param item 要检查的物品
-     * @return 如果物品有配置稀有度返回true，否则返回false
+     * @return 如果物品有配置稀有度返回true,否则返回false
      */
     private boolean hasConfiguredRarity(Item item) {
         if (item == null) {

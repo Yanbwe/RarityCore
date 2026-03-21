@@ -31,12 +31,12 @@ public class RarityRegistry {
     private static boolean hasNotifiedPlayer = false; // 添加玩家通知状态
     
     /**
-     * 物品稀有度映射（来自 FinalRarity.json、数据包等用户手动配置）
+     * 物品稀有度映射(来自 FinalRarity.json、数据包等用户手动配置)
      */
     public static final ConcurrentHashMap<ResourceLocation, Integer> ITEM_RARITY_MAP = new ConcurrentHashMap<>();
     
     /**
-     * 自动计算的稀有度映射（来自 auto_rarity.json，优先级低于 ITEM_RARITY_MAP）
+     * 自动计算的稀有度映射(来自 auto_rarity.json,优先级低于 ITEM_RARITY_MAP)
      */
     private static final ConcurrentHashMap<ResourceLocation, Integer> AUTO_RARITY_MAP = new ConcurrentHashMap<>();
     
@@ -74,7 +74,7 @@ public class RarityRegistry {
         if (!isVanillaRarityApiSupported && !hasNotifiedPlayer) {
             net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
             if (server != null) {
-                // 向所有玩家发送世界消息（使用本地化字符串）
+                // 向所有玩家发送世界消息(使用本地化字符串)
                 server.getPlayerList().broadcastSystemMessage(
                     net.minecraft.network.chat.Component.translatable("raritycore.message.vanilla_rarity_unavailable"),
                     false
@@ -133,7 +133,7 @@ public class RarityRegistry {
     }
     /**
      * 注册物品的稀有度等级
-     * 1普通，2稀有，3罕见，4史诗，5传说，6神话，7唯一
+     * 1普通,2稀有,3罕见,4史诗,5传说,6神话,7唯一
      * 不注册视为普通品质
      * @param item 要注册稀有度的物品
      * @param rarity 稀有度等级
@@ -142,7 +142,7 @@ public class RarityRegistry {
      * 执行兼容性检查并记录诊断信息
      */
     public static void performCompatibilityCheck() {
-        // 静默执行兼容性检查，只在DEBUG级别记录必要信息
+        // 静默执行兼容性检查,只在DEBUG级别记录必要信息
         boolean apiAvailable = isVanillaRarityApiAvailable();
         
         if (!apiAvailable) {
@@ -156,7 +156,7 @@ public class RarityRegistry {
     
     /**
      * 注册物品的稀有度等级
-     * 1普通，2稀有，3罕见，4史诗，5传说，6神话，7唯一
+     * 1普通,2稀有,3罕见,4史诗,5传说,6神话,7唯一
      * 不注册视为普通品质
      * @param item 要注册稀有度的物品
      * @param rarity 稀有度等级
@@ -173,7 +173,7 @@ public class RarityRegistry {
                     RarityChangeEvent.ChangeType.REGISTER : RarityChangeEvent.ChangeType.UPDATE;
                 MinecraftForge.EVENT_BUS.post(new RarityChangeEvent(item, oldRarity, rarity, changeType));
                 
-                // 如果需要同步到客户端且当前在服务端环境中，记录变更操作
+                // 如果需要同步到客户端且当前在服务端环境中,记录变更操作
                 if (syncToClients) {
                     // 记录变更操作
                     if (oldRarity == null) {
@@ -208,7 +208,7 @@ public class RarityRegistry {
                         item, removedRarity, null, RarityChangeEvent.ChangeType.REMOVE));
                 }
                 
-                // 如果需要同步到客户端且当前在服务端环境中，记录删除操作
+                // 如果需要同步到客户端且当前在服务端环境中,记录删除操作
                 if (syncToClients) {
                     // 记录删除操作
                     if (removedRarity != null) {
@@ -223,7 +223,7 @@ public class RarityRegistry {
     }
     
     /**
-     * 将所有稀有度数据同步到客户端（全量同步）
+     * 将所有稀有度数据同步到客户端(全量同步)
      */
     public static void syncRarityToClients() {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
@@ -273,10 +273,10 @@ public class RarityRegistry {
     }
 
     /**
-     * 获取物品的稀有度等级（标准化版本）
-     * 遵循模组的包容性原则：小于1的值视为1，大于7的值视为7
+     * 获取物品的稀有度等级(标准化版本)
+     * 遵循模组的包容性原则:小于1的值视为1,大于7的值视为7
      * @param item 要查稀有度的物品
-     * @return 标准化后的物品稀有度等级（1-7）
+     * @return 标准化后的物品稀有度等级(1-7)
      */
     public static @NotNull Integer getNormalizedRarity(@Nullable Item item) {
         Integer rawRarity = getRarity(item);
@@ -284,10 +284,10 @@ public class RarityRegistry {
     }
     
     /**
-     * 获取物品栈的稀有度等级（标准化版本，支持NBT匹配）
-     * 遵循模组的包容性原则：小于1的值视为1，大于7的值视为7
+     * 获取物品栈的稀有度等级(标准化版本,支持NBT匹配)
+     * 遵循模组的包容性原则:小于1的值视为1,大于7的值视为7
      * @param itemStack 要查稀有度的物品栈
-     * @return 标准化后的物品稀有度等级（1-7）
+     * @return 标准化后的物品稀有度等级(1-7)
      */
     public static @NotNull Integer getNormalizedRarity(@Nullable ItemStack itemStack) {
         Integer rawRarity = getRarity(itemStack);
@@ -305,10 +305,10 @@ public class RarityRegistry {
     }
     
     /**
-     * 获取物品的完整稀有度工具提示字符串（支持本地化）
-     * 返回格式示例：
-     * - 普通物品："[普通] ⭐" (中文) 或 "[Common] ⭐" (英文)
-     * - 高级物品："[5级稀有度-⭐⭐⭐⭐⭐]"
+     * 获取物品的完整稀有度工具提示字符串(支持本地化)
+     * 返回格式示例:
+     * - 普通物品:"[普通] ⭐" (中文) 或 "[Common] ⭐" (英文)
+     * - 高级物品:"[5级稀有度-⭐⭐⭐⭐⭐]"
      * @param item 要获取工具提示的物品
      * @return 本地化的稀有度工具提示字符串
      */
@@ -323,7 +323,7 @@ public class RarityRegistry {
             rarity = RarityConstants.RARITY_COMMON;
         }
         
-        // 先检查是否为特殊稀有度（大于7），保存原始值用于显示
+        // 先检查是否为特殊稀有度(大于7),保存原始值用于显示
         boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;
         int displayRarity = rarity; // 保存用于显示的原始稀有度值
         
@@ -332,21 +332,21 @@ public class RarityRegistry {
         
         // 构建工具提示字符串
         if (isSpecialRarity) {
-            // 特殊稀有度（大于 7 级）
+            // 特殊稀有度(大于 7 级)
             String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(displayRarity);
             
             // 检查是否有自定义特殊稀有度文本
             String customText = org.yanbwe.raritycore.config.ConfigManager.getCustomSpecialRarityText(displayRarity);
             
             if (customText != null && !customText.isEmpty()) {
-                // 使用自定义文本，但保持完整格式：[自定义文本 - 星星]
+                // 使用自定义文本,但保持完整格式:[自定义文本 - 星星]
                 return "[" + customText + "-" + stars + "]";
             } else {
-                // 使用默认格式：[xx 级稀有度 - 星星]
+                // 使用默认格式:[xx 级稀有度 - 星星]
                 return "[" + displayRarity + "级稀有度-" + stars + "]";
             }
         } else {
-            // 标准稀有度（1-7级）
+            // 标准稀有度(1-7级)
             String rarityKey;
             switch (rarity) {
                 case RarityConstants.RARITY_COMMON:
@@ -383,10 +383,10 @@ public class RarityRegistry {
     }
     
     /**
-     * 获取物品栈的稀有度等级（支持NBT数据）
-     * 优先级顺序：神化模组稀有度 > 原版稀有度 > 本模组稀有度（配置和数据包）
+     * 获取物品栈的稀有度等级(支持NBT数据)
+     * 优先级顺序:神化模组稀有度 > 原版稀有度 > 本模组稀有度(配置和数据包)
      * @param itemStack 要查稀有度的物品栈
-     * @return 物品的稀有度等级（1-7）
+     * @return 物品的稀有度等级(1-7)
      */
     public static @NotNull Integer getRarity(@Nullable ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) {
@@ -405,14 +405,14 @@ public class RarityRegistry {
     
     /**
      * 统一的稀有度获取逻辑
-     * 优先级顺序：NBT匹配 > 神化模组稀有度 > 本模组稀有度（配置和数据包） > 原版稀有度映射
+     * 优先级顺序:NBT匹配 > 神化模组稀有度 > 本模组稀有度(配置和数据包) > 原版稀有度映射
      * @param itemId 物品资源位置
-     * @param itemStack 物品栈（用于检查NBT数据）
+     * @param itemStack 物品栈(用于检查NBT数据)
      * @param item 物品
-     * @return 物品的稀有度等级（1-7）
+     * @return 物品的稀有度等级(1-7)
      */
     private static @NotNull Integer getRarityInternal(ResourceLocation itemId, @Nullable ItemStack itemStack, Item item) {
-        // 首先检查NBT匹配配置（最高优先级）
+        // 首先检查NBT匹配配置(最高优先级)
         if (itemStack != null && itemStack.hasTag()) {
             Integer nbtMatchedRarity = org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher.getNbtMatchedRarity(itemStack);
             if (nbtMatchedRarity != null) {
@@ -424,7 +424,7 @@ public class RarityRegistry {
         // 然后检查神化模组稀有度
         if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity() && itemStack != null) {
             boolean hasApothRarity = org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.hasApotheosisRarity(itemStack);
-            // 减少神化稀有度检查的日志输出，只在必要时记录
+            // 减少神化稀有度检查的日志输出,只在必要时记录
             // RarityCore.LOGGER.debug("物品 {} 是否具有神化稀有度: {}", itemId, hasApothRarity);
             
             Integer apothRarity = org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(itemStack);
@@ -432,7 +432,7 @@ public class RarityRegistry {
                 // RarityCore.LOGGER.debug("物品 {} 使用神化稀有度: {}", itemId, apothRarity);
                 return apothRarity;
             } else {
-                // 只对特定物品记录映射失败（避免大量日志）
+                // 只对特定物品记录映射失败(避免大量日志)
                 if (itemId.toString().contains("dragon_egg") || itemId.toString().contains("slime_ball")) {
                     RarityCore.LOGGER.trace("Item {} apotheosis rarity mapping failed", itemId);
                 }
@@ -441,19 +441,19 @@ public class RarityRegistry {
             RarityCore.LOGGER.debug("Apotheosis rarity check disabled or item stack is empty");
         }
         
-        // 然后检查本模组的稀有度配置（包括配置文件和数据包）- 最高优先级
+        // 然后检查本模组的稀有度配置(包括配置文件和数据包)- 最高优先级
         Integer configuredRarity = ITEM_RARITY_MAP.get(itemId);
         if (configuredRarity != null) {
             return configuredRarity;
         }
         
-        // 然后检查自动计算的稀有度配置 - 中等优先级（低于 FinalRarity，高于原版）
+        // 然后检查自动计算的稀有度配置 - 中等优先级(低于 FinalRarity,高于原版)
         Integer autoRarity = AUTO_RARITY_MAP.get(itemId);
         if (autoRarity != null) {
             return autoRarity;
         }
         
-        // 最后检查原版稀有度映射（最低优先级）
+        // 最后检查原版稀有度映射(最低优先级)
         if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
             // 先检测API可用性
             if (isVanillaRarityApiAvailable()) {
@@ -479,7 +479,7 @@ public class RarityRegistry {
     /**
      * 映射原版稀有度到本模组稀有度
      * @param vanillaRarity 原版稀有度
-     * @return 映射后的稀有度等级（1-7）
+     * @return 映射后的稀有度等级(1-7)
      */
     private static Integer mapVanillaRarity(Rarity vanillaRarity) {
         if (vanillaRarity == Rarity.UNCOMMON) {
@@ -495,9 +495,9 @@ public class RarityRegistry {
     
     /**
      * 获取物品的稀有度等级
-     * 优先级顺序：神化模组映射 > 本模组稀有度（配置和数据包） > 原版映射 > 默认值
+     * 优先级顺序:神化模组映射 > 本模组稀有度(配置和数据包) > 原版映射 > 默认值
      * @param item 要查稀有度的物品
-     * @return 物品的稀有度等级（1-7）
+     * @return 物品的稀有度等级(1-7)
      */
     public static @NotNull Integer getRarity(@Nullable Item item) {
         if (item != null) {
@@ -505,7 +505,7 @@ public class RarityRegistry {
             if (itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
                 net.minecraft.world.item.ItemStack tempStack = new net.minecraft.world.item.ItemStack(item);
                 
-                // 首先检查神化模组稀有度（最高优先级）
+                // 首先检查神化模组稀有度(最高优先级)
                 if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity()) {
                     try {
                         Integer apotheosisRarity = org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(tempStack);
@@ -517,19 +517,19 @@ public class RarityRegistry {
                     }
                 }
                 
-                // 然后检查本模组的稀有度配置（包括配置文件和数据包）- 最高优先级
+                // 然后检查本模组的稀有度配置(包括配置文件和数据包)- 最高优先级
                 Integer configuredRarity = ITEM_RARITY_MAP.get(itemId);
                 if (configuredRarity != null) {
                     return configuredRarity;
                 }
                 
-                // 然后检查自动计算的稀有度配置 - 中等优先级（低于 FinalRarity，高于原版）
+                // 然后检查自动计算的稀有度配置 - 中等优先级(低于 FinalRarity,高于原版)
                 Integer autoRarity = AUTO_RARITY_MAP.get(itemId);
                 if (autoRarity != null) {
                     return autoRarity;
                 }
                 
-                // 最后检查原版稀有度映射（最低优先级）
+                // 最后检查原版稀有度映射(最低优先级)
                 if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
                     // 先检测API可用性
                     if (isVanillaRarityApiAvailable()) {
@@ -555,7 +555,7 @@ public class RarityRegistry {
     }
     
     /**
-     * 使用重试机制将所有稀有度数据同步到客户端（全量同步）
+     * 使用重试机制将所有稀有度数据同步到客户端(全量同步)
      */
     public static void syncRarityToClientsWithRetry() {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();

@@ -1,8 +1,6 @@
 package org.yanbwe.raritycore.nbtmatching;
 
 import net.minecraft.nbt.*;
-import org.yanbwe.raritycore.RarityCore;
-
 import java.util.List;
 
 /**
@@ -48,7 +46,7 @@ public class EqualsCondition extends NbtCondition {
             return false;
         }
         
-        // 对于通配符，采用"任意匹配"策略：只要有一个元素匹配成功即返回true
+        // 对于通配符,采用"任意匹配"策略:只要有一个元素匹配成功即返回true
         for (Tag result : results) {
             if (compareTags(result, expectedValue)) {
                 return true;
@@ -74,14 +72,14 @@ public class EqualsCondition extends NbtCondition {
             expectedString = expected.toString();
         }
         
-        // 对于数值类型，尝试数值比较
+        // 对于数值类型,尝试数值比较
         if (expected instanceof Number) {
             try {
                 double actualNum = Double.parseDouble(actualString);
                 double expectedNum = ((Number) expected).doubleValue();
                 return Math.abs(actualNum - expectedNum) < 0.001;
             } catch (NumberFormatException e) {
-                // 如果不能转换为数字，则使用字符串比较
+                // 如果不能转换为数字,则使用字符串比较
                 return actualString.equals(expectedString);
             }
         }

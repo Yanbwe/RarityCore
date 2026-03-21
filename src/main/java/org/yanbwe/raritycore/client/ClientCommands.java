@@ -5,7 +5,6 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.CacheConfig;
 import org.yanbwe.raritycore.cache.DualCacheManager;
 

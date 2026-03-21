@@ -3,8 +3,6 @@ package org.yanbwe.raritycore.service;
 import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.server.ServerLifecycleHooks;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
@@ -16,7 +14,6 @@ import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.NbtSyncManager;
 import org.yanbwe.raritycore.network.SyncBatchManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
-import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.util.CacheRefreshCoordinator;
 import org.yanbwe.raritycore.util.StarDisplayManager;
 
@@ -30,25 +27,25 @@ public class ConfigReloadService {
     
     /**
      * 执行完整的配置重载流程
-     * @param source 命令源（可以为null，用于区分是命令调用还是启动加载）
+     * @param source 命令源(可以为null,用于区分是命令调用还是启动加载)
      * @param isStartup 是否为游戏启动时调用
      */
     public static void reloadAllConfigs(CommandSourceStack source, boolean isStartup) {
         try {
             RarityCore.LOGGER.info("Starting {} config reload process", isStartup ? "startup" : "manual");
             
-            // 发送进度消息（仅在命令调用时）
+            // 发送进度消息(仅在命令调用时)
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.reload_starting_all"));
             }
             
-            // 1. 加载服务端配置（包含神化稀有度检测开关）
+            // 1. 加载服务端配置(包含神化稀有度检测开关)
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_server_config"));
             }
             ServerConfigManager.loadServerConfig();
                         
-            // 2. 加载 NBT 匹配配置（最高优先级）
+            // 2. 加载 NBT 匹配配置(最高优先级)
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_nbt_config"));
             }
@@ -58,37 +55,37 @@ public class ConfigReloadService {
             SimpleNbtCache.reinitializeCache();
                         
             // 同步 NBT 规则到所有客户端
-            if (!isStartup) { // 启动时不需要同步，会在玩家登录时处理
+            if (!isStartup) { // 启动时不需要同步,会在玩家登录时处理
                 NbtSyncManager.syncNbtRulesToAllPlayers();
             }
                         
-            // 3. 加载 FinalRarityConfig文件夹（第三优先级）
+            // 3. 加载 FinalRarityConfig文件夹(第三优先级)
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_final_rarity_config_folder"));
             }
             FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
                         
-            // 4. 加载 FinalRarity.json 文件（第三优先级）
+            // 4. 加载 FinalRarity.json 文件(第三优先级)
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_final_rarity_file"));
             }
             RarityConfigLoader.loadConfigRarityData();
                         
-            // 5. 加载自动计算的稀有度配置（第四优先级）
+            // 5. 加载自动计算的稀有度配置(第四优先级)
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_auto_rarity_config"));
             }
             org.yanbwe.raritycore.calc.AutoRarityConfigManager.loadAutoRarityConfig();
             
-            // 6. 强制处理批处理队列中的操作（关键步骤）
+            // 6. 强制处理批处理队列中的操作(关键步骤)
             processPendingBatchOperations(source);
             
             // 7. 同步数据到所有客户端
-            if (!isStartup) { // 启动时不需要同步，会在玩家登录时处理
+            if (!isStartup) { // 启动时不需要同步,会在玩家登录时处理
                 RarityRegistry.syncRarityToClientsWithRetry();
             }
             
-            // 8. 处理客户端相关配置（仅在命令调用时）
+            // 8. 处理客户端相关配置(仅在命令调用时)
             if (source != null) {
                 handleClientSideConfigs();
                 sendCompletionMessage(source);

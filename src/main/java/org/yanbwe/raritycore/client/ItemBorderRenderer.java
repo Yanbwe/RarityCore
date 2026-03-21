@@ -38,9 +38,9 @@ public class ItemBorderRenderer {
         boolean isCacheEnabled = org.yanbwe.raritycore.config.ConfigManager.isEnableCacheSystem();
         
         if (isCacheEnabled) {
-            // 获取物品栈的稀有度（使用缓存）
+            // 获取物品栈的稀有度(使用缓存)
             rarity = org.yanbwe.raritycore.client.RenderCacheManager.getCachedRarity(itemStack);
-            // 如果缓存没有命中，则从注册表获取并缓存
+            // 如果缓存没有命中,则从注册表获取并缓存
             if (rarity == null) {
                 rarity = RarityRegistry.getRarity(itemStack);
                 if (rarity != null) {
@@ -52,19 +52,19 @@ public class ItemBorderRenderer {
             rarity = RarityRegistry.getRarity(itemStack);
         }
         
-        // 如果仍然没有获取到稀有度，使用默认值
+        // 如果仍然没有获取到稀有度,使用默认值
         if (rarity == null) {
             rarity = RarityConstants.RARITY_COMMON;
         }
         
-        // 如果启用了跳过未配置物品且物品没有配置稀有度，则不渲染
-        // 注意：需要检查物品是否真的没有配置，而不是默认的稀有度1
+        // 如果启用了跳过未配置物品且物品没有配置稀有度,则不渲染
+        // 注意:需要检查物品是否真的没有配置,而不是默认的稀有度1
         Item item = itemStack.getItem();
         if (org.yanbwe.raritycore.config.ConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
             return;
         }
         
-        // 遵循模组包容性原则：小于1视为1，大于7视为7
+        // 遵循模组包容性原则:小于1视为1,大于7视为7
         rarity = RarityValidator.normalizeRarity(rarity);
         
         // 根据配置选择渲染方式
@@ -85,7 +85,7 @@ public class ItemBorderRenderer {
      * @param y Y坐标
      */
     private static void renderTextureBorder(GuiGraphics guiGraphics, int rarity, int x, int y) {
-        // 构造纹理路径，例如: raritycore:textures/border/rarity_1.png
+        // 构造纹理路径,例如: raritycore:textures/border/rarity_1.png
         String textureName = "rarity_" + rarity;
         ResourceLocation textureLocation = new ResourceLocation(RarityConstants.BORDER_TEXTURE_PATH + textureName + RarityConstants.TEXTURE_SUFFIX);
         
@@ -95,13 +95,13 @@ public class ItemBorderRenderer {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             
-            // 使用 blit 方法，指定完整的纹理坐标和裁剪尺寸
-            // 参数顺序：ResourceLocation texture, int x, int y, float z, 
+            // 使用 blit 方法,指定完整的纹理坐标和裁剪尺寸
+            // 参数顺序:ResourceLocation texture, int x, int y, float z, 
             //           int uOffset, int vOffset, int uWidth, int vHeight, 
             //           int textureWidth, int textureHeight
             guiGraphics.blit(textureLocation, x, y, 0, 0, 16, 16, 16, 16);
         } catch (Exception e) {
-            // 如果纹理加载失败，回退到颜色边框
+            // 如果纹理加载失败,回退到颜色边框
             RarityCore.LOGGER.warn("Failed to load texture for rarity {}, falling back to color border: {}", rarity, e.getMessage());
             renderColorBorder(guiGraphics, rarity, x, y);
         }
@@ -116,15 +116,15 @@ public class ItemBorderRenderer {
         RenderSystem.defaultBlendFunc();
         
         if (ConfigManager.getItemBorderStyle() == 1) {
-            // 实心边框 - 50%半透明，16x16大小
-            // 通过将alpha值设置为0x80（128/255 ≈ 50%透明度）实现半透明
+            // 实心边框 - 50%半透明,16x16大小
+            // 通过将alpha值设置为0x80(128/255 ≈ 50%透明度)实现半透明
             int alphaMask = 0x80000000;  // 50%透明度的alpha值
-            int translucentColor = (borderColor & 0x00FFFFFF) | alphaMask;  // 保留RGB值，设置alpha为50%
+            int translucentColor = (borderColor & 0x00FFFFFF) | alphaMask;  // 保留RGB值,设置alpha为50%
             
             // 绘制16x16区域的半透明背景
             guiGraphics.fill(x, y, x + 16, y + 16, translucentColor);
         } else {
-            // 空心边框 - 16x16 像素的物品槽，边框宽度为1像素
+            // 空心边框 - 16x16 像素的物品槽,边框宽度为1像素
             // 上边框
             guiGraphics.fill(x, y, x + 16, y + 1, borderColor);
             // 下边框
@@ -139,7 +139,7 @@ public class ItemBorderRenderer {
     /**
      * 检查物品是否有配置的稀有度
      * @param item 要检查的物品
-     * @return 如果物品有配置稀有度返回true，否则返回false
+     * @return 如果物品有配置稀有度返回true,否则返回false
      */
     private static boolean hasConfiguredRarity(Item item) {
         if (item == null) {

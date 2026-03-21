@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * 简化配置验证器
- * 对格式错误的配置项直接忽略，不进行恢复
+ * 对格式错误的配置项直接忽略,不进行恢复
  */
 public class SimpleConfigValidator {
     
@@ -57,7 +57,7 @@ public class SimpleConfigValidator {
     /**
      * 解析配置为匹配规则
      * @param config 配置对象
-     * @return 匹配规则，如果解析失败返回null
+     * @return 匹配规则,如果解析失败返回null
      */
     public static NbtMatchRule parseRule(JsonObject config) {
         if (!isValidConfig(config)) {
@@ -122,7 +122,7 @@ public class SimpleConfigValidator {
     /**
      * 解析单个条件
      * @param conditionObj 条件对象
-     * @return 条件对象，解析失败返回null
+     * @return 条件对象,解析失败返回null
      */
     private static NbtCondition parseCondition(com.google.gson.JsonObject conditionObj) {
         if (!conditionObj.has("path") || !conditionObj.has("type")) {
