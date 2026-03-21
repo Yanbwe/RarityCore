@@ -3,9 +3,17 @@
   "minVersion": "0.8",
   "package": "org.yanbwe.raritycore.mixin",
   "compatibilityLevel": "JAVA_21",
+  "refmap": "raritycore.refmap.json",
   "mixins": [
+    "AbstractContainerScreenAccessor",
+    "ItemStackMixin",
+    "SmithingTransformRecipeAccessor"
   ],
   "client": [
+    "AbstractContainerScreenMixin",
+    "GuiGraphicsMixin",
+    "GuiMixin",
+    "refinedstorage.BaseScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1
