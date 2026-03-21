@@ -12,10 +12,10 @@ import org.slf4j.Logger;
 import org.yanbwe.raritycore.compat.CompatibilityManager;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.event.RarityCoreEventHandler;
-import org.yanbwe.raritycore.network.EditModeRequestPacket;
-import org.yanbwe.raritycore.network.IncrementalSyncPacket;
-import org.yanbwe.raritycore.network.NbtSyncPacket;
-import org.yanbwe.raritycore.network.RaritySyncPacket;
+import org.yanbwe.raritycore.network.EditModeRequestPayload;
+import org.yanbwe.raritycore.network.IncrementalSyncPayload;
+import org.yanbwe.raritycore.network.NbtSyncPayload;
+import org.yanbwe.raritycore.network.RaritySyncPayload;
 import org.yanbwe.raritycore.service.ServiceFactory;
 
 @Mod(RarityCore.MODID)
@@ -36,11 +36,6 @@ public class RarityCore {
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         event.enqueueWork(org.yanbwe.raritycore.compat.CompatibilityChecker::performCompatibilityCheck);
-
-        event.enqueueWork(RaritySyncPacket::initialize);
-        event.enqueueWork(IncrementalSyncPacket::initialize);
-        event.enqueueWork(NbtSyncPacket::initialize);
-        event.enqueueWork(EditModeRequestPacket::initialize);
 
         event.enqueueWork(CompatibilityManager::initializeCompatibilityAdapters);
     }
