@@ -8,7 +8,6 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
-import org.yanbwe.raritycore.network.NetworkConstants;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.function.Supplier;
@@ -22,7 +21,7 @@ public class EditModeRequestPacket {
     
     public static void initialize() {
         INSTANCE = NetworkRegistry.newSimpleChannel(
-                new ResourceLocation(RarityCore.MODID, NetworkConstants.EDIT_MODE_REQUEST_CHANNEL),
+                ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.EDIT_MODE_REQUEST_CHANNEL),
                 () -> NetworkConstants.PROTOCOL_VERSION,
                 NetworkConstants.PROTOCOL_VERSION::equals,
                 NetworkConstants.PROTOCOL_VERSION::equals
@@ -48,7 +47,7 @@ public class EditModeRequestPacket {
 
     public EditModeRequestPacket(FriendlyByteBuf buf) {
         String itemIdStr = buf.readUtf();
-        this.itemId = new ResourceLocation(itemIdStr);
+        this.itemId = ResourceLocation.parse(itemIdStr);
         this.rarity = buf.readInt();
         this.deleteMode = buf.readBoolean();
     }
@@ -99,7 +98,7 @@ public class EditModeRequestPacket {
                     }
                     
                     // 同步到所有客户端(包括请求者)
-                    RarityRegistry.syncRarityToClientsWithRetry();
+                    SyncManager.syncRarityToClientsWithRetry(RarityRegistry.ITEM_RARITY_MAP);
                 } else {
                     RarityCore.LOGGER.warn("Invalid item received in edit mode request: {}", itemId);
                 }

@@ -3,13 +3,10 @@ package org.yanbwe.raritycore.cache;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.CacheMetrics.CacheType;
-import org.yanbwe.raritycore.registry.RarityRegistry;
-import org.yanbwe.raritycore.util.RarityConstants;
 
 import java.util.concurrent.TimeUnit;
 
@@ -21,13 +18,13 @@ import java.util.concurrent.TimeUnit;
 public class DualCacheManager {
     
     // ID缓存 - 永久性,预加载所有物品
-    private static Cache<ResourceLocation, Integer> idCache;
+    private static volatile Cache<ResourceLocation, Integer> idCache;
     
     // NBT缓存 - LRU动态管理
-    private static Cache<String, Integer> nbtCache;
+    private static volatile Cache<String, Integer> nbtCache;
     
     // 缓存配置
-    private static CacheConfig config;
+    private static volatile CacheConfig config;
     
     // 防抖相关变量
     private static volatile boolean isReloading = false;
@@ -88,26 +85,28 @@ public class DualCacheManager {
      * 以避免触发某些物品的 getRarity() 方法导致 ClientLevel 数组越界
      */
     private static void preloadIdCache() {
-        int successCount = 0;
-        int errorCount = 0;
+        // 使用线程安全的原子计数器
+        java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
+        java.util.concurrent.atomic.AtomicInteger errorCount = new java.util.concurrent.atomic.AtomicInteger(0);
             
         // 直接从配置映射中预加载,避免调用物品的 getRarity() 方法
         try {
-            for (var entry : org.yanbwe.raritycore.registry.RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
+            // 使用并行流加速预加载过程
+            org.yanbwe.raritycore.registry.RarityRegistry.ITEM_RARITY_MAP.entrySet().parallelStream().forEach(entry -> {
                 try {
                     idCache.put(entry.getKey(), entry.getValue());
-                    successCount++;
+                    successCount.incrementAndGet();
                 } catch (Throwable e) {
-                    errorCount++;
+                    errorCount.incrementAndGet();
                     RarityCore.LOGGER.debug("Failed to cache rarity for item: {}", entry.getKey(), e);
                 }
-            }
+            });
         } catch (Throwable e) {
             RarityCore.LOGGER.error("Error loading ITEM_RARITY_MAP during cache preload", e);
         }
             
         RarityCore.LOGGER.info("ID cache preloaded: {} items from config, {} items failed", 
-            successCount, errorCount);
+            successCount.get(), errorCount.get());
     }
     
     /**
@@ -214,10 +213,25 @@ public class DualCacheManager {
      */
     private static String generateNbtKey(ItemStack itemStack) {
         ResourceLocation itemId = generateIdKey(itemStack);
+        if (itemId == null) {
+            return "unknown:item";
+        }
         StringBuilder key = new StringBuilder(itemId.toString());
         
-        if (itemStack.hasTag()) {
-            key.append("|nbt:").append(itemStack.getTag().toString());
+        if (itemStack.hasTag() && itemStack.getTag() != null) {
+            try {
+                // 使用MD5哈希算法生成NBT数据的哈希值,减少缓存键长度
+                java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+                byte[] hash = md.digest(itemStack.getTag().toString().getBytes());
+                StringBuilder hexString = new StringBuilder();
+                for (byte b : hash) {
+                    hexString.append(String.format("%02x", b));
+                }
+                key.append("|nbt:hash:").append(hexString.toString());
+            } catch (Exception e) {
+                // 哈希生成失败时回退到原始方式
+                key.append("|nbt:").append(itemStack.getTag().toString());
+            }
         }
         
         return key.toString();

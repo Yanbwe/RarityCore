@@ -1,35 +1,24 @@
 package org.yanbwe.raritycore.registry;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
-import org.yanbwe.raritycore.RarityCore;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.simple.SimpleChannel;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.server.ServerLifecycleHooks;
 import org.jetbrains.annotations.NotNull;
+import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.compat.CompatibilityChecker;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
 import org.yanbwe.raritycore.network.ChangeOperation;
-import org.yanbwe.raritycore.network.IncrementalSyncPacket;
-import org.yanbwe.raritycore.network.RaritySyncPacket;
+import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.util.RarityConstants;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RarityRegistry {
-    // 环境兼容性检测标志
-    private static boolean vanillaRarityApiChecked = false;
-    private static boolean isVanillaRarityApiSupported = true;
-    private static String compatibilityFailureReason = null;
-    private static boolean hasNotifiedPlayer = false; // 添加玩家通知状态
+
     
     /**
      * 物品稀有度映射(来自 FinalRarity.json、数据包等用户手动配置)
@@ -41,10 +30,7 @@ public class RarityRegistry {
      */
     private static final ConcurrentHashMap<ResourceLocation, Integer> AUTO_RARITY_MAP = new ConcurrentHashMap<>();
     
-    /**
-     * 变更操作缓冲区
-     */
-    private static final List<ChangeOperation> CHANGE_OPERATIONS_BUFFER = new ArrayList<>();
+
     
     /**
      * 放入自动计算的稀有度配置
@@ -64,93 +50,12 @@ public class RarityRegistry {
     }
 
     /**
-     * 向所有在线玩家发送兼容性提示消息
-     */
-    public static void notifyPlayersOfCompatibilityIssue() {
-        // 检查配置是否启用警告
-        if (!org.yanbwe.raritycore.config.ServerConfigManager.isEnableGetRarityWarning()) {
-            return; // 配置禁用则不发送警告
-        }
-        
-        if (!isVanillaRarityApiSupported && !hasNotifiedPlayer) {
-            net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
-            if (server != null) {
-                // 向所有玩家发送世界消息(使用本地化字符串)
-                server.getPlayerList().broadcastSystemMessage(
-                    net.minecraft.network.chat.Component.translatable("raritycore.message.vanilla_rarity_unavailable"),
-                    false
-                );
-                server.getPlayerList().broadcastSystemMessage(
-                    net.minecraft.network.chat.Component.translatable("raritycore.message.vanilla_rarity_cause"),
-                    false
-                );
-                hasNotifiedPlayer = true;
-            }
-        }
-    }
-    
-    /**
-     * 检测原版稀有度API是否可用
-     * @return API是否可用
-     */
-    private static boolean isVanillaRarityApiAvailable() {
-        if (vanillaRarityApiChecked) {
-            return isVanillaRarityApiSupported;
-        }
-        
-        try {
-            // 测试API调用
-            ItemStack testStack = ItemStack.EMPTY;
-            Rarity testRarity = testStack.getRarity(); // 这会触发NoSuchMethodError如果API不可用
-            
-            // 验证返回值
-            if (testRarity == null) {
-                throw new IllegalStateException("getRarity() returned null");
-            }
-            
-            vanillaRarityApiChecked = true;
-            isVanillaRarityApiSupported = true;
-            compatibilityFailureReason = null;
-            return true;
-        } catch (NoSuchMethodError e) {
-            vanillaRarityApiChecked = true;
-            isVanillaRarityApiSupported = false;
-            compatibilityFailureReason = "NoSuchMethodError: " + e.getMessage();
-
-            return false;
-        } catch (LinkageError e) {
-            vanillaRarityApiChecked = true;
-            isVanillaRarityApiSupported = false;
-            compatibilityFailureReason = "LinkageError: " + e.getMessage();
-
-            return false;
-        } catch (Throwable e) {
-            vanillaRarityApiChecked = true;
-            isVanillaRarityApiSupported = false;
-            compatibilityFailureReason = "Unexpected error: " + e.getClass().getSimpleName() + ": " + e.getMessage();
-
-            return false;
-        }
-    }
-    /**
      * 注册物品的稀有度等级
      * 1普通,2稀有,3罕见,4史诗,5传说,6神话,7唯一
      * 不注册视为普通品质
      * @param item 要注册稀有度的物品
      * @param rarity 稀有度等级
      */
-    /**
-     * 执行兼容性检查并记录诊断信息
-     */
-    public static void performCompatibilityCheck() {
-        // 静默执行兼容性检查,只在DEBUG级别记录必要信息
-        boolean apiAvailable = isVanillaRarityApiAvailable();
-        
-        if (!apiAvailable) {
-            // 只在DEBUG级别输出基本信息
-            RarityCore.LOGGER.debug("Vanilla rarity API unavailable - operating in reduced functionality mode");
-        }
-    }
     public static void register(@Nullable Item item, int rarity) {
         register(item, rarity, true);
     }
@@ -179,14 +84,14 @@ public class RarityRegistry {
                     // 记录变更操作
                     if (oldRarity == null) {
                         // 新增操作
-                        CHANGE_OPERATIONS_BUFFER.add(new ChangeOperation(ChangeOperation.OperationType.ADD, itemId, rarity));
+                        SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.ADD, itemId, rarity));
                     } else {
                         // 更新操作
-                        CHANGE_OPERATIONS_BUFFER.add(new ChangeOperation(ChangeOperation.OperationType.UPDATE, itemId, rarity));
+                        SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.UPDATE, itemId, rarity));
                     }
                     
                     // 同步到客户端
-                    syncRarityToClients();
+                    SyncManager.syncRarityToClients(ITEM_RARITY_MAP);
                 }
             }
         }
@@ -213,73 +118,17 @@ public class RarityRegistry {
                 if (syncToClients) {
                     // 记录删除操作
                     if (removedRarity != null) {
-                        CHANGE_OPERATIONS_BUFFER.add(new ChangeOperation(ChangeOperation.OperationType.DELETE, itemId, null));
+                        SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.DELETE, itemId, null));
                     }
                     
                     // 同步到客户端
-                    syncRarityToClients();
+                    SyncManager.syncRarityToClients(ITEM_RARITY_MAP);
                 }
             }
         }
     }
     
-    /**
-     * 将所有稀有度数据同步到客户端(全量同步)
-     */
-    public static void syncRarityToClients() {
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server != null) {
-            // 创建包含当前所有数据的映射
-            java.util.Map<ResourceLocation, Integer> currentData = new java.util.HashMap<>(ITEM_RARITY_MAP);
-            RaritySyncPacket packet = new RaritySyncPacket(currentData);
-            
-            // 发送到所有在线玩家
-            sendPacketToAllPlayers(packet, RaritySyncPacket.INSTANCE);
-        }
-    }
-    
-    /**
-     * 将增量变更同步到客户端
-     */
-    public static void syncIncrementalChangesToClients() {
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server != null && !CHANGE_OPERATIONS_BUFFER.isEmpty()) {
-            // 创建包含变更操作的增量同步包
-            IncrementalSyncPacket packet = new IncrementalSyncPacket(new ArrayList<>(CHANGE_OPERATIONS_BUFFER));
-            
-            // 清空缓冲区
-            CHANGE_OPERATIONS_BUFFER.clear();
-            
-            // 发送到所有在线玩家
-            sendPacketToAllPlayers(packet, IncrementalSyncPacket.INSTANCE);
-        }
-    }
-    
-    /**
-     * 向所有在线玩家发送数据包
-     */
-    private static <T> void sendPacketToAllPlayers(T packet, SimpleChannel channel) {
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server != null) {
-            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
-            }
-        }
-    }
-    
-    /**
-     * 获取当前变更缓冲区中的操作数量
-     */
-    public static int getPendingChangeCount() {
-        return CHANGE_OPERATIONS_BUFFER.size();
-    }
-    
-    /**
-     * 清空变更缓冲区
-     */
-    public static void clearChangeBuffer() {
-        CHANGE_OPERATIONS_BUFFER.clear();
-    }
+
 
     /**
      * 获取物品的稀有度等级(标准化版本)
@@ -309,8 +158,14 @@ public class RarityRegistry {
      * @return 本地化文本
      */
     private static String getLocalizedText(String key) {
-        // 直接使用和原版工具提示系统一样的方式
-        return net.minecraft.client.resources.language.I18n.get(key);
+        try {
+            // 直接使用和原版工具提示系统一样的方式
+            return net.minecraft.client.resources.language.I18n.get(key);
+        } catch (Exception e) {
+            // 本地化失败时返回原始键
+            RarityCore.LOGGER.debug("Error getting localized text for key: {}", key, e);
+            return key;
+        }
     }
     
     /**
@@ -345,7 +200,7 @@ public class RarityRegistry {
             String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(displayRarity);
             
             // 检查是否有自定义特殊稀有度文本
-            String customText = org.yanbwe.raritycore.config.ConfigManager.getCustomSpecialRarityText(displayRarity);
+            String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(displayRarity);
             
             if (customText != null && !customText.isEmpty()) {
                 // 使用自定义文本,但保持完整格式:[自定义文本 - 星星]
@@ -393,7 +248,7 @@ public class RarityRegistry {
     
     /**
      * 获取物品栈的稀有度等级(支持NBT数据)
-     * 优先级顺序:神化模组稀有度 > 原版稀有度 > 本模组稀有度(配置和数据包)
+     * 优先级顺序:NBT匹配 > 神化模组稀有度 > 本模组稀有度(配置和数据包) > 原版稀有度映射
      * @param itemStack 要查稀有度的物品栈
      * @return 物品的稀有度等级(1-7)
      */
@@ -414,7 +269,7 @@ public class RarityRegistry {
     
     /**
      * 获取物品的稀有度等级
-     * 优先级顺序:神化模组映射 > 本模组稀有度(配置和数据包) > 原版映射 > 默认值
+     * 优先级顺序:NBT匹配 > 神化模组稀有度 > 本模组稀有度(配置和数据包) > 原版稀有度映射
      * @param item 要查稀有度的物品
      * @return 物品的稀有度等级(1-7)
      */
@@ -431,76 +286,106 @@ public class RarityRegistry {
     
     /**
      * 统一的稀有度获取逻辑
-     * 优先级顺序:NBT匹配 > 神化模组稀有度 > 本模组稀有度(配置和数据包) > 原版稀有度映射
-     * @param itemId 物品资源位置
-     * @param itemStack 物品栈(用于检查NBT数据)
-     * @param item 物品
-     * @return 物品的稀有度等级(1-7)
+     * 按照以下优先级顺序获取稀有度:
+     * 1. NBT匹配配置(最高优先级)
+     * 2. 神化模组稀有度
+     * 3. 本模组的稀有度配置(包括配置文件和数据包)
+     * 4. 自动计算的稀有度配置
+     * 5. 原版稀有度映射(最低优先级)
+     * 
+     * @param itemId 物品资源位置,用于查找配置的稀有度
+     * @param itemStack 物品栈,用于检查NBT数据和神化模组稀有度
+     * @param item 物品实例,用于获取默认稀有度
+     * @return 物品的稀有度等级(1-7),如果没有找到匹配的稀有度,返回1(普通)
      */
     private static @NotNull Integer getRarityInternal(ResourceLocation itemId, @Nullable ItemStack itemStack, Item item) {
         // 首先检查NBT匹配配置(最高优先级)
-        if (itemStack != null && itemStack.hasTag()) {
-            Integer nbtMatchedRarity = org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher.getNbtMatchedRarity(itemStack);
-            if (nbtMatchedRarity != null) {
-                // RarityCore.LOGGER.debug("物品 {} 使用NBT匹配稀有度: {}", itemId, nbtMatchedRarity);
-                return nbtMatchedRarity;
-            }
+        Integer rarity = checkNbtRarity(itemStack);
+        if (rarity != null) {
+            return rarity;
         }
         
         // 然后检查神化模组稀有度
-        if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity() && itemStack != null) {
-            boolean hasApothRarity = org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.hasApotheosisRarity(itemStack);
-            // 减少神化稀有度检查的日志输出,只在必要时记录
-            // RarityCore.LOGGER.debug("物品 {} 是否具有神化稀有度: {}", itemId, hasApothRarity);
-            
-            Integer apothRarity = org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(itemStack);
-            if (apothRarity != null) {
-                // RarityCore.LOGGER.debug("物品 {} 使用神化稀有度: {}", itemId, apothRarity);
-                return apothRarity;
-            } else {
-                // 只对特定物品记录映射失败(避免大量日志)
-                if (itemId.toString().contains("dragon_egg") || itemId.toString().contains("slime_ball")) {
-                    RarityCore.LOGGER.trace("Item {} apotheosis rarity mapping failed", itemId);
-                }
-            }
-        } else {
-            RarityCore.LOGGER.debug("Apotheosis rarity check disabled or item stack is empty");
+        rarity = checkApotheosisRarity(itemStack);
+        if (rarity != null) {
+            return rarity;
         }
         
         // 然后检查本模组的稀有度配置(包括配置文件和数据包)- 最高优先级
-        Integer configuredRarity = ITEM_RARITY_MAP.get(itemId);
-        if (configuredRarity != null) {
-            return configuredRarity;
+        rarity = ITEM_RARITY_MAP.get(itemId);
+        if (rarity != null) {
+            return rarity;
         }
         
         // 然后检查自动计算的稀有度配置 - 中等优先级(低于 FinalRarity,高于原版)
-        Integer autoRarity = AUTO_RARITY_MAP.get(itemId);
-        if (autoRarity != null) {
-            return autoRarity;
+        rarity = AUTO_RARITY_MAP.get(itemId);
+        if (rarity != null) {
+            return rarity;
         }
         
         // 最后检查原版稀有度映射(最低优先级)
-        if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
-            // 先检测API可用性
-            if (isVanillaRarityApiAvailable()) {
-                try {
-                    net.minecraft.world.item.Rarity vanillaRarity = itemStack != null ? itemStack.getRarity() : item.getDefaultInstance().getRarity();
-                    Integer mappedVanilla = mapVanillaRarity(vanillaRarity);
-                    if (mappedVanilla > 1) { // 只有当原版稀有度不是普通时才使用
-                        // RarityCore.LOGGER.debug("物品 {} 使用原版稀有度映射: {} (原版: {})", 
-                        //     itemId, mappedVanilla, vanillaRarity);
-                        return mappedVanilla;
-                    }
-                } catch (Throwable e) { // 捕获所有异常包括Error
-                    RarityCore.LOGGER.debug("Vanilla rarity check failed for item: {}", itemId, e);
-                }
-            } else {
-            }
+        rarity = checkVanillaRarity(itemStack, item);
+        if (rarity != null) {
+            return rarity;
         }
         
         // 默认返回普通稀有度
-        // RarityCore.LOGGER.debug("物品 {} 使用默认稀有度: 1", itemId);
         return 1;
+    }
+    
+    /**
+     * 检查NBT匹配稀有度
+     * @param itemStack 物品栈
+     * @return 稀有度等级,如果没有匹配则返回null
+     */
+    private static Integer checkNbtRarity(@Nullable ItemStack itemStack) {
+        if (itemStack != null && itemStack.hasTag()) {
+            return org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher.getNbtMatchedRarity(itemStack);
+        }
+        return null;
+    }
+    
+    /**
+     * 检查神化模组稀有度
+     * @param itemStack 物品栈
+     * @return 稀有度等级,如果没有匹配则返回null
+     */
+    private static Integer checkApotheosisRarity(@Nullable ItemStack itemStack) {
+        if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity() && itemStack != null) {
+            return org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(itemStack);
+        }
+        return null;
+    }
+    
+    /**
+     * 检查原版稀有度
+     * @param itemStack 物品栈
+     * @param item 物品
+     * @return 稀有度等级,如果没有匹配则返回null
+     */
+    private static Integer checkVanillaRarity(@Nullable ItemStack itemStack, Item item) {
+        if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
+            if (CompatibilityChecker.isVanillaRarityApiAvailable()) {
+                try {
+                    net.minecraft.world.item.Rarity vanillaRarity;
+                    if (itemStack != null) {
+                        vanillaRarity = itemStack.getRarity();
+                    } else if (item != null) {
+                        vanillaRarity = item.getDefaultInstance().getRarity();
+                    } else {
+                        return null;
+                    }
+                    Integer mappedVanilla = mapVanillaRarity(vanillaRarity);
+                    if (mappedVanilla > 1) { // 只有当原版稀有度不是普通时才使用
+                        return mappedVanilla;
+                    }
+                } catch (Throwable e) {
+                    // 记录异常信息,便于调试
+                    RarityCore.LOGGER.debug("Error checking vanilla rarity", e);
+                }
+            }
+        }
+        return null;
     }
     
     /**
@@ -520,37 +405,59 @@ public class RarityRegistry {
         }
     }
     
-
+    /**
+     * 获取物品稀有度映射
+     * @return 物品稀有度映射
+     */
+    public static java.util.Map<net.minecraft.resources.ResourceLocation, Integer> getItemRarityMap() {
+        return ITEM_RARITY_MAP;
+    }
     
     /**
-     * 使用重试机制将所有稀有度数据同步到客户端(全量同步)
+     * 获取自动计算的稀有度映射
+     * @return 自动计算的稀有度映射
+     */
+    public static java.util.Map<net.minecraft.resources.ResourceLocation, Integer> getAutoRarityMap() {
+        return AUTO_RARITY_MAP;
+    }
+    
+    /**
+     * 同步稀有度数据到客户端
+     */
+    public static void syncRarityToClients() {
+        SyncManager.syncRarityToClients(ITEM_RARITY_MAP);
+    }
+    
+    /**
+     * 同步稀有度数据到客户端(带重试机制)
      */
     public static void syncRarityToClientsWithRetry() {
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server != null) {
-            // 创建包含当前所有数据的映射
-            java.util.Map<ResourceLocation, Integer> currentData = new java.util.HashMap<>(ITEM_RARITY_MAP);
-            RaritySyncPacket packet = new RaritySyncPacket(currentData);
-            
-            // 使用重试管理器发送
-            org.yanbwe.raritycore.network.NetworkRetryManager.sendFullSyncWithRetry(packet);
-        }
+        SyncManager.syncRarityToClientsWithRetry(ITEM_RARITY_MAP);
     }
     
     /**
-     * 使用重试机制将增量变更同步到客户端
+     * 同步增量变更到客户端
+     */
+    public static void syncIncrementalChangesToClients() {
+        SyncManager.syncIncrementalChangesToClients();
+    }
+    
+    /**
+     * 同步增量变更到客户端(带重试机制)
      */
     public static void syncIncrementalChangesToClientsWithRetry() {
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server != null && !CHANGE_OPERATIONS_BUFFER.isEmpty()) {
-            // 创建包含变更操作的增量同步包
-            IncrementalSyncPacket packet = new IncrementalSyncPacket(new ArrayList<>(CHANGE_OPERATIONS_BUFFER));
-            
-            // 清空缓冲区
-            CHANGE_OPERATIONS_BUFFER.clear();
-            
-            // 使用重试管理器发送
-            org.yanbwe.raritycore.network.NetworkRetryManager.sendIncrementalSyncWithRetry(packet);
-        }
+        SyncManager.syncIncrementalChangesToClientsWithRetry();
     }
+    
+    /**
+     * 获取待处理的变更操作数量
+     * @return 变更操作数量
+     */
+    public static int getPendingChangeCount() {
+        return SyncManager.getPendingChangeCount();
+    }
+    
+
+    
+
 }

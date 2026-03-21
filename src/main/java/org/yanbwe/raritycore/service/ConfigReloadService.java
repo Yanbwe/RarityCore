@@ -1,10 +1,10 @@
 package org.yanbwe.raritycore.service;
 
-import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.config.ServerConfigManager;
@@ -13,6 +13,7 @@ import org.yanbwe.raritycore.nbtmatching.SimpleNbtCache;
 import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.NbtSyncManager;
 import org.yanbwe.raritycore.network.SyncBatchManager;
+import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.CacheRefreshCoordinator;
 import org.yanbwe.raritycore.util.StarDisplayManager;
@@ -82,17 +83,16 @@ public class ConfigReloadService {
             
             // 7. 同步数据到所有客户端
             if (!isStartup) { // 启动时不需要同步,会在玩家登录时处理
-                RarityRegistry.syncRarityToClientsWithRetry();
+                SyncManager.syncRarityToClientsWithRetry(RarityRegistry.ITEM_RARITY_MAP);
             }
             
-            // 8. 处理客户端相关配置(仅在命令调用时)
+            // 8. 处理双缓存系统重载
+            handleCacheSystems();
+            
+            // 9. 发送完成消息(仅在命令调用时)
             if (source != null) {
-                handleClientSideConfigs();
                 sendCompletionMessage(source);
             }
-            
-            // 9. 处理双缓存系统重载
-            handleCacheSystems();
             
             RarityCore.LOGGER.info("Config reload process completed");
             
@@ -177,7 +177,7 @@ public class ConfigReloadService {
     private static void handleClientSideConfigs() {
         try {
             // 重新加载客户端配置
-            ConfigManager.loadClientConfig();
+            ClientConfigManager.loadClientConfig();
             
             // 通知星星显示管理器重新加载配置
             StarDisplayManager.getInstance().reloadConfiguration();
@@ -205,7 +205,7 @@ public class ConfigReloadService {
             org.yanbwe.raritycore.client.RarityTooltipHandler.handleSkipConfigChange();
             
             // 使相关缓存失效
-            org.yanbwe.raritycore.client.RenderCacheManager.clearAllCache();
+            org.yanbwe.raritycore.cache.RenderCacheManager.clearAllCache();
             
             RarityCore.LOGGER.info("skipUnconfiguredItems config change processed, related systems refreshed");
         } catch (Exception e) {

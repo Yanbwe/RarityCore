@@ -14,6 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.io.FileWriter;
@@ -94,7 +95,7 @@ public class RarityManagementCommands {
             saveRarityToConfig(itemId.toString(), rarity);
             
             // 手动同步到所有客户端
-            RarityRegistry.syncRarityToClients();
+            SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
             
             source.sendSuccess(() -> Component.translatable("rarity.core.item_set_rarity", itemId, rarity).withStyle(ChatFormatting.GREEN), false);
             return 1;
@@ -123,7 +124,7 @@ public class RarityManagementCommands {
         saveRarityToConfig(itemId.toString(), rarity);
         
         // 手动同步到所有客户端
-        RarityRegistry.syncRarityToClients();
+        SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
         
         source.sendSuccess(() -> Component.translatable("rarity.core.item_set_rarity_by_id", itemId, rarity).withStyle(ChatFormatting.GREEN), false);
         return 1;
@@ -157,7 +158,7 @@ public class RarityManagementCommands {
             saveRarityToConfig(itemId.toString(), 0);
             
             // 手动同步到所有客户端
-            RarityRegistry.syncRarityToClients();
+            SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
             
             source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity", itemId).withStyle(ChatFormatting.GREEN), false);
             return 1;
@@ -186,7 +187,7 @@ public class RarityManagementCommands {
         saveRarityToConfig(itemId.toString(), 0);
         
         // 手动同步到所有客户端
-        RarityRegistry.syncRarityToClients();
+        SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
         
         source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity_by_id", itemId).withStyle(ChatFormatting.GREEN), false);
         return 1;

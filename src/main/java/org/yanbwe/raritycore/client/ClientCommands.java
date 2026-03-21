@@ -1,12 +1,13 @@
 package org.yanbwe.raritycore.client;
 
 import com.mojang.brigadier.CommandDispatcher;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.cache.CacheConfig;
 import org.yanbwe.raritycore.cache.DualCacheManager;
+import org.yanbwe.raritycore.cache.RenderCacheManager;
 
 /**
  * 客户端命令管理器
@@ -22,7 +23,7 @@ public class ClientCommands {
                 .then(Commands.literal("stats")
                     .executes(context -> {
                         RenderCacheManager.CacheStats stats = RenderCacheManager.getCacheStats();
-                        boolean isCacheEnabled = org.yanbwe.raritycore.config.ConfigManager.isEnableCacheSystem();
+                        boolean isCacheEnabled = org.yanbwe.raritycore.config.ClientConfigManager.isEnableCacheSystem();
                         CacheConfig config = DualCacheManager.getConfig();
                         
                         context.getSource().sendSuccess(() -> Component.translatable("rarity.core.cache_stats_header")

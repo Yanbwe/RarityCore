@@ -1,8 +1,7 @@
-package org.yanbwe.raritycore.client;
+package org.yanbwe.raritycore.cache;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import org.yanbwe.raritycore.cache.DualCacheManager;
 
 /**
  * 渲染缓存管理器 - 适配器模式

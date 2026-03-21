@@ -9,9 +9,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
-import org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;

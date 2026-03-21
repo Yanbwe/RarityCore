@@ -6,7 +6,6 @@ import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.network.NetworkConstants;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.HashMap;
@@ -18,7 +17,7 @@ public class RaritySyncPacket {
     
     public static void initialize() {
         INSTANCE = NetworkRegistry.newSimpleChannel(
-                new ResourceLocation(RarityCore.MODID, NetworkConstants.RARITY_SYNC_CHANNEL),
+                ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.RARITY_SYNC_CHANNEL),
                 () -> NetworkConstants.PROTOCOL_VERSION,
                 NetworkConstants.PROTOCOL_VERSION::equals,
                 NetworkConstants.PROTOCOL_VERSION::equals
@@ -43,7 +42,7 @@ public class RaritySyncPacket {
         for (int i = 0; i < size; i++) {
             String key = buf.readUtf();
             int value = buf.readInt();
-            rarityData.put(new ResourceLocation(key), value);
+            rarityData.put(ResourceLocation.parse(key), value);
         }
     }
 

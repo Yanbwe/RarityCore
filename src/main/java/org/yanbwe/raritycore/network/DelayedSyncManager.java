@@ -120,17 +120,26 @@ public class DelayedSyncManager {
      */
     public static void shutdown() {
         if (syncExecutor != null && !syncExecutor.isShutdown()) {
+            RarityCore.LOGGER.debug("Shutting down DelayedSyncManager executor");
             syncExecutor.shutdown();
             try {
                 if (!syncExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    RarityCore.LOGGER.warn("DelayedSyncManager executor did not terminate gracefully, forcing shutdown");
                     syncExecutor.shutdownNow();
+                    if (!syncExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                        RarityCore.LOGGER.error("DelayedSyncManager executor could not be terminated");
+                    }
+                } else {
+                    RarityCore.LOGGER.debug("DelayedSyncManager executor terminated gracefully");
                 }
             } catch (InterruptedException e) {
+                RarityCore.LOGGER.warn("Interrupted while waiting for DelayedSyncManager executor to terminate");
                 syncExecutor.shutdownNow();
                 Thread.currentThread().interrupt();
             }
         }
         syncScheduled = false;
+        RarityCore.LOGGER.debug("DelayedSyncManager shutdown completed");
     }
     
     /**

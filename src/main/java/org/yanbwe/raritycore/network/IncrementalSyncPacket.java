@@ -6,7 +6,6 @@ import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.network.NetworkConstants;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.ArrayList;
@@ -18,7 +17,7 @@ public class IncrementalSyncPacket {
     
     public static void initialize() {
         INSTANCE = NetworkRegistry.newSimpleChannel(
-                new ResourceLocation(RarityCore.MODID, NetworkConstants.INCREMENTAL_SYNC_CHANNEL),
+                ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.INCREMENTAL_SYNC_CHANNEL),
                 () -> NetworkConstants.PROTOCOL_VERSION,
                 NetworkConstants.PROTOCOL_VERSION::equals,
                 NetworkConstants.PROTOCOL_VERSION::equals
@@ -43,7 +42,7 @@ public class IncrementalSyncPacket {
         for (int i = 0; i < size; i++) {
             int opType = buf.readInt();
             String itemIdStr = buf.readUtf();
-            ResourceLocation itemId = new ResourceLocation(itemIdStr);
+            ResourceLocation itemId = ResourceLocation.parse(itemIdStr);
             
             Integer rarity = null;
             boolean hasRarity = buf.readBoolean();

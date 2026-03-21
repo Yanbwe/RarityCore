@@ -7,8 +7,8 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 import org.yanbwe.raritycore.RarityCore;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -22,11 +22,13 @@ public class NetworkRetryManager {
     private static final double EXPONENTIAL_BACKOFF_MULTIPLIER = 2.0;
     
     // 用于延迟重试的调度器
-    private static final ScheduledExecutorService retryScheduler = Executors.newScheduledThreadPool(2, r -> {
-        Thread t = new Thread(r, "RarityCore-Network-Retry");
-        t.setDaemon(true);
-        return t;
-    });
+    private static final ScheduledExecutorService retryScheduler = Executors.newScheduledThreadPool(
+        Runtime.getRuntime().availableProcessors() / 2 + 1, r -> {
+            Thread t = new Thread(r, "RarityCore-Network-Retry");
+            t.setDaemon(true);
+            return t;
+        }
+    );
     
     /**
      * 调度延迟重试任务
@@ -64,9 +66,29 @@ public class NetworkRetryManager {
     }
     
     /**
+     * 发送数据包到单个玩家
+     */
+    private static <T> boolean sendPacketToPlayer(Object channel, T packet, ServerPlayer player) {
+        if (channel instanceof IncrementalSyncPacket && packet instanceof IncrementalSyncPacket) {
+            IncrementalSyncPacket.INSTANCE.send(
+                PacketDistributor.PLAYER.with(() -> player), 
+                (IncrementalSyncPacket) packet
+            );
+            return true;
+        } else if (channel instanceof RaritySyncPacket && packet instanceof RaritySyncPacket) {
+            RaritySyncPacket.INSTANCE.send(
+                PacketDistributor.PLAYER.with(() -> player), 
+                (RaritySyncPacket) packet
+            );
+            return true;
+        }
+        return false;
+    }
+    
+    /**
      * 通用的带重试包发送方法
      */
-    private static <T> void sendPacketWithRetry(Object channel, T packet, int maxRetries, long baseDelay) {
+    private static <T> void sendPacketWithRetry(Object channelInstance, T packet, int maxRetries, long baseDelay) {
         int attempts = 0;
         Exception lastException = null;
         
@@ -76,18 +98,7 @@ public class NetworkRetryManager {
                 MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
                 if (server != null) {
                     for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                        // 这里需要根据具体通道类型进行转换
-                        if (channel instanceof IncrementalSyncPacket) {
-                            IncrementalSyncPacket.INSTANCE.send(
-                                PacketDistributor.PLAYER.with(() -> player), 
-                                (IncrementalSyncPacket) packet
-                            );
-                        } else if (channel instanceof RaritySyncPacket) {
-                            RaritySyncPacket.INSTANCE.send(
-                                PacketDistributor.PLAYER.with(() -> player), 
-                                (RaritySyncPacket) packet
-                            );
-                        }
+                        sendPacketToPlayer(channelInstance, packet, player);
                     }
                 }
                 
@@ -108,7 +119,7 @@ public class NetworkRetryManager {
                     
                     // 使用ScheduledExecutorService进行延迟重试
                     scheduleRetry(() -> {
-                        sendPacketWithRetry(channel, packet, maxRetries, baseDelay);
+                        sendPacketWithRetry(channelInstance, packet, maxRetries, baseDelay);
                     }, delay);
                     return;
                 }
@@ -136,17 +147,7 @@ public class NetworkRetryManager {
         
         while (attempts < maxRetries) {
             try {
-                if (channel instanceof IncrementalSyncPacket) {
-                    IncrementalSyncPacket.INSTANCE.send(
-                        PacketDistributor.PLAYER.with(() -> player), 
-                        (IncrementalSyncPacket) packet
-                    );
-                } else if (channel instanceof RaritySyncPacket) {
-                    RaritySyncPacket.INSTANCE.send(
-                        PacketDistributor.PLAYER.with(() -> player), 
-                        (RaritySyncPacket) packet
-                    );
-                }
+                sendPacketToPlayer(channel, packet, player);
                 
                 if (attempts > 0) {
                     RarityCore.LOGGER.info("Packet sent to player {} successfully after {} retry attempts", 

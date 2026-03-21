@@ -66,7 +66,7 @@ public class SimpleConfigValidator {
         
         try {
             String itemIdStr = config.get("item_id").getAsString();
-            ResourceLocation itemId = new ResourceLocation(itemIdStr);
+            ResourceLocation itemId = ResourceLocation.parse(itemIdStr);
             
             List<NbtCondition> conditions = parseConditions(config.getAsJsonArray("conditions"));
             if (conditions.isEmpty()) {

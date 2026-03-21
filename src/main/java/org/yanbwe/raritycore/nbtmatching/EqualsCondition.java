@@ -1,6 +1,9 @@
 package org.yanbwe.raritycore.nbtmatching;
 
-import net.minecraft.nbt.*;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+
 import java.util.List;
 
 /**

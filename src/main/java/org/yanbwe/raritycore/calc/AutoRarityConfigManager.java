@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.io.FileWriter;
@@ -65,7 +66,7 @@ public class AutoRarityConfigManager {
             
             for (String key : jsonObject.keySet()) {
                 try {
-                    ResourceLocation itemId = new ResourceLocation(key);
+                    ResourceLocation itemId = ResourceLocation.parse(key);
                     int rarity = jsonObject.get(key).getAsInt();
                     
                     net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
@@ -83,7 +84,7 @@ public class AutoRarityConfigManager {
             RarityCore.LOGGER.info("Loaded {} auto rarity configurations from {}", loadedCount, AUTO_RARITY_FILE);
             
             // 3. 清空批处理缓冲区(避免之前的操作影响)
-            org.yanbwe.raritycore.registry.RarityRegistry.clearChangeBuffer();
+            SyncManager.clearChangeBuffer();
             
         } catch (IOException e) {
             RarityCore.LOGGER.error("Failed to load auto rarity config", e);
@@ -140,7 +141,7 @@ public class AutoRarityConfigManager {
                     com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(content).getAsJsonObject();
                     for (String key : jsonObject.keySet()) {
                         try {
-                            removedIds.add(new ResourceLocation(key));
+                            removedIds.add(ResourceLocation.parse(key));
                         } catch (Exception e) {
                             // 忽略无效的 ID
                         }

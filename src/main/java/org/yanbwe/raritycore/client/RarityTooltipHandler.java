@@ -17,7 +17,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.cache.RenderCacheManager;
+import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.ComponentBuilder;
 import org.yanbwe.raritycore.util.RarityColorUtil;
@@ -30,7 +31,7 @@ public class RarityTooltipHandler {
     @SubscribeEvent
     public static void onItemTooltip(ItemTooltipEvent event) {
         // 检查是否启用工具提示插入
-        if (!ConfigManager.isEnableTooltipInsert()) {
+        if (!ClientConfigManager.isEnableTooltipInsert()) {
             return;
         }
         
@@ -56,14 +57,10 @@ public class RarityTooltipHandler {
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度,则不插入工具提示
         // 注意:需要检查物品是否真的没有配置,而不是检查rarity是否为null
-        if (org.yanbwe.raritycore.config.ConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
+        if (ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
             return;
         }
         
-        // 如果没有注册稀有度,默认为普通
-        if (rarity == null) {
-            rarity = RarityConstants.RARITY_COMMON;
-        }
         
         // 先检查是否为特殊稀有度(大于7),保存原始值用于显示
         boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;

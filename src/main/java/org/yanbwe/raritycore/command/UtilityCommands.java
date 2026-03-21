@@ -1,23 +1,23 @@
 package org.yanbwe.raritycore.command;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.edit.EditModeManager;
+import org.yanbwe.raritycore.network.SyncManager;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 /**
  * 工具命令类
@@ -115,10 +115,10 @@ public class UtilityCommands {
      */
     private static int showPerformanceStats(CommandSourceStack source) {
         // 获取各种性能指标
-        org.yanbwe.raritycore.client.RenderCacheManager.CacheStats cacheStats = 
-            org.yanbwe.raritycore.client.RenderCacheManager.getCacheStats();
+        org.yanbwe.raritycore.cache.RenderCacheManager.CacheStats cacheStats = 
+            org.yanbwe.raritycore.cache.RenderCacheManager.getCacheStats();
         
-        int pendingChanges = org.yanbwe.raritycore.registry.RarityRegistry.getPendingChangeCount();
+        int pendingChanges = SyncManager.getPendingChangeCount();
         int registrySize = org.yanbwe.raritycore.registry.RarityRegistry.ITEM_RARITY_MAP.size();
         
         source.sendSuccess(() -> Component.translatable("rarity.core.performance_stats_title").withStyle(ChatFormatting.GOLD), false);
@@ -136,7 +136,7 @@ public class UtilityCommands {
      */
     private static int triggerManualOptimization(CommandSourceStack source) {
         // 清理缓存
-        org.yanbwe.raritycore.client.RenderCacheManager.clearAllCache();
+        org.yanbwe.raritycore.cache.RenderCacheManager.clearAllCache();
         
         // 重新加载配置
         org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
@@ -150,16 +150,16 @@ public class UtilityCommands {
      * 切换纹理边框启用状态
      */
     private static int toggleTextureBorder(CommandSourceStack source) {
-        boolean currentState = ConfigManager.isUseTextureBorder();
+        boolean currentState = ClientConfigManager.isUseTextureBorder();
         boolean newState = !currentState;
-        ConfigManager.setUseTextureBorder(newState);
+        ClientConfigManager.setUseTextureBorder(newState);
         
         // 尝试保存到配置文件
         try {
-            Path configDir = ConfigManager.getConfigDirPath();
+            Path configDir = org.yanbwe.raritycore.config.ConfigManager.getConfigDirPath();
             Files.createDirectories(configDir);
             
-            Path configFile = ConfigManager.getClientConfigPath();
+            Path configFile = ClientConfigManager.getClientConfigPath();
             
             // 读取现有配置
             JsonObject jsonObject;

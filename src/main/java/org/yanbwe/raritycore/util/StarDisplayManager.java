@@ -1,7 +1,7 @@
 package org.yanbwe.raritycore.util;
 
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.config.StarDisplayConfigManager;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,7 +12,11 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class StarDisplayManager {
     
-    private static StarDisplayManager instance;
+    // 使用静态内部类实现线程安全的单例模式
+    private static class SingletonHolder {
+        private static final StarDisplayManager INSTANCE = new StarDisplayManager();
+    }
+    
     private StarDisplayStrategy currentStrategy;
     private final Map<String, StarDisplayStrategy> strategyCache;
     
@@ -25,11 +29,8 @@ public class StarDisplayManager {
     /**
      * 获取单例实例
      */
-    public static synchronized StarDisplayManager getInstance() {
-        if (instance == null) {
-            instance = new StarDisplayManager();
-        }
-        return instance;
+    public static StarDisplayManager getInstance() {
+        return SingletonHolder.INSTANCE;
     }
     
     /**
@@ -45,12 +46,12 @@ public class StarDisplayManager {
      * 根据配置更新当前策略
      */
     public void updateStrategyFromConfig() {
-        if (!ConfigManager.isEnableStarDisplay()) {
+        if (!StarDisplayConfigManager.isEnableStarDisplay()) {
             currentStrategy = null;
             return;
         }
         
-        String mode = ConfigManager.getStarMode();
+        String mode = StarDisplayConfigManager.getStarMode();
         StarMode starMode = parseStarMode(mode);
         
         switch (starMode) {
@@ -88,7 +89,7 @@ public class StarDisplayManager {
      * 创建重复模式策略
      */
     private StarDisplayStrategy createRepeatStrategy() {
-        String character = ConfigManager.getRepeatCharacter();
+        String character = StarDisplayConfigManager.getRepeatCharacter();
         if (character == null || character.isEmpty()) {
             character = RarityConstants.DEFAULT_REPEAT_CHARACTER;
         }
@@ -99,17 +100,17 @@ public class StarDisplayManager {
      * 创建自定义模式策略
      */
     private StarDisplayStrategy createCustomStrategy() {
-        Map<Integer, String> customStrings = ConfigManager.getCustomStarStrings();
+        Map<Integer, String> customStrings = StarDisplayConfigManager.getCustomStarStrings();
         return new CustomStarStrategy(customStrings);
     }
     
     /**
      * 获取星星显示字符串
      * @param rarity 稀有度等级
-     * @return 显示的字符串，如果不应显示则返回空字符串
+     * @return 显示的字符串,如果不应显示则返回空字符串
      */
     public String getStarDisplayString(int rarity) {
-        if (!ConfigManager.isEnableStarDisplay() || currentStrategy == null) {
+        if (!StarDisplayConfigManager.isEnableStarDisplay() || currentStrategy == null) {
             return "";
         }
         
@@ -127,7 +128,7 @@ public class StarDisplayManager {
      * @return 是否应该显示
      */
     public boolean shouldDisplayStars(int rarity) {
-        if (!ConfigManager.isEnableStarDisplay() || currentStrategy == null) {
+        if (!StarDisplayConfigManager.isEnableStarDisplay() || currentStrategy == null) {
             return false;
         }
         
@@ -156,7 +157,6 @@ public class StarDisplayManager {
     public void cleanup() {
         strategyCache.clear();
         currentStrategy = null;
-        instance = null;
         RarityCore.LOGGER.debug("星星显示管理器已清理");
     }
 }

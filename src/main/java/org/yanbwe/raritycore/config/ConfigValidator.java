@@ -7,11 +7,8 @@ import org.yanbwe.raritycore.RarityCore;
 
 import java.io.BufferedReader;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 配置验证器
@@ -30,9 +27,10 @@ public class ConfigValidator {
      */
     public static JsonObject validateConfig(Path configFile, JsonObject defaultConfig, String configType) {
         try {
-            // 如果配置文件不存在，直接返回默认配置
+            // 如果配置文件不存在，创建默认配置文件
             if (!Files.exists(configFile)) {
-                RarityCore.LOGGER.info("Config file {} does not exist, will create with default values", configType);
+                RarityCore.LOGGER.info("Config file {} does not exist, creating with default values", configType);
+                saveConfigFile(configFile, defaultConfig);
                 return defaultConfig;
             }
 
@@ -43,7 +41,8 @@ public class ConfigValidator {
             }
 
             if (configObject == null) {
-                RarityCore.LOGGER.warn("Config file {} is invalid, will use default values", configType);
+                RarityCore.LOGGER.warn("Config file {} is invalid, recreating with default values", configType);
+                saveConfigFile(configFile, defaultConfig);
                 return defaultConfig;
             }
 
@@ -64,6 +63,23 @@ public class ConfigValidator {
         } catch (Exception e) {
             RarityCore.LOGGER.error("Failed to validate {} config: {}", configType, e.getMessage());
             return defaultConfig;
+        }
+    }
+
+    /**
+     * 保存配置到文件
+     * @param configFile 配置文件路径
+     * @param config 配置对象
+     */
+    private static void saveConfigFile(Path configFile, JsonObject config) {
+        try {
+            Files.createDirectories(configFile.getParent());
+            try (FileWriter writer = new FileWriter(configFile.toFile())) {
+                GSON.toJson(config, writer);
+            }
+            RarityCore.LOGGER.info("Config file saved: {}", configFile);
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Failed to save config file: {}", configFile, e);
         }
     }
 
@@ -108,11 +124,10 @@ public class ConfigValidator {
         
         // 基本配置
         configObject.addProperty("enableItemBorderRendering", true);
-        configObject.addProperty("itemBorderStyle", 0);
-        configObject.addProperty("useTextureBorder", false);
+        configObject.addProperty("itemBorderStyle", 1);
+        configObject.addProperty("useTextureBorder", true);
         configObject.addProperty("enableItemNameColor", true);
         configObject.addProperty("enableTooltipInsert", true);
-        configObject.addProperty("checkVanillaRarity", true);
         configObject.addProperty("skipUnconfiguredItems", false);
         configObject.addProperty("enableBatchProcessing", true);
         configObject.addProperty("enableCacheSystem", true);
@@ -135,6 +150,7 @@ public class ConfigValidator {
         customStrings.addProperty("5", "★★★★☆");
         customStrings.addProperty("6", "★★★★★");
         customStrings.addProperty("7", "★★★★★★");
+        customStrings.addProperty("8", "★★★★★★★");
         customConfig.add("strings", customStrings);
         customConfig.add("specialRarityTexts", new JsonObject());
         starDisplay.add("custom", customConfig);

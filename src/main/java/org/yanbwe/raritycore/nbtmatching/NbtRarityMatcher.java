@@ -48,6 +48,10 @@ public class NbtRarityMatcher {
         }
         
         Item item = itemStack.getItem();
+        if (item == null) {
+            return null;
+        }
+        
         ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
         if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
             return null;
@@ -58,13 +62,10 @@ public class NbtRarityMatcher {
             return null;
         }
         
-        // 按优先级降序排列(数值大的优先级高)
-        List<NbtMatchRule> sortedRules = new ArrayList<>(rules);
-        sortedRules.sort((a, b) -> Integer.compare(b.getPriority(), a.getPriority()));
-        
+        // 规则已经在注册时按优先级排序好了
         // 查找第一个匹配的规则
-        for (NbtMatchRule rule : sortedRules) {
-            if (rule.isEnabled() && rule.matches(itemStack)) {
+        for (NbtMatchRule rule : rules) {
+            if (rule != null && rule.isEnabled() && rule.matches(itemStack)) {
                 return rule.getRarity();
             }
         }
@@ -82,8 +83,11 @@ public class NbtRarityMatcher {
             return;
         }
         
-        RULES_CACHE.computeIfAbsent(rule.getItemId(), k -> new ArrayList<>())
-                  .add(rule);
+        List<NbtMatchRule> rules = RULES_CACHE.computeIfAbsent(rule.getItemId(), k -> new ArrayList<>());
+        rules.add(rule);
+        
+        // 按优先级降序排序(数值大的优先级高)
+        rules.sort((a, b) -> Integer.compare(b.getPriority(), a.getPriority()));
         
         RarityCore.LOGGER.debug("注册NBT匹配规则: {} -> 稀有度{} (优先级:{})", 
             rule.getItemId(), rule.getRarity(), rule.getPriority());

@@ -14,16 +14,16 @@ import java.nio.file.Path;
 
 /**
  * 配置文件工具类
- * 统一处理配置文件的读写操作，避免重复代码
+ * 统一处理配置文件的读写操作,避免重复代码
  */
 public class ConfigFileUtils {
     
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     
     /**
-     * 确保目录存在，如果不存在则创建
+     * 确保目录存在,如果不存在则创建
      * @param directoryPath 目录路径
-     * @param operationName 操作名称（用于日志）
+     * @param operationName 操作名称(用于日志)
      * @return 是否成功创建或目录已存在
      */
     public static boolean ensureDirectoryExists(Path directoryPath, String operationName) {
@@ -42,8 +42,8 @@ public class ConfigFileUtils {
     /**
      * 读取JSON配置文件
      * @param configFile 配置文件路径
-     * @param operationName 操作名称（用于日志）
-     * @return JsonObject对象，如果文件不存在或读取失败返回null
+     * @param operationName 操作名称(用于日志)
+     * @return JsonObject对象,如果文件不存在或读取失败返回null
      */
     public static JsonObject readJsonConfig(Path configFile, String operationName) {
         if (!Files.exists(configFile)) {
@@ -66,7 +66,7 @@ public class ConfigFileUtils {
      * 写入JSON配置文件
      * @param configFile 配置文件路径
      * @param jsonObject 要写入的JSON对象
-     * @param operationName 操作名称（用于日志）
+     * @param operationName 操作名称(用于日志)
      * @return 是否写入成功
      */
     public static boolean writeJsonConfig(Path configFile, JsonObject jsonObject, String operationName) {
@@ -84,7 +84,7 @@ public class ConfigFileUtils {
      * 安全地读取并更新JSON配置文件
      * @param configFile 配置文件路径
      * @param updater 更新函数
-     * @param operationName 操作名称（用于日志）
+     * @param operationName 操作名称(用于日志)
      * @return 是否操作成功
      */
     public static boolean updateJsonConfig(Path configFile, JsonUpdater updater, String operationName) {

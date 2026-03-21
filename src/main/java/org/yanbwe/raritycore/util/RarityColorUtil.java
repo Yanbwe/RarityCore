@@ -2,6 +2,8 @@ package org.yanbwe.raritycore.util;
 
 import net.minecraft.ChatFormatting;
 
+import javax.annotation.Nonnull;
+
 /**
  * 稀有度颜色工具类
  * 统一管理不同稀有度对应的颜色值
@@ -11,8 +13,9 @@ public class RarityColorUtil {
     /**
      * 根据稀有度等级获取对应的颜色格式
      * @param rarity 稀有度等级 (1-7)
-     * @return ChatFormatting颜色
+     * @return ChatFormatting颜色,永不为null
      */
+    @Nonnull
     public static ChatFormatting getRarityChatColor(int rarity) {
         switch (rarity) {
             case 1: // 普通 - 白色
@@ -41,7 +44,7 @@ public class RarityColorUtil {
      */
     public static int getRarityArgbColor(int rarity) {
         return switch (rarity) {
-            case 1 -> // 普通 - 灰色（更明显）
+            case 1 -> // 普通 - 灰色(更明显)
                     0xFFA0A0A0;
             case 2 -> // 稀有 - 绿色
                     0xFF00AA00;

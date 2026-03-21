@@ -3,6 +3,7 @@ package org.yanbwe.raritycore.compat.apotheosis;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.ModList;
 import org.yanbwe.raritycore.RarityCore;
+
 import java.lang.reflect.Method;
 
 /**

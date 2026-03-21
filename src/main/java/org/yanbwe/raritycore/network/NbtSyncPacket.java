@@ -1,17 +1,15 @@
 package org.yanbwe.raritycore.network;
 
+import com.google.gson.JsonObject;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.network.NetworkConstants;
-import org.yanbwe.raritycore.nbtmatching.NbtMatchRule;
 import org.yanbwe.raritycore.nbtmatching.NbtCondition;
+import org.yanbwe.raritycore.nbtmatching.NbtMatchRule;
 import org.yanbwe.raritycore.nbtmatching.SimpleNbtCache;
-
-import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +24,7 @@ public class NbtSyncPacket {
     
     public static void initialize() {
         INSTANCE = NetworkRegistry.newSimpleChannel(
-                new ResourceLocation(RarityCore.MODID, NetworkConstants.NBT_SYNC_CHANNEL),
+                ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.NBT_SYNC_CHANNEL),
                 () -> NetworkConstants.PROTOCOL_VERSION,
                 NetworkConstants.PROTOCOL_VERSION::equals,
                 NetworkConstants.PROTOCOL_VERSION::equals
@@ -159,7 +157,7 @@ public class NbtSyncPacket {
 
         public NbtMatchRule toRule() {
             try {
-                ResourceLocation itemLoc = new ResourceLocation(itemId);
+                ResourceLocation itemLoc = ResourceLocation.parse(itemId);
                 List<NbtCondition> nbtConditions = new ArrayList<>();
                 
                 for (ConditionData conditionData : conditions) {

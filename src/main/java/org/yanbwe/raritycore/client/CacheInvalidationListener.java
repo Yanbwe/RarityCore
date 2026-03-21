@@ -5,8 +5,8 @@ import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.util.CacheRefreshCoordinator;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
+import org.yanbwe.raritycore.util.CacheRefreshCoordinator;
 
 /**
  * 缓存失效监听器

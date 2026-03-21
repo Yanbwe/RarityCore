@@ -4,6 +4,8 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 
+import javax.annotation.Nonnull;
+
 /**
  * 组件构建器工具类
  * Minecraft组件创建和组装工具
@@ -14,8 +16,9 @@ public class ComponentBuilder {
     /**
      * 获取预构建的星星字符串
      * @param count 星星数量
-     * @return 星星字符串
+     * @return 星星字符串,永不为null
      */
+    @Nonnull
     public static String getStars(int count) {
         // 使用新的星星显示管理器
         try {
@@ -41,8 +44,9 @@ public class ComponentBuilder {
      * 构建稀有度组件(高性能版本)
      * @param rarity 稀有度等级
      * @param color 颜色格式
-     * @return 构建好的组件
+     * @return 构建好的组件,永不为null
      */
+    @Nonnull
     public static MutableComponent buildRarityComponent(int rarity, ChatFormatting color) {
         if (rarity <= 0) return Component.empty();
         
@@ -56,11 +60,12 @@ public class ComponentBuilder {
      * 构建特殊稀有度组件(大于 7 级的情况)
      * @param rarity 稀有度等级
      * @param color 颜色格式
-     * @return 构建好的组件
+     * @return 构建好的组件,永不为null
      */
+    @Nonnull
     public static MutableComponent buildSpecialRarityComponent(int rarity, ChatFormatting color) {
         // 检查是否有自定义特殊稀有度文本
-        String customText = org.yanbwe.raritycore.config.ConfigManager.getCustomSpecialRarityText(rarity);
+        String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(rarity);
             
         String textToShow;
         if (customText != null && !customText.isEmpty()) {

@@ -7,7 +7,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.cache.RenderCacheManager;
+import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -24,7 +25,7 @@ public class ItemBorderRenderer {
      */
     public static void renderRarityBorder(GuiGraphics guiGraphics, ItemStack itemStack, int x, int y) {
         // 检查是否启用了边框渲染
-        if (!ConfigManager.isEnableItemBorderRendering()) {
+        if (!ClientConfigManager.isEnableItemBorderRendering()) {
             return;
         }
         
@@ -35,16 +36,16 @@ public class ItemBorderRenderer {
         Integer rarity;
         
         // 检查缓存系统是否启用
-        boolean isCacheEnabled = org.yanbwe.raritycore.config.ConfigManager.isEnableCacheSystem();
+        boolean isCacheEnabled = ClientConfigManager.isEnableCacheSystem();
         
         if (isCacheEnabled) {
             // 获取物品栈的稀有度(使用缓存)
-            rarity = org.yanbwe.raritycore.client.RenderCacheManager.getCachedRarity(itemStack);
+            rarity = org.yanbwe.raritycore.cache.RenderCacheManager.getCachedRarity(itemStack);
             // 如果缓存没有命中,则从注册表获取并缓存
             if (rarity == null) {
                 rarity = RarityRegistry.getRarity(itemStack);
                 if (rarity != null) {
-                    org.yanbwe.raritycore.client.RenderCacheManager.cacheItemStackRarity(itemStack, rarity);
+                    org.yanbwe.raritycore.cache.RenderCacheManager.cacheItemStackRarity(itemStack, rarity);
                 }
             }
         } else {
@@ -60,7 +61,7 @@ public class ItemBorderRenderer {
         // 如果启用了跳过未配置物品且物品没有配置稀有度,则不渲染
         // 注意:需要检查物品是否真的没有配置,而不是默认的稀有度1
         Item item = itemStack.getItem();
-        if (org.yanbwe.raritycore.config.ConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
+        if (ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
             return;
         }
         
@@ -68,7 +69,7 @@ public class ItemBorderRenderer {
         rarity = RarityValidator.normalizeRarity(rarity);
         
         // 根据配置选择渲染方式
-        if (ConfigManager.isUseTextureBorder()) {
+        if (ClientConfigManager.isUseTextureBorder()) {
             // 使用纹理渲染边框
             renderTextureBorder(guiGraphics, rarity, x, y);
         } else {
@@ -87,7 +88,17 @@ public class ItemBorderRenderer {
     private static void renderTextureBorder(GuiGraphics guiGraphics, int rarity, int x, int y) {
         // 构造纹理路径,例如: raritycore:textures/border/rarity_1.png
         String textureName = "rarity_" + rarity;
-        ResourceLocation textureLocation = new ResourceLocation(RarityConstants.BORDER_TEXTURE_PATH + textureName + RarityConstants.TEXTURE_SUFFIX);
+        ResourceLocation textureLocation = null;
+        
+        try {
+            // 安全解析纹理路径
+            textureLocation = ResourceLocation.parse(RarityConstants.BORDER_TEXTURE_PATH + textureName + RarityConstants.TEXTURE_SUFFIX);
+        } catch (Exception e) {
+            // 路径解析失败,回退到颜色边框
+            RarityCore.LOGGER.warn("Failed to parse texture path for rarity {}, falling back to color border: {}", rarity, e.getMessage());
+            renderColorBorder(guiGraphics, rarity, x, y);
+            return;
+        }
         
         // 尝试绘制纹理边框
         try {
@@ -115,7 +126,7 @@ public class ItemBorderRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         
-        if (ConfigManager.getItemBorderStyle() == 1) {
+        if (ClientConfigManager.getItemBorderStyle() == 1) {
             // 实心边框 - 50%半透明,16x16大小
             // 通过将alpha值设置为0x80(128/255 ≈ 50%透明度)实现半透明
             int alphaMask = 0x80000000;  // 50%透明度的alpha值
@@ -166,12 +177,5 @@ public class ItemBorderRenderer {
         // ItemBorderRenderer: skipUnconfiguredItems config change handled
     }
     
-    /**
-     * 根据稀有度等级获取对应颜色
-     * @param rarity 稀有度等级 (1-7)
-     * @return ARGB颜色值
-     */
-    private static int getRarityColor(int rarity) {
-        return RarityColorUtil.getRarityArgbColor(rarity);
-    }
+
 }

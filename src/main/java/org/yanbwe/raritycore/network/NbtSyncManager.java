@@ -1,5 +1,6 @@
 package org.yanbwe.raritycore.network;
 
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.PacketDistributor;
@@ -11,7 +12,6 @@ import org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import net.minecraft.resources.ResourceLocation;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 

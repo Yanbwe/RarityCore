@@ -49,7 +49,7 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener {
                     if (rarityElement.isJsonPrimitive() && rarityElement.getAsJsonPrimitive().isNumber()) {
                         int rarity = rarityElement.getAsInt();
                         
-                        ResourceLocation itemId = new ResourceLocation(itemIdString);
+                        ResourceLocation itemId = ResourceLocation.parse(itemIdString);
                         net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
                         
                         if (item == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {

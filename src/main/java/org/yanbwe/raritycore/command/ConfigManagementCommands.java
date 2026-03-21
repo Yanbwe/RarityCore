@@ -6,10 +6,10 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.ConfigValidator;
 import org.yanbwe.raritycore.config.ServerConfigManager;
-import java.io.BufferedReader;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -57,7 +57,7 @@ public class ConfigManagementCommands {
      * 重新加载客户端配置
      */
     private static int reloadClientConfig(CommandSourceStack source) {
-        ConfigManager.loadClientConfig();
+        ClientConfigManager.loadClientConfig();
         
         // 通知星星显示管理器重新加载配置
         org.yanbwe.raritycore.util.StarDisplayManager.getInstance().reloadConfiguration();
@@ -86,7 +86,7 @@ public class ConfigManagementCommands {
             org.yanbwe.raritycore.client.RarityTooltipHandler.handleSkipConfigChange();
             
             // 使相关缓存失效
-            org.yanbwe.raritycore.client.RenderCacheManager.clearAllCache();
+            org.yanbwe.raritycore.cache.RenderCacheManager.clearAllCache();
             
             RarityCore.LOGGER.info("skipUnconfiguredItems config change handled, related systems refreshed");
         } catch (Exception e) {
@@ -103,7 +103,7 @@ public class ConfigManagementCommands {
             source.sendSuccess(() -> Component.translatable("rarity.core.config_version_deprecated").withStyle(ChatFormatting.YELLOW), false);
             
             // 显示客户端配置状态
-            Path clientConfigPath = ConfigManager.getClientConfigPath();
+            Path clientConfigPath = ClientConfigManager.getClientConfigPath();
             if (Files.exists(clientConfigPath)) {
                 source.sendSuccess(() -> Component.translatable("rarity.core.client_config_exists").withStyle(ChatFormatting.GREEN), false);
             } else {
@@ -136,7 +136,7 @@ public class ConfigManagementCommands {
             
             // 强制验证客户端配置
             com.google.gson.JsonObject defaultClientConfig = ConfigValidator.createDefaultClientConfig();
-            ConfigValidator.validateConfig(ConfigManager.getClientConfigPath(), defaultClientConfig, "client (forced)");
+            ConfigValidator.validateConfig(ClientConfigManager.getClientConfigPath(), defaultClientConfig, "client (forced)");
             
             // 强制验证服务端配置
             com.google.gson.JsonObject defaultServerConfig = ConfigValidator.createDefaultServerConfig();

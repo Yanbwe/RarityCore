@@ -52,7 +52,7 @@ public class ConfigLoaderUtils {
                         }
                         // 注意:不再限制最大稀有度值,允许8-10级等高级稀有度
                         
-                        ResourceLocation itemId = new ResourceLocation(itemIdString);
+                        ResourceLocation itemId = ResourceLocation.parse(itemIdString);
                         net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
                         
                         if (item == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
@@ -88,7 +88,7 @@ public class ConfigLoaderUtils {
      */
     public static int loadJsonConfigFileWithBatch(Path configFile, String fileName, boolean useBatchProcessing) {
         return loadJsonConfigFile(configFile, fileName, (itemIdString, rarity) -> {
-            ResourceLocation itemId = new ResourceLocation(itemIdString);
+            ResourceLocation itemId = ResourceLocation.parse(itemIdString);
             
             if (useBatchProcessing) {
                 // 使用批处理管理器

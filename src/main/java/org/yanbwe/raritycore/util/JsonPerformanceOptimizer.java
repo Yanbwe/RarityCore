@@ -48,7 +48,7 @@ public class JsonPerformanceOptimizer {
                 }
                 
                 // 注册物品稀有度或删除稀有度
-                ResourceLocation itemId = new ResourceLocation(itemIdString);
+                ResourceLocation itemId = ResourceLocation.parse(itemIdString);
                 net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
                 
                 if (item != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
