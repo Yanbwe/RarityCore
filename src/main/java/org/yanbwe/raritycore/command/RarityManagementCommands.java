@@ -98,7 +98,7 @@ public class RarityManagementCommands {
             // 手动同步到所有客户端
             SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
             
-            source.sendSuccess(() -> Component.translatable("rarity.core.item_set_rarity", itemId, rarity).withStyle(ChatFormatting.GREEN), false);
+            source.sendSuccess(() -> Component.translatable("rarity.core.item_set_rarity", itemId.toString(), rarity).withStyle(ChatFormatting.GREEN), false);
             return 1;
         } catch (Exception e) {
             RarityCore.LOGGER.error("Command execution failed", e);
@@ -114,7 +114,7 @@ public class RarityManagementCommands {
         Item item = BuiltInRegistries.ITEM.get(itemId);
         
         if (item == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
-            source.sendSuccess(() -> Component.translatable("rarity.core.unknown_item_id", itemId).withStyle(ChatFormatting.RED), false);
+            source.sendSuccess(() -> Component.translatable("rarity.core.unknown_item_id", itemId.toString()).withStyle(ChatFormatting.RED), false);
             return 0;
         }
         
@@ -127,7 +127,7 @@ public class RarityManagementCommands {
         // 手动同步到所有客户端
         SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
         
-        source.sendSuccess(() -> Component.translatable("rarity.core.item_set_rarity_by_id", itemId, rarity).withStyle(ChatFormatting.GREEN), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.item_set_rarity_by_id", itemId.toString(), rarity).withStyle(ChatFormatting.GREEN), false);
         return 1;
     }
     
@@ -161,7 +161,7 @@ public class RarityManagementCommands {
             // 手动同步到所有客户端
             SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
             
-            source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity", itemId).withStyle(ChatFormatting.GREEN), false);
+            source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity", itemId.toString()).withStyle(ChatFormatting.GREEN), false);
             return 1;
         } catch (Exception e) {
             RarityCore.LOGGER.error("Command execution failed", e);
@@ -177,7 +177,7 @@ public class RarityManagementCommands {
         Item item = BuiltInRegistries.ITEM.get(itemId);
         
         if (item == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
-            source.sendSuccess(() -> Component.translatable("rarity.core.unknown_item_id", itemId).withStyle(ChatFormatting.RED), false);
+            source.sendSuccess(() -> Component.translatable("rarity.core.unknown_item_id", itemId.toString()).withStyle(ChatFormatting.RED), false);
             return 0;
         }
         
@@ -190,7 +190,7 @@ public class RarityManagementCommands {
         // 手动同步到所有客户端
         SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
         
-        source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity_by_id", itemId).withStyle(ChatFormatting.GREEN), false);
+        source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity_by_id", itemId.toString()).withStyle(ChatFormatting.GREEN), false);
         return 1;
     }
     
