@@ -15,18 +15,18 @@ public class CustomStarStrategy implements StarDisplayStrategy {
     
     public CustomStarStrategy(Map<Integer, String> customStrings) {
         this.customStrings = customStrings != null ? customStrings : Collections.emptyMap();
-        RarityCore.LOGGER.debug("初始化自定义模式策略，配置了 {} 个稀有度字符串", this.customStrings.size());
+        RarityCore.LOGGER.debug("初始化自定义模式策略,配置了 {} 个稀有度字符串", this.customStrings.size());
     }
     
     @Override
     public String getDisplayString(int rarity) {
-        // 边界处理：负数和0都按1处理
+        // 边界处理:负数和0都按1处理
         int effectiveRarity = Math.max(1, rarity);
         
         // 查找配置的字符串
         String result = customStrings.get(effectiveRarity);
         
-        // 如果未配置则不显示（返回空字符串）
+        // 如果未配置则不显示(返回空字符串)
         if (result == null) {
             return "";
         }

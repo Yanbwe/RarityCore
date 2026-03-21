@@ -20,7 +20,7 @@ public class BaseScreenMixin {
     
     /**
      * 在物品渲染后添加稀有度边框
-     * 精致存储直接调用graphics.renderItem，绕过了原版的renderItemDecorations
+     * 精致存储直接调用graphics.renderItem,绕过了原版的renderItemDecorations
      */
     @Inject(method = {"renderItem(Lnet/minecraft/client/gui/GuiGraphics;IILnet/minecraft/world/item/ItemStack;)V", 
                       "renderItem(Lnet/minecraft/client/gui/GuiGraphics;IILnet/minecraft/world/item/ItemStack;ZLjava/lang/String;I)V"},
@@ -43,8 +43,8 @@ public class BaseScreenMixin {
                 // 调用我们的稀有度边框渲染逻辑
                 ItemBorderRenderer.renderRarityBorder(graphics, stack, x, y);
             } catch (Exception e) {
-                // 静默失败，不影响原版渲染
-                // 根据调试日志管理规范，注释掉高频触发的调试信息
+                // 静默失败,不影响原版渲染
+                // 根据调试日志管理规范,注释掉高频触发的调试信息
                 // org.yanbwe.raritycore.RarityCore.LOGGER.debug("Failed to render rarity border for Refined Storage item: {}", e.getMessage());
             }
         }
@@ -62,7 +62,7 @@ public class BaseScreenMixin {
                 // 调用我们的稀有度边框渲染逻辑
                 ItemBorderRenderer.renderRarityBorder(graphics, stack, x, y);
             } catch (Exception e) {
-                // 静默失败，不影响原版渲染
+                // 静默失败,不影响原版渲染
             }
         }
     }

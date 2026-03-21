@@ -2,7 +2,7 @@ package org.yanbwe.raritycore.calc;
 
 import com.google.gson.JsonObject;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
@@ -70,7 +70,7 @@ public class AutoRarityConfigManager {
                     ResourceLocation itemId = ResourceLocation.parse(key);
                     int rarity = jsonObject.get(key).getAsInt();
                     
-                    net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
+                    net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(itemId);
                     if (item != null) {
                         // 写入自动计算的稀有度映射(优先级低于 FinalRarity.json)
                         RarityRegistry.putAutoRarity(itemId, rarity);
@@ -175,7 +175,7 @@ public class AutoRarityConfigManager {
             int writtenCount = 0;
             
             for (Map.Entry<net.minecraft.world.item.Item, Integer> entry : computedRarities.entrySet()) {
-                ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(entry.getKey());
+                ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(entry.getKey());
                 if (itemId != null) {
                     jsonObject.addProperty(itemId.toString(), entry.getValue());
                     writtenCount++;

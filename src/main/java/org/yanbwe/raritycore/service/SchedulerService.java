@@ -62,7 +62,7 @@ public class SchedulerService {
         // 添加自动稀有度计算的 tick 任务
         syncScheduler.scheduleAtFixedRate(() -> {
             try {
-                // 每 2 tick 调用计算器，减少性能开销
+                // 每 2 tick 调用计算器,减少性能开销
                 serviceFactory.getAutoRarityCalculator().tick();
             } catch (Exception e) {
                 RarityCore.LOGGER.error("Error occurred during auto rarity calculation tick", e);

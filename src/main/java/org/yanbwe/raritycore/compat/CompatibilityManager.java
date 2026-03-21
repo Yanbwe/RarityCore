@@ -14,7 +14,7 @@ public class CompatibilityManager {
      * @return 如果模组已加载返回true
      */
     public static boolean isModLoaded(String modId) {
-        return net.minecraftforge.fml.ModList.get().isLoaded(modId);
+        return net.neoforged.fml.ModList.get().isLoaded(modId);
     }
     
 
@@ -60,7 +60,7 @@ public class CompatibilityManager {
         
         // TODO: 在此处添加其他模组的兼容性检测和初始化
         /*
-        // 示例：JEI兼容性
+        // 示例:JEI兼容性
         try {
             Class.forName("mezz.jei.api.IModPlugin");
             JEIIntegration.init();

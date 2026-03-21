@@ -51,7 +51,7 @@ public class RangeCondition extends NbtCondition {
             return false;
         }
         
-        // 对于通配符，采用"任意匹配"策略：只要有一个元素在范围内即返回true
+        // 对于通配符,采用"任意匹配"策略:只要有一个元素在范围内即返回true
         for (Tag result : results) {
             if (isInRange(result, minValue, maxValue)) {
                 return true;

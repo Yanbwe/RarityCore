@@ -5,7 +5,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -79,8 +79,8 @@ public class ItemStackMixin {
         }
         
         // 获取物品ID
-        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-        if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+        if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
             return false;
         }
         

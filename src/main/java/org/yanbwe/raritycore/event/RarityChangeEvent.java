@@ -1,7 +1,7 @@
 package org.yanbwe.raritycore.event;
 
 import net.minecraft.world.item.Item;
-import net.minecraftforge.eventbus.api.Event;
+import net.neoforged.bus.api.Event;
 
 /**
  * 稀有度变更事件

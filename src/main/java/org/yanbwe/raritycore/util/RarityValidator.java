@@ -2,7 +2,7 @@ package org.yanbwe.raritycore.util;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
  * 稀有度验证工具类
@@ -44,8 +44,8 @@ public class RarityValidator {
             return false;
         }
         
-        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-        return itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey());
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+        return itemId != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey());
     }
     
     /**
@@ -57,7 +57,7 @@ public class RarityValidator {
         if (!isValidItem(item)) {
             return null;
         }
-        return ForgeRegistries.ITEMS.getKey(item);
+        return BuiltInRegistries.ITEM.getKey(item);
     }
     
     /**

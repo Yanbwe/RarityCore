@@ -4,8 +4,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.common.NeoForge;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.jetbrains.annotations.NotNull;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.compat.CompatibilityChecker;
@@ -70,14 +70,14 @@ public class RarityRegistry {
      */
     public static void register(@Nullable Item item, int rarity, boolean syncToClients) {
         if (item != null) {
-            ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-            if (itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+            if (itemId != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                 Integer oldRarity = ITEM_RARITY_MAP.put(itemId, rarity);
                 
                 // 发布稀有度变更事件
                 RarityChangeEvent.ChangeType changeType = (oldRarity == null) ? 
                     RarityChangeEvent.ChangeType.REGISTER : RarityChangeEvent.ChangeType.UPDATE;
-                MinecraftForge.EVENT_BUS.post(new RarityChangeEvent(item, oldRarity, rarity, changeType));
+                NeoForge.EVENT_BUS.post(new RarityChangeEvent(item, oldRarity, rarity, changeType));
                 
                 // 如果需要同步到客户端且当前在服务端环境中,记录变更操作
                 if (syncToClients) {
@@ -104,13 +104,13 @@ public class RarityRegistry {
      */
     public static void unregister(@Nullable Item item, boolean syncToClients) {
         if (item != null) {
-            ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-            if (itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+            if (itemId != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                 Integer removedRarity = ITEM_RARITY_MAP.remove(itemId);
                 
                 // 发布稀有度变更事件
                 if (removedRarity != null) {
-                    MinecraftForge.EVENT_BUS.post(new RarityChangeEvent(
+                    NeoForge.EVENT_BUS.post(new RarityChangeEvent(
                         item, removedRarity, null, RarityChangeEvent.ChangeType.REMOVE));
                 }
                 
@@ -258,8 +258,8 @@ public class RarityRegistry {
         }
         
         Item item = itemStack.getItem();
-        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-        if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+        if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
             return 1;
         }
         
@@ -275,8 +275,8 @@ public class RarityRegistry {
      */
     public static @NotNull Integer getRarity(@Nullable Item item) {
         if (item != null) {
-            ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-            if (itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+            if (itemId != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                 ItemStack tempStack = new ItemStack(item);
                 return getRarityInternal(itemId, tempStack, item);
             }
@@ -339,10 +339,10 @@ public class RarityRegistry {
      * @return 稀有度等级,如果没有匹配则返回null
      */
     private static Integer checkNbtRarity(@Nullable ItemStack itemStack) {
-        if (itemStack != null && itemStack.hasTag()) {
-            return org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher.getNbtMatchedRarity(itemStack);
+        if (itemStack == null || itemStack.isEmpty()) {
+            return null;
         }
-        return null;
+        return org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher.getNbtMatchedRarity(itemStack);
     }
     
     /**

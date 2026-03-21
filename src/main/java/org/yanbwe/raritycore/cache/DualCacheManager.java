@@ -4,7 +4,9 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.component.CustomData;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.CacheMetrics.CacheType;
 
@@ -19,7 +21,15 @@ public class DualCacheManager {
     
     // ID缓存 - 永久性,预加载所有物品
     private static volatile Cache<ResourceLocation, Integer> idCache;
-    
+
+    private static boolean hasNbtData(ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty()) {
+            return false;
+        }
+        CustomData customData = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        return !customData.isEmpty();
+    }
+
     // NBT缓存 - LRU动态管理
     private static volatile Cache<String, Integer> nbtCache;
     
@@ -120,7 +130,7 @@ public class DualCacheManager {
         }
         
         // 优先检查NBT缓存
-        if (config.isNbtCacheEnabled() && itemStack.hasTag()) {
+        if (config.isNbtCacheEnabled() && hasNbtData(itemStack)) {
             String nbtKey = generateNbtKey(itemStack);
             Integer nbtResult = nbtCache.getIfPresent(nbtKey);
             if (nbtResult != null) {
@@ -157,7 +167,7 @@ public class DualCacheManager {
         idCache.put(idKey, rarity);
         
         // 条件填充NBT缓存
-        if (config.isNbtCacheEnabled() && itemStack.hasTag()) {
+        if (config.isNbtCacheEnabled() && hasNbtData(itemStack)) {
             String nbtKey = generateNbtKey(itemStack);
             nbtCache.put(nbtKey, rarity);
         }
@@ -208,7 +218,7 @@ public class DualCacheManager {
      * 生成ID缓存键
      */
     private static ResourceLocation generateIdKey(ItemStack itemStack) {
-        return ForgeRegistries.ITEMS.getKey(itemStack.getItem());
+        return BuiltInRegistries.ITEM.getKey(itemStack.getItem());
     }
     
     /**
@@ -220,12 +230,12 @@ public class DualCacheManager {
             return "unknown:item";
         }
         StringBuilder key = new StringBuilder(itemId.toString());
-        
-        if (itemStack.hasTag() && itemStack.getTag() != null) {
-            net.minecraft.nbt.CompoundTag tag = itemStack.getTag();
+
+        CustomData customData = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        if (!customData.isEmpty()) {
+            net.minecraft.nbt.CompoundTag tag = customData.copyTag();
             if (tag != null) {
                 try {
-                    // 使用MD5哈希算法生成NBT数据的哈希值,减少缓存键长度
                     java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
                     byte[] hash = md.digest(tag.toString().getBytes());
                     StringBuilder hexString = new StringBuilder();
@@ -234,12 +244,11 @@ public class DualCacheManager {
                     }
                     key.append("|nbt:hash:").append(hexString.toString());
                 } catch (Exception e) {
-                    // 哈希生成失败时回退到原始方式
                     key.append("|nbt:").append(tag.toString());
                 }
             }
         }
-        
+
         return key.toString();
     }
     

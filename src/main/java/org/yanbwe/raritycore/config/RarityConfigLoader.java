@@ -30,7 +30,7 @@ public class RarityConfigLoader {
 
         Path configFile = ConfigManager.getFinalRarityConfigPath();
         
-        // 如果配置文件不存在，则创建默认配置文件
+        // 如果配置文件不存在,则创建默认配置文件
         if (!Files.exists(configFile)) {
             createDefaultConfig(configFile);
         }

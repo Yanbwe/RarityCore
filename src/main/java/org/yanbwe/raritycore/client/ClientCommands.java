@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.cache.CacheConfig;
 import org.yanbwe.raritycore.cache.DualCacheManager;
@@ -71,7 +72,7 @@ public class ClientCommands {
      */
     private static int getCurrentItemCount() {
         try {
-            return net.minecraftforge.registries.ForgeRegistries.ITEMS.getValues().size();
+            return (int) BuiltInRegistries.ITEM.stream().count();
         } catch (Exception e) {
             return 0;
         }

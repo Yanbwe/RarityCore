@@ -1,12 +1,12 @@
 package org.yanbwe.raritycore.event;
 
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
-import net.minecraftforge.event.server.ServerStoppedEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.bus.api.SubscribeEvent;
 import org.yanbwe.raritycore.service.ServiceFactory;
 
 /**
@@ -30,7 +30,7 @@ public class RarityCoreEventHandler {
         // 注册缓存失效监听器到事件总线
         try {
             Class<?> listenerClass = Class.forName("org.yanbwe.raritycore.client.CacheInvalidationListener");
-            net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(listenerClass);
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.register(listenerClass);
         } catch (ClassNotFoundException e) {
             org.yanbwe.raritycore.RarityCore.LOGGER.warn("CacheInvalidationListener class not found, skipping registration");
         }

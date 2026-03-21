@@ -13,7 +13,7 @@ import org.yanbwe.raritycore.client.ItemBorderRenderer;
 @Mixin(AbstractContainerScreen.class)
 public class AbstractContainerScreenMixin {
 
-    // 注入到renderSlot方法中，在物品和装饰渲染完成后添加边框
+    // 注入到renderSlot方法中,在物品和装饰渲染完成后添加边框
     @Inject(
         method = "renderSlot(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/inventory/Slot;)V", 
         at = @At(

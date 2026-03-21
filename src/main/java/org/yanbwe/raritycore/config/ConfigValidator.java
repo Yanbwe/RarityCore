@@ -27,7 +27,7 @@ public class ConfigValidator {
      */
     public static JsonObject validateConfig(Path configFile, JsonObject defaultConfig, String configType) {
         try {
-            // 如果配置文件不存在，创建默认配置文件
+            // 如果配置文件不存在,创建默认配置文件
             if (!Files.exists(configFile)) {
                 RarityCore.LOGGER.info("Config file {} does not exist, creating with default values", configType);
                 saveConfigFile(configFile, defaultConfig);
@@ -50,7 +50,7 @@ public class ConfigValidator {
             boolean[] hasMissingItems = {false};
             JsonObject updatedConfig = mergeConfigRecursive(configObject, defaultConfig, configType, hasMissingItems);
 
-            // 如果有缺失项，保存更新后的配置
+            // 如果有缺失项,保存更新后的配置
             if (hasMissingItems[0]) {
                 try (FileWriter writer = new FileWriter(configFile.toFile())) {
                     GSON.toJson(updatedConfig, writer);
@@ -84,7 +84,7 @@ public class ConfigValidator {
     }
 
     /**
-     * 递归合并配置对象，添加缺失的配置项
+     * 递归合并配置对象,添加缺失的配置项
      * @param existingConfig 现有配置对象
      * @param defaultConfig 默认配置对象
      * @param configType 配置类型描述
@@ -96,12 +96,12 @@ public class ConfigValidator {
 
         for (String key : defaultConfig.keySet()) {
             if (!result.has(key)) {
-                // 配置项不存在，直接添加
+                // 配置项不存在,直接添加
                 result.add(key, defaultConfig.get(key));
                 RarityCore.LOGGER.info("Added missing config option '{}' to {} config", key, configType);
                 hasMissingItems[0] = true;
             } else if (defaultConfig.get(key).isJsonObject() && result.get(key).isJsonObject()) {
-                // 两个都是JSON对象，递归合并
+                // 两个都是JSON对象,递归合并
                 JsonObject merged = mergeConfigRecursive(
                     result.getAsJsonObject(key),
                     defaultConfig.getAsJsonObject(key),

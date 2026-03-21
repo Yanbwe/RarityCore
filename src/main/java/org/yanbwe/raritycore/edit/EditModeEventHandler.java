@@ -8,11 +8,11 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ScreenEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.ScreenEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import org.lwjgl.glfw.GLFW;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.mixin.AbstractContainerScreenAccessor;
@@ -21,7 +21,7 @@ import org.yanbwe.raritycore.mixin.AbstractContainerScreenAccessor;
  * 客户端编辑模式事件处理器
  * 处理键盘输入和鼠标点击事件来控制编辑模式
  */
-@Mod.EventBusSubscriber(value = Dist.CLIENT, modid = RarityCore.MODID)
+@EventBusSubscriber(value = Dist.CLIENT, modid = RarityCore.MODID)
 public class EditModeEventHandler {
     
     @SubscribeEvent(priority = EventPriority.HIGHEST)

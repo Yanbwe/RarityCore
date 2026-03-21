@@ -21,7 +21,6 @@ public class ConfigManagementCommands {
     
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("raritycore")
-            .requires(source -> source.hasPermission(2))
             .then(Commands.literal("reload")
                 .executes(context -> reloadRarityData(context.getSource()))
             )

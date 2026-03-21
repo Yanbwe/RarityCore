@@ -18,7 +18,7 @@ import org.yanbwe.raritycore.registry.RarityRegistry;
 
 /**
  * 服务容器
- * 管理所有服务的实例，提供依赖注入功能
+ * 管理所有服务的实例,提供依赖注入功能
  */
 public class ServiceContainer {
     

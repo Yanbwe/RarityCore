@@ -4,11 +4,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
-import org.yanbwe.raritycore.network.EditModeRequestPacket;
+import org.yanbwe.raritycore.network.EditModeRequestPayload;
+import org.yanbwe.raritycore.network.NetworkConstants;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.ArrayList;
@@ -164,8 +165,8 @@ public class EditModeManager {
         }
             
         // 获取物品 ID
-        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-        if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+        if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
             return false;
         }
             
@@ -175,12 +176,12 @@ public class EditModeManager {
         
         if (isMultiplayer) {
             // 多人游戏:发送请求包到服务端,由服务端保存配置并同步
-            EditModeRequestPacket packet = new EditModeRequestPacket(
+            EditModeRequestPayload payload = new EditModeRequestPayload(
                 itemId, 
                 deleteModeEnabled ? 0 : currentRarity, 
                 deleteModeEnabled
             );
-            EditModeRequestPacket.INSTANCE.sendToServer(packet);
+            net.neoforged.neoforge.network.PacketDistributor.sendToServer(payload);
         } else {
             // 单人游戏:本地处理并保存配置
             if (deleteModeEnabled) {

@@ -3,6 +3,8 @@ package org.yanbwe.raritycore.nbtmatching;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomData;
 
 import java.util.List;
 import java.util.Objects;
@@ -58,12 +60,13 @@ public class NbtMatchRule {
         if (itemStack == null || itemStack.isEmpty()) {
             return false;
         }
-        
-        if (!itemStack.hasTag()) {
+
+        CustomData customData = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        if (customData.isEmpty()) {
             return false;
         }
-        
-        CompoundTag nbt = itemStack.getTag();
+
+        CompoundTag nbt = customData.copyTag();
         
         // 无论是模糊匹配还是精确匹配，条件之间都是AND关系
         // 先检查所有条件是否满足

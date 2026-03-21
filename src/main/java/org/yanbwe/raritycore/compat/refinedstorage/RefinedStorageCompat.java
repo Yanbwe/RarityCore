@@ -1,6 +1,6 @@
 package org.yanbwe.raritycore.compat.refinedstorage;
 
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 import org.yanbwe.raritycore.RarityCore;
 
 /**

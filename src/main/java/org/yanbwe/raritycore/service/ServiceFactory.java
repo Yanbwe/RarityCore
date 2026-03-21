@@ -23,7 +23,7 @@ import org.yanbwe.raritycore.registry.RarityRegistry;
 
 /**
  * 服务工厂
- * 管理所有服务的访问，提供依赖注入功能
+ * 管理所有服务的访问,提供依赖注入功能
  */
 public class ServiceFactory {
     
@@ -47,7 +47,7 @@ public class ServiceFactory {
     private static class ServiceInfo<T> {
         private final Class<T> serviceClass;
         private final java.util.function.Supplier<T> supplier;
-        private final int priority; // 初始化优先级，数字越小优先级越高
+        private final int priority; // 初始化优先级,数字越小优先级越高
         
         public ServiceInfo(Class<T> serviceClass, java.util.function.Supplier<T> supplier, int priority) {
             this.serviceClass = serviceClass;
@@ -78,7 +78,7 @@ public class ServiceFactory {
      * 初始化服务注册
      */
     private void initializeServiceRegistry() {
-        // 注册服务，按照依赖关系设置优先级
+        // 注册服务,按照依赖关系设置优先级
         registerService(ConfigManager.class, ConfigManager::new, 10);
         registerService(ServerConfigManager.class, ServerConfigManager::new, 15);
         registerService(DualCacheManager.class, DualCacheManager::new, 20);

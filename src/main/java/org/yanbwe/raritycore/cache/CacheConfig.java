@@ -1,6 +1,6 @@
 package org.yanbwe.raritycore.cache;
 
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
  * 缓存系统配置
@@ -9,13 +9,13 @@ public class CacheConfig {
     // NBT缓存开关
     private boolean nbtCacheEnabled = true;
     
-    // NBT缓存最大条目数（固定模式）
+    // NBT缓存最大条目数(固定模式)
     private int maxNbtCacheSize = 10000;
     
     // 是否启用动态容量
     private boolean dynamicCapacityEnabled = true;
     
-    // 动态容量倍数（当前物品数量的倍数）
+    // 动态容量倍数(当前物品数量的倍数)
     private double dynamicCapacityMultiplier = 2.0;
     
     // 动态容量最小值
@@ -24,7 +24,7 @@ public class CacheConfig {
     // 动态容量最大值
     private int dynamicCapacityMax = 999999;
     
-    // 缓存清理阈值（0.0-1.0）
+    // 缓存清理阈值(0.0-1.0)
     private double cleanupThreshold = 0.9;
     
     public CacheConfig() {
@@ -33,12 +33,11 @@ public class CacheConfig {
     }
     
     private void loadFromConfig() {
-        // TODO: 从实际配置文件加载
         // 暂时使用硬编码默认值
     }
     
     /**
-     * 获取NBT缓存的实际最大容量（动态计算）
+     * 获取NBT缓存的实际最大容量(动态计算)
      * @return 计算后的最大容量
      */
     public int getActualMaxNbtCacheSize() {
@@ -65,9 +64,9 @@ public class CacheConfig {
      */
     private int getCurrentItemCount() {
         try {
-            return ForgeRegistries.ITEMS.getValues().size();
+            return (int) BuiltInRegistries.ITEM.stream().count();
         } catch (Exception e) {
-            // 如果获取失败，返回默认值
+            // 如果获取失败,返回默认值
             return 1000;
         }
     }

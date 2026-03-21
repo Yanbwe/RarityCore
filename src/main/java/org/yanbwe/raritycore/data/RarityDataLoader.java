@@ -7,7 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -52,9 +52,9 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener {
                         int rarity = rarityElement.getAsInt();
                         
                         ResourceLocation itemId = ResourceLocation.parse(itemIdString);
-                        net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
+                        net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(itemId);
                         
-                        if (item == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+                        if (item == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                             RarityCore.LOGGER.warn("Unknown item '{}' in rarity data file '{}'", itemIdString, location);
                             continue;
                         }

@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonReader;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
@@ -49,9 +49,9 @@ public class JsonPerformanceOptimizer {
                 
                 // 注册物品稀有度或删除稀有度
                 ResourceLocation itemId = ResourceLocation.parse(itemIdString);
-                net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
+                net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(itemId);
                 
-                if (item != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+                if (item != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                     if (rarity == 0) {
                         // 稀有度为0表示删除该物品的稀有度配置
                         RarityRegistry.unregister(item, false);

@@ -12,12 +12,12 @@ public class RepeatStarStrategy implements StarDisplayStrategy {
     
     public RepeatStarStrategy(String character) {
         this.character = character != null && !character.isEmpty() ? character : "⭐";
-        RarityCore.LOGGER.debug("初始化重复模式策略，使用字符: {}", this.character);
+        RarityCore.LOGGER.debug("初始化重复模式策略,使用字符: {}", this.character);
     }
     
     @Override
     public String getDisplayString(int rarity) {
-        // 边界处理：负数和0都按1处理
+        // 边界处理:负数和0都按1处理
         int effectiveRarity = Math.max(1, rarity);
         
         // 重复字符

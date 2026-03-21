@@ -14,7 +14,7 @@ public class ChangeOperation {
 
     private final OperationType type;
     private final ResourceLocation itemId;
-    private final Integer rarity; // 对于DELETE操作，此值为null
+    private final Integer rarity; // 对于DELETE操作,此值为null
 
     public ChangeOperation(OperationType type, ResourceLocation itemId, Integer rarity) {
         this.type = type;

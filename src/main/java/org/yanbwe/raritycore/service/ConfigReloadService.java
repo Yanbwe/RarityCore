@@ -2,6 +2,7 @@ package org.yanbwe.raritycore.service;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ClientConfigManager;
@@ -124,8 +125,8 @@ public class ConfigReloadService {
                 // 应用所有待处理操作
                 int appliedCount = 0;
                 for (ChangeOperation op : pendingOps) {
-                    net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(op.getItemId());
-                    if (item != null && !op.getItemId().equals(net.minecraftforge.registries.ForgeRegistries.ITEMS.getDefaultKey())) {
+                    net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(op.getItemId());
+                    if (item != null && !op.getItemId().equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                         switch (op.getType()) {
                             case ADD:
                             case UPDATE:

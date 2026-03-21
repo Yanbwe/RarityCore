@@ -2,7 +2,7 @@ package org.yanbwe.raritycore.compat.sophisticatedcore;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.inventory.Slot;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.client.ItemBorderRenderer;
 

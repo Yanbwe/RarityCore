@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.network.SyncManager;
@@ -82,9 +82,9 @@ public class RarityManagementCommands {
             }
             
             Item item = itemStack.getItem();
-            ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
             
-            if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+            if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                 source.sendSuccess(() -> Component.translatable("rarity.core.unrecognized_item").withStyle(ChatFormatting.RED), false);
                 return 0;
             }
@@ -111,9 +111,9 @@ public class RarityManagementCommands {
      * 设置指定物品的稀有度
      */
     private static int setItemRarity(CommandSourceStack source, ResourceLocation itemId, int rarity) {
-        Item item = ForgeRegistries.ITEMS.getValue(itemId);
+        Item item = BuiltInRegistries.ITEM.get(itemId);
         
-        if (item == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+        if (item == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
             source.sendSuccess(() -> Component.translatable("rarity.core.unknown_item_id", itemId).withStyle(ChatFormatting.RED), false);
             return 0;
         }
@@ -145,9 +145,9 @@ public class RarityManagementCommands {
             }
             
             Item item = itemStack.getItem();
-            ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
             
-            if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+            if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                 source.sendSuccess(() -> Component.translatable("rarity.core.unrecognized_item").withStyle(ChatFormatting.RED), false);
                 return 0;
             }
@@ -174,9 +174,9 @@ public class RarityManagementCommands {
      * 删除指定物品的稀有度
      */
     private static int removeItemRarity(CommandSourceStack source, ResourceLocation itemId) {
-        Item item = ForgeRegistries.ITEMS.getValue(itemId);
+        Item item = BuiltInRegistries.ITEM.get(itemId);
         
-        if (item == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+        if (item == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
             source.sendSuccess(() -> Component.translatable("rarity.core.unknown_item_id", itemId).withStyle(ChatFormatting.RED), false);
             return 0;
         }

@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.network.ChangeOperation;
 
@@ -53,9 +53,9 @@ public class ConfigLoaderUtils {
                         // 注意:不再限制最大稀有度值,允许8-10级等高级稀有度
                         
                         ResourceLocation itemId = ResourceLocation.parse(itemIdString);
-                        net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
+                        net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(itemId);
                         
-                        if (item == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+                        if (item == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                             RarityCore.LOGGER.warn("Unknown item '{}' in file '{}'", itemIdString, fileName);
                             continue;
                         }
@@ -100,7 +100,7 @@ public class ConfigLoaderUtils {
                 org.yanbwe.raritycore.network.SyncBatchManager.addOperation(operation);
             } else {
                 // 直接注册到稀有度注册表
-                net.minecraft.world.item.Item item = ForgeRegistries.ITEMS.getValue(itemId);
+                net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(itemId);
                 if (item != null) {
                     org.yanbwe.raritycore.registry.RarityRegistry.register(item, rarity, false);
                 }

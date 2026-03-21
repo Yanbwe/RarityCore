@@ -1,9 +1,12 @@
 package org.yanbwe.raritycore.nbtmatching;
 
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomData;
 import org.yanbwe.raritycore.RarityCore;
 
 import javax.annotation.Nullable;
@@ -21,6 +24,19 @@ public class NbtRarityMatcher {
      */
     private static final Map<ResourceLocation, List<NbtMatchRule>> RULES_CACHE = 
         new ConcurrentHashMap<>();
+
+    @Nullable
+    private static CompoundTag getItemStackTag(ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty()) {
+            return null;
+        }
+        CustomData customData = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        if (customData.isEmpty()) {
+            return null;
+        }
+        return customData.copyTag();
+    }
+
     
     /**
      * 获取物品的NBT匹配稀有度(带缓存)
@@ -29,7 +45,7 @@ public class NbtRarityMatcher {
      */
     @Nullable
     public static Integer getNbtMatchedRarity(ItemStack itemStack) {
-        if (itemStack == null || itemStack.isEmpty() || !itemStack.hasTag()) {
+        if (getItemStackTag(itemStack) == null) {
             return null;
         }
         
@@ -43,7 +59,7 @@ public class NbtRarityMatcher {
      * @return 计算的稀有度
      */
     public static Integer calculateWithoutCache(ItemStack itemStack) {
-        if (itemStack == null || itemStack.isEmpty() || !itemStack.hasTag()) {
+        if (getItemStackTag(itemStack) == null) {
             return null;
         }
         
@@ -52,8 +68,8 @@ public class NbtRarityMatcher {
             return null;
         }
         
-        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-        if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+        if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
             return null;
         }
         

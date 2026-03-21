@@ -9,7 +9,7 @@ public interface StarDisplayStrategy {
     /**
      * 根据稀有度获取显示字符串
      * @param rarity 稀有度等级
-     * @return 显示的字符串，如果不应显示则返回空字符串
+     * @return 显示的字符串,如果不应显示则返回空字符串
      */
     String getDisplayString(int rarity);
     

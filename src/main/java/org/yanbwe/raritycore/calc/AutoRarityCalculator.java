@@ -7,10 +7,11 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.registry.RarityRegistry;
+import org.yanbwe.raritycore.mixin.SmithingTransformRecipeAccessor;
 
 import java.util.*;
 
@@ -132,7 +133,7 @@ public class AutoRarityCalculator {
         
         // 将所有已有配置的 A 类物品加入待处理列表
         for (ResourceLocation itemId : RarityRegistry.ITEM_RARITY_MAP.keySet()) {
-            Item item = ForgeRegistries.ITEMS.getValue(itemId);
+            Item item = BuiltInRegistries.ITEM.get(itemId);
             if (item != null) {
                 pendingItemList.add(item);
             }
@@ -152,40 +153,41 @@ public class AutoRarityCalculator {
         
         int smithingCount = 0;
         
-        for (Recipe<?> recipe : recipeManager.getRecipes()) {
+        for (RecipeHolder<?> holder : recipeManager.getRecipes()) {
+            Recipe<?> recipe = holder.value();
             if (!isSupportedRecipeType(recipe)) {
                 continue;
             }
-            
+
             // 特殊处理锻造台配方(使用 Mixin 获取配料)
             if (recipe instanceof SmithingTransformRecipe smithingRecipe) {
                 try {
                     // 使用 Mixin 访问器获取配料
-                    org.yanbwe.raritycore.mixin.SmithingTransformRecipeAccessor accessor = 
+                    org.yanbwe.raritycore.mixin.SmithingTransformRecipeAccessor accessor =
                         (org.yanbwe.raritycore.mixin.SmithingTransformRecipeAccessor) smithingRecipe;
-                    
+
                     Ingredient template = accessor.getTemplate();
                     Ingredient base = accessor.getBase();
                     Ingredient addition = accessor.getAddition();
-                    
+
                     // 将三个配料加入映射
                     addIngredientToMap(template, recipe);
                     addIngredientToMap(base, recipe);
                     addIngredientToMap(addition, recipe);
-                    
+
                     smithingCount++;
-                    
+
                 } catch (Exception e) {
-                    RarityCore.LOGGER.error("Failed to get ingredients from smithing recipe {}: {}", recipe.getId(), e.getMessage());
+                    RarityCore.LOGGER.error("Failed to get ingredients from smithing recipe {}: {}", holder.id(), e.getMessage());
                 }
             }
-            
+
             // 默认处理
             for (Ingredient ingredient : recipe.getIngredients()) {
                 if (ingredient != null && !ingredient.isEmpty()) {
                     for (ItemStack stack : ingredient.getItems()) {
                         Item item = stack.getItem();
-                        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+                        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
                         if (itemId != null) {
                             ingredientToRecipesMap.computeIfAbsent(itemId, k -> new ArrayList<>()).add(recipe);
                         }
@@ -208,7 +210,7 @@ public class AutoRarityCalculator {
         
         for (ItemStack stack : ingredient.getItems()) {
             Item item = stack.getItem();
-            ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
             if (itemId != null) {
                 ingredientToRecipesMap.computeIfAbsent(itemId, k -> new ArrayList<>()).add(recipe);
             }
@@ -275,7 +277,7 @@ public class AutoRarityCalculator {
      * 处理单个配料物品
      */
     private static void processMaterial(Item material) {
-        ResourceLocation materialId = ForgeRegistries.ITEMS.getKey(material);
+        ResourceLocation materialId = BuiltInRegistries.ITEM.getKey(material);
         if (materialId == null) {
             return;
         }
@@ -298,7 +300,7 @@ public class AutoRarityCalculator {
                 }
                 
                 Item outputItem = result.getItem();
-                ResourceLocation outputId = ForgeRegistries.ITEMS.getKey(outputItem);
+                ResourceLocation outputId = BuiltInRegistries.ITEM.getKey(outputItem);
                 
                 if (outputId == null) {
                     continue;
@@ -352,7 +354,7 @@ public class AutoRarityCalculator {
                 Item item = stack.getItem();
                 
                 // 先查注册表(数据包、FinalRarity.json、FinalRarityConfig文件夹)
-                ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+                ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
                 Integer rarity = null;
                 if (itemId != null) {
                     rarity = RarityRegistry.ITEM_RARITY_MAP.get(itemId);
@@ -450,7 +452,7 @@ public class AutoRarityCalculator {
             Item item = stack.getItem();
             
             // 先查注册表(数据包、FinalRarity.json、FinalRarityConfig文件夹)
-            ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
             Integer rarity = null;
             if (itemId != null) {
                 rarity = RarityRegistry.ITEM_RARITY_MAP.get(itemId);

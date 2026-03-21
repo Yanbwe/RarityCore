@@ -1,7 +1,9 @@
 package org.yanbwe.raritycore.compat.apotheosis;
 
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.fml.ModList;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.CustomData;
+import net.neoforged.fml.ModList;
 import org.yanbwe.raritycore.RarityCore;
 
 import java.lang.reflect.Method;
@@ -57,9 +59,9 @@ public class ApotheosisAdapter {
         }
         
         try {
-            // 首先检查是否有NBT数据中的稀有度信息(适用于装备)
-            if (itemStack.hasTag()) {
-                net.minecraft.nbt.CompoundTag tag = itemStack.getTag();
+            CustomData customData = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+            if (!customData.isEmpty()) {
+                net.minecraft.nbt.CompoundTag tag = customData.copyTag();
                 if (tag != null && tag.contains("affix_data")) {
                     return true;
                 }
@@ -87,9 +89,9 @@ public class ApotheosisAdapter {
         }
         
         try {
-            // 首先尝试从NBT数据中获取稀有度(适用于装备、宝石等所有物品)
-            if (itemStack.hasTag()) {
-                net.minecraft.nbt.CompoundTag tag = itemStack.getTag();
+            CustomData customData = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+            if (!customData.isEmpty()) {
+                net.minecraft.nbt.CompoundTag tag = customData.copyTag();
                 if (tag != null && tag.contains("affix_data")) {
                     net.minecraft.nbt.CompoundTag affixData = tag.getCompound("affix_data");
                     if (affixData.contains("rarity")) {
