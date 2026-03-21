@@ -16,12 +16,23 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.network.PacketDistributor;
 import org.slf4j.Logger;
+import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
 import org.yanbwe.raritycore.compat.CompatibilityManager;
 import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.data.RarityDataLoader;
+import org.yanbwe.raritycore.client.CacheInvalidationListener;
+import org.yanbwe.raritycore.calc.AutoRarityCalculator;
+import org.yanbwe.raritycore.calc.AutoRarityConfigManager;
+import org.yanbwe.raritycore.network.DelayedSyncManager;
+import org.yanbwe.raritycore.network.EditModeRequestPacket;
 import org.yanbwe.raritycore.network.IncrementalSyncPacket;
+import org.yanbwe.raritycore.network.NbtSyncManager;
+import org.yanbwe.raritycore.network.NbtSyncPacket;
 import org.yanbwe.raritycore.network.RaritySyncPacket;
+import org.yanbwe.raritycore.network.SyncBatchManager;
+import org.yanbwe.raritycore.nbtmatching.NbtConfigLoader;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.concurrent.Executors;
@@ -49,7 +60,7 @@ public class RarityCore {
         org.yanbwe.raritycore.config.ServerConfigManager.initializeServerConfigs();
         
         // 初始化双缓存系统
-        org.yanbwe.raritycore.cache.DualCacheManager.initialize();
+        DualCacheManager.initialize();
     }
     
     @SubscribeEvent
@@ -57,13 +68,13 @@ public class RarityCore {
         event.addListener(RarityDataLoader.INSTANCE);
         
         // 注册NBT匹配配置加载器(支持数据包加载)
-        event.addListener(new org.yanbwe.raritycore.nbtmatching.NbtConfigLoader());
+        event.addListener(new NbtConfigLoader());
         
         // 注册缓存失效监听器到事件总线
-        MinecraftForge.EVENT_BUS.register(org.yanbwe.raritycore.client.CacheInvalidationListener.class);
+        MinecraftForge.EVENT_BUS.register(CacheInvalidationListener.class);
         
         // 加载本地NBT匹配配置
-        org.yanbwe.raritycore.nbtmatching.NbtConfigLoader.loadAllConfigs();
+        NbtConfigLoader.loadAllConfigs();
     }
     
     private void commonSetup(final FMLCommonSetupEvent event) {
@@ -73,8 +84,8 @@ public class RarityCore {
         // Initialize network packets
         event.enqueueWork(RaritySyncPacket::initialize);
         event.enqueueWork(IncrementalSyncPacket::initialize);
-        event.enqueueWork(org.yanbwe.raritycore.network.NbtSyncPacket::initialize);
-        event.enqueueWork(org.yanbwe.raritycore.network.EditModeRequestPacket::initialize);
+        event.enqueueWork(NbtSyncPacket::initialize);
+        event.enqueueWork(EditModeRequestPacket::initialize);
         
         // Initialize all configurations (already handled in constructor, just to be safe)
         event.enqueueWork(ConfigManager::initializeConfigs);
@@ -114,7 +125,7 @@ public class RarityCore {
         syncScheduler.scheduleAtFixedRate(() -> {
             try {
                 // Check if sync is needed using batch manager
-                int pendingCount = org.yanbwe.raritycore.network.SyncBatchManager.getPendingOperationCount();
+                int pendingCount = SyncBatchManager.getPendingOperationCount();
                 if (pendingCount > 0) {
                     RarityRegistry.syncIncrementalChangesToClients();
                 }
@@ -127,7 +138,7 @@ public class RarityCore {
         syncScheduler.scheduleAtFixedRate(() -> {
             try {
                 // 每 tick 调用计算器
-                org.yanbwe.raritycore.calc.AutoRarityCalculator.tick();
+                AutoRarityCalculator.tick();
             } catch (Exception e) {
                 LOGGER.error("Error occurred during auto rarity calculation tick", e);
             }
@@ -169,7 +180,7 @@ public class RarityCore {
         RarityRegistry.clearChangeBuffer();
         
         // Shutdown delayed sync manager
-        org.yanbwe.raritycore.network.DelayedSyncManager.shutdown();
+        DelayedSyncManager.shutdown();
     }
     
     /**
@@ -177,10 +188,10 @@ public class RarityCore {
      */
     private void checkAndStartAutoCalculation() {
         // 检查 auto_rarity.json 是否存在
-        java.nio.file.Path autoRarityFile = org.yanbwe.raritycore.calc.AutoRarityConfigManager.getAutoRarityFilePath();
+        java.nio.file.Path autoRarityFile = AutoRarityConfigManager.getAutoRarityFilePath();
         if (!java.nio.file.Files.exists(autoRarityFile)) {
             // 文件不存在,开始自动计算
-            org.yanbwe.raritycore.calc.AutoRarityCalculator.startAutoCalculation();
+            AutoRarityCalculator.startAutoCalculation();
         } else {
             LOGGER.debug("Auto rarity config already exists, skipping calculation: {}", autoRarityFile);
         }
@@ -201,7 +212,7 @@ public class RarityCore {
             RaritySyncPacket.INSTANCE.send(PacketDistributor.PLAYER.with(() -> serverPlayer), packet);
             
             // Send NBT matching rules
-            org.yanbwe.raritycore.network.NbtSyncManager.syncNbtRulesToPlayer(serverPlayer);
+            NbtSyncManager.syncNbtRulesToPlayer(serverPlayer);
         }
     }
 }

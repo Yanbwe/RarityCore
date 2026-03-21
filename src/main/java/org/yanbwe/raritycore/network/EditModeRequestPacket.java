@@ -8,6 +8,7 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
+import org.yanbwe.raritycore.network.NetworkConstants;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.function.Supplier;
@@ -17,15 +18,14 @@ import java.util.function.Supplier;
  * 用于在多人游戏中,客户端向服务端发送编辑模式修改请求
  */
 public class EditModeRequestPacket {
-    public static final String PROTOCOL_VERSION = "1.0";
     public static SimpleChannel INSTANCE;
     
     public static void initialize() {
         INSTANCE = NetworkRegistry.newSimpleChannel(
-                new ResourceLocation(RarityCore.MODID, "edit_mode_request"),
-                () -> PROTOCOL_VERSION,
-                PROTOCOL_VERSION::equals,
-                PROTOCOL_VERSION::equals
+                new ResourceLocation(RarityCore.MODID, NetworkConstants.EDIT_MODE_REQUEST_CHANNEL),
+                () -> NetworkConstants.PROTOCOL_VERSION,
+                NetworkConstants.PROTOCOL_VERSION::equals,
+                NetworkConstants.PROTOCOL_VERSION::equals
         );
         
         // 服务端接收客户端的请求包

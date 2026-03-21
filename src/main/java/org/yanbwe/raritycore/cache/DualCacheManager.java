@@ -15,12 +15,12 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 双缓存管理系统
- * ID缓存：基于物品ID的永久性缓存，预加载所有注册物品
- * NBT缓存：基于完整NBT数据的LRU缓存，动态构建
+ * ID缓存:基于物品ID的永久性缓存,预加载所有注册物品
+ * NBT缓存:基于完整NBT数据的LRU缓存,动态构建
  */
 public class DualCacheManager {
     
-    // ID缓存 - 永久性，预加载所有物品
+    // ID缓存 - 永久性,预加载所有物品
     private static Cache<ResourceLocation, Integer> idCache;
     
     // NBT缓存 - LRU动态管理
@@ -56,34 +56,42 @@ public class DualCacheManager {
      * 创建缓存实例
      */
     private static void createCaches() {
-        // ID缓存：无大小限制，永不过期
+        // ID缓存:无大小限制,永不过期
         idCache = CacheBuilder.newBuilder()
             .build();
         
-        // NBT缓存：LRU策略，使用动态容量
+        // NBT缓存:LRU策略,使用动态容量
+        nbtCache = createNbtCache();
+    }
+    
+    /**
+     * 创建NBT缓存
+     */
+    private static Cache<String, Integer> createNbtCache() {
+        // 获取动态容量
         int actualNbtCacheSize = config.getActualMaxNbtCacheSize();
-        nbtCache = CacheBuilder.newBuilder()
+        
+        // 创建NBT缓存
+        Cache<String, Integer> cache = CacheBuilder.newBuilder()
             .maximumSize(actualNbtCacheSize)
             .expireAfterWrite(60, TimeUnit.MINUTES)
             .expireAfterAccess(30, TimeUnit.MINUTES)
-            .removalListener(notification -> {
-                // Removed debug log to reduce log spam
-            })
             .build();
         
         RarityCore.LOGGER.info("NBT cache created with dynamic capacity: {} entries", actualNbtCacheSize);
+        return cache;
     }
     
     /**
      * 预加载 ID 缓存
-     * 注意：仅从配置映射中读取已配置的稀有度，不调用 RarityRegistry.getRarity()
+     * 注意:仅从配置映射中读取已配置的稀有度,不调用 RarityRegistry.getRarity()
      * 以避免触发某些物品的 getRarity() 方法导致 ClientLevel 数组越界
      */
     private static void preloadIdCache() {
         int successCount = 0;
         int errorCount = 0;
             
-        // 直接从配置映射中预加载，避免调用物品的 getRarity() 方法
+        // 直接从配置映射中预加载,避免调用物品的 getRarity() 方法
         try {
             for (var entry : org.yanbwe.raritycore.registry.RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
                 try {
@@ -125,8 +133,8 @@ public class DualCacheManager {
         Integer idResult = idCache.getIfPresent(idKey);
         if (idResult != null) {
             CacheMetrics.recordHit(CacheType.ID);
-            // 关键修复：移除强制返回 null 的逻辑，直接返回 ID 缓存结果
-            // 这样可以让没有 NBT 配置的物品直接使用 ID 缓存，避免重复计算
+            // 关键修复:移除强制返回 null 的逻辑,直接返回 ID 缓存结果
+            // 这样可以让没有 NBT 配置的物品直接使用 ID 缓存,避免重复计算
             return idResult;
         }
         
@@ -154,12 +162,12 @@ public class DualCacheManager {
     }
     
     /**
-     * 处理配置重载（带防抖机制）
+     * 处理配置重载(带防抖机制)
      */
     public static void handleConfigReload() {
         long currentTime = System.currentTimeMillis();
         
-        // 防抖检查：如果正在重载或者距离上次重载时间太短，则跳过
+        // 防抖检查:如果正在重载或者距离上次重载时间太短,则跳过
         if (isReloading || (currentTime - lastReloadTime) < MIN_RELOAD_INTERVAL) {
             return;
         }
@@ -183,7 +191,7 @@ public class DualCacheManager {
             preloadIdCache();
             
             // 重新创建NBT缓存以应用新的容量设置
-            recreateNbtCache();
+            nbtCache = createNbtCache();
             
             RarityCore.LOGGER.info("Dual cache system reloaded - ID cache: {}, NBT cache: {}", 
                 idCache.size(), nbtCache.size());
@@ -192,28 +200,7 @@ public class DualCacheManager {
         }
     }
     
-    /**
-     * 重新创建NBT缓存（用于配置变更时）
-     */
-    private static void recreateNbtCache() {
-        // 获取新的动态容量
-        int newCapacity = config.getActualMaxNbtCacheSize();
-        
-        // 创建新的NBT缓存
-        Cache<String, Integer> newNbtCache = CacheBuilder.newBuilder()
-            .maximumSize(newCapacity)
-            .expireAfterWrite(60, TimeUnit.MINUTES)
-            .expireAfterAccess(30, TimeUnit.MINUTES)
-            .removalListener(notification -> {
-                // Removed debug log to reduce log spam
-            })
-            .build();
-        
-        // 替换旧的缓存引用
-        nbtCache = newNbtCache;
-        
-        RarityCore.LOGGER.info("NBT cache recreated with new capacity: {} entries", newCapacity);
-    }
+    
     
     /**
      * 生成ID缓存键

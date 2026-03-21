@@ -6,6 +6,7 @@ import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.network.NetworkConstants;
 import org.yanbwe.raritycore.nbtmatching.NbtMatchRule;
 import org.yanbwe.raritycore.nbtmatching.NbtCondition;
 import org.yanbwe.raritycore.nbtmatching.SimpleNbtCache;
@@ -21,15 +22,14 @@ import java.util.function.Supplier;
  * 用于将服务端的NBT匹配配置同步到客户端
  */
 public class NbtSyncPacket {
-    public static final String PROTOCOL_VERSION = "1.0";
     public static SimpleChannel INSTANCE;
     
     public static void initialize() {
         INSTANCE = NetworkRegistry.newSimpleChannel(
-                new ResourceLocation(RarityCore.MODID, "nbt_sync"),
-                () -> PROTOCOL_VERSION,
-                PROTOCOL_VERSION::equals,
-                PROTOCOL_VERSION::equals
+                new ResourceLocation(RarityCore.MODID, NetworkConstants.NBT_SYNC_CHANNEL),
+                () -> NetworkConstants.PROTOCOL_VERSION,
+                NetworkConstants.PROTOCOL_VERSION::equals,
+                NetworkConstants.PROTOCOL_VERSION::equals
         );
         
         INSTANCE.messageBuilder(NbtSyncPacket.class, 0)

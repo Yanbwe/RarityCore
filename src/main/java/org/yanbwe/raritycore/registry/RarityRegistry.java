@@ -9,6 +9,7 @@ import net.minecraft.world.item.Rarity;
 import org.yanbwe.raritycore.RarityCore;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.network.simple.SimpleChannel;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.jetbrains.annotations.NotNull;
@@ -233,9 +234,7 @@ public class RarityRegistry {
             RaritySyncPacket packet = new RaritySyncPacket(currentData);
             
             // 发送到所有在线玩家
-            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                RaritySyncPacket.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
-            }
+            sendPacketToAllPlayers(packet, RaritySyncPacket.INSTANCE);
         }
     }
     
@@ -252,8 +251,18 @@ public class RarityRegistry {
             CHANGE_OPERATIONS_BUFFER.clear();
             
             // 发送到所有在线玩家
+            sendPacketToAllPlayers(packet, IncrementalSyncPacket.INSTANCE);
+        }
+    }
+    
+    /**
+     * 向所有在线玩家发送数据包
+     */
+    private static <T> void sendPacketToAllPlayers(T packet, SimpleChannel channel) {
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null) {
             for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                IncrementalSyncPacket.INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
+                channel.send(PacketDistributor.PLAYER.with(() -> player), packet);
             }
         }
     }
@@ -404,6 +413,23 @@ public class RarityRegistry {
     }
     
     /**
+     * 获取物品的稀有度等级
+     * 优先级顺序:神化模组映射 > 本模组稀有度(配置和数据包) > 原版映射 > 默认值
+     * @param item 要查稀有度的物品
+     * @return 物品的稀有度等级(1-7)
+     */
+    public static @NotNull Integer getRarity(@Nullable Item item) {
+        if (item != null) {
+            ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+            if (itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
+                net.minecraft.world.item.ItemStack tempStack = new net.minecraft.world.item.ItemStack(item);
+                return getRarityInternal(itemId, tempStack, item);
+            }
+        }
+        return 1; // 默认为普通
+    }
+    
+    /**
      * 统一的稀有度获取逻辑
      * 优先级顺序:NBT匹配 > 神化模组稀有度 > 本模组稀有度(配置和数据包) > 原版稀有度映射
      * @param itemId 物品资源位置
@@ -466,6 +492,7 @@ public class RarityRegistry {
                         return mappedVanilla;
                     }
                 } catch (Throwable e) { // 捕获所有异常包括Error
+                    RarityCore.LOGGER.debug("Vanilla rarity check failed for item: {}", itemId, e);
                 }
             } else {
             }
@@ -493,66 +520,7 @@ public class RarityRegistry {
         }
     }
     
-    /**
-     * 获取物品的稀有度等级
-     * 优先级顺序:神化模组映射 > 本模组稀有度(配置和数据包) > 原版映射 > 默认值
-     * @param item 要查稀有度的物品
-     * @return 物品的稀有度等级(1-7)
-     */
-    public static @NotNull Integer getRarity(@Nullable Item item) {
-        if (item != null) {
-            ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-            if (itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-                net.minecraft.world.item.ItemStack tempStack = new net.minecraft.world.item.ItemStack(item);
-                
-                // 首先检查神化模组稀有度(最高优先级)
-                if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity()) {
-                    try {
-                        Integer apotheosisRarity = org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(tempStack);
-                        if (apotheosisRarity != null) {
-                            return apotheosisRarity; // 返回映射后的神化稀有度
-                        }
-                    } catch (Exception e) {
-                        RarityCore.LOGGER.debug("Apotheosis compatibility check failed for item: {}", itemId, e);
-                    }
-                }
-                
-                // 然后检查本模组的稀有度配置(包括配置文件和数据包)- 最高优先级
-                Integer configuredRarity = ITEM_RARITY_MAP.get(itemId);
-                if (configuredRarity != null) {
-                    return configuredRarity;
-                }
-                
-                // 然后检查自动计算的稀有度配置 - 中等优先级(低于 FinalRarity,高于原版)
-                Integer autoRarity = AUTO_RARITY_MAP.get(itemId);
-                if (autoRarity != null) {
-                    return autoRarity;
-                }
-                
-                // 最后检查原版稀有度映射(最低优先级)
-                if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
-                    // 先检测API可用性
-                    if (isVanillaRarityApiAvailable()) {
-                        try {
-                            net.minecraft.world.item.Rarity vanillaRarity = tempStack.getRarity();
-                            if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
-                                return 3; // 罕见
-                            } else if (vanillaRarity == net.minecraft.world.item.Rarity.RARE) {
-                                return 4; // 史诗
-                            } else if (vanillaRarity == net.minecraft.world.item.Rarity.EPIC) {
-                                return 5; // 传说
-                            }
-                        } catch (Throwable e) { // 捕获所有异常包括Error
-                            RarityCore.LOGGER.debug("Vanilla rarity check failed for item: {}", itemId, e);
-                        }
-                    } else {
-                        RarityCore.LOGGER.debug("Skipping vanilla rarity check for item {} - API not available", itemId);
-                    }
-                }
-            }
-        }
-        return 1; // 默认为普通
-    }
+
     
     /**
      * 使用重试机制将所有稀有度数据同步到客户端(全量同步)

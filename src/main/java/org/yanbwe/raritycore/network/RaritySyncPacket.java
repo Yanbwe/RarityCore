@@ -6,6 +6,7 @@ import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.network.NetworkConstants;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.HashMap;
@@ -13,15 +14,14 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public class RaritySyncPacket {
-    public static final String PROTOCOL_VERSION = "1.0";
     public static SimpleChannel INSTANCE;
     
     public static void initialize() {
         INSTANCE = NetworkRegistry.newSimpleChannel(
-                new ResourceLocation(RarityCore.MODID, "rarity_sync"),
-                () -> PROTOCOL_VERSION,
-                PROTOCOL_VERSION::equals,
-                PROTOCOL_VERSION::equals
+                new ResourceLocation(RarityCore.MODID, NetworkConstants.RARITY_SYNC_CHANNEL),
+                () -> NetworkConstants.PROTOCOL_VERSION,
+                NetworkConstants.PROTOCOL_VERSION::equals,
+                NetworkConstants.PROTOCOL_VERSION::equals
         );
         
         INSTANCE.messageBuilder(RaritySyncPacket.class, 0)
