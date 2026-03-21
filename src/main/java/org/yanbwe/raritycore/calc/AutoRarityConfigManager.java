@@ -44,6 +44,7 @@ public class AutoRarityConfigManager {
     /**
      * 加载 auto_rarity.json 到注册表
      */
+    @SuppressWarnings("null")
     public static void loadAutoRarityConfig() {
         try {
             // 1. 先清理上次加载的 auto 配置
@@ -131,6 +132,7 @@ public class AutoRarityConfigManager {
      * 删除自动稀有度文件,并返回被删除的物品 ID 列表
      * @return 被删除的物品 ID 列表
      */
+    @SuppressWarnings("null")
     public static java.util.List<ResourceLocation> deleteAutoRarityFile() {
         java.util.List<ResourceLocation> removedIds = new java.util.ArrayList<>();
         try {

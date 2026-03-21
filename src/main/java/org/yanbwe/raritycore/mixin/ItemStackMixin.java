@@ -50,10 +50,7 @@ public class ItemStackMixin {
             return;
         }
         
-        // 如果没有注册稀有度,则不修改名称颜色
-        if (rarity == null) {
-            return;
-        }
+
 
         // 标准化稀有度值,遵循模组的包容性原则
         rarity = RarityValidator.normalizeRarity(rarity);
@@ -91,12 +88,5 @@ public class ItemStackMixin {
         return RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId);
     }
     
-    /**
-     * 根据稀有度等级获取对应颜色
-     * @param rarity 稀有度等级 (2-7)
-     * @return ChatFormatting颜色
-     */
-    private ChatFormatting getRarityColor(int rarity) {
-        return RarityColorUtil.getRarityChatColor(rarity);
-    }
+
 }

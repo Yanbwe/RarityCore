@@ -152,6 +152,7 @@ public class EditModeManager {
      * @return 是否成功修改
      */
     @OnlyIn(Dist.CLIENT)
+    @SuppressWarnings("null")
     public static boolean modifyItemRarity(ItemStack itemStack) {
         if (!editModeEnabled || itemStack.isEmpty()) {
             return false;

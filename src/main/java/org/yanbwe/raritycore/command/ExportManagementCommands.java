@@ -27,6 +27,7 @@ import java.util.Map;
  */
 public class ExportManagementCommands {
     
+    @SuppressWarnings("null")
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("raritycore")
             .requires(source -> source.hasPermission(2))
@@ -58,6 +59,7 @@ public class ExportManagementCommands {
     /**
      * 显示稀有度配置详情
      */
+    @SuppressWarnings("null")
     private static int showDetails(CommandSourceStack source) {
         // 统计每个模组的物品数量
         Map<String, Integer> modItemCount = new HashMap<>();
@@ -88,6 +90,7 @@ public class ExportManagementCommands {
     /**
      * 显示NBT匹配配置详情
      */
+    @SuppressWarnings("null")
     private static int showNbtDetails(CommandSourceStack source) {
         try {
             // 获取NBT规则统计信息

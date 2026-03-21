@@ -1,7 +1,6 @@
 package org.yanbwe.raritycore.config;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.util.ConfigLoaderUtils;
 
@@ -14,7 +13,7 @@ import java.nio.file.Path;
  * 负责加载config/raritycore/FinalRarityConfig文件夹中的所有JSON配置文件
  */
 public class FinalRarityConfigFolderLoader {
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
 
     /**
      * 加载FinalRarityConfig文件夹中的所有JSON文件

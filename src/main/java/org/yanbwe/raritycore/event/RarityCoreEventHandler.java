@@ -61,10 +61,10 @@ public class RarityCoreEventHandler {
         factory.getSchedulerService().stopScheduledTasks();
         
         // 清空变更缓冲区
-        factory.getSyncManager().clearChangeBuffer();
+        org.yanbwe.raritycore.network.SyncManager.clearChangeBuffer();
         
         // 关闭延迟同步管理器
-        factory.getDelayedSyncManager().shutdown();
+        org.yanbwe.raritycore.network.DelayedSyncManager.shutdown();
     }
     
     /**
@@ -73,8 +73,7 @@ public class RarityCoreEventHandler {
      */
     @SubscribeEvent
     public void registerCommands(RegisterCommandsEvent event) {
-        ServiceFactory factory = ServiceFactory.getInstance();
-        factory.getRarityCoreCommands().register(event.getDispatcher());
+        org.yanbwe.raritycore.command.RarityCoreCommands.register(event.getDispatcher());
     }
     
     /**
@@ -83,14 +82,13 @@ public class RarityCoreEventHandler {
      */
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        ServiceFactory factory = ServiceFactory.getInstance();
         // 登录时向玩家发送完整稀有度数据
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             // 发送完整稀有度数据
-            factory.getSyncManager().syncRarityToClients(factory.getRarityRegistry().getItemRarityMap());
+            org.yanbwe.raritycore.network.SyncManager.syncRarityToClients(org.yanbwe.raritycore.registry.RarityRegistry.getItemRarityMap());
             
             // 发送NBT匹配规则
-            factory.getNbtSyncManager().syncNbtRulesToPlayer(serverPlayer);
+            org.yanbwe.raritycore.network.NbtSyncManager.syncNbtRulesToPlayer(serverPlayer);
         }
     }
 }

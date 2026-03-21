@@ -43,16 +43,7 @@ public class AutoRarityCalculator {
         return maxRarityCache.containsKey(item);
     }
     
-    /**
-     * 判断物品是否为 B 类物品(无配置,可以计算)
-     * @param itemId 物品 ID
-     * @param item 物品对象
-     * @return 如果是 B 类返回 true
-     */
-    private static boolean isTypeB(ResourceLocation itemId, Item item) {
-        // 不是 A 类且不是 C 类,就是 B 类
-        return !isTypeA(itemId) && !isTypeC(item);
-    }
+
     
     // 轮次计数器
     private static int currentRound = 0;
@@ -75,8 +66,7 @@ public class AutoRarityCalculator {
     // 预构建的配料→配方映射(性能优化)
     private static Map<ResourceLocation, List<Recipe<?>>> ingredientToRecipesMap = new HashMap<>();
     
-    // 统计信息
-    private static int newlyAddedCount = 0;
+
     
     // 进度跟踪
     private static int totalItemsInRound = 0; // 本轮总物品数
@@ -111,7 +101,6 @@ public class AutoRarityCalculator {
         
         isCalculating = true;
         currentRound = 1;
-        newlyAddedCount = 0;
         
         // 初始化数据结构
         pendingItemList = new ArrayList<>();
@@ -303,7 +292,7 @@ public class AutoRarityCalculator {
                 List<Integer> ingredientRarities = getIngredientRaritiesForNewAlgorithm(recipe);
                 
                 // 计算产物稀有度
-                ItemStack result = recipe.getResultItem(null);
+                ItemStack result = recipe.getResultItem(net.minecraft.core.RegistryAccess.EMPTY);
                 if (result.isEmpty()) {
                     continue;
                 }
@@ -552,7 +541,7 @@ public class AutoRarityCalculator {
         if (recipe instanceof ShapedRecipe || recipe instanceof ShapelessRecipe) {
             // 工作台配方:检查数量比例
             int ingredientCount = recipe.getIngredients().size();
-            int outputCount = recipe.getResultItem(null).getCount();
+            int outputCount = recipe.getResultItem(net.minecraft.core.RegistryAccess.EMPTY).getCount();
             
             // 使用浮点数除法避免精度丢失
             if (outputCount > 0 && (double) ingredientCount / outputCount >= 2.0) {
@@ -595,7 +584,6 @@ public class AutoRarityCalculator {
             // 非首次计算仅更新历史记录,不加入当前轮结果,避免无限循环
             if (isFirstTime) {
                 currentRoundResults.put(outputItem, newRarity);
-                newlyAddedCount++;
             }
         }
     }
@@ -752,6 +740,7 @@ public class AutoRarityCalculator {
     /**
      * 发送世界消息
      */
+    @SuppressWarnings("null")
     private static void sendToAllPlayers(net.minecraft.network.chat.Component message) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
@@ -853,7 +842,7 @@ public class AutoRarityCalculator {
         }
         
         // 删除旧文件
-        java.util.List<ResourceLocation> removedIds = AutoRarityConfigManager.deleteAutoRarityFile();
+        AutoRarityConfigManager.deleteAutoRarityFile();
         AutoRarityConfigManager.cleanupAutoNbtFiles();
         
         // 清空所有缓存和数据结构
@@ -863,7 +852,6 @@ public class AutoRarityCalculator {
         itemFirstRoundMap = new HashMap<>();
         maxRarityCache = new HashMap<>();
         ingredientToRecipesMap = new HashMap<>();
-        newlyAddedCount = 0;
         
         // 开始计算
         startAutoCalculation();

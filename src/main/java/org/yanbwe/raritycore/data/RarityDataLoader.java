@@ -13,6 +13,7 @@ import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityConstants;
 
 import java.util.Map;
+import javax.annotation.Nonnull;
 
 public class RarityDataLoader extends SimpleJsonResourceReloadListener {
     /**
@@ -32,7 +33,8 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener {
      * @param profiler 性能统计器
      */
     @Override
-    protected void apply(Map<ResourceLocation, JsonElement> jsons, ResourceManager resourceManager, ProfilerFiller profiler) {
+    @SuppressWarnings("null")
+    protected void apply(@Nonnull Map<ResourceLocation, JsonElement> jsons, @Nonnull ResourceManager resourceManager, @Nonnull ProfilerFiller profiler) {
         // 遍历所有加载的JSON配置文件
         for (Map.Entry<ResourceLocation, JsonElement> entry : jsons.entrySet()) {
             ResourceLocation location = entry.getKey();

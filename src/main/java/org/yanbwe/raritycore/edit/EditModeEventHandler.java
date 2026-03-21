@@ -39,6 +39,7 @@ public class EditModeEventHandler {
     }
     
     @SubscribeEvent(priority = EventPriority.HIGHEST)
+    @SuppressWarnings("null")
     public static void onMouseClick(ScreenEvent.MouseButtonPressed.Pre event) {
         // 只在编辑模式下处理鼠标点击
         if (!EditModeManager.isEditModeEnabled()) {
@@ -101,6 +102,7 @@ public class EditModeEventHandler {
     /**
      * 处理数字键按下事件
      */
+    @SuppressWarnings("null")
     private static void handleNumberKeyPress(int keyCode) {
         if (!EditModeManager.isEditModeEnabled()) {
             return;
@@ -126,6 +128,7 @@ public class EditModeEventHandler {
     /**
      * 处理0键按下事件(切换删除模式)
      */
+    @SuppressWarnings("null")
     private static void handleZeroKeyPress() {
         if (!EditModeManager.isEditModeEnabled()) {
             return;

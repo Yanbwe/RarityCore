@@ -15,7 +15,6 @@ public class ApotheosisAdapter {
     private static boolean isInitialized = false;
     private static Class<?> lootRarityClass;
     private static Class<?> rarityRegistryClass;
-    private static Method getMaterialMethod;
     private static Method isMaterialMethod;
     private static Method getMaterialRarityMethod;
     
@@ -38,7 +37,6 @@ public class ApotheosisAdapter {
             rarityRegistryClass = Class.forName("dev.shadowsoffire.apotheosis.adventure.loot.RarityRegistry");
             
             // 获取必要的方法
-            getMaterialMethod = lootRarityClass.getMethod("getMaterial");
             isMaterialMethod = rarityRegistryClass.getMethod("isMaterial", net.minecraft.world.item.Item.class);
             getMaterialRarityMethod = rarityRegistryClass.getMethod("getMaterialRarity", net.minecraft.world.item.Item.class);
             
@@ -60,8 +58,11 @@ public class ApotheosisAdapter {
         
         try {
             // 首先检查是否有NBT数据中的稀有度信息(适用于装备)
-            if (itemStack.hasTag() && itemStack.getTag().contains("affix_data")) {
-                return true;
+            if (itemStack.hasTag()) {
+                net.minecraft.nbt.CompoundTag tag = itemStack.getTag();
+                if (tag != null && tag.contains("affix_data")) {
+                    return true;
+                }
             }
             
             // 检查物品是否是稀有度材料(适用于材料物品)
@@ -87,11 +88,14 @@ public class ApotheosisAdapter {
         
         try {
             // 首先尝试从NBT数据中获取稀有度(适用于装备、宝石等所有物品)
-            if (itemStack.hasTag() && itemStack.getTag().contains("affix_data")) {
-                net.minecraft.nbt.CompoundTag affixData = itemStack.getTag().getCompound("affix_data");
-                if (affixData.contains("rarity")) {
-                    String rarityString = affixData.getString("rarity");
-                    return mapApotheosisRarityString(rarityString);
+            if (itemStack.hasTag()) {
+                net.minecraft.nbt.CompoundTag tag = itemStack.getTag();
+                if (tag != null && tag.contains("affix_data")) {
+                    net.minecraft.nbt.CompoundTag affixData = tag.getCompound("affix_data");
+                    if (affixData.contains("rarity")) {
+                        String rarityString = affixData.getString("rarity");
+                        return mapApotheosisRarityString(rarityString);
+                    }
                 }
             }
             
@@ -181,7 +185,6 @@ public class ApotheosisAdapter {
         isInitialized = false;
         lootRarityClass = null;
         rarityRegistryClass = null;
-        getMaterialMethod = null;
         isMaterialMethod = null;
         getMaterialRarityMethod = null;
     }

@@ -28,6 +28,7 @@ import java.nio.file.Path;
  */
 public class RarityManagementCommands {
     
+    @SuppressWarnings("null")
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("raritycore")
             .requires(source -> source.hasPermission(2))

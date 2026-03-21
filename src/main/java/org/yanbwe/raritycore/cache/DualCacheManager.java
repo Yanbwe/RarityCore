@@ -84,6 +84,7 @@ public class DualCacheManager {
      * 注意:仅从配置映射中读取已配置的稀有度,不调用 RarityRegistry.getRarity()
      * 以避免触发某些物品的 getRarity() 方法导致 ClientLevel 数组越界
      */
+    @SuppressWarnings("null")
     private static void preloadIdCache() {
         // 使用线程安全的原子计数器
         java.util.concurrent.atomic.AtomicInteger successCount = new java.util.concurrent.atomic.AtomicInteger(0);
@@ -112,6 +113,7 @@ public class DualCacheManager {
     /**
      * 获取缓存的稀有度
      */
+    @SuppressWarnings("null")
     public static Integer getCachedRarity(ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) {
             return null;
@@ -144,6 +146,7 @@ public class DualCacheManager {
     /**
      * 缓存稀有度
      */
+    @SuppressWarnings("null")
     public static void cacheRarity(ItemStack itemStack, Integer rarity) {
         if (itemStack == null || itemStack.isEmpty() || rarity == null) {
             return;
@@ -219,18 +222,21 @@ public class DualCacheManager {
         StringBuilder key = new StringBuilder(itemId.toString());
         
         if (itemStack.hasTag() && itemStack.getTag() != null) {
-            try {
-                // 使用MD5哈希算法生成NBT数据的哈希值,减少缓存键长度
-                java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-                byte[] hash = md.digest(itemStack.getTag().toString().getBytes());
-                StringBuilder hexString = new StringBuilder();
-                for (byte b : hash) {
-                    hexString.append(String.format("%02x", b));
+            net.minecraft.nbt.CompoundTag tag = itemStack.getTag();
+            if (tag != null) {
+                try {
+                    // 使用MD5哈希算法生成NBT数据的哈希值,减少缓存键长度
+                    java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+                    byte[] hash = md.digest(tag.toString().getBytes());
+                    StringBuilder hexString = new StringBuilder();
+                    for (byte b : hash) {
+                        hexString.append(String.format("%02x", b));
+                    }
+                    key.append("|nbt:hash:").append(hexString.toString());
+                } catch (Exception e) {
+                    // 哈希生成失败时回退到原始方式
+                    key.append("|nbt:").append(tag.toString());
                 }
-                key.append("|nbt:hash:").append(hexString.toString());
-            } catch (Exception e) {
-                // 哈希生成失败时回退到原始方式
-                key.append("|nbt:").append(itemStack.getTag().toString());
             }
         }
         

@@ -29,6 +29,7 @@ import org.yanbwe.raritycore.util.RarityValidator;
 public class RarityTooltipHandler {
 
     @SubscribeEvent
+    @SuppressWarnings("null")
     public static void onItemTooltip(ItemTooltipEvent event) {
         // 检查是否启用工具提示插入
         if (!ClientConfigManager.isEnableTooltipInsert()) {

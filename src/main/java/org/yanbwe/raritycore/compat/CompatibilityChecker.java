@@ -21,6 +21,7 @@ public class CompatibilityChecker {
     /**
      * 向所有在线玩家发送兼容性提示消息
      */
+    @SuppressWarnings("null")
     public static void notifyPlayersOfCompatibilityIssue() {
         // 检查配置是否启用警告
         if (!org.yanbwe.raritycore.config.ServerConfigManager.isEnableGetRarityWarning()) {

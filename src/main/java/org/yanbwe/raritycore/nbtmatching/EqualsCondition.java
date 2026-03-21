@@ -1,7 +1,6 @@
 package org.yanbwe.raritycore.nbtmatching;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 
 import java.util.List;
@@ -96,51 +95,9 @@ public class EqualsCondition extends NbtCondition {
         return actualString.equals(expectedString);
     }
     
-    private boolean compareListTags(ListTag actualList, Object expected) {
-        if (!(expected instanceof java.util.List)) {
-            return false;
-        }
-        
-        java.util.List<?> expectedList = (java.util.List<?>) expected;
-        if (actualList.size() != expectedList.size()) {
-            return false;
-        }
-        
-        for (int i = 0; i < actualList.size(); i++) {
-            Tag actualElement = actualList.get(i);
-            Object expectedElement = expectedList.get(i);
-            if (!compareTags(actualElement, expectedElement)) {
-                return false;
-            }
-        }
-        
-        return true;
-    }
+
     
-    private boolean compareCompoundTags(CompoundTag actualCompound, Object expected) {
-        if (!(expected instanceof java.util.Map)) {
-            return false;
-        }
-        
-        java.util.Map<?, ?> expectedMap = (java.util.Map<?, ?>) expected;
-        if (actualCompound.size() != expectedMap.size()) {
-            return false;
-        }
-        
-        for (String key : actualCompound.getAllKeys()) {
-            if (!expectedMap.containsKey(key)) {
-                return false;
-            }
-            
-            Tag actualValue = actualCompound.get(key.toString());
-            Object expectedValue = expectedMap.get(key);
-            if (!compareTags(actualValue, expectedValue)) {
-                return false;
-            }
-        }
-        
-        return true;
-    }
+
     
     public Object getExpectedValue() {
         return expectedValue;

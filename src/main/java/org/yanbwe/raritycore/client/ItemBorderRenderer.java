@@ -85,6 +85,7 @@ public class ItemBorderRenderer {
      * @param x X坐标
      * @param y Y坐标
      */
+    @SuppressWarnings("null")
     private static void renderTextureBorder(GuiGraphics guiGraphics, int rarity, int x, int y) {
         // 构造纹理路径,例如: raritycore:textures/border/rarity_1.png
         String textureName = "rarity_" + rarity;
