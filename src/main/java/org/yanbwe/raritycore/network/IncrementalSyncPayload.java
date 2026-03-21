@@ -13,9 +13,10 @@ import org.yanbwe.raritycore.registry.RarityRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import javax.annotation.Nonnull;
 
 public record IncrementalSyncPayload(List<ChangeOperationData> changeOperations) implements CustomPacketPayload {
-    public static final Type<IncrementalSyncPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.INCREMENTAL_SYNC_CHANNEL));
+    public static final CustomPacketPayload.Type<IncrementalSyncPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.INCREMENTAL_SYNC_CHANNEL));
     @SuppressWarnings("unchecked")
     public static final StreamCodec<FriendlyByteBuf, IncrementalSyncPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.collection(ArrayList::new, (StreamCodec<FriendlyByteBuf, ChangeOperationData>) (StreamCodec<?, ChangeOperationData>) ChangeOperationData.STREAM_CODEC),
@@ -88,7 +89,7 @@ public record IncrementalSyncPayload(List<ChangeOperationData> changeOperations)
         @SuppressWarnings("unchecked")
         public static final StreamCodec<FriendlyByteBuf, ChangeOperationData> STREAM_CODEC = new StreamCodec<>() {
             @Override
-            public void encode(FriendlyByteBuf buf, ChangeOperationData value) {
+            public void encode(FriendlyByteBuf buf, @Nonnull ChangeOperationData value) {
                 OPERATION_TYPE_CODEC.encode(buf, value.type());
                 RESOURCE_LOCATION_CODEC.encode(buf, value.itemId());
                 OPTIONAL_VAR_INT.encode(buf, Optional.ofNullable(value.rarity()));

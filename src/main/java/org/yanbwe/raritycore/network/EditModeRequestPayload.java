@@ -13,7 +13,7 @@ import org.yanbwe.raritycore.command.RarityCoreCommands;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 public record EditModeRequestPayload(ResourceLocation itemId, int rarity, boolean deleteMode) implements CustomPacketPayload {
-    public static final Type<EditModeRequestPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.EDIT_MODE_REQUEST_CHANNEL));
+    public static final CustomPacketPayload.Type<EditModeRequestPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.EDIT_MODE_REQUEST_CHANNEL));
     public static final StreamCodec<FriendlyByteBuf, EditModeRequestPayload> STREAM_CODEC = StreamCodec.composite(
             ResourceLocation.STREAM_CODEC,
             EditModeRequestPayload::itemId,

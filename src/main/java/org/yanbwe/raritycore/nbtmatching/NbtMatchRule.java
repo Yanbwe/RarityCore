@@ -26,11 +26,11 @@ public class NbtMatchRule {
      * 构造函数
      * @param itemId 物品ID
      * @param conditions 匹配条件列表
-     * @param priority 优先级（数值越大优先级越高）
-     * @param rarity 稀有度等级（1-7）
+     * @param priority 优先级(数值越大优先级越高)
+     * @param rarity 稀有度等级(1-7)
      * @param enabled 是否启用
-     * @param fuzzyMatch 是否启用模糊匹配（整个规则级别）
-     * @param description 规则描述（可选）
+     * @param fuzzyMatch 是否启用模糊匹配(整个规则级别)
+     * @param description 规则描述(可选)
      */
     public NbtMatchRule(ResourceLocation itemId, List<NbtCondition> conditions, 
                        int priority, int rarity, boolean enabled, boolean fuzzyMatch, String description) {
@@ -44,7 +44,7 @@ public class NbtMatchRule {
     }
     
     /**
-     * 简化构造函数（默认启用，精确匹配，无描述）
+     * 简化构造函数(默认启用,精确匹配,无描述)
      */
     public NbtMatchRule(ResourceLocation itemId, List<NbtCondition> conditions, 
                        int priority, int rarity) {
@@ -68,7 +68,7 @@ public class NbtMatchRule {
 
         CompoundTag nbt = customData.copyTag();
         
-        // 无论是模糊匹配还是精确匹配，条件之间都是AND关系
+        // 无论是模糊匹配还是精确匹配,条件之间都是AND关系
         // 先检查所有条件是否满足
         for (NbtCondition condition : conditions) {
             if (!condition.matches(nbt)) {
@@ -76,18 +76,18 @@ public class NbtMatchRule {
             }
         }
         
-        // 所有条件都满足后，根据匹配类型决定是否最终匹配成功
+        // 所有条件都满足后,根据匹配类型决定是否最终匹配成功
         if (fuzzyMatch) {
-            // 模糊匹配：条件满足即可，允许额外标签
+            // 模糊匹配:条件满足即可,允许额外标签
             return true;
         } else {
-            // 精确匹配：除了满足条件外，还要检查是否有多余标签
+            // 精确匹配:除了满足条件外,还要检查是否有多余标签
             return hasExactNbtStructure(itemStack, nbt);
         }
     }
     
     /**
-     * 检查物品是否具有精确的NBT结构（不允许额外标签）
+     * 检查物品是否具有精确的NBT结构(不允许额外标签)
      * @param itemStack 物品堆
      * @param nbt NBT标签
      * @return 是否具有精确结构
@@ -95,7 +95,7 @@ public class NbtMatchRule {
     private boolean hasExactNbtStructure(ItemStack itemStack, CompoundTag nbt) {
         // 这是一个简化的实现
         // 实际应用中可能需要更复杂的逻辑来检查是否有多余标签
-        // 目前先返回true，表示暂时不检查额外标签
+        // 目前先返回true,表示暂时不检查额外标签
         return true;
     }
     

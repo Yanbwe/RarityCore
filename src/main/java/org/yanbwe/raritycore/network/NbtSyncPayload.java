@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record NbtSyncPayload(List<NbtRuleDataPayload> rules, boolean isFullSync) implements CustomPacketPayload {
-    public static final Type<NbtSyncPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.NBT_SYNC_CHANNEL));
+    public static final CustomPacketPayload.Type<NbtSyncPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.NBT_SYNC_CHANNEL));
     public static final StreamCodec<FriendlyByteBuf, NbtSyncPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.collection(ArrayList::new, NbtRuleDataPayload.STREAM_CODEC),
             NbtSyncPayload::rules,

@@ -6,7 +6,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import org.yanbwe.raritycore.RarityCore;
 
-@EventBusSubscriber(modid = RarityCore.MODID, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = RarityCore.MODID)
 public class RarityNetworkInitialization {
 
     @SubscribeEvent

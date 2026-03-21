@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public record RaritySyncPayload(Map<ResourceLocation, Integer> rarityData) implements CustomPacketPayload {
-    public static final Type<RaritySyncPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.RARITY_SYNC_CHANNEL));
+    public static final CustomPacketPayload.Type<RaritySyncPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.RARITY_SYNC_CHANNEL));
     public static final StreamCodec<FriendlyByteBuf, RaritySyncPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.map(HashMap::new, ResourceLocation.STREAM_CODEC, ByteBufCodecs.VAR_INT),
             RaritySyncPayload::rarityData,

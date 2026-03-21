@@ -39,7 +39,7 @@ public class ContainsCondition extends NbtCondition {
             return stringTag.getAsString().contains(substring);
         }
         
-        // 对于非字符串标签，转换为字符串后检查
+        // 对于非字符串标签,转换为字符串后检查
         return tag.getAsString().contains(substring);
     }
     
@@ -54,7 +54,7 @@ public class ContainsCondition extends NbtCondition {
             return false;
         }
         
-        // 对于通配符，采用"任意匹配"策略：只要有一个元素包含子字符串即返回true
+        // 对于通配符,采用"任意匹配"策略:只要有一个元素包含子字符串即返回true
         for (Tag result : results) {
             if (result.getAsString().contains(substring)) {
                 return true;
