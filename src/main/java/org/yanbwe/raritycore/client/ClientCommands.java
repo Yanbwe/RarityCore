@@ -35,13 +35,13 @@ public class ClientCommands {
                             .withStyle(ChatFormatting.AQUA), false);
                         context.getSource().sendSuccess(() -> Component.translatable("rarity.core.id_cache_size", stats.getRarityCacheSize())
                             .withStyle(ChatFormatting.YELLOW), false);
-                        context.getSource().sendSuccess(() -> Component.translatable("rarity.core.nbt_cache_size", stats.getItemStackCacheSize())
+                        context.getSource().sendSuccess(() -> Component.translatable("rarity.core.item_data_cache_size", stats.getItemStackCacheSize())
                             .withStyle(ChatFormatting.YELLOW), false);
                         
                         // 添加缓存配置信息
                         context.getSource().sendSuccess(() -> Component.translatable("rarity.core.cache_config_header")
                             .withStyle(ChatFormatting.GOLD), false);
-                        context.getSource().sendSuccess(() -> Component.translatable("rarity.core.nbt_cache_capacity", config.getActualMaxNbtCacheSize())
+                        context.getSource().sendSuccess(() -> Component.translatable("rarity.core.item_data_cache_capacity", config.getActualMaxItemDataCacheSize())
                             .withStyle(ChatFormatting.WHITE), false);
                         context.getSource().sendSuccess(() -> Component.translatable("rarity.core.dynamic_multiplier", config.getDynamicCapacityMultiplier())
                             .withStyle(ChatFormatting.WHITE), false);

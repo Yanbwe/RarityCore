@@ -142,7 +142,7 @@ public class RarityRegistry {
     }
     
     /**
-     * 获取物品栈的稀有度等级(标准化版本,支持NBT匹配)
+     * 获取物品栈的稀有度等级(标准化版本,支持物品数据匹配)
      * 遵循模组的包容性原则:小于1的值视为1,大于7的值视为7
      * @param itemStack 要查稀有度的物品栈
      * @return 标准化后的物品稀有度等级(1-7)
@@ -247,8 +247,8 @@ public class RarityRegistry {
     }
     
     /**
-     * 获取物品栈的稀有度等级(支持NBT数据)
-     * 优先级顺序:NBT匹配 > 神化模组稀有度 > 本模组稀有度(配置和数据包) > 原版稀有度映射
+     * 获取物品栈的稀有度等级(支持物品数据)
+     * 优先级顺序:物品数据匹配 > 神化模组稀有度 > 本模组稀有度(配置和数据包) > 原版稀有度映射
      * @param itemStack 要查稀有度的物品栈
      * @return 物品的稀有度等级(1-7)
      */
@@ -269,7 +269,7 @@ public class RarityRegistry {
     
     /**
      * 获取物品的稀有度等级
-     * 优先级顺序:NBT匹配 > 神化模组稀有度 > 本模组稀有度(配置和数据包) > 原版稀有度映射
+     * 优先级顺序:物品数据匹配 > 神化模组稀有度 > 本模组稀有度(配置和数据包) > 原版稀有度映射
      * @param item 要查稀有度的物品
      * @return 物品的稀有度等级(1-7)
      */
@@ -287,19 +287,19 @@ public class RarityRegistry {
     /**
      * 统一的稀有度获取逻辑
      * 按照以下优先级顺序获取稀有度:
-     * 1. NBT匹配配置(最高优先级)
+     * 1. 物品数据匹配配置(最高优先级)
      * 2. 神化模组稀有度
      * 3. 本模组的稀有度配置(包括配置文件和数据包)
      * 4. 自动计算的稀有度配置
      * 5. 原版稀有度映射(最低优先级)
      * 
      * @param itemId 物品资源位置,用于查找配置的稀有度
-     * @param itemStack 物品栈,用于检查NBT数据和神化模组稀有度
+     * @param itemStack 物品栈,用于检查物品数据和神化模组稀有度
      * @param item 物品实例,用于获取默认稀有度
      * @return 物品的稀有度等级(1-7),如果没有找到匹配的稀有度,返回1(普通)
      */
     private static @NotNull Integer getRarityInternal(ResourceLocation itemId, @Nullable ItemStack itemStack, Item item) {
-        // 首先检查NBT匹配配置(最高优先级)
+        // 首先检查物品数据匹配配置(最高优先级)
         Integer rarity = checkItemDataRarity(itemStack);
         if (rarity != null) {
             return rarity;

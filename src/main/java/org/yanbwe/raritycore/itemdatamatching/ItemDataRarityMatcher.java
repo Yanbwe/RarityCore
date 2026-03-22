@@ -5,8 +5,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.component.CustomData;
 import org.yanbwe.raritycore.RarityCore;
 
 import javax.annotation.Nullable;
@@ -30,11 +28,17 @@ public class ItemDataRarityMatcher {
         if (itemStack == null || itemStack.isEmpty()) {
             return null;
         }
-        CustomData customData = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
-        if (customData.isEmpty()) {
-            return null;
+        
+        try {
+            net.minecraft.nbt.Tag nbt = itemStack.save(net.minecraft.core.RegistryAccess.EMPTY);
+            if (nbt instanceof CompoundTag itemNbt) {
+                return itemNbt;
+            }
+        } catch (Exception e) {
+            RarityCore.LOGGER.warn("无法将ItemStack序列化为NBT: {}", e.getMessage());
         }
-        return customData.copyTag();
+        
+        return null;
     }
 
     

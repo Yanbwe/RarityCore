@@ -6,11 +6,11 @@ import net.minecraft.core.registries.BuiltInRegistries;
  * 缓存系统配置
  */
 public class CacheConfig {
-    // NBT缓存开关
-    private boolean nbtCacheEnabled = true;
+    // 物品组件缓存开关
+    private boolean itemDataCacheEnabled = true;
     
-    // NBT缓存最大条目数(固定模式)
-    private int maxNbtCacheSize = 10000;
+    // 物品组件缓存最大条目数(固定模式)
+    private int maxItemDataCacheSize = 10000;
     
     // 是否启用动态容量
     private boolean dynamicCapacityEnabled = true;
@@ -37,12 +37,12 @@ public class CacheConfig {
     }
     
     /**
-     * 获取NBT缓存的实际最大容量(动态计算)
+     * 获取物品组件缓存的实际最大容量(动态计算)
      * @return 计算后的最大容量
      */
-    public int getActualMaxNbtCacheSize() {
+    public int getActualMaxItemDataCacheSize() {
         if (!dynamicCapacityEnabled) {
-            return maxNbtCacheSize;
+            return maxItemDataCacheSize;
         }
         
         // 获取当前物品总数
@@ -72,20 +72,20 @@ public class CacheConfig {
     }
     
     // getter/setter方法
-    public boolean isNbtCacheEnabled() {
-        return nbtCacheEnabled;
+    public boolean isItemDataCacheEnabled() {
+        return itemDataCacheEnabled;
     }
     
-    public void setNbtCacheEnabled(boolean nbtCacheEnabled) {
-        this.nbtCacheEnabled = nbtCacheEnabled;
+    public void setItemDataCacheEnabled(boolean itemDataCacheEnabled) {
+        this.itemDataCacheEnabled = itemDataCacheEnabled;
     }
     
-    public int getMaxNbtCacheSize() {
-        return maxNbtCacheSize;
+    public int getMaxItemDataCacheSize() {
+        return maxItemDataCacheSize;
     }
     
-    public void setMaxNbtCacheSize(int maxNbtCacheSize) {
-        this.maxNbtCacheSize = maxNbtCacheSize;
+    public void setMaxItemDataCacheSize(int maxItemDataCacheSize) {
+        this.maxItemDataCacheSize = maxItemDataCacheSize;
     }
     
     public boolean isDynamicCapacityEnabled() {

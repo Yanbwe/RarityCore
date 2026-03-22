@@ -3,8 +3,6 @@ package org.yanbwe.raritycore.itemdatamatching;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.component.CustomData;
 
 import java.util.List;
 import java.util.Objects;
@@ -61,12 +59,16 @@ public class ItemDataMatchRule {
             return false;
         }
 
-        CustomData customData = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
-        if (customData.isEmpty()) {
+        CompoundTag nbt;
+        try {
+            net.minecraft.nbt.Tag tag = itemStack.save(net.minecraft.core.RegistryAccess.EMPTY);
+            if (!(tag instanceof CompoundTag)) {
+                return false;
+            }
+            nbt = (CompoundTag) tag;
+        } catch (Exception e) {
             return false;
         }
-
-        CompoundTag nbt = customData.copyTag();
         
         // 无论是模糊匹配还是精确匹配,条件之间都是AND关系
         // 先检查所有条件是否满足

@@ -47,16 +47,16 @@ public class ConfigReloadService {
             }
             ServerConfigManager.loadServerConfig();
                         
-            // 2. 加载 物品数据 匹配配置(最高优先级)
+            // 2. 加载物品数据匹配配置(最高优先级)
             if (source != null) {
-                sendProgressMessage(source, Component.translatable("rarity.core.loading_nbt_config"));
+                sendProgressMessage(source, Component.translatable("rarity.core.loading_item_data_config"));
             }
             ItemDataConfigLoader.loadAllConfigs();
                         
-            // 重新初始化 物品数据 缓存
+            // 重新初始化物品数据缓存
             SimpleItemDataCache.reinitializeCache();
                         
-            // 同步 NBT 规则到所有客户端
+            // 同步物品数据规则到所有客户端
             if (!isStartup) { // 启动时不需要同步,会在玩家登录时处理
                 ItemDataSyncManager.syncItemDataRulesToAllPlayers();
             }

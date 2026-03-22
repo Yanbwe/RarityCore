@@ -24,7 +24,7 @@ public class RarityCoreEventHandler {
         ServiceFactory factory = ServiceFactory.getInstance();
         event.addListener(factory.getRarityDataLoader());
         
-        // 注册NBT匹配配置加载器(支持数据包加载)
+        // 注册物品数据匹配配置加载器(支持数据包加载)
         event.addListener(factory.createItemDataConfigLoader());
         
         // 注册缓存失效监听器到事件总线
@@ -35,7 +35,7 @@ public class RarityCoreEventHandler {
             org.yanbwe.raritycore.RarityCore.LOGGER.warn("CacheInvalidationListener class not found, skipping registration");
         }
         
-        // 加载本地NBT匹配配置
+        // 加载本地物品数据匹配配置
         org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader.loadAllConfigs();
     }
     
@@ -87,7 +87,7 @@ public class RarityCoreEventHandler {
             // 发送完整稀有度数据
             org.yanbwe.raritycore.network.SyncManager.syncRarityToClients(org.yanbwe.raritycore.registry.RarityRegistry.getItemRarityMap());
             
-            // 发送NBT匹配规则
+            // 发送物品数据匹配规则
             org.yanbwe.raritycore.network.ItemDataSyncManager.syncItemDataRulesToPlayer(serverPlayer);
         }
     }

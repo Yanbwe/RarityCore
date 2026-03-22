@@ -6,8 +6,6 @@ import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.RarityCore;
 
 import java.util.concurrent.TimeUnit;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.component.CustomData;
 
 /**
  * 简化版物品数据匹配缓存
@@ -20,13 +18,33 @@ public class SimpleItemDataCache {
      * 将除了id和count外的内容作为缓存键
      */
     private static class CacheKey {
-        private final net.minecraft.resources.ResourceLocation itemId;
-        private final net.minecraft.nbt.CompoundTag customData;
+        private final int hashCode;
         
         public CacheKey(net.minecraft.world.item.ItemStack stack) {
-            this.itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem());
-            CustomData data = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
-            this.customData = data.isEmpty() ? null : data.copyTag();
+            // 计算哈希值，忽略 id 和 count
+            int hash = 1;
+            
+            try {
+                net.minecraft.nbt.Tag tag = stack.save(net.minecraft.core.RegistryAccess.EMPTY);
+                if (tag instanceof net.minecraft.nbt.CompoundTag compoundTag) {
+                    // 创建一个新的 CompoundTag，排除 id 和 count
+                    net.minecraft.nbt.CompoundTag filteredTag = new net.minecraft.nbt.CompoundTag();
+                    
+                    for (String key : compoundTag.getAllKeys()) {
+                        if (!key.equals("id") && !key.equals("count")) {
+                            filteredTag.put(key, compoundTag.get(key));
+                        }
+                    }
+                    
+                    // 计算过滤后标签的哈希值
+                    hash = filteredTag.hashCode();
+                }
+            } catch (Exception e) {
+                // 如果序列化失败，使用物品类型作为备用哈希
+                hash = stack.getItem().hashCode();
+            }
+            
+            this.hashCode = hash;
         }
         
         @Override
@@ -34,15 +52,12 @@ public class SimpleItemDataCache {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             CacheKey cacheKey = (CacheKey) o;
-            return itemId.equals(cacheKey.itemId) && 
-                   (customData == null ? cacheKey.customData == null : customData.equals(cacheKey.customData));
+            return hashCode == cacheKey.hashCode;
         }
         
         @Override
         public int hashCode() {
-            int result = itemId.hashCode();
-            result = 31 * result + (customData != null ? customData.hashCode() : 0);
-            return result;
+            return hashCode;
         }
     }
     
