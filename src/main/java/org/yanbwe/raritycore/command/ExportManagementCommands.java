@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
-import org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher;
+import org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.io.FileWriter;
@@ -49,8 +49,8 @@ public class ExportManagementCommands {
                 .then(Commands.literal("id")
                     .executes(context -> showDetails(context.getSource()))
                 )
-                .then(Commands.literal("nbt")
-                    .executes(context -> showNbtDetails(context.getSource()))
+                .then(Commands.literal("itemdata")
+                    .executes(context -> showItemDataDetails(context.getSource()))
                 )
             )
         );
@@ -88,20 +88,20 @@ public class ExportManagementCommands {
     }
     
     /**
-     * 显示NBT匹配配置详情
+     * 显示物品数据匹配配置详情
      */
     @SuppressWarnings("null")
-    private static int showNbtDetails(CommandSourceStack source) {
+    private static int showItemDataDetails(CommandSourceStack source) {
         try {
-            // 获取NBT规则统计信息
-            Map<ResourceLocation, Integer> ruleStats = NbtRarityMatcher.getRuleStatistics();
-            int totalRules = NbtRarityMatcher.getRuleCount();
-            int itemsWithNbtConfig = ruleStats.size();
+            // 获取物品数据规则统计信息
+            Map<ResourceLocation, Integer> ruleStats = ItemDataRarityMatcher.getRuleStatistics();
+            int totalRules = ItemDataRarityMatcher.getRuleCount();
+            int itemsWithItemDataConfig = ruleStats.size();
             
             // 构建响应消息
             StringBuilder response = new StringBuilder();
-            response.append("具有NBT匹配配置的物品数量:").append(itemsWithNbtConfig).append(" ");
-            response.append("总NBT匹配配置数量:").append(totalRules).append(" ");
+            response.append("具有物品数据匹配配置的物品数量:").append(itemsWithItemDataConfig).append(" ");
+            response.append("总物品数据匹配配置数量:").append(totalRules).append(" ");
             
             // 添加各物品的配置数量
             for (Map.Entry<ResourceLocation, Integer> entry : ruleStats.entrySet()) {
@@ -111,7 +111,7 @@ public class ExportManagementCommands {
             source.sendSuccess(() -> Component.literal(response.toString().trim()).withStyle(ChatFormatting.AQUA), false);
             return 1;
         } catch (Exception e) {
-            RarityCore.LOGGER.error("Error getting NBT config details", e);
+            RarityCore.LOGGER.error("Error getting item data config details", e);
             source.sendSuccess(() -> Component.translatable("rarity.core.command_failed").withStyle(ChatFormatting.RED), false);
             return 0;
         }

@@ -14,7 +14,7 @@ import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.event.RarityCoreEventHandler;
 import org.yanbwe.raritycore.network.EditModeRequestPayload;
 import org.yanbwe.raritycore.network.IncrementalSyncPayload;
-import org.yanbwe.raritycore.network.NbtSyncPayload;
+import org.yanbwe.raritycore.network.ItemDataSyncPayload;
 import org.yanbwe.raritycore.network.RaritySyncPayload;
 import org.yanbwe.raritycore.service.ServiceFactory;
 
