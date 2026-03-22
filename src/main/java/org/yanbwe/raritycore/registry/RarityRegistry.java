@@ -300,7 +300,7 @@ public class RarityRegistry {
      */
     private static @NotNull Integer getRarityInternal(ResourceLocation itemId, @Nullable ItemStack itemStack, Item item) {
         // 首先检查NBT匹配配置(最高优先级)
-        Integer rarity = checkNbtRarity(itemStack);
+        Integer rarity = checkItemDataRarity(itemStack);
         if (rarity != null) {
             return rarity;
         }
@@ -334,15 +334,15 @@ public class RarityRegistry {
     }
     
     /**
-     * 检查NBT匹配稀有度
+     * 检查物品数据匹配稀有度
      * @param itemStack 物品栈
      * @return 稀有度等级,如果没有匹配则返回null
      */
-    private static Integer checkNbtRarity(@Nullable ItemStack itemStack) {
+    private static Integer checkItemDataRarity(@Nullable ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) {
             return null;
         }
-        return org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher.getNbtMatchedRarity(itemStack);
+        return org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher.getItemDataMatchedRarity(itemStack);
     }
     
     /**

@@ -6,9 +6,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.nbtmatching.NbtCondition;
-import org.yanbwe.raritycore.nbtmatching.NbtMatchRule;
-import org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher;
+import org.yanbwe.raritycore.itemdatamatching.ItemDataCondition;
+import org.yanbwe.raritycore.itemdatamatching.ItemDataMatchRule;
+import org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,59 +16,59 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-public class NbtSyncManager {
+public class ItemDataSyncManager {
 
-    public static void syncNbtRulesToPlayer(ServerPlayer player) {
+    public static void syncItemDataRulesToPlayer(ServerPlayer player) {
         CompletableFuture.runAsync(() -> {
             try {
-                List<NbtSyncPayload.NbtRuleDataPayload> ruleDataList = getAllRulesAsData();
-                NbtSyncPayload payload = new NbtSyncPayload(ruleDataList, true);
+                List<ItemDataSyncPayload.ItemDataRuleDataPayload> ruleDataList = getAllRulesAsData();
+                ItemDataSyncPayload payload = new ItemDataSyncPayload(ruleDataList, true);
 
                 PacketDistributor.sendToPlayer(player, payload);
 
-                RarityCore.LOGGER.debug("Sent NBT rules sync payload to player {}, rule count: {}",
+                RarityCore.LOGGER.debug("Sent item data rules sync payload to player {}, rule count: {}",
                     player.getName().getString(), ruleDataList.size());
 
             } catch (Exception e) {
-                RarityCore.LOGGER.error("Error syncing NBT rules to player {}: {}",
+                RarityCore.LOGGER.error("Error syncing item data rules to player {}: {}",
                     player.getName().getString(), e.getMessage());
             }
         });
     }
 
-    public static void syncNbtRulesToAllPlayers() {
+    public static void syncItemDataRulesToAllPlayers() {
         CompletableFuture.runAsync(() -> {
             try {
                 MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
                 if (server == null) {
-                    RarityCore.LOGGER.warn("Cannot get server instance, skipping NBT rules sync");
+                    RarityCore.LOGGER.warn("Cannot get server instance, skipping item data rules sync");
                     return;
                 }
 
-                List<NbtSyncPayload.NbtRuleDataPayload> ruleDataList = getAllRulesAsData();
-                NbtSyncPayload payload = new NbtSyncPayload(ruleDataList, true);
+                List<ItemDataSyncPayload.ItemDataRuleDataPayload> ruleDataList = getAllRulesAsData();
+                ItemDataSyncPayload payload = new ItemDataSyncPayload(ruleDataList, true);
 
                 for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                     PacketDistributor.sendToPlayer(player, payload);
                 }
 
-                RarityCore.LOGGER.info("Sent NBT rules sync payload to all players, rule count: {}",
+                RarityCore.LOGGER.info("Sent item data rules sync payload to all players, rule count: {}",
                     ruleDataList.size());
 
             } catch (Exception e) {
-                RarityCore.LOGGER.error("Error syncing NBT rules to all players: {}", e.getMessage());
+                RarityCore.LOGGER.error("Error syncing item data rules to all players: {}", e.getMessage());
             }
         });
     }
 
-    private static List<NbtSyncPayload.NbtRuleDataPayload> getAllRulesAsData() {
-        List<NbtSyncPayload.NbtRuleDataPayload> dataList = new ArrayList<>();
+    private static List<ItemDataSyncPayload.ItemDataRuleDataPayload> getAllRulesAsData() {
+        List<ItemDataSyncPayload.ItemDataRuleDataPayload> dataList = new ArrayList<>();
 
-        Map<ResourceLocation, List<NbtMatchRule>> rulesCache =
-            NbtRarityMatcher.getRulesCacheForSync();
+        Map<ResourceLocation, List<ItemDataMatchRule>> rulesCache =
+            ItemDataRarityMatcher.getRulesCacheForSync();
 
-        for (List<NbtMatchRule> rules : rulesCache.values()) {
-            for (NbtMatchRule rule : rules) {
+        for (List<ItemDataMatchRule> rules : rulesCache.values()) {
+            for (ItemDataMatchRule rule : rules) {
                 dataList.add(ruleToDataPayload(rule));
             }
         }
@@ -76,12 +76,12 @@ public class NbtSyncManager {
         return dataList;
     }
 
-    private static NbtSyncPayload.NbtRuleDataPayload ruleToDataPayload(NbtMatchRule rule) {
-        List<NbtSyncPayload.ConditionDataPayload> conditions = new ArrayList<>();
-        for (NbtCondition condition : rule.getConditions()) {
+    private static ItemDataSyncPayload.ItemDataRuleDataPayload ruleToDataPayload(ItemDataMatchRule rule) {
+        List<ItemDataSyncPayload.ConditionDataPayload> conditions = new ArrayList<>();
+        for (ItemDataCondition condition : rule.getConditions()) {
             conditions.add(conditionToDataPayload(condition));
         }
-        return new NbtSyncPayload.NbtRuleDataPayload(
+        return new ItemDataSyncPayload.ItemDataRuleDataPayload(
             rule.getItemId().toString(),
             rule.getPriority(),
             rule.getRarity(),
@@ -91,8 +91,8 @@ public class NbtSyncManager {
         );
     }
 
-    private static NbtSyncPayload.ConditionDataPayload conditionToDataPayload(NbtCondition condition) {
-        return new NbtSyncPayload.ConditionDataPayload(
+    private static ItemDataSyncPayload.ConditionDataPayload conditionToDataPayload(ItemDataCondition condition) {
+        return new ItemDataSyncPayload.ConditionDataPayload(
             condition.getPath(),
             condition.getType().name(),
             condition.getDescription(),
@@ -100,10 +100,10 @@ public class NbtSyncManager {
         );
     }
 
-    private static String serializeConditionData(NbtCondition condition) {
+    private static String serializeConditionData(ItemDataCondition condition) {
         com.google.gson.JsonObject data = new com.google.gson.JsonObject();
 
-        if (condition instanceof org.yanbwe.raritycore.nbtmatching.EqualsCondition equalsCondition) {
+        if (condition instanceof org.yanbwe.raritycore.itemdatamatching.EqualsCondition equalsCondition) {
             Object value = equalsCondition.getExpectedValue();
             if (value instanceof String s) {
                 data.addProperty("value", s);
@@ -114,25 +114,25 @@ public class NbtSyncManager {
             } else {
                 data.addProperty("value", value.toString());
             }
-        } else if (condition instanceof org.yanbwe.raritycore.nbtmatching.RangeCondition rangeCondition) {
+        } else if (condition instanceof org.yanbwe.raritycore.itemdatamatching.RangeCondition rangeCondition) {
             data.addProperty("min", rangeCondition.getMinValue());
             data.addProperty("max", rangeCondition.getMaxValue());
-        } else if (condition instanceof org.yanbwe.raritycore.nbtmatching.ContainsCondition containsCondition) {
+        } else if (condition instanceof org.yanbwe.raritycore.itemdatamatching.ContainsCondition containsCondition) {
             data.addProperty("value", containsCondition.getSubstring());
         }
 
         return data.toString();
     }
 
-    public static void syncNbtRulesToPlayerWithRetry(ServerPlayer player, int maxRetries) {
+    public static void syncItemDataRulesToPlayerWithRetry(ServerPlayer player, int maxRetries) {
         CompletableFuture.runAsync(() -> {
             Exception lastException = null;
 
             for (int attempt = 1; attempt <= maxRetries; attempt++) {
                 try {
-                    syncNbtRulesToPlayer(player);
+                    syncItemDataRulesToPlayer(player);
                     if (attempt > 1) {
-                        RarityCore.LOGGER.info("NBT rules sync retry successful, attempt {}", attempt);
+                        RarityCore.LOGGER.info("Item data rules sync retry successful, attempt {}", attempt);
                     }
                     return;
 
@@ -140,31 +140,31 @@ public class NbtSyncManager {
                     lastException = e;
                     if (attempt < maxRetries) {
                         long delay = 1000L * attempt;
-                        RarityCore.LOGGER.warn("NBT rules sync failed (attempt {}/{}), retrying in {}ms: {}",
+                        RarityCore.LOGGER.warn("Item data rules sync failed (attempt {}/{}}, retrying in {}ms: {}",
                             attempt, maxRetries, delay, e.getMessage());
 
                         CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS).execute(() -> {
-                            syncNbtRulesToAllPlayers();
+                            syncItemDataRulesToAllPlayers();
                         });
                         return;
                     }
                 }
             }
 
-            RarityCore.LOGGER.error("NBT rules sync finally failed after {} retries. Last error: {}",
+            RarityCore.LOGGER.error("Item data rules sync finally failed after {} retries. Last error: {}",
                 maxRetries, lastException != null ? lastException.getMessage() : "Unknown error");
         });
     }
 
-    public static void syncChangedRules(List<NbtMatchRule> changedRules) {
+    public static void syncChangedRules(List<ItemDataMatchRule> changedRules) {
         CompletableFuture.runAsync(() -> {
             try {
-                List<NbtSyncPayload.NbtRuleDataPayload> ruleDataList = new ArrayList<>();
-                for (NbtMatchRule rule : changedRules) {
+                List<ItemDataSyncPayload.ItemDataRuleDataPayload> ruleDataList = new ArrayList<>();
+                for (ItemDataMatchRule rule : changedRules) {
                     ruleDataList.add(ruleToDataPayload(rule));
                 }
 
-                NbtSyncPayload payload = new NbtSyncPayload(ruleDataList, false);
+                ItemDataSyncPayload payload = new ItemDataSyncPayload(ruleDataList, false);
 
                 MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
                 if (server != null) {
@@ -173,11 +173,11 @@ public class NbtSyncManager {
                     }
                 }
 
-                RarityCore.LOGGER.debug("Sent incremental NBT rules sync payload, changed rules count: {}",
+                RarityCore.LOGGER.debug("Sent incremental item data rules sync payload, changed rules count: {}",
                     ruleDataList.size());
 
             } catch (Exception e) {
-                RarityCore.LOGGER.error("Error in incremental NBT rules sync: {}", e.getMessage());
+                RarityCore.LOGGER.error("Error in incremental item data rules sync: {}", e.getMessage());
             }
         });
     }
@@ -189,7 +189,7 @@ public class NbtSyncManager {
         }
 
         int onlinePlayers = server.getPlayerList().getPlayerCount();
-        int ruleCount = NbtRarityMatcher.getRuleCount();
+        int ruleCount = ItemDataRarityMatcher.getRuleCount();
 
         return new SyncStatus(true, onlinePlayers, ruleCount, "正常");
     }

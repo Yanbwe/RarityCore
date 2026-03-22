@@ -9,10 +9,10 @@ import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.config.ServerConfigManager;
-import org.yanbwe.raritycore.nbtmatching.NbtConfigLoader;
-import org.yanbwe.raritycore.nbtmatching.SimpleNbtCache;
+import org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader;
+import org.yanbwe.raritycore.itemdatamatching.SimpleItemDataCache;
 import org.yanbwe.raritycore.network.ChangeOperation;
-import org.yanbwe.raritycore.network.NbtSyncManager;
+import org.yanbwe.raritycore.network.ItemDataSyncManager;
 import org.yanbwe.raritycore.network.SyncBatchManager;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
@@ -47,18 +47,18 @@ public class ConfigReloadService {
             }
             ServerConfigManager.loadServerConfig();
                         
-            // 2. 加载 NBT 匹配配置(最高优先级)
+            // 2. 加载 物品数据 匹配配置(最高优先级)
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_nbt_config"));
             }
-            NbtConfigLoader.loadAllConfigs();
+            ItemDataConfigLoader.loadAllConfigs();
                         
-            // 重新初始化 NBT 缓存
-            SimpleNbtCache.reinitializeCache();
+            // 重新初始化 物品数据 缓存
+            SimpleItemDataCache.reinitializeCache();
                         
             // 同步 NBT 规则到所有客户端
             if (!isStartup) { // 启动时不需要同步,会在玩家登录时处理
-                NbtSyncManager.syncNbtRulesToAllPlayers();
+                ItemDataSyncManager.syncItemDataRulesToAllPlayers();
             }
                         
             // 3. 加载 FinalRarityConfig文件夹(第三优先级)

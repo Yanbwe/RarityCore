@@ -25,7 +25,7 @@ public class RarityCoreEventHandler {
         event.addListener(factory.getRarityDataLoader());
         
         // 注册NBT匹配配置加载器(支持数据包加载)
-        event.addListener(factory.createNbtConfigLoader());
+        event.addListener(factory.createItemDataConfigLoader());
         
         // 注册缓存失效监听器到事件总线
         try {
@@ -36,7 +36,7 @@ public class RarityCoreEventHandler {
         }
         
         // 加载本地NBT匹配配置
-        org.yanbwe.raritycore.nbtmatching.NbtConfigLoader.loadAllConfigs();
+        org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader.loadAllConfigs();
     }
     
     /**
@@ -88,7 +88,7 @@ public class RarityCoreEventHandler {
             org.yanbwe.raritycore.network.SyncManager.syncRarityToClients(org.yanbwe.raritycore.registry.RarityRegistry.getItemRarityMap());
             
             // 发送NBT匹配规则
-            org.yanbwe.raritycore.network.NbtSyncManager.syncNbtRulesToPlayer(serverPlayer);
+            org.yanbwe.raritycore.network.ItemDataSyncManager.syncItemDataRulesToPlayer(serverPlayer);
         }
     }
 }

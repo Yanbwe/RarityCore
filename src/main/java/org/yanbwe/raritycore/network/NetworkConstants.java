@@ -13,5 +13,6 @@ public class NetworkConstants {
     public static final String RARITY_SYNC_CHANNEL = "rarity_sync";
     public static final String INCREMENTAL_SYNC_CHANNEL = "incremental_sync";
     public static final String NBT_SYNC_CHANNEL = "nbt_sync";
+    public static final String ITEM_DATA_SYNC_CHANNEL = "item_data_sync";
     public static final String EDIT_MODE_REQUEST_CHANNEL = "edit_mode_request";
 }

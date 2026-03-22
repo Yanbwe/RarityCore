@@ -9,9 +9,9 @@ import org.yanbwe.raritycore.compat.CompatibilityManager;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.data.RarityDataLoader;
-import org.yanbwe.raritycore.nbtmatching.NbtConfigLoader;
+import org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader;
 import org.yanbwe.raritycore.network.DelayedSyncManager;
-import org.yanbwe.raritycore.network.NbtSyncManager;
+import org.yanbwe.raritycore.network.ItemDataSyncManager;
 import org.yanbwe.raritycore.network.SyncBatchManager;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
@@ -66,10 +66,10 @@ public class ServiceContainer {
     }
     
     /**
-     * 获取NBT配置加载器
+     * 获取物品数据配置加载器
      */
-    public NbtConfigLoader getNbtConfigLoader() {
-        return new NbtConfigLoader();
+    public ItemDataConfigLoader getItemDataConfigLoader() {
+        return new ItemDataConfigLoader();
     }
     
     /**
@@ -80,10 +80,10 @@ public class ServiceContainer {
     }
     
     /**
-     * 获取NBT同步管理器
+     * 获取物品数据同步管理器
      */
-    public NbtSyncManager getNbtSyncManager() {
-        return NbtSyncManager.class.cast(new Object());
+    public ItemDataSyncManager getItemDataSyncManager() {
+        return ItemDataSyncManager.class.cast(new Object());
     }
     
     /**

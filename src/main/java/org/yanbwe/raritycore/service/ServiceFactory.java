@@ -14,9 +14,9 @@ import org.yanbwe.raritycore.compat.CompatibilityManager;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.data.RarityDataLoader;
-import org.yanbwe.raritycore.nbtmatching.NbtConfigLoader;
+import org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader;
 import org.yanbwe.raritycore.network.DelayedSyncManager;
-import org.yanbwe.raritycore.network.NbtSyncManager;
+import org.yanbwe.raritycore.network.ItemDataSyncManager;
 import org.yanbwe.raritycore.network.SyncBatchManager;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
@@ -85,7 +85,7 @@ public class ServiceFactory {
         registerService(CompatibilityManager.class, CompatibilityManager::new, 25);
         registerService(CompatibilityChecker.class, CompatibilityChecker::new, 30);
         registerService(SyncManager.class, SyncManager::new, 35);
-        registerService(NbtSyncManager.class, NbtSyncManager::new, 40);
+        registerService(ItemDataSyncManager.class, ItemDataSyncManager::new, 40);
         registerService(DelayedSyncManager.class, DelayedSyncManager::new, 45);
         registerService(SyncBatchManager.class, SyncBatchManager::new, 50);
         registerService(AutoRarityConfigManager.class, AutoRarityConfigManager::new, 55);
@@ -153,11 +153,11 @@ public class ServiceFactory {
     }
     
     /**
-     * 创建NBT配置加载器
-     * @return NBT配置加载器实例
+     * 创建物品数据配置加载器
+     * @return 物品数据配置加载器实例
      */
-    public NbtConfigLoader createNbtConfigLoader() {
-        return new NbtConfigLoader();
+    public ItemDataConfigLoader createItemDataConfigLoader() {
+        return new ItemDataConfigLoader();
     }
     
     // 保持向后兼容的方法
@@ -203,11 +203,11 @@ public class ServiceFactory {
     }
     
     /**
-     * 获取NBT同步管理器
-     * @return NBT同步管理器实例
+     * 获取物品数据同步管理器
+     * @return 物品数据同步管理器实例
      */
-    public NbtSyncManager getNbtSyncManager() {
-        return getService(NbtSyncManager.class);
+    public ItemDataSyncManager getItemDataSyncManager() {
+        return getService(ItemDataSyncManager.class);
     }
     
     /**

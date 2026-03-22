@@ -23,9 +23,11 @@ public class RarityNetworkInitialization {
                 IncrementalSyncPayload.STREAM_CODEC,
                 (payload, context) -> payload.handle(context));
 
+
+
         registrar.playToClient(
-                NbtSyncPayload.TYPE,
-                NbtSyncPayload.STREAM_CODEC,
+                ItemDataSyncPayload.TYPE,
+                ItemDataSyncPayload.STREAM_CODEC,
                 (payload, context) -> payload.handle(context));
 
         registrar.playToServer(
