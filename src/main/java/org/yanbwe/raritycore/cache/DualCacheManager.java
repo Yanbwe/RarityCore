@@ -118,7 +118,11 @@ public class DualCacheManager {
         if (itemStack == null || itemStack.isEmpty()) {
             return null;
         }
-        
+
+        if (itemStack.hasTag() && itemStack.getTag().toString().contains("affix_data")) {
+            return null;
+        }
+
         // 优先检查NBT缓存
         if (config.isNbtCacheEnabled() && itemStack.hasTag()) {
             String nbtKey = generateNbtKey(itemStack);
@@ -128,7 +132,7 @@ public class DualCacheManager {
                 return nbtResult;
             }
         }
-        
+
         // 回退到 ID 缓存
         ResourceLocation idKey = generateIdKey(itemStack);
         Integer idResult = idCache.getIfPresent(idKey);
@@ -138,7 +142,7 @@ public class DualCacheManager {
             // 这样可以让没有 NBT 配置的物品直接使用 ID 缓存,避免重复计算
             return idResult;
         }
-        
+
         CacheMetrics.recordMiss();
         return null;
     }

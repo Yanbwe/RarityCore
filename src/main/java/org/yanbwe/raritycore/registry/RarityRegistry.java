@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.compat.CompatibilityChecker;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
+import org.yanbwe.raritycore.nbtmatching.SimpleNbtCache;
 import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -347,14 +348,16 @@ public class RarityRegistry {
     
     /**
      * 检查神化模组稀有度
+     * 神化稀有度不应该被缓存，因为依赖于物品的实时NBT数据
      * @param itemStack 物品栈
      * @return 稀有度等级,如果没有匹配则返回null
      */
     private static Integer checkApotheosisRarity(@Nullable ItemStack itemStack) {
-        if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity() && itemStack != null) {
-            return org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(itemStack);
+        if (!org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity() || itemStack == null || itemStack.isEmpty()) {
+            return null;
         }
-        return null;
+
+        return org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(itemStack);
     }
     
     /**
