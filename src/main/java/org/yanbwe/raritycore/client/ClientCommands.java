@@ -29,19 +29,17 @@ public class ClientCommands {
                         
                         context.getSource().sendSuccess(() -> Component.translatable("rarity.core.cache_stats_header")
                             .withStyle(ChatFormatting.GOLD), false);
-                        context.getSource().sendSuccess(() -> Component.translatable("rarity.core.cache_enabled_status", isCacheEnabled ? "启用" : "禁用")
+                        context.getSource().sendSuccess(() -> Component.translatable("rarity.core.cache_system_enabled_status", isCacheEnabled ? "启用" : "禁用")
                             .withStyle(isCacheEnabled ? ChatFormatting.GREEN : ChatFormatting.RED), false);
                         context.getSource().sendSuccess(() -> Component.translatable("rarity.core.cache_hit_rate_display", stats.getHitRate())
                             .withStyle(ChatFormatting.AQUA), false);
-                        context.getSource().sendSuccess(() -> Component.translatable("rarity.core.id_cache_size", stats.getRarityCacheSize())
+                        context.getSource().sendSuccess(() -> Component.translatable("rarity.core.unified_cache_size", stats.getItemStackCacheSize())
                             .withStyle(ChatFormatting.YELLOW), false);
-                        context.getSource().sendSuccess(() -> Component.translatable("rarity.core.item_data_cache_size", stats.getItemStackCacheSize())
-                            .withStyle(ChatFormatting.YELLOW), false);
-                        
+
                         // 添加缓存配置信息
                         context.getSource().sendSuccess(() -> Component.translatable("rarity.core.cache_config_header")
                             .withStyle(ChatFormatting.GOLD), false);
-                        context.getSource().sendSuccess(() -> Component.translatable("rarity.core.item_data_cache_capacity", config.getActualMaxItemDataCacheSize())
+                        context.getSource().sendSuccess(() -> Component.translatable("rarity.core.cache_capacity", config.getActualMaxCacheSize())
                             .withStyle(ChatFormatting.WHITE), false);
                         context.getSource().sendSuccess(() -> Component.translatable("rarity.core.dynamic_multiplier", config.getDynamicCapacityMultiplier())
                             .withStyle(ChatFormatting.WHITE), false);

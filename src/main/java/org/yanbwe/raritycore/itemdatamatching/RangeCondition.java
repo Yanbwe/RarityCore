@@ -63,11 +63,27 @@ public class RangeCondition extends ItemDataCondition {
     
     private boolean isInRange(Tag tag, Number min, Number max) {
         try {
-            double value = Double.parseDouble(tag.getAsString());
+            double value;
+            if (tag instanceof net.minecraft.nbt.IntTag intTag) {
+                value = intTag.getAsInt();
+            } else if (tag instanceof net.minecraft.nbt.LongTag longTag) {
+                value = longTag.getAsLong();
+            } else if (tag instanceof net.minecraft.nbt.FloatTag floatTag) {
+                value = floatTag.getAsFloat();
+            } else if (tag instanceof net.minecraft.nbt.DoubleTag doubleTag) {
+                value = doubleTag.getAsDouble();
+            } else if (tag instanceof net.minecraft.nbt.ByteTag byteTag) {
+                value = byteTag.getAsByte();
+            } else if (tag instanceof net.minecraft.nbt.ShortTag shortTag) {
+                value = shortTag.getAsShort();
+            } else {
+                // 尝试将其他类型转换为字符串再解析
+                value = Double.parseDouble(tag.getAsString());
+            }
             double minVal = min.doubleValue();
             double maxVal = max.doubleValue();
             return value >= minVal && value <= maxVal;
-        } catch (NumberFormatException e) {
+        } catch (Exception e) {
             return false;
         }
     }

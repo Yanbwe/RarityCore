@@ -98,17 +98,18 @@ public class ExportManagementCommands {
             int totalRules = ItemDataRarityMatcher.getRuleCount();
             int itemsWithItemDataConfig = ruleStats.size();
             
-            // 构建响应消息
-            StringBuilder response = new StringBuilder();
-            response.append("具有物品数据匹配配置的物品数量:").append(itemsWithItemDataConfig).append(" ");
-            response.append("总物品数据匹配配置数量:").append(totalRules).append(" ");
+            // 发送基本统计信息
+            source.sendSuccess(() -> Component.translatable("rarity.core.item_data_items_count", itemsWithItemDataConfig).withStyle(ChatFormatting.AQUA), false);
+            source.sendSuccess(() -> Component.translatable("rarity.core.item_data_rules_count", totalRules).withStyle(ChatFormatting.AQUA), false);
             
-            // 添加各物品的配置数量
-            for (Map.Entry<ResourceLocation, Integer> entry : ruleStats.entrySet()) {
-                response.append(entry.getKey().toString()).append(":").append(entry.getValue()).append(" ");
+            // 发送各物品的配置数量
+            if (!ruleStats.isEmpty()) {
+                source.sendSuccess(() -> Component.translatable("rarity.core.item_data_configs_detail").withStyle(ChatFormatting.YELLOW), false);
+                for (Map.Entry<ResourceLocation, Integer> entry : ruleStats.entrySet()) {
+                    source.sendSuccess(() -> Component.literal(entry.getKey().toString() + ":" + entry.getValue()).withStyle(ChatFormatting.WHITE), false);
+                }
             }
             
-            source.sendSuccess(() -> Component.literal(response.toString().trim()).withStyle(ChatFormatting.AQUA), false);
             return 1;
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error getting item data config details", e);

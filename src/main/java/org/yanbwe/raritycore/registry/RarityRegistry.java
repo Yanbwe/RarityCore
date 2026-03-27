@@ -299,38 +299,65 @@ public class RarityRegistry {
      * @return 物品的稀有度等级(1-7),如果没有找到匹配的稀有度,返回1(普通)
      */
     private static @NotNull Integer getRarityInternal(ResourceLocation itemId, @Nullable ItemStack itemStack, Item item) {
+        Integer rarity;
+        
         // 首先检查物品数据匹配配置(最高优先级)
-        Integer rarity = checkItemDataRarity(itemStack);
+        rarity = checkItemDataRarity(itemStack);
         if (rarity != null) {
+            // 填充缓存
+            if (itemStack != null) {
+                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+            }
             return rarity;
         }
         
         // 然后检查神化模组稀有度
         rarity = checkApotheosisRarity(itemStack);
         if (rarity != null) {
+            // 填充缓存
+            if (itemStack != null) {
+                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+            }
             return rarity;
         }
         
         // 然后检查本模组的稀有度配置(包括配置文件和数据包)- 最高优先级
         rarity = ITEM_RARITY_MAP.get(itemId);
         if (rarity != null) {
+            // 填充缓存
+            if (itemStack != null) {
+                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+            }
             return rarity;
         }
         
         // 然后检查自动计算的稀有度配置 - 中等优先级(低于 FinalRarity,高于原版)
         rarity = AUTO_RARITY_MAP.get(itemId);
         if (rarity != null) {
+            // 填充缓存
+            if (itemStack != null) {
+                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+            }
             return rarity;
         }
         
         // 最后检查原版稀有度映射(最低优先级)
         rarity = checkVanillaRarity(itemStack, item);
         if (rarity != null) {
+            // 填充缓存
+            if (itemStack != null) {
+                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+            }
             return rarity;
         }
         
         // 默认返回普通稀有度
-        return 1;
+        rarity = 1;
+        // 填充缓存
+        if (itemStack != null) {
+            org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+        }
+        return rarity;
     }
     
     /**

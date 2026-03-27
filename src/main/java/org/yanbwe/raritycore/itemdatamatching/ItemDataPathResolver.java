@@ -56,7 +56,7 @@ public class ItemDataPathResolver {
                 return results.isEmpty() ? null : results.get(0);
             }
             
-            // 直接从root开始解析路径
+            // 直接从nbt开始解析路径
             return resolvePathRecursive(nbt, path);
         } catch (Exception e) {
             RarityCore.LOGGER.debug("解析物品数据路径 '{}' 时发生错误: {}", path, e.getMessage());
@@ -77,17 +77,22 @@ public class ItemDataPathResolver {
         }
         
         // 解析路径的第一部分
-        String[] parts = splitPath(remainingPath);
-        if (parts.length == 0) {
-            return current;
-        }
-        
-        String firstPart = parts[0];
-        String restPath = parts.length > 1 ? String.join(".", 
-            Arrays.copyOfRange(parts, 1, parts.length)) : "";
+        int dotIndex = remainingPath.indexOf('.');
+        String firstPart = dotIndex == -1 ? remainingPath : remainingPath.substring(0, dotIndex);
+        String restPath = dotIndex == -1 ? "" : remainingPath.substring(dotIndex + 1);
         
         // 处理当前标签
         Tag next = getNextTag(current, firstPart);
+        
+        // 如果是components前缀且没有找到，尝试直接从根级查找
+        if (next == null && firstPart.equals("components")) {
+            // 直接使用restPath作为键名从根级查找
+            next = getNextTag(current, restPath);
+            if (next != null) {
+                return next;
+            }
+        }
+        
         if (next == null) {
             return null;
         }
@@ -114,12 +119,8 @@ public class ItemDataPathResolver {
                 }
             }
             
-            if (pathSegment.matches("\\d+")) {
-                // 数字索引,但在复合标签中应该是键名
-                return compound.get(pathSegment);
-            } else {
-                return compound.get(pathSegment);
-            }
+            // 直接返回复合标签中对应的键值，支持包含冒号的键名
+            return compound.get(pathSegment);
         } else if (current instanceof ListTag list) {
             // 处理列表标签
             // 检查是否是数组索引格式 [0], [1] 等
@@ -156,7 +157,7 @@ public class ItemDataPathResolver {
      */
     private static String[] splitPath(String path) {
         // 改进的分割实现,支持通配符
-        return path.split("\\.|(?=\\[)|(?<=\\])");
+        return path.split("\\.");
     }
     
     /**

@@ -53,8 +53,10 @@ public class ItemDataRarityMatcher {
             return null;
         }
         
-        // 使用缓存获取结果
-        return SimpleItemDataCache.getCachedRarity(itemStack);
+        // 直接计算稀有度，缓存由RarityRegistry统一处理
+        Integer calculatedRarity = calculateWithoutCache(itemStack);
+        
+        return calculatedRarity;
     }
     
     /**

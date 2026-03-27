@@ -52,17 +52,17 @@ public class RenderCacheManager {
     public static CacheStats getCacheStats() {
         DualCacheManager.CacheStatistics dualStats = DualCacheManager.getStatistics();
         return new CacheStats(
-            0, // hits - 通过DualCacheManager内部统计
-            0, // misses - 通过DualCacheManager内部统计
-            0, // clears - 暂时为0
-            (int) dualStats.getIdCacheSize(),
-            (int) dualStats.getNbtCacheSize(),
+            0,
+            0,
+            0,
+            (int) dualStats.getCacheSize(),
+            (int) dualStats.getCacheSize(),
             dualStats.getOverallHitRate()
         );
     }
     
     /**
-     * 缓存统计信息类（保持向后兼容）
+     * 缓存统计信息类(保持向后兼容)
      */
     public static class CacheStats {
         private final long hits;
