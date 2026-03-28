@@ -1,0 +1,98 @@
+package org.yanbwe.raritycore.itemdatamatching;
+
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+
+import java.util.List;
+
+/**
+ * 范围匹配条件
+ * 检查数值类型的物品数据是否在指定范围内
+ */
+public class RangeCondition extends ItemDataCondition {
+    private final Number minValue;
+    private final Number maxValue;
+    
+    public RangeCondition(String path, Number min, Number max) {
+        super(path, MatchType.RANGE);
+        this.minValue = min;
+        this.maxValue = max;
+    }
+    
+    public RangeCondition(String path, Number min, Number max, String description) {
+        super(path, MatchType.RANGE, description);
+        this.minValue = min;
+        this.maxValue = max;
+    }
+    
+    @Override
+    public boolean matches(CompoundTag nbt) {
+        // 检查是否使用通配符
+        if (ItemDataPathResolver.containsWildcard(path)) {
+            return matchesWildcard(nbt);
+        }
+        
+        Tag tag = ItemDataPathResolver.resolve(nbt, path);
+        if (tag == null) {
+            return false;
+        }
+        
+        return isInRange(tag, minValue, maxValue);
+    }
+    
+    /**
+     * 处理通配符路径的范围匹配
+     * @param nbt NBT标签
+     * @return 是否匹配成功
+     */
+    private boolean matchesWildcard(CompoundTag nbt) {
+        List<Tag> results = ItemDataPathResolver.resolveWildcardPath(nbt, path);
+        if (results.isEmpty()) {
+            return false;
+        }
+        
+        // 对于通配符,采用"任意匹配"策略:只要有一个元素在范围内即返回true
+        for (Tag result : results) {
+            if (isInRange(result, minValue, maxValue)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    private boolean isInRange(Tag tag, Number min, Number max) {
+        try {
+            double value;
+            if (tag instanceof net.minecraft.nbt.IntTag intTag) {
+                value = intTag.getAsInt();
+            } else if (tag instanceof net.minecraft.nbt.LongTag longTag) {
+                value = longTag.getAsLong();
+            } else if (tag instanceof net.minecraft.nbt.FloatTag floatTag) {
+                value = floatTag.getAsFloat();
+            } else if (tag instanceof net.minecraft.nbt.DoubleTag doubleTag) {
+                value = doubleTag.getAsDouble();
+            } else if (tag instanceof net.minecraft.nbt.ByteTag byteTag) {
+                value = byteTag.getAsByte();
+            } else if (tag instanceof net.minecraft.nbt.ShortTag shortTag) {
+                value = shortTag.getAsShort();
+            } else {
+                // 尝试将其他类型转换为字符串再解析
+                value = Double.parseDouble(tag.getAsString());
+            }
+            double minVal = min.doubleValue();
+            double maxVal = max.doubleValue();
+            return value >= minVal && value <= maxVal;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    public Number getMinValue() {
+        return minValue;
+    }
+    
+    public Number getMaxValue() {
+        return maxValue;
+    }
+}
