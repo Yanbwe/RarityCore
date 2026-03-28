@@ -50,6 +50,15 @@ public class RarityRegistry {
     }
 
     /**
+     * 检查物品是否有自动计算的稀有度配置
+     * @param itemId 物品资源位置
+     * @return 如果有配置返回true
+     */
+    public static boolean hasAutoRarity(ResourceLocation itemId) {
+        return AUTO_RARITY_MAP.containsKey(itemId);
+    }
+
+    /**
      * 注册物品的稀有度等级
      * 1普通,2稀有,3罕见,4史诗,5传说,6神话,7唯一
      * 不注册视为普通品质

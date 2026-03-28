@@ -1,193 +1,246 @@
 package org.yanbwe.raritycore.compat.apotheosis;
 
+import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.component.CustomData;
 import net.neoforged.fml.ModList;
 import org.yanbwe.raritycore.RarityCore;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Map;
 
-/**
- * 神化模组兼容性适配器
- * 实现神化模组稀有度与本模组稀有度的映射
- */
 public class ApotheosisAdapter {
-    
+
     private static boolean isInitialized = false;
-    private static Class<?> lootRarityClass;
-    private static Class<?> rarityRegistryClass;
-    private static Method isMaterialMethod;
-    private static Method getMaterialRarityMethod;
-    
-    /**
-     * 初始化神化模组兼容性适配器
-     */
+    private static DataComponentType<ResourceLocation> rarityComponent;
+    private static DataComponentType<String> purityComponent;
+
     public static void init() {
         if (isInitialized) {
             return;
         }
-        
+
         if (!ModList.get().isLoaded("apotheosis")) {
             RarityCore.LOGGER.debug("Apotheosis mod not detected, skipping initialization");
             return;
         }
-        
+
         try {
-            // 加载神化模组的类
-            lootRarityClass = Class.forName("dev.shadowsoffire.apotheosis.adventure.loot.LootRarity");
-            rarityRegistryClass = Class.forName("dev.shadowsoffire.apotheosis.adventure.loot.RarityRegistry");
-            
-            // 获取必要的方法
-            isMaterialMethod = rarityRegistryClass.getMethod("isMaterial", net.minecraft.world.item.Item.class);
-            getMaterialRarityMethod = rarityRegistryClass.getMethod("getMaterialRarity", net.minecraft.world.item.Item.class);
-            
+            rarityComponent = getApotheosisRarityComponent();
+            purityComponent = getApotheosisPurityComponent();
+
             isInitialized = true;
-            RarityCore.LOGGER.info("Apotheosis compatibility adapter initialized");
-            
+            RarityCore.LOGGER.info("Apotheosis compatibility adapter initialized with Component API");
+
         } catch (Exception e) {
             RarityCore.LOGGER.error("Failed to initialize Apotheosis compatibility adapter", e);
         }
     }
-    
-    /**
-     * 检查物品是否具有神化稀有度
-     */
+
+    @SuppressWarnings("unchecked")
+    private static DataComponentType<ResourceLocation> getApotheosisRarityComponent() {
+        try {
+            ResourceLocation rarityLoc = ResourceLocation.fromNamespaceAndPath("apotheosis", "rarity");
+            Field field = BuiltInRegistries.class.getDeclaredField("DATA_COMPONENT_TYPE");
+            field.setAccessible(true);
+            Object registry = field.get(null);
+
+            Method byLocationMethod = registry.getClass().getMethod("get", ResourceLocation.class);
+            Object holder = byLocationMethod.invoke(registry, rarityLoc);
+
+            if (holder != null) {
+                Method getValueMethod = holder.getClass().getMethod("value");
+                Object value = getValueMethod.invoke(holder);
+                if (value instanceof DataComponentType) {
+                    return (DataComponentType<ResourceLocation>) value;
+                }
+            }
+        } catch (Exception e) {
+            RarityCore.LOGGER.debug("Could not get apotheosis rarity component: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static DataComponentType<String> getApotheosisPurityComponent() {
+        try {
+            ResourceLocation purityLoc = ResourceLocation.fromNamespaceAndPath("apotheosis", "purity");
+            Field field = BuiltInRegistries.class.getDeclaredField("DATA_COMPONENT_TYPE");
+            field.setAccessible(true);
+            Object registry = field.get(null);
+
+            Method byLocationMethod = registry.getClass().getMethod("get", ResourceLocation.class);
+            Object holder = byLocationMethod.invoke(registry, purityLoc);
+
+            if (holder != null) {
+                Method getValueMethod = holder.getClass().getMethod("value");
+                Object value = getValueMethod.invoke(holder);
+                if (value instanceof DataComponentType) {
+                    return (DataComponentType<String>) value;
+                }
+            }
+        } catch (Exception e) {
+            RarityCore.LOGGER.debug("Could not get apotheosis purity component: {}", e.getMessage());
+        }
+        return null;
+    }
+
     public static boolean hasApotheosisRarity(ItemStack itemStack) {
         if (!isInitialized || itemStack.isEmpty()) {
             return false;
         }
-        
+
         try {
-            CustomData customData = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
-            if (!customData.isEmpty()) {
-                net.minecraft.nbt.CompoundTag tag = customData.copyTag();
-                if (tag != null && tag.contains("affix_data")) {
-                    return true;
-                }
+            if (rarityComponent != null && hasComponent(itemStack, rarityComponent)) {
+                return true;
             }
-            
-            // 检查物品是否是稀有度材料(适用于材料物品)
-            Object item = itemStack.getItem();
-            Boolean isMaterial = (Boolean) isMaterialMethod.invoke(null, item);
-            return isMaterial != null && isMaterial;
-            
+
+            if (purityComponent != null && hasComponent(itemStack, purityComponent)) {
+                return true;
+            }
+
+            return false;
+
         } catch (Exception e) {
             RarityCore.LOGGER.debug("Failed to check Apotheosis rarity for item: {}", itemStack.getItem(), e);
             return false;
         }
     }
-    
-    /**
-     * 获取物品的神化稀有度并映射到本模组稀有度
-     * @param itemStack 要检查的物品
-     * @return 映射后的稀有度等级 (1-6),如果没有神化稀有度则返回null
-     */
+
+    private static <T> boolean hasComponent(ItemStack itemStack, DataComponentType<T> componentType) {
+        try {
+            Map<?, ?> components = getComponentsMap(itemStack);
+            if (components != null) {
+                return components.containsKey(componentType);
+            }
+        } catch (Exception e) {
+            RarityCore.LOGGER.debug("Failed to check component presence: {}", e.getMessage());
+        }
+        return false;
+    }
+
+    private static <T> T getComponent(ItemStack itemStack, DataComponentType<T> componentType, T defaultValue) {
+        try {
+            Map<?, ?> components = getComponentsMap(itemStack);
+            if (components != null && components.containsKey(componentType)) {
+                @SuppressWarnings("unchecked")
+                T value = (T) components.get(componentType);
+                if (value != null) {
+                    return value;
+                }
+            }
+        } catch (Exception e) {
+            RarityCore.LOGGER.debug("Failed to get component: {}", e.getMessage());
+        }
+        return defaultValue;
+    }
+
+    private static Map<?, ?> getComponentsMap(ItemStack itemStack) {
+        try {
+            Method getComponentsMethod = itemStack.getClass().getMethod("getComponents");
+            return (Map<?, ?>) getComponentsMethod.invoke(itemStack);
+        } catch (Exception e) {
+            RarityCore.LOGGER.debug("Failed to get components map: {}", e.getMessage());
+            return null;
+        }
+    }
+
     public static Integer getMappedRarity(ItemStack itemStack) {
         if (!isInitialized || itemStack.isEmpty()) {
             return null;
         }
-        
+
         try {
-            CustomData customData = itemStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
-            if (!customData.isEmpty()) {
-                net.minecraft.nbt.CompoundTag tag = customData.copyTag();
-                if (tag != null && tag.contains("affix_data")) {
-                    net.minecraft.nbt.CompoundTag affixData = tag.getCompound("affix_data");
-                    if (affixData.contains("rarity")) {
-                        String rarityString = affixData.getString("rarity");
-                        return mapApotheosisRarityString(rarityString);
+            if (rarityComponent != null) {
+                ResourceLocation rarityLoc = getComponent(itemStack, rarityComponent, null);
+                if (rarityLoc != null) {
+                    Integer mappedRarity = mapApotheosisRarityString(rarityLoc.toString());
+                    if (mappedRarity != null) {
+                        return mappedRarity;
                     }
                 }
             }
-            
-            // 如果NBT中没有,则回退到材料稀有度检查(适用于特殊材料物品)
-            Object item = itemStack.getItem();
-            Boolean isMaterial = (Boolean) isMaterialMethod.invoke(null, item);
-            
-            if (isMaterial != null && isMaterial) {
-                // 获取对应的稀有度
-                Object rarityHolder = getMaterialRarityMethod.invoke(null, item);
-                
-                // 检查holder是否绑定
-                Method isBoundMethod = rarityHolder.getClass().getMethod("isBound");
-                Boolean isBound = (Boolean) isBoundMethod.invoke(rarityHolder);
-                
-                if (isBound != null && isBound) {
-                    // 获取稀有度对象
-                    Method getMethod = rarityHolder.getClass().getMethod("get");
-                    Object rarity = getMethod.invoke(rarityHolder);
-                    
-                    // 获取ordinal值
-                    Method ordinalMethod = rarity.getClass().getMethod("ordinal");
-                    Integer ordinal = (Integer) ordinalMethod.invoke(rarity);
-                    
-                    // 映射神化稀有度到本模组稀有度
-                    // Apotheosis: Common(0)→1, Uncommon(1)→2, Rare(2)→3, Epic(3)→4, Mythic(4)→5, Ancient(5)→6
-                    if (ordinal != null && ordinal >= 0 && ordinal <= 5) {
-                        return ordinal + 1; // 神化的ordinal + 1 = 本模组稀有度
+
+            if (purityComponent != null) {
+                String purity = getComponent(itemStack, purityComponent, null);
+                if (purity != null) {
+                    Integer mappedRarity = mapApotheosisPurityString(purity);
+                    if (mappedRarity != null) {
+                        return mappedRarity;
                     }
                 }
             }
-            
+
             return null;
-            
+
         } catch (Exception e) {
             RarityCore.LOGGER.debug("Failed to get mapped Apotheosis rarity for item: {}", itemStack.getItem(), e);
             return null;
         }
     }
-    
-    /**
-     * 根据神化稀有字符串映射到本模组稀有度
-     * @param rarityString 神化稀有度字符串,格式如 "apotheosis:common", "apotheosis:epic" 等
-     * @return 对应的本模组稀有度等级 (1-6)
-     */
+
     private static Integer mapApotheosisRarityString(String rarityString) {
         if (rarityString == null || rarityString.isEmpty()) {
             return null;
         }
-        
-        // 移除命名空间前缀
+
         String rarityName = rarityString;
         if (rarityName.contains(":")) {
             rarityName = rarityName.substring(rarityName.indexOf(":") + 1);
         }
-        
-        // 根据神化稀有度名称进行映射
+
         switch (rarityName.toLowerCase()) {
             case "common":
-                return 1;    // Common → 稀有度1
+                return 1;
             case "uncommon":
-                return 2;    // Uncommon → 稀有度2
+                return 2;
             case "rare":
-                return 3;    // Rare → 稀有度3
+                return 3;
             case "epic":
-                return 4;    // Epic → 稀有度4
+                return 4;
             case "mythic":
-                return 5;    // Mythic → 稀有度5
+                return 5;
             case "ancient":
-                return 6;    // Ancient → 稀有度6
-            // Apotheotic Additions 稀有度支持
+                return 6;
             case "artifact":
-                return 7;    // Artifact → 稀有度7
+                return 7;
             case "heirloom":
-                return 8;    // Heirloom → 稀有度8
+                return 8;
             case "esoteric":
-                return 9;    // Esoteric → 稀有度9
+                return 9;
             default:
                 return null;
         }
     }
-    
-    /**
-     * 重置初始化状态(主要用于测试)
-     */
+
+    private static Integer mapApotheosisPurityString(String purityString) {
+        if (purityString == null || purityString.isEmpty()) {
+            return null;
+        }
+
+        switch (purityString.toLowerCase()) {
+            case "cracked":
+                return 1;
+            case "chipped":
+                return 2;
+            case "flawed":
+                return 3;
+            case "normal":
+                return 4;
+            case "flawless":
+                return 5;
+            case "perfect":
+                return 6;
+            default:
+                return null;
+        }
+    }
+
     public static void reset() {
         isInitialized = false;
-        lootRarityClass = null;
-        rarityRegistryClass = null;
-        isMaterialMethod = null;
-        getMaterialRarityMethod = null;
+        rarityComponent = null;
+        purityComponent = null;
     }
 }

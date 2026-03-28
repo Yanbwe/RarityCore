@@ -132,6 +132,8 @@ public class DualCacheManager {
                     key.append("|hash:").append(hexString.toString());
                 }
             }
+        } catch (IllegalStateException e) {
+            RarityCore.LOGGER.debug("Error generating unified cache key (registry access issue, using item ID only): {}", e.getMessage());
         } catch (Exception e) {
             RarityCore.LOGGER.debug("Error generating unified cache key: {}", e.getMessage());
         }

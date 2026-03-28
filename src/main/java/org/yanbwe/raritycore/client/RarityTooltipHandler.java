@@ -129,15 +129,24 @@ public class RarityTooltipHandler {
         if (item == null) {
             return false;
         }
-        
+
         // 获取物品ID
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
         if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
             return false;
         }
-        
-        // 检查是否在注册表中有配置
-        return RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId);
+
+        // 检查是否在手动配置中有稀有度
+        if (RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId)) {
+            return true;
+        }
+
+        // 检查是否在自动计算稀有度中有配置
+        if (RarityRegistry.hasAutoRarity(itemId)) {
+            return true;
+        }
+
+        return false;
     }
     
     /**
