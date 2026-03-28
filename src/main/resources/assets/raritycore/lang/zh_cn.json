@@ -126,6 +126,8 @@
   "rarity.core.auto_reload_complete_message": "自动重载完毕,若仍没有效果请手动输入/raritycore reload 命令来重载!",
   "rarity.core.auto_calculation_no_items_calculated": "§e没有物品需要计算,所有可计算的物品都已有稀有度配置",
   "rarity.core.auto_calculation_manual_reload_required": "⚠ 配置已写入文件,请执行 /raritycore reload 命令以应用新的配置!但是注意要用两次命令才行!",
+  "rarity.core.auto_calculation_starting_recalculate": "已启动自动稀有度重新计算,请稍候...",
+  "rarity.core.auto_calculation_recalculate_failed": "重新计算失败: %s",
   "rarity.core.auto_reload_complete": "自动重载完成,新的稀有度配置已生效",
   "rarity.core.auto_reload_failed": "自动重载失败,请手动执行 /raritycore reload",
   "raritycore.message.vanilla_rarity_unavailable": "§c[稀有度核心] <原版稀有度检查功能> 在当前环境中不可用,功能已自动关闭",

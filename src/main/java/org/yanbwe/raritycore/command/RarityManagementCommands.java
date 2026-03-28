@@ -242,14 +242,13 @@ public class RarityManagementCommands {
      */
     private static int recalculateAutoRarity(CommandSourceStack source) {
         try {
-            // 强制重新计算
             org.yanbwe.raritycore.calc.AutoRarityCalculator.forceRecalculate();
-            
-            source.sendSuccess(() -> Component.literal("已启动自动稀有度重新计算,请稍候..."), true);
+
+            source.sendSuccess(() -> Component.translatable("rarity.core.auto_calculation_starting_recalculate"), true);
             return 1;
         } catch (Exception e) {
             RarityCore.LOGGER.error("Failed to recalculate auto rarity", e);
-            source.sendSuccess(() -> Component.literal("重新计算失败:" + e.getMessage()).withStyle(ChatFormatting.RED), false);
+            source.sendSuccess(() -> Component.translatable("rarity.core.auto_calculation_recalculate_failed", e.getMessage()).withStyle(ChatFormatting.RED), false);
             return 0;
         }
     }

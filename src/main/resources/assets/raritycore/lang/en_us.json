@@ -125,6 +125,8 @@
   "rarity.core.auto_calculation_will_auto_reload": "Rarity calculation complete! Auto-reloading configuration in 10 seconds!",
   "rarity.core.auto_reload_complete_message": "Auto-reload complete! If it still doesn't work, please manually execute /raritycore reload command!",
   "rarity.core.auto_calculation_manual_reload_required": "⚠ Configuration written to file. Please execute /raritycore reload command to apply new rarity configurations.But be sure to use the command twice!",
+  "rarity.core.auto_calculation_starting_recalculate": "Auto rarity recalculation started, please wait...",
+  "rarity.core.auto_calculation_recalculate_failed": "Recalculation failed: %s",
   "rarity.core.auto_reload_complete": "Auto reload complete, new rarity configuration is now active",
   "rarity.core.auto_reload_failed": "Auto reload failed, please manually execute /raritycore reload",
   "raritycore.message.vanilla_rarity_unavailable": "§c[RarityCore] Vanilla rarity check module is unavailable in current environment, functionality automatically degraded",
