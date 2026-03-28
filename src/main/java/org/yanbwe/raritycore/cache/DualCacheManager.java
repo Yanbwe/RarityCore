@@ -109,6 +109,11 @@ public class DualCacheManager {
         if (itemId == null) {
             return null;
         }
+
+        if (org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.hasApotheosisRarity(itemStack)) {
+            return null;
+        }
+
         StringBuilder key = new StringBuilder(itemId.toString());
 
         try {
