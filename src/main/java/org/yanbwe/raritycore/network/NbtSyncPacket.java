@@ -205,8 +205,8 @@ public class NbtSyncPacket {
         public ConditionData(FriendlyByteBuf buf) {
             this.path = buf.readUtf();
             this.type = buf.readUtf();
-            this.description = buf.readUtf();
             this.valueData = buf.readUtf();
+            this.description = buf.readUtf();
         }
 
         public void encode(FriendlyByteBuf buf) {
