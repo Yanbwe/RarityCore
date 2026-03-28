@@ -27,7 +27,7 @@ public class UtilityCommands {
     
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("raritycore")
-            .requires(source -> source.hasPermission(2))
+            .requires(Commands.hasPermission(Commands.LEVEL_MODERATORS))
             .then(Commands.literal("edit")
                 .then(Commands.literal("enable")
                     .executes(context -> enableEditMode(context.getSource()))

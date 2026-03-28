@@ -3,7 +3,7 @@ package org.yanbwe.raritycore.compat.apotheosis;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.TypedDataComponent;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
 import org.yanbwe.raritycore.RarityCore;
@@ -15,8 +15,8 @@ public class ApotheosisAdapter {
 
     private static boolean isApotheosisLoaded = false;
     private static boolean isInitialized = false;
-    private static ResourceLocation rarityComponentLoc;
-    private static ResourceLocation purityComponentLoc;
+    private static Identifier rarityComponentLoc;
+    private static Identifier purityComponentLoc;
 
     private static final Pattern DYNAMIC_HOLDER_PATTERN = Pattern.compile("DynamicHolder\\{[^/]*/ ([^}]+)\\}");
 
@@ -34,8 +34,8 @@ public class ApotheosisAdapter {
         }
 
         try {
-            rarityComponentLoc = ResourceLocation.fromNamespaceAndPath("apotheosis", "rarity");
-            purityComponentLoc = ResourceLocation.fromNamespaceAndPath("apotheosis", "purity");
+            rarityComponentLoc = Identifier.fromNamespaceAndPath("apotheosis", "rarity");
+            purityComponentLoc = Identifier.fromNamespaceAndPath("apotheosis", "purity");
 
             isInitialized = true;
             RarityCore.LOGGER.info("Apotheosis compatibility adapter initialized, rarity={}, purity={}",
@@ -63,7 +63,7 @@ public class ApotheosisAdapter {
             DataComponentMap components = itemStack.getComponents();
 
             for (TypedDataComponent<?> component : components) {
-                ResourceLocation keyLoc = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(component.type());
+                Identifier keyLoc = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(component.type());
                 if (keyLoc.equals(rarityComponentLoc) || keyLoc.equals(purityComponentLoc)) {
                     return true;
                 }
@@ -93,7 +93,7 @@ public class ApotheosisAdapter {
             DataComponentMap components = itemStack.getComponents();
 
             for (TypedDataComponent<?> component : components) {
-                ResourceLocation keyLoc = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(component.type());
+                Identifier keyLoc = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(component.type());
 
                 if (keyLoc.equals(rarityComponentLoc)) {
                     Object value = component.value();
@@ -135,8 +135,8 @@ public class ApotheosisAdapter {
             return matcher.group(1);
         }
 
-        if (holder instanceof ResourceLocation rl) {
-            return rl.getPath();
+        if (holder instanceof Identifier id) {
+            return id.getPath();
         }
 
         return null;

@@ -1,5 +1,6 @@
 package org.yanbwe.raritycore.network;
 
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -9,15 +10,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * 同步管理器
- * 处理稀有度数据的同步功能
- */
 public class SyncManager {
 
     private static final List<ChangeOperation> CHANGE_OPERATIONS_BUFFER = new CopyOnWriteArrayList<>();
 
-    public static void syncRarityToClients(java.util.Map<net.minecraft.resources.ResourceLocation, Integer> itemRarityMap) {
+    public static void syncRarityToClients(java.util.Map<Identifier, Integer> itemRarityMap) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null && itemRarityMap != null) {
             RaritySyncPayload payload = new RaritySyncPayload(itemRarityMap);
@@ -65,7 +62,7 @@ public class SyncManager {
         CHANGE_OPERATIONS_BUFFER.add(operation);
     }
 
-    public static void syncRarityToClientsWithRetry(java.util.Map<net.minecraft.resources.ResourceLocation, Integer> itemRarityMap) {
+    public static void syncRarityToClientsWithRetry(java.util.Map<Identifier, Integer> itemRarityMap) {
         syncRarityToClients(itemRarityMap);
     }
 

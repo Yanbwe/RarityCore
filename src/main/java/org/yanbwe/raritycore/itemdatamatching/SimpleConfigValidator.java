@@ -1,7 +1,7 @@
 package org.yanbwe.raritycore.itemdatamatching;
 
 import com.google.gson.JsonObject;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.yanbwe.raritycore.RarityCore;
 
 import java.util.ArrayList;
@@ -66,7 +66,7 @@ public class SimpleConfigValidator {
         
         try {
             String itemIdStr = config.get("item_id").getAsString();
-            ResourceLocation itemId = ResourceLocation.parse(itemIdStr);
+            Identifier itemId = Identifier.parse(itemIdStr);
             
             List<ItemDataCondition> conditions = parseConditions(config.getAsJsonArray("conditions"));
             if (conditions.isEmpty()) {

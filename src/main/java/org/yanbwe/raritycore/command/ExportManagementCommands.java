@@ -4,9 +4,9 @@ import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.commands.arguments.IdentifierArgument;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher;
@@ -30,7 +30,7 @@ public class ExportManagementCommands {
     @SuppressWarnings("null")
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("raritycore")
-            .requires(source -> source.hasPermission(2))
+            .requires(Commands.hasPermission(Commands.LEVEL_MODERATORS))
             .then(Commands.literal("export")
                 .then(Commands.literal("all")
                     .executes(context -> exportAllRarityData(context.getSource()))
@@ -39,8 +39,8 @@ public class ExportManagementCommands {
                     .executes(context -> exportAllModRarityData(context.getSource()))
                 )
                 .then(Commands.literal("mod")
-                    .then(Commands.argument("modid", ResourceLocationArgument.id())
-                        .executes(context -> exportModRarityData(context.getSource(), ResourceLocationArgument.getId(context, "modid")))
+                    .then(Commands.argument("modid", IdentifierArgument.id())
+                        .executes(context -> exportModRarityData(context.getSource(), IdentifierArgument.getId(context, "modid")))
                     )
                 )
             )
@@ -65,7 +65,7 @@ public class ExportManagementCommands {
         Map<String, Integer> modItemCount = new HashMap<>();
         int totalItems = 0;
         
-        for (Map.Entry<ResourceLocation, Integer> entry : RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
+        for (Map.Entry<Identifier, Integer> entry : RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
             String modId = entry.getKey().getNamespace();
             modItemCount.put(modId, modItemCount.getOrDefault(modId, 0) + 1);
             totalItems++;
@@ -94,7 +94,7 @@ public class ExportManagementCommands {
     private static int showItemDataDetails(CommandSourceStack source) {
         try {
             // 获取物品数据规则统计信息
-            Map<ResourceLocation, Integer> ruleStats = ItemDataRarityMatcher.getRuleStatistics();
+            Map<Identifier, Integer> ruleStats = ItemDataRarityMatcher.getRuleStatistics();
             int totalRules = ItemDataRarityMatcher.getRuleCount();
             int itemsWithItemDataConfig = ruleStats.size();
             
@@ -105,7 +105,7 @@ public class ExportManagementCommands {
             // 发送各物品的配置数量
             if (!ruleStats.isEmpty()) {
                 source.sendSuccess(() -> Component.translatable("rarity.core.item_data_configs_detail").withStyle(ChatFormatting.YELLOW), false);
-                for (Map.Entry<ResourceLocation, Integer> entry : ruleStats.entrySet()) {
+                for (Map.Entry<Identifier, Integer> entry : ruleStats.entrySet()) {
                     source.sendSuccess(() -> Component.literal(entry.getKey().toString() + ":" + entry.getValue()).withStyle(ChatFormatting.WHITE), false);
                 }
             }
@@ -148,7 +148,7 @@ public class ExportManagementCommands {
     /**
      * 导出特定模组的稀有度数据
      */
-    private static int exportModRarityData(CommandSourceStack source, ResourceLocation modId) {
+    private static int exportModRarityData(CommandSourceStack source, Identifier modId) {
         try {
             // 使用ConfigManager提供的路径
             Path configDir = ConfigManager.getConfigDirPath();
@@ -190,7 +190,7 @@ public class ExportManagementCommands {
             // 按模组分组稀有度数据
             Map<String, Map<String, Integer>> modBasedData = new HashMap<>();
             
-            for (Map.Entry<ResourceLocation, Integer> entry : RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
+            for (Map.Entry<Identifier, Integer> entry : RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
                 String modId = entry.getKey().getNamespace();
                 String itemId = entry.getKey().toString();
                 Integer rarity = entry.getValue();
@@ -228,7 +228,7 @@ public class ExportManagementCommands {
         java.util.LinkedHashMap<String, Integer> exportData = new java.util.LinkedHashMap<>();
         
         // 从注册表获取所有已注册的稀有度数据
-        for (Map.Entry<ResourceLocation, Integer> entry : RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
+        for (Map.Entry<Identifier, Integer> entry : RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
             exportData.put(entry.getKey().toString(), entry.getValue());
         }
         
@@ -247,7 +247,7 @@ public class ExportManagementCommands {
         java.util.LinkedHashMap<String, Integer> exportData = new java.util.LinkedHashMap<>();
         
         // 从注册表获取特定模组的已注册稀有度数据
-        for (Map.Entry<ResourceLocation, Integer> entry : RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
+        for (Map.Entry<Identifier, Integer> entry : RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
             if (entry.getKey().getNamespace().equals(modNamespace)) {
                 exportData.put(entry.getKey().toString(), entry.getValue());
             }

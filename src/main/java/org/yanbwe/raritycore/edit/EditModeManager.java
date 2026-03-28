@@ -1,7 +1,7 @@
 package org.yanbwe.raritycore.edit;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
@@ -165,23 +165,23 @@ public class EditModeManager {
         }
             
         // 获取物品 ID
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
         if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
             return false;
         }
-            
+
         // 检查是否在多人游戏中
         Minecraft mc = Minecraft.getInstance();
         boolean isMultiplayer = mc.getConnection() != null;
-        
+
         if (isMultiplayer) {
             // 多人游戏:发送请求包到服务端,由服务端保存配置并同步
             EditModeRequestPayload payload = new EditModeRequestPayload(
-                itemId, 
-                deleteModeEnabled ? 0 : currentRarity, 
+                itemId,
+                deleteModeEnabled ? 0 : currentRarity,
                 deleteModeEnabled
             );
-            net.neoforged.neoforge.network.PacketDistributor.sendToServer(payload);
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(payload);
         } else {
             // 单人游戏:本地处理并保存配置
             if (deleteModeEnabled) {

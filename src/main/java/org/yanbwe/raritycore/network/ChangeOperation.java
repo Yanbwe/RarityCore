@@ -1,22 +1,19 @@
 package org.yanbwe.raritycore.network;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
-/**
- * 表示稀有度变更的操作类型
- */
 public class ChangeOperation {
     public enum OperationType {
-        ADD,    // 添加新物品稀有度
-        UPDATE, // 更新已有物品稀有度
-        DELETE  // 删除物品稀有度
+        ADD,
+        UPDATE,
+        DELETE
     }
 
     private final OperationType type;
-    private final ResourceLocation itemId;
-    private final Integer rarity; // 对于DELETE操作,此值为null
+    private final Identifier itemId;
+    private final Integer rarity;
 
-    public ChangeOperation(OperationType type, ResourceLocation itemId, Integer rarity) {
+    public ChangeOperation(OperationType type, Identifier itemId, Integer rarity) {
         this.type = type;
         this.itemId = itemId;
         this.rarity = rarity;
@@ -26,7 +23,7 @@ public class ChangeOperation {
         return type;
     }
 
-    public ResourceLocation getItemId() {
+    public Identifier getItemId() {
         return itemId;
     }
 

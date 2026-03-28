@@ -1,17 +1,25 @@
  package org.yanbwe.raritycore.calc;
 
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.mixin.SmithingTransformRecipeAccessor;
+import org.yanbwe.raritycore.mixin.ShapedRecipeAccessor;
+import org.yanbwe.raritycore.mixin.ShapelessRecipeAccessor;
+import org.yanbwe.raritycore.mixin.SingleItemRecipeAccessor;
 
 import java.util.*;
 
@@ -31,7 +39,7 @@ public class AutoRarityCalculator {
      * @param itemId 物品 ID
      * @return 如果是 A 类返回 true
      */
-    private static boolean isTypeA(ResourceLocation itemId) {
+    private static boolean isTypeA(Identifier itemId) {
         return RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId);
     }
     
@@ -65,10 +73,38 @@ public class AutoRarityCalculator {
     private static Map<Item, Integer> maxRarityCache = new HashMap<>();
     
     // 预构建的配料→配方映射(性能优化)
-    private static Map<ResourceLocation, List<Recipe<?>>> ingredientToRecipesMap = new HashMap<>();
-    
+    private static Map<Identifier, List<Recipe<?>>> ingredientToRecipesMap = new HashMap<>();
 
-    
+    /**
+     * 获取配方的结果物品
+     */
+    private static ItemStack getRecipeResult(Recipe<?> recipe) {
+        if (recipe instanceof ShapedRecipe shapedRecipe) {
+            return ((ShapedRecipeAccessor) shapedRecipe).getResult();
+        } else if (recipe instanceof ShapelessRecipe shapelessRecipe) {
+            return ((ShapelessRecipeAccessor) shapelessRecipe).getResult();
+        } else if (recipe instanceof SingleItemRecipe singleItemRecipe) {
+            return ((SingleItemRecipeAccessor) singleItemRecipe).getResult();
+        }
+        return ItemStack.EMPTY;
+    }
+
+    /**
+     * 获取配方的配料列表
+     */
+    private static List<Optional<Ingredient>> getRecipeIngredients(Recipe<?> recipe) {
+        if (recipe instanceof ShapedRecipe shapedRecipe) {
+            return shapedRecipe.getIngredients();
+        } else if (recipe instanceof ShapelessRecipe shapelessRecipe) {
+            return ((ShapelessRecipeAccessor) shapelessRecipe).getIngredients().stream()
+                .map(Optional::of)
+                .toList();
+        } else if (recipe instanceof SingleItemRecipe singleItemRecipe) {
+            return List.of(Optional.of(singleItemRecipe.input()));
+        }
+        return List.of();
+    }
+
     // 进度跟踪
     private static int totalItemsInRound = 0; // 本轮总物品数
     private static int processedItemsInRound = 0; // 本轮已处理物品数
@@ -132,8 +168,10 @@ public class AutoRarityCalculator {
         }
         
         // 将所有已有配置的 A 类物品加入待处理列表
-        for (ResourceLocation itemId : RarityRegistry.ITEM_RARITY_MAP.keySet()) {
-            Item item = BuiltInRegistries.ITEM.get(itemId);
+        for (Identifier itemId : RarityRegistry.ITEM_RARITY_MAP.keySet()) {
+            Item item = BuiltInRegistries.ITEM.get(itemId)
+                .map(holder -> holder.value())
+                .orElse(null);
             if (item != null) {
                 pendingItemList.add(item);
             }
@@ -166,14 +204,14 @@ public class AutoRarityCalculator {
                     org.yanbwe.raritycore.mixin.SmithingTransformRecipeAccessor accessor =
                         (org.yanbwe.raritycore.mixin.SmithingTransformRecipeAccessor) smithingRecipe;
 
-                    Ingredient template = accessor.getTemplate();
+                    Optional<Ingredient> optTemplate = accessor.getTemplate();
                     Ingredient base = accessor.getBase();
-                    Ingredient addition = accessor.getAddition();
+                    Optional<Ingredient> optAddition = accessor.getAddition();
 
                     // 将三个配料加入映射
-                    addIngredientToMap(template, recipe);
+                    optTemplate.ifPresent(template -> addIngredientToMap(template, recipe));
                     addIngredientToMap(base, recipe);
-                    addIngredientToMap(addition, recipe);
+                    optAddition.ifPresent(addition -> addIngredientToMap(addition, recipe));
 
                     smithingCount++;
 
@@ -183,13 +221,16 @@ public class AutoRarityCalculator {
             }
 
             // 默认处理
-            for (Ingredient ingredient : recipe.getIngredients()) {
-                if (ingredient != null && !ingredient.isEmpty()) {
-                    for (ItemStack stack : ingredient.getItems()) {
-                        Item item = stack.getItem();
-                        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
-                        if (itemId != null) {
-                            ingredientToRecipesMap.computeIfAbsent(itemId, k -> new ArrayList<>()).add(recipe);
+            for (Optional<Ingredient> optIngredient : getRecipeIngredients(recipe)) {
+                if (optIngredient.isPresent()) {
+                    Ingredient ingredient = optIngredient.get();
+                    if (!ingredient.isEmpty()) {
+                        for (Item item : ingredient.items().map(Holder::value).toList()) {
+                            ItemStack stack = new ItemStack(item);
+                            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+                            if (itemId != null) {
+                                ingredientToRecipesMap.computeIfAbsent(itemId, k -> new ArrayList<>()).add(recipe);
+                            }
                         }
                     }
                 }
@@ -207,10 +248,10 @@ public class AutoRarityCalculator {
         if (ingredient == null || ingredient.isEmpty()) {
             return;
         }
-        
-        for (ItemStack stack : ingredient.getItems()) {
-            Item item = stack.getItem();
-            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+
+        for (Item item : ingredient.items().map(Holder::value).toList()) {
+            ItemStack stack = new ItemStack(item);
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
             if (itemId != null) {
                 ingredientToRecipesMap.computeIfAbsent(itemId, k -> new ArrayList<>()).add(recipe);
             }
@@ -277,7 +318,7 @@ public class AutoRarityCalculator {
      * 处理单个配料物品
      */
     private static void processMaterial(Item material) {
-        ResourceLocation materialId = BuiltInRegistries.ITEM.getKey(material);
+        Identifier materialId = BuiltInRegistries.ITEM.getKey(material);
         if (materialId == null) {
             return;
         }
@@ -292,15 +333,15 @@ public class AutoRarityCalculator {
             try {
                 // 获取所有配料的稀有度
                 List<Integer> ingredientRarities = getIngredientRaritiesForNewAlgorithm(recipe);
-                
+
                 // 计算产物稀有度
-                ItemStack result = recipe.getResultItem(net.minecraft.core.RegistryAccess.EMPTY);
+                ItemStack result = getRecipeResult(recipe);
                 if (result.isEmpty()) {
                     continue;
                 }
                 
                 Item outputItem = result.getItem();
-                ResourceLocation outputId = BuiltInRegistries.ITEM.getKey(outputItem);
+                Identifier outputId = BuiltInRegistries.ITEM.getKey(outputItem);
                 
                 if (outputId == null) {
                     continue;
@@ -342,24 +383,29 @@ public class AutoRarityCalculator {
         }
         
         // 默认处理
-        for (Ingredient ingredient : recipe.getIngredients()) {
+        for (Optional<Ingredient> optIngredient : getRecipeIngredients(recipe)) {
+            if (!optIngredient.isPresent()) {
+                rarities.add(1); // 空配料视为 1
+                continue;
+            }
+            Ingredient ingredient = optIngredient.get();
             if (ingredient == null || ingredient.isEmpty()) {
                 rarities.add(1); // 空配料视为 1
                 continue;
             }
-            
+
             // 遍历配料的所有物品,取最低稀有度
             Integer minRarity = null;
-            for (ItemStack stack : ingredient.getItems()) {
-                Item item = stack.getItem();
-                
+            for (Item item : ingredient.items().map(Holder::value).toList()) {
+                ItemStack stack = new ItemStack(item);
+
                 // 先查注册表(数据包、FinalRarity.json、FinalRarityConfig文件夹)
-                ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+                Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
                 Integer rarity = null;
                 if (itemId != null) {
                     rarity = RarityRegistry.ITEM_RARITY_MAP.get(itemId);
                 }
-                
+
                 // 如果注册表没有,再查之前轮次计算的稀有度(E1, E2...)
                 if (rarity == null) {
                     // 优先查全局缓存(包括之前轮次计算的物品)
@@ -369,7 +415,7 @@ public class AutoRarityCalculator {
                         rarity = currentRoundResults.get(item);
                     }
                 }
-                
+
                 // 如果还没有,最后检查原版稀有度
                 if (rarity == null && org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
                     try {
@@ -385,7 +431,7 @@ public class AutoRarityCalculator {
                         // 忽略异常,继续返回 null
                     }
                 }
-                
+
                 if (rarity != null) {
                     // 取最低稀有度
                     if (minRarity == null || rarity < minRarity) {
@@ -393,12 +439,12 @@ public class AutoRarityCalculator {
                     }
                 }
             }
-            
+
             // 如果找不到稀有度,视为 1(普通物品)
             if (minRarity == null) {
                 minRarity = 1;
             }
-            
+
             rarities.add(minRarity);
         }
         
@@ -411,27 +457,27 @@ public class AutoRarityCalculator {
      */
     private static List<Integer> handleSmithingRecipe(Recipe<?> recipe) {
         List<Integer> rarities = new ArrayList<>();
-        
+
         try {
             // 使用 Mixin 访问器获取配料
-            org.yanbwe.raritycore.mixin.SmithingTransformRecipeAccessor accessor = 
+            org.yanbwe.raritycore.mixin.SmithingTransformRecipeAccessor accessor =
                 (org.yanbwe.raritycore.mixin.SmithingTransformRecipeAccessor) recipe;
-            
-            Ingredient template = accessor.getTemplate();
+
+            Optional<Ingredient> optTemplate = accessor.getTemplate();
             Ingredient base = accessor.getBase();
-            Ingredient addition = accessor.getAddition();
-            
+            Optional<Ingredient> optAddition = accessor.getAddition();
+
             // 处理三个配料(如果找不到稀有度则视为 1)
-            int templateRarity = processSmithingIngredient(template);
+            int templateRarity = optTemplate.map(ingredient -> processSmithingIngredient(ingredient)).orElse(1);
             int baseRarity = processSmithingIngredient(base);
-            int additionRarity = processSmithingIngredient(addition);
-            
+            int additionRarity = optAddition.map(ingredient -> processSmithingIngredient(ingredient)).orElse(1);
+
             rarities.add(templateRarity);
             rarities.add(baseRarity);
             rarities.add(additionRarity);
-            
+
             return rarities;
-            
+
         } catch (Exception e) {
             return Collections.emptyList();
         }
@@ -445,19 +491,19 @@ public class AutoRarityCalculator {
         if (ingredient == null || ingredient.isEmpty()) {
             return 1; // 空配料视为 1
         }
-        
+
         // 遍历配料的所有物品,取最低稀有度
         Integer minRarity = null;
-        for (ItemStack stack : ingredient.getItems()) {
-            Item item = stack.getItem();
-            
+        for (Item item : ingredient.items().map(Holder::value).toList()) {
+            ItemStack stack = new ItemStack(item);
+
             // 先查注册表(数据包、FinalRarity.json、FinalRarityConfig文件夹)
-            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
             Integer rarity = null;
             if (itemId != null) {
                 rarity = RarityRegistry.ITEM_RARITY_MAP.get(itemId);
             }
-            
+
             // 如果注册表没有,再查之前轮次计算的稀有度(E1, E2...)
             if (rarity == null) {
                 // 优先查全局缓存(包括之前轮次计算的物品)
@@ -467,7 +513,7 @@ public class AutoRarityCalculator {
                     rarity = currentRoundResults.get(item);
                 }
             }
-            
+
             // 如果还没有,最后检查原版稀有度
             if (rarity == null && org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
                 try {
@@ -483,7 +529,7 @@ public class AutoRarityCalculator {
                     // 忽略异常
                 }
             }
-            
+
             if (rarity != null) {
                 // 取最低稀有度
                 if (minRarity == null || rarity < minRarity) {
@@ -491,7 +537,7 @@ public class AutoRarityCalculator {
                 }
             }
         }
-        
+
         // 没找到稀有度,返回 1(普通物品)
         return minRarity != null ? minRarity : 1;
     }
@@ -540,18 +586,29 @@ public class AutoRarityCalculator {
         // 全部相同,检查配方类型
         int baseRarity = validRarities.get(0);
         
-        if (recipe instanceof ShapedRecipe || recipe instanceof ShapelessRecipe) {
+        if (recipe instanceof ShapedRecipe shapedRecipe) {
             // 工作台配方:检查数量比例
-            int ingredientCount = recipe.getIngredients().size();
-            int outputCount = recipe.getResultItem(net.minecraft.core.RegistryAccess.EMPTY).getCount();
-            
+            int ingredientCount = getRecipeIngredients(recipe).size();
+            int outputCount = getRecipeResult(recipe).getCount();
+
             // 使用浮点数除法避免精度丢失
             if (outputCount > 0 && (double) ingredientCount / outputCount >= 2.0) {
                 return baseRarity + 1; // 配料数量/产物数量 >= 2 → +1
             } else {
                 return baseRarity; // 否则继承
             }
-        } else if (recipe instanceof AbstractCookingRecipe) {
+        } else if (recipe instanceof ShapelessRecipe shapelessRecipe) {
+            // 工作台配方:检查数量比例
+            int ingredientCount = getRecipeIngredients(recipe).size();
+            int outputCount = getRecipeResult(recipe).getCount();
+
+            // 使用浮点数除法避免精度丢失
+            if (outputCount > 0 && (double) ingredientCount / outputCount >= 2.0) {
+                return baseRarity + 1; // 配料数量/产物数量 >= 2 → +1
+            } else {
+                return baseRarity; // 否则继承
+            }
+        } else if (recipe instanceof AbstractCookingRecipe cookingRecipe) {
             // 烧制配方 → 继承
             return baseRarity;
         } else {

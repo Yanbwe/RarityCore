@@ -1,6 +1,6 @@
 package org.yanbwe.raritycore.registry;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
@@ -19,42 +19,20 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class RarityRegistry {
 
-    
-    /**
-     * 物品稀有度映射(来自 FinalRarity.json、数据包等用户手动配置)
-     */
-    public static final ConcurrentHashMap<ResourceLocation, Integer> ITEM_RARITY_MAP = new ConcurrentHashMap<>();
-    
-    /**
-     * 自动计算的稀有度映射(来自 auto_rarity.json,优先级低于 ITEM_RARITY_MAP)
-     */
-    private static final ConcurrentHashMap<ResourceLocation, Integer> AUTO_RARITY_MAP = new ConcurrentHashMap<>();
-    
 
-    
-    /**
-     * 放入自动计算的稀有度配置
-     * @param itemId 物品资源位置
-     * @param rarity 稀有度等级
-     */
-    public static void putAutoRarity(ResourceLocation itemId, int rarity) {
+    public static final ConcurrentHashMap<Identifier, Integer> ITEM_RARITY_MAP = new ConcurrentHashMap<>();
+
+    private static final ConcurrentHashMap<Identifier, Integer> AUTO_RARITY_MAP = new ConcurrentHashMap<>();
+
+    public static void putAutoRarity(Identifier itemId, int rarity) {
         AUTO_RARITY_MAP.put(itemId, rarity);
     }
-    
-    /**
-     * 移除自动计算的稀有度配置
-     * @param itemId 物品资源位置
-     */
-    public static void removeAutoRarity(ResourceLocation itemId) {
+
+    public static void removeAutoRarity(Identifier itemId) {
         AUTO_RARITY_MAP.remove(itemId);
     }
 
-    /**
-     * 检查物品是否有自动计算的稀有度配置
-     * @param itemId 物品资源位置
-     * @return 如果有配置返回true
-     */
-    public static boolean hasAutoRarity(ResourceLocation itemId) {
+    public static boolean hasAutoRarity(Identifier itemId) {
         return AUTO_RARITY_MAP.containsKey(itemId);
     }
 
@@ -79,27 +57,21 @@ public class RarityRegistry {
      */
     public static void register(@Nullable Item item, int rarity, boolean syncToClients) {
         if (item != null) {
-            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
             if (itemId != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                 Integer oldRarity = ITEM_RARITY_MAP.put(itemId, rarity);
-                
-                // 发布稀有度变更事件
-                RarityChangeEvent.ChangeType changeType = (oldRarity == null) ? 
+
+                RarityChangeEvent.ChangeType changeType = (oldRarity == null) ?
                     RarityChangeEvent.ChangeType.REGISTER : RarityChangeEvent.ChangeType.UPDATE;
                 NeoForge.EVENT_BUS.post(new RarityChangeEvent(item, oldRarity, rarity, changeType));
-                
-                // 如果需要同步到客户端且当前在服务端环境中,记录变更操作
+
                 if (syncToClients) {
-                    // 记录变更操作
                     if (oldRarity == null) {
-                        // 新增操作
                         SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.ADD, itemId, rarity));
                     } else {
-                        // 更新操作
                         SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.UPDATE, itemId, rarity));
                     }
-                    
-                    // 同步到客户端
+
                     SyncManager.syncRarityToClients(ITEM_RARITY_MAP);
                 }
             }
@@ -113,24 +85,20 @@ public class RarityRegistry {
      */
     public static void unregister(@Nullable Item item, boolean syncToClients) {
         if (item != null) {
-            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
             if (itemId != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                 Integer removedRarity = ITEM_RARITY_MAP.remove(itemId);
-                
-                // 发布稀有度变更事件
+
                 if (removedRarity != null) {
                     NeoForge.EVENT_BUS.post(new RarityChangeEvent(
                         item, removedRarity, null, RarityChangeEvent.ChangeType.REMOVE));
                 }
-                
-                // 如果需要同步到客户端且当前在服务端环境中,记录删除操作
+
                 if (syncToClients) {
-                    // 记录删除操作
                     if (removedRarity != null) {
                         SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.DELETE, itemId, null));
                     }
-                    
-                    // 同步到客户端
+
                     SyncManager.syncRarityToClients(ITEM_RARITY_MAP);
                 }
             }
@@ -267,24 +235,17 @@ public class RarityRegistry {
         }
         
         Item item = itemStack.getItem();
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
         if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
             return 1;
         }
-        
-        // 使用统一的稀有度获取逻辑
+
         return getRarityInternal(itemId, itemStack, item);
     }
-    
-    /**
-     * 获取物品的稀有度等级
-     * 优先级顺序:物品数据匹配 > 神化模组稀有度 > 本模组稀有度(配置和数据包) > 原版稀有度映射
-     * @param item 要查稀有度的物品
-     * @return 物品的稀有度等级(1-7)
-     */
+
     public static @NotNull Integer getRarity(@Nullable Item item) {
         if (item != null) {
-            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
             if (itemId != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                 ItemStack tempStack = new ItemStack(item);
                 return getRarityInternal(itemId, tempStack, item);
@@ -293,76 +254,50 @@ public class RarityRegistry {
         return 1; // 默认为普通
     }
     
-    /**
-     * 统一的稀有度获取逻辑
-     * 按照以下优先级顺序获取稀有度:
-     * 1. 物品数据匹配配置(最高优先级)
-     * 2. 神化模组稀有度
-     * 3. 本模组的稀有度配置(包括配置文件和数据包)
-     * 4. 自动计算的稀有度配置
-     * 5. 原版稀有度映射(最低优先级)
-     * 
-     * @param itemId 物品资源位置,用于查找配置的稀有度
-     * @param itemStack 物品栈,用于检查物品数据和神化模组稀有度
-     * @param item 物品实例,用于获取默认稀有度
-     * @return 物品的稀有度等级(1-7),如果没有找到匹配的稀有度,返回1(普通)
-     */
-    private static @NotNull Integer getRarityInternal(ResourceLocation itemId, @Nullable ItemStack itemStack, Item item) {
+    private static @NotNull Integer getRarityInternal(Identifier itemId, @Nullable ItemStack itemStack, Item item) {
         Integer rarity;
-        
-        // 首先检查物品数据匹配配置(最高优先级)
+
         rarity = checkItemDataRarity(itemStack);
         if (rarity != null) {
-            // 填充缓存
             if (itemStack != null) {
                 org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
             }
             return rarity;
         }
-        
-        // 然后检查神化模组稀有度
+
         rarity = checkApotheosisRarity(itemStack);
         if (rarity != null) {
-            // 填充缓存
             if (itemStack != null) {
                 org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
             }
             return rarity;
         }
-        
-        // 然后检查本模组的稀有度配置(包括配置文件和数据包)- 最高优先级
+
         rarity = ITEM_RARITY_MAP.get(itemId);
         if (rarity != null) {
-            // 填充缓存
             if (itemStack != null) {
                 org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
             }
             return rarity;
         }
-        
-        // 然后检查自动计算的稀有度配置 - 中等优先级(低于 FinalRarity,高于原版)
+
         rarity = AUTO_RARITY_MAP.get(itemId);
         if (rarity != null) {
-            // 填充缓存
             if (itemStack != null) {
                 org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
             }
             return rarity;
         }
-        
-        // 最后检查原版稀有度映射(最低优先级)
+
         rarity = checkVanillaRarity(itemStack, item);
         if (rarity != null) {
-            // 填充缓存
             if (itemStack != null) {
                 org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
             }
             return rarity;
         }
-        
-        // 默认返回普通稀有度
+
         rarity = 1;
-        // 填充缓存
         if (itemStack != null) {
             org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
         }
@@ -441,19 +376,11 @@ public class RarityRegistry {
         }
     }
     
-    /**
-     * 获取物品稀有度映射
-     * @return 物品稀有度映射
-     */
-    public static java.util.Map<ResourceLocation, Integer> getItemRarityMap() {
+    public static java.util.Map<Identifier, Integer> getItemRarityMap() {
         return ITEM_RARITY_MAP;
     }
-    
-    /**
-     * 获取自动计算的稀有度映射
-     * @return 自动计算的稀有度映射
-     */
-    public static java.util.Map<ResourceLocation, Integer> getAutoRarityMap() {
+
+    public static java.util.Map<Identifier, Integer> getAutoRarityMap() {
         return AUTO_RARITY_MAP;
     }
     

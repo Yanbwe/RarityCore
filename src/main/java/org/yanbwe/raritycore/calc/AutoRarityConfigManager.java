@@ -1,7 +1,7 @@
 package org.yanbwe.raritycore.calc;
 
 import com.google.gson.JsonObject;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.core.registries.BuiltInRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.network.SyncManager;
@@ -25,7 +25,7 @@ public class AutoRarityConfigManager {
     private static final Path AUTO_RARITY_FILE = AUTO_CONFIG_DIR.resolve("auto_rarity.json");
     
     // 跟踪上次加载的 auto 配置物品 ID(用于 reload 时清理)
-    private static java.util.Set<ResourceLocation> lastLoadedAutoItems = new java.util.HashSet<>();
+    private static java.util.Set<Identifier> lastLoadedAutoItems = new java.util.HashSet<>();
     
     /**
      * 获取自动配置目录路径
@@ -67,10 +67,12 @@ public class AutoRarityConfigManager {
             
             for (String key : jsonObject.keySet()) {
                 try {
-                    ResourceLocation itemId = ResourceLocation.parse(key);
+                    Identifier itemId = Identifier.parse(key);
                     int rarity = jsonObject.get(key).getAsInt();
                     
-                    net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(itemId);
+                    net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(itemId)
+                        .map(holder -> holder.value())
+                        .orElse(null);
                     if (item != null) {
                         // 写入自动计算的稀有度映射(优先级低于 FinalRarity.json)
                         RarityRegistry.putAutoRarity(itemId, rarity);
@@ -96,7 +98,7 @@ public class AutoRarityConfigManager {
      * 清理上次加载的 auto 配置物品
      */
     private static void clearAutoLoadedItems() {
-        for (ResourceLocation itemId : lastLoadedAutoItems) {
+        for (Identifier itemId : lastLoadedAutoItems) {
             // 从自动计算映射中移除
             RarityRegistry.removeAutoRarity(itemId);
         }
@@ -133,8 +135,8 @@ public class AutoRarityConfigManager {
      * @return 被删除的物品 ID 列表
      */
     @SuppressWarnings("null")
-    public static java.util.List<ResourceLocation> deleteAutoRarityFile() {
-        java.util.List<ResourceLocation> removedIds = new java.util.ArrayList<>();
+    public static java.util.List<Identifier> deleteAutoRarityFile() {
+        java.util.List<Identifier> removedIds = new java.util.ArrayList<>();
         try {
             if (Files.exists(AUTO_RARITY_FILE)) {
                 // 读取文件内容,获取所有物品 ID
@@ -143,7 +145,7 @@ public class AutoRarityConfigManager {
                     JsonObject jsonObject = com.google.gson.JsonParser.parseString(content).getAsJsonObject();
                     for (String key : jsonObject.keySet()) {
                         try {
-                            removedIds.add(ResourceLocation.parse(key));
+                            removedIds.add(Identifier.parse(key));
                         } catch (Exception e) {
                             // 忽略无效的 ID
                         }
@@ -175,7 +177,7 @@ public class AutoRarityConfigManager {
             int writtenCount = 0;
             
             for (Map.Entry<net.minecraft.world.item.Item, Integer> entry : computedRarities.entrySet()) {
-                ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(entry.getKey());
+                Identifier itemId = BuiltInRegistries.ITEM.getKey(entry.getKey());
                 if (itemId != null) {
                     jsonObject.addProperty(itemId.toString(), entry.getValue());
                     writtenCount++;

@@ -1,6 +1,6 @@
 package org.yanbwe.raritycore.network;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.*;
 
@@ -164,10 +164,10 @@ public class SyncBatchManager {
         }
         
         // 使用Map来跟踪每个物品的最新状态
-        Map<ResourceLocation, ChangeOperation> latestOperations = new LinkedHashMap<>();
+        Map<Identifier, ChangeOperation> latestOperations = new LinkedHashMap<>();
         
         for (ChangeOperation op : operations) {
-            ResourceLocation itemId = op.getItemId();
+            Identifier itemId = op.getItemId();
             
             switch (op.getType()) {
                 case ADD:

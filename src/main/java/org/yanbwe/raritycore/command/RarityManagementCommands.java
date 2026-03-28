@@ -5,9 +5,9 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.commands.arguments.IdentifierArgument;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -31,7 +31,7 @@ public class RarityManagementCommands {
     @SuppressWarnings("null")
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("raritycore")
-            .requires(source -> source.hasPermission(2))
+            .requires(Commands.hasPermission(Commands.LEVEL_MODERATORS))
             .then(Commands.literal("sethand")
                 .then(Commands.argument("rarity", IntegerArgumentType.integer())
                     .executes(context -> setHandRarity(
@@ -44,19 +44,19 @@ public class RarityManagementCommands {
                 .executes(context -> removeHandRarity(context.getSource()))
             )
             .then(Commands.literal("removerarity")
-                .then(Commands.argument("item", ResourceLocationArgument.id())
+                .then(Commands.argument("item", IdentifierArgument.id())
                     .executes(context -> removeItemRarity(
                         context.getSource(),
-                        ResourceLocationArgument.getId(context, "item")
+                        IdentifierArgument.getId(context, "item")
                     ))
                 )
             )
             .then(Commands.literal("setrarity")
-                .then(Commands.argument("item", ResourceLocationArgument.id())
+                .then(Commands.argument("item", IdentifierArgument.id())
                     .then(Commands.argument("rarity", IntegerArgumentType.integer())
                         .executes(context -> setItemRarity(
                             context.getSource(),
-                            ResourceLocationArgument.getId(context, "item"),
+                            IdentifierArgument.getId(context, "item"),
                             IntegerArgumentType.getInteger(context, "rarity")
                         ))
                     )
@@ -82,22 +82,22 @@ public class RarityManagementCommands {
             }
             
             Item item = itemStack.getItem();
-            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
-            
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+
             if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                 source.sendSuccess(() -> Component.translatable("rarity.core.unrecognized_item").withStyle(ChatFormatting.RED), false);
                 return 0;
             }
-            
+
             // 注册稀有度(不自动同步,因为后面会手动同步)
             RarityRegistry.register(item, rarity, false);
-            
+
             // 保存到配置文件
             saveRarityToConfig(itemId.toString(), rarity);
-            
+
             // 手动同步到所有客户端
             SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
-            
+
             source.sendSuccess(() -> Component.translatable("rarity.core.item_set_rarity", itemId.toString(), rarity).withStyle(ChatFormatting.GREEN), false);
             return 1;
         } catch (Exception e) {
@@ -106,13 +106,15 @@ public class RarityManagementCommands {
             return 0;
         }
     }
-    
+
     /**
      * 设置指定物品的稀有度
      */
-    private static int setItemRarity(CommandSourceStack source, ResourceLocation itemId, int rarity) {
-        Item item = BuiltInRegistries.ITEM.get(itemId);
-        
+    private static int setItemRarity(CommandSourceStack source, Identifier itemId, int rarity) {
+        Item item = BuiltInRegistries.ITEM.get(itemId)
+            .map(holder -> holder.value())
+            .orElse(null);
+
         if (item == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
             source.sendSuccess(() -> Component.translatable("rarity.core.unknown_item_id", itemId.toString()).withStyle(ChatFormatting.RED), false);
             return 0;
@@ -145,22 +147,22 @@ public class RarityManagementCommands {
             }
             
             Item item = itemStack.getItem();
-            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
-            
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+
             if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                 source.sendSuccess(() -> Component.translatable("rarity.core.unrecognized_item").withStyle(ChatFormatting.RED), false);
                 return 0;
             }
-            
+
             // 删除稀有度(不自动同步,因为后面会手动同步)
             RarityRegistry.unregister(item, false);
-            
+
             // 保存到配置文件(稀有度为0表示删除)
             saveRarityToConfig(itemId.toString(), 0);
-            
+
             // 手动同步到所有客户端
             SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
-            
+
             source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity", itemId.toString()).withStyle(ChatFormatting.GREEN), false);
             return 1;
         } catch (Exception e) {
@@ -169,27 +171,29 @@ public class RarityManagementCommands {
             return 0;
         }
     }
-    
+
     /**
      * 删除指定物品的稀有度
      */
-    private static int removeItemRarity(CommandSourceStack source, ResourceLocation itemId) {
-        Item item = BuiltInRegistries.ITEM.get(itemId);
-        
+    private static int removeItemRarity(CommandSourceStack source, Identifier itemId) {
+        Item item = BuiltInRegistries.ITEM.get(itemId)
+            .map(holder -> holder.value())
+            .orElse(null);
+
         if (item == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
             source.sendSuccess(() -> Component.translatable("rarity.core.unknown_item_id", itemId.toString()).withStyle(ChatFormatting.RED), false);
             return 0;
         }
-        
+
         // 删除稀有度(不自动同步,因为后面会手动同步)
         RarityRegistry.unregister(item, false);
-        
+
         // 保存到配置文件(稀有度为0表示删除)
         saveRarityToConfig(itemId.toString(), 0);
-        
+
         // 手动同步到所有客户端
         SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
-        
+
         source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity_by_id", itemId.toString()).withStyle(ChatFormatting.GREEN), false);
         return 1;
     }

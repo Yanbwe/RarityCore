@@ -1,7 +1,8 @@
 package org.yanbwe.raritycore.event;
 
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -9,85 +10,54 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import org.yanbwe.raritycore.service.ServiceFactory;
 
-/**
- * RarityCore 事件处理器
- * 负责处理所有事件监听
- */
 public class RarityCoreEventHandler {
-    
-    /**
-     * 注册资源重载监听器
-     * @param event 资源重载监听器事件
-     */
+
+    private static final Identifier RARITY_DATA_LOADER_KEY = Identifier.fromNamespaceAndPath("raritycore", "rarity");
+    private static final Identifier ITEM_DATA_CONFIG_LOADER_KEY = Identifier.fromNamespaceAndPath("raritycore", "item_data_matches");
+
     @SubscribeEvent
-    public void addReloadListeners(AddReloadListenerEvent event) {
+    public void addReloadListeners(AddServerReloadListenersEvent event) {
         ServiceFactory factory = ServiceFactory.getInstance();
-        event.addListener(factory.getRarityDataLoader());
-        
-        // 注册物品数据匹配配置加载器(支持数据包加载)
-        event.addListener(factory.createItemDataConfigLoader());
-        
-        // 注册缓存失效监听器到事件总线
+        event.addListener(RARITY_DATA_LOADER_KEY, factory.getRarityDataLoader());
+
+        event.addListener(ITEM_DATA_CONFIG_LOADER_KEY, factory.createItemDataConfigLoader());
+
         try {
             Class<?> listenerClass = Class.forName("org.yanbwe.raritycore.client.CacheInvalidationListener");
             net.neoforged.neoforge.common.NeoForge.EVENT_BUS.register(listenerClass);
         } catch (ClassNotFoundException e) {
             org.yanbwe.raritycore.RarityCore.LOGGER.warn("CacheInvalidationListener class not found, skipping registration");
         }
-        
-        // 加载本地物品数据匹配配置
+
         org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader.loadAllConfigs();
     }
-    
-    /**
-     * 服务器启动事件
-     * @param event 服务器启动事件
-     */
+
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         ServiceFactory factory = ServiceFactory.getInstance();
-        // 启动调度器服务
         factory.getSchedulerService().startScheduledTasks();
     }
-    
-    /**
-     * 服务器停止事件
-     * @param event 服务器停止事件
-     */
+
     @SubscribeEvent
     public void onServerStopped(ServerStoppedEvent event) {
         ServiceFactory factory = ServiceFactory.getInstance();
-        // 停止调度器服务
         factory.getSchedulerService().stopScheduledTasks();
-        
-        // 清空变更缓冲区
+
         org.yanbwe.raritycore.network.SyncManager.clearChangeBuffer();
-        
-        // 关闭延迟同步管理器
+
         org.yanbwe.raritycore.network.DelayedSyncManager.shutdown();
     }
-    
-    /**
-     * 注册命令
-     * @param event 命令注册事件
-     */
+
     @SubscribeEvent
     public void registerCommands(RegisterCommandsEvent event) {
         org.yanbwe.raritycore.command.RarityCoreCommands.register(event.getDispatcher());
     }
-    
-    /**
-     * 玩家登录事件
-     * @param event 玩家登录事件
-     */
+
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        // 登录时向玩家发送完整稀有度数据
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-            // 发送完整稀有度数据
             org.yanbwe.raritycore.network.SyncManager.syncRarityToClients(org.yanbwe.raritycore.registry.RarityRegistry.getItemRarityMap());
-            
-            // 发送物品数据匹配规则
+
             org.yanbwe.raritycore.network.ItemDataSyncManager.syncItemDataRulesToPlayer(serverPlayer);
         }
     }

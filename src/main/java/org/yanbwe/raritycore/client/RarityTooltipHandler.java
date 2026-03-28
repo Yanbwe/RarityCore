@@ -8,7 +8,7 @@ package org.yanbwe.raritycore.client;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
@@ -130,18 +130,15 @@ public class RarityTooltipHandler {
             return false;
         }
 
-        // 获取物品ID
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
         if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
             return false;
         }
 
-        // 检查是否在手动配置中有稀有度
         if (RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId)) {
             return true;
         }
 
-        // 检查是否在自动计算稀有度中有配置
         if (RarityRegistry.hasAutoRarity(itemId)) {
             return true;
         }

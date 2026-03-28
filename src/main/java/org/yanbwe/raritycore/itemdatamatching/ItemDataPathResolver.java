@@ -291,49 +291,49 @@ public class ItemDataPathResolver {
         if (tag == null) {
             return null;
         }
-        
+
         // 使用最安全的方式:通过ID判断类型并转换
         switch (tag.getId()) {
             case 1: // BYTE
-            case 2: // SHORT  
+            case 2: // SHORT
             case 3: // INT
             case 4: // LONG
             case 5: // FLOAT
             case 6: // DOUBLE
                 try {
-                    return Double.parseDouble(tag.getAsString());
+                    return Double.parseDouble(tag.asString().orElse(""));
                 } catch (NumberFormatException e) {
-                    return tag.getAsString();
+                    return tag.asString().orElse("");
                 }
             case 7: // BYTE_ARRAY
                 if (tag instanceof net.minecraft.nbt.ByteArrayTag byteArrayTag) {
                     return byteArrayTag.getAsByteArray();
                 }
-                return tag.getAsString();
+                return tag.asString().orElse("");
             case 8: // STRING
-                return tag.getAsString();
+                return tag.asString().orElse("");
             case 9: // LIST
                 if (tag instanceof ListTag listTag) {
                     return getListAsJavaList(listTag);
                 }
-                return tag.getAsString();
+                return tag.asString().orElse("");
             case 10: // COMPOUND
                 if (tag instanceof CompoundTag compoundTag) {
                     return getCompoundAsJavaMap(compoundTag);
                 }
-                return tag.getAsString();
+                return tag.asString().orElse("");
             case 11: // INT_ARRAY
                 if (tag instanceof net.minecraft.nbt.IntArrayTag intArrayTag) {
                     return intArrayTag.getAsIntArray();
                 }
-                return tag.getAsString();
+                return tag.asString().orElse("");
             case 12: // LONG_ARRAY
                 if (tag instanceof net.minecraft.nbt.LongArrayTag longArrayTag) {
                     return longArrayTag.getAsLongArray();
                 }
-                return tag.getAsString();
+                return tag.asString().orElse("");
             default:
-                return tag.getAsString();
+                return tag.asString().orElse("");
         }
     }
     
@@ -354,7 +354,7 @@ public class ItemDataPathResolver {
      */
     private static java.util.Map<String, Object> getCompoundAsJavaMap(CompoundTag compoundTag) {
         java.util.Map<String, Object> result = new java.util.HashMap<>();
-        for (String key : compoundTag.getAllKeys()) {
+        for (String key : compoundTag.keySet()) {
             Tag value = compoundTag.get(key);
             result.put(key, getTagValue(value));
         }

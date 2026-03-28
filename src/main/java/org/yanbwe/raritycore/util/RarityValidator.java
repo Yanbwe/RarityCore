@@ -1,6 +1,6 @@
 package org.yanbwe.raritycore.util;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.core.registries.BuiltInRegistries;
 
@@ -44,7 +44,7 @@ public class RarityValidator {
             return false;
         }
         
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
         return itemId != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey());
     }
     
@@ -53,7 +53,7 @@ public class RarityValidator {
      * @param item 物品对象
      * @return 资源位置，如果物品无效则返回null
      */
-    public static ResourceLocation getItemId(Item item) {
+    public static Identifier getItemId(Item item) {
         if (!isValidItem(item)) {
             return null;
         }

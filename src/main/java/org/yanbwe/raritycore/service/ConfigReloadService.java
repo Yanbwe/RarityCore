@@ -125,7 +125,9 @@ public class ConfigReloadService {
                 // 应用所有待处理操作
                 int appliedCount = 0;
                 for (ChangeOperation op : pendingOps) {
-                    net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(op.getItemId());
+                    net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(op.getItemId())
+                        .map(holder -> holder.value())
+                        .orElse(null);
                     if (item != null && !op.getItemId().equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                         switch (op.getType()) {
                             case ADD:

@@ -5,7 +5,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.registry.RarityRegistry;
@@ -13,10 +13,10 @@ import org.yanbwe.raritycore.registry.RarityRegistry;
 import java.util.HashMap;
 import java.util.Map;
 
-public record RaritySyncPayload(Map<ResourceLocation, Integer> rarityData) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<RaritySyncPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.RARITY_SYNC_CHANNEL));
+public record RaritySyncPayload(Map<Identifier, Integer> rarityData) implements CustomPacketPayload {
+    public static final CustomPacketPayload.Type<RaritySyncPayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.RARITY_SYNC_CHANNEL));
     public static final StreamCodec<FriendlyByteBuf, RaritySyncPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.map(HashMap::new, ResourceLocation.STREAM_CODEC, ByteBufCodecs.VAR_INT),
+            ByteBufCodecs.map(HashMap::new, Identifier.STREAM_CODEC, ByteBufCodecs.VAR_INT),
             RaritySyncPayload::rarityData,
             RaritySyncPayload::new);
 
@@ -28,7 +28,7 @@ public record RaritySyncPayload(Map<ResourceLocation, Integer> rarityData) imple
     public void handle(IPayloadContext context) {
         context.enqueueWork(() -> {
             RarityRegistry.ITEM_RARITY_MAP.clear();
-            for (Map.Entry<ResourceLocation, Integer> entry : rarityData.entrySet()) {
+            for (Map.Entry<Identifier, Integer> entry : rarityData.entrySet()) {
                 var item = BuiltInRegistries.ITEM.get(entry.getKey());
                 if (item != null && !entry.getKey().equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                     RarityRegistry.ITEM_RARITY_MAP.put(entry.getKey(), entry.getValue());

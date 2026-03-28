@@ -5,17 +5,18 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
-public record EditModeRequestPayload(ResourceLocation itemId, int rarity, boolean deleteMode) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<EditModeRequestPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.EDIT_MODE_REQUEST_CHANNEL));
+public record EditModeRequestPayload(Identifier itemId, int rarity, boolean deleteMode) implements CustomPacketPayload {
+    public static final CustomPacketPayload.Type<EditModeRequestPayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.EDIT_MODE_REQUEST_CHANNEL));
     public static final StreamCodec<FriendlyByteBuf, EditModeRequestPayload> STREAM_CODEC = StreamCodec.composite(
-            ResourceLocation.STREAM_CODEC,
+            Identifier.STREAM_CODEC,
             EditModeRequestPayload::itemId,
             ByteBufCodecs.VAR_INT,
             EditModeRequestPayload::rarity,
@@ -36,7 +37,7 @@ public record EditModeRequestPayload(ResourceLocation itemId, int rarity, boolea
                 return;
             }
 
-            if (!serverPlayer.hasPermissions(2)) {
+            if (!Commands.LEVEL_MODERATORS.check(serverPlayer.permissions())) {
                 RarityCore.LOGGER.warn("Player {} without sufficient permissions tried to use edit mode",
                     serverPlayer.getName().getString());
                 return;
@@ -46,8 +47,9 @@ public record EditModeRequestPayload(ResourceLocation itemId, int rarity, boolea
                 serverPlayer.getName().getString(), itemId, rarity, deleteMode);
 
             try {
-                var item = BuiltInRegistries.ITEM.get(itemId);
-                if (item != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
+                var itemHolder = BuiltInRegistries.ITEM.get(itemId);
+                if (itemHolder.isPresent() && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
+                    var item = itemHolder.get().value();
                     if (deleteMode) {
                         RarityRegistry.unregister(item, false);
                         RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), 0);

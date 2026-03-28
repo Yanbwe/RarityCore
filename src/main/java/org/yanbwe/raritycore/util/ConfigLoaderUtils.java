@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.core.registries.BuiltInRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.network.ChangeOperation;
@@ -52,9 +52,11 @@ public class ConfigLoaderUtils {
                         }
                         // 注意:不再限制最大稀有度值,允许8-10级等高级稀有度
                         
-                        ResourceLocation itemId = ResourceLocation.parse(itemIdString);
-                        net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(itemId);
-                        
+                        Identifier itemId = Identifier.parse(itemIdString);
+                        net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(itemId)
+                            .map(holder -> holder.value())
+                            .orElse(null);
+
                         if (item == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                             RarityCore.LOGGER.warn("Unknown item '{}' in file '{}'", itemIdString, fileName);
                             continue;
@@ -88,19 +90,21 @@ public class ConfigLoaderUtils {
      */
     public static int loadJsonConfigFileWithBatch(Path configFile, String fileName, boolean useBatchProcessing) {
         return loadJsonConfigFile(configFile, fileName, (itemIdString, rarity) -> {
-            ResourceLocation itemId = ResourceLocation.parse(itemIdString);
-            
+            Identifier itemId = Identifier.parse(itemIdString);
+
             if (useBatchProcessing) {
                 // 使用批处理管理器
                 ChangeOperation operation = new ChangeOperation(
                     rarity == 0 ? ChangeOperation.OperationType.DELETE : ChangeOperation.OperationType.ADD,
-                    itemId, 
+                    itemId,
                     rarity == 0 ? null : rarity
                 );
                 org.yanbwe.raritycore.network.SyncBatchManager.addOperation(operation);
             } else {
                 // 直接注册到稀有度注册表
-                net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(itemId);
+                net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(itemId)
+                    .map(holder -> holder.value())
+                    .orElse(null);
                 if (item != null) {
                     org.yanbwe.raritycore.registry.RarityRegistry.register(item, rarity, false);
                 }

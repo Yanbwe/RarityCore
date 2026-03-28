@@ -1,6 +1,6 @@
 package org.yanbwe.raritycore.network;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -64,7 +64,7 @@ public class ItemDataSyncManager {
     private static List<ItemDataSyncPayload.ItemDataRuleDataPayload> getAllRulesAsData() {
         List<ItemDataSyncPayload.ItemDataRuleDataPayload> dataList = new ArrayList<>();
 
-        Map<ResourceLocation, List<ItemDataMatchRule>> rulesCache =
+        Map<Identifier, List<ItemDataMatchRule>> rulesCache =
             ItemDataRarityMatcher.getRulesCacheForSync();
 
         for (List<ItemDataMatchRule> rules : rulesCache.values()) {

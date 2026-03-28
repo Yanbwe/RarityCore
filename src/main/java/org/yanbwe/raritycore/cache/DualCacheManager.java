@@ -117,19 +117,12 @@ public class DualCacheManager {
         StringBuilder key = new StringBuilder(itemId.toString());
 
         try {
-            var tag = itemStack.save(net.minecraft.core.RegistryAccess.EMPTY);
-            if (tag instanceof net.minecraft.nbt.CompoundTag compoundTag) {
-                net.minecraft.nbt.CompoundTag filteredTag = new net.minecraft.nbt.CompoundTag();
-
-                for (String keyName : compoundTag.getAllKeys()) {
-                    if (!keyName.equals("id") && !keyName.equals("count")) {
-                        filteredTag.put(keyName, compoundTag.get(keyName));
-                    }
-                }
-
-                if (!filteredTag.isEmpty()) {
+            var componentsPatch = itemStack.getComponentsPatch();
+            if (componentsPatch != null && !componentsPatch.isEmpty()) {
+                String componentsString = componentsPatch.toString();
+                if (componentsString != null && !componentsString.isEmpty()) {
                     java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-                    byte[] hash = md.digest(filteredTag.toString().getBytes());
+                    byte[] hash = md.digest(componentsString.getBytes());
                     StringBuilder hexString = new StringBuilder();
                     for (byte b : hash) {
                         hexString.append(String.format("%02x", b));

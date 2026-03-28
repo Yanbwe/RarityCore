@@ -5,7 +5,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.itemdatamatching.*;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record ItemDataSyncPayload(List<ItemDataRuleDataPayload> rules, boolean isFullSync) implements CustomPacketPayload {
-    public static final CustomPacketPayload.Type<ItemDataSyncPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.ITEM_DATA_SYNC_CHANNEL));
+    public static final CustomPacketPayload.Type<ItemDataSyncPayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.ITEM_DATA_SYNC_CHANNEL));
     public static final StreamCodec<FriendlyByteBuf, ItemDataSyncPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.collection(ArrayList::new, ItemDataRuleDataPayload.STREAM_CODEC),
             ItemDataSyncPayload::rules,
@@ -74,7 +74,7 @@ public record ItemDataSyncPayload(List<ItemDataRuleDataPayload> rules, boolean i
 
         public ItemDataMatchRule toRule() {
             try {
-                ResourceLocation itemLoc = ResourceLocation.parse(itemId);
+                Identifier itemLoc = Identifier.parse(itemId);
                 List<ItemDataCondition> itemDataConditions = new ArrayList<>();
 
                 for (ConditionDataPayload conditionData : conditions) {
