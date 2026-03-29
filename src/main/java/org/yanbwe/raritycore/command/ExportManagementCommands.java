@@ -128,7 +128,7 @@ public class ExportManagementCommands {
             Files.createDirectories(configDir);
             
             // 生成带 Minecraft 版本和时间戳的文件名
-            String mcVersion = "1.20.1"; // 从 gradle.properties 获取的 Minecraft 版本
+            String mcVersion = "1.21.11"; // 从 gradle.properties 获取的 Minecraft 版本
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
             String fileName = "export_all_" + mcVersion + "_" + timestamp + ".json";
             Path exportFile = configDir.resolve(fileName);
@@ -155,7 +155,7 @@ public class ExportManagementCommands {
             Files.createDirectories(configDir);
             
             // 生成带 Minecraft 版本和时间戳的文件名
-            String mcVersion = "1.20.1";
+            String mcVersion = "1.21.11";
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
             String fileName = "export_mod_" + modId.getNamespace() + "_" + mcVersion + "_" + timestamp + ".json";
             Path exportFile = configDir.resolve(fileName);
@@ -182,7 +182,7 @@ public class ExportManagementCommands {
             Files.createDirectories(configDir);
             
             // 生成带 Minecraft 版本和时间戳的文件夹名
-            String mcVersion = "1.20.1";
+            String mcVersion = "1.21.11";
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
             Path exportDir = configDir.resolve("export_all-mod_" + mcVersion + "_" + timestamp);
             Files.createDirectories(exportDir);
