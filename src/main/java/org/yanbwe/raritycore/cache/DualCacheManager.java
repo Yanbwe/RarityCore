@@ -2,8 +2,8 @@ package org.yanbwe.raritycore.cache;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.RarityCore;
 
 import java.util.concurrent.TimeUnit;

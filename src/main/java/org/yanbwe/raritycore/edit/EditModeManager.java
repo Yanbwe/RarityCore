@@ -1,13 +1,12 @@
 package org.yanbwe.raritycore.edit;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.core.registries.BuiltInRegistries;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
 import org.yanbwe.raritycore.network.EditModeRequestPayload;
-import org.yanbwe.raritycore.network.NetworkConstants;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.ArrayList;

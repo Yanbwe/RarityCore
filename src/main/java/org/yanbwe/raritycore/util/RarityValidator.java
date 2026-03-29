@@ -1,8 +1,8 @@
 package org.yanbwe.raritycore.util;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
-import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
  * 稀有度验证工具类

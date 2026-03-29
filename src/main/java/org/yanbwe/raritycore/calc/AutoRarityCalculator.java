@@ -4,21 +4,21 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.*;
-import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ServerConfigManager;
-import org.yanbwe.raritycore.service.ConfigReloadService;
 import org.yanbwe.raritycore.mixin.ShapedRecipeAccessor;
 import org.yanbwe.raritycore.mixin.ShapelessRecipeAccessor;
 import org.yanbwe.raritycore.mixin.SingleItemRecipeAccessor;
 import org.yanbwe.raritycore.mixin.SmithingTransformRecipeAccessor;
 import org.yanbwe.raritycore.registry.RarityRegistry;
+import org.yanbwe.raritycore.service.ConfigReloadService;
 
 import java.util.*;
 

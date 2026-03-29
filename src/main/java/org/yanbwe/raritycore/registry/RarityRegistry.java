@@ -1,11 +1,11 @@
 package org.yanbwe.raritycore.registry;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.neoforge.common.NeoForge;
-import net.minecraft.core.registries.BuiltInRegistries;
 import org.jetbrains.annotations.NotNull;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.compat.CompatibilityChecker;

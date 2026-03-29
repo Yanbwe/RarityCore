@@ -1,8 +1,8 @@
 package org.yanbwe.raritycore.itemdatamatching;
 
 import com.google.gson.*;
-import net.minecraft.resources.Identifier;
 import net.minecraft.resources.FileToIdConverter;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.ExtraCodecs;

@@ -4,8 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonReader;
-import net.minecraft.resources.Identifier;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 

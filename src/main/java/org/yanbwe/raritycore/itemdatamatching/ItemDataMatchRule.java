@@ -1,7 +1,6 @@
 package org.yanbwe.raritycore.itemdatamatching;
 
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
 import java.util.Objects;

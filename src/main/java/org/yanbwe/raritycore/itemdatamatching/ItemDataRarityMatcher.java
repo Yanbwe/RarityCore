@@ -1,9 +1,9 @@
 package org.yanbwe.raritycore.itemdatamatching;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.core.registries.BuiltInRegistries;
 import org.yanbwe.raritycore.RarityCore;
 
 import javax.annotation.Nullable;
