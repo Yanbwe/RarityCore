@@ -1,0 +1,109 @@
+package org.yanbwe.raritycore.service;
+
+import org.yanbwe.raritycore.RarityCore;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * 调度器服务
+ * 负责管理所有定时任务和调度器
+ */
+public class SchedulerService {
+    
+    private ScheduledExecutorService syncScheduler;
+    private final ServiceFactory serviceFactory;
+    
+    public SchedulerService(ServiceFactory serviceFactory) {
+        this.serviceFactory = serviceFactory;
+    }
+    
+    /**
+     * 启动所有调度任务
+     */
+    public void startScheduledTasks() {
+        // 启动智能计划同步任务
+        syncScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "RarityCore-Incremental-Sync");
+            t.setDaemon(true);  // 设置为守护线程
+            return t;
+        });
+        
+        // 延时发送兼容性提示(等待世界完全加载)
+        syncScheduler.schedule(() -> {
+            try {
+                serviceFactory.getCompatibilityChecker().notifyPlayersOfCompatibilityIssue();
+            } catch (Exception e) {
+                RarityCore.LOGGER.debug("Failed to send compatibility notification", e);
+            }
+        }, 5, TimeUnit.SECONDS); // 5 秒后发送提示
+        
+        // 延时启动自动稀有度计算(世界启动 5 秒后检测)
+        syncScheduler.schedule(() -> {
+            try {
+                checkAndStartAutoCalculation();
+            } catch (Exception e) {
+                RarityCore.LOGGER.error("Failed to start auto rarity calculation", e);
+            }
+        }, 5, TimeUnit.SECONDS);
+        
+        syncScheduler.scheduleAtFixedRate(() -> {
+            try {
+                // 使用批处理管理器检查是否需要同步
+                int pendingCount = serviceFactory.getSyncBatchManager().getPendingOperationCount();
+                if (pendingCount > 0) {
+                    serviceFactory.getSyncManager().syncIncrementalChangesToClients();
+                }
+            } catch (Exception e) {
+                RarityCore.LOGGER.error("增量同步过程中发生错误", e);
+            }
+        }, 0, 2000, TimeUnit.MILLISECONDS); // 每2秒检查一次,与批处理窗口匹配
+        
+        // 添加自动稀有度计算的 tick 任务
+        syncScheduler.scheduleAtFixedRate(() -> {
+            try {
+                // 每 2 tick 调用计算器,减少性能开销
+                serviceFactory.getAutoRarityCalculator().tick();
+            } catch (Exception e) {
+                RarityCore.LOGGER.error("Error occurred during auto rarity calculation tick", e);
+            }
+        }, 100, 100, TimeUnit.MILLISECONDS); // 100ms 后开始,每 100ms(2tick) 执行一次
+    }
+    
+    /**
+     * 停止所有调度任务
+     */
+    public void stopScheduledTasks() {
+        // 服务器停止时关闭调度器
+        if (syncScheduler != null) {
+            syncScheduler.shutdown();
+            try {
+                if (!syncScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    syncScheduler.shutdownNow();
+                    if (!syncScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                        RarityCore.LOGGER.error("线程池未能正确终止");
+                    }
+                }
+            } catch (InterruptedException e) {
+                syncScheduler.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+            syncScheduler = null;
+        }
+    }
+    
+    /**
+     * 检查并启动自动稀有度计算
+     */
+    private void checkAndStartAutoCalculation() {
+        // 检查 auto_rarity.json 是否存在
+        java.nio.file.Path autoRarityFile = serviceFactory.getAutoRarityConfigManager().getAutoRarityFilePath();
+        if (!java.nio.file.Files.exists(autoRarityFile)) {
+            // 文件不存在,开始自动计算
+            serviceFactory.getAutoRarityCalculator().startAutoCalculation();
+        } else {
+            RarityCore.LOGGER.debug("自动稀有度配置已存在,跳过计算: {}", autoRarityFile);
+        }
+    }
+}
