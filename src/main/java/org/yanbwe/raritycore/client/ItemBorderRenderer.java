@@ -60,23 +60,14 @@ public class ItemBorderRenderer {
         }
     }
 
-    @SuppressWarnings("null")
     private static void renderTextureBorder(GuiGraphics guiGraphics, int rarity, int x, int y) {
         String textureName = "rarity_" + rarity;
-        Identifier textureLocation = null;
 
         try {
-            textureLocation = Identifier.parse(RarityConstants.BORDER_TEXTURE_PATH + textureName + RarityConstants.TEXTURE_SUFFIX);
+            Identifier textureLocation = Identifier.parse(RarityConstants.BORDER_TEXTURE_PATH + textureName + RarityConstants.TEXTURE_SUFFIX);
+            guiGraphics.blit(textureLocation, x, y, 16, 16, 0, 0, 16, 16);
         } catch (Exception e) {
-            RarityCore.LOGGER.warn("Failed to parse texture path for rarity {}, falling back to color border: {}", rarity, e.getMessage());
-            renderColorBorder(guiGraphics, rarity, x, y);
-            return;
-        }
-
-        try {
-            guiGraphics.blit(textureLocation, x, y, 0, 0, 16, 16, 16, 16);
-        } catch (Exception e) {
-            RarityCore.LOGGER.warn("Failed to load texture for rarity {}, falling back to color border: {}", rarity, e.getMessage());
+            RarityCore.LOGGER.warn("Failed to render texture border for rarity {}, falling back to color border: {}", rarity, e.getMessage());
             renderColorBorder(guiGraphics, rarity, x, y);
         }
     }
