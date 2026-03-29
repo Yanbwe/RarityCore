@@ -14,6 +14,7 @@ import org.yanbwe.raritycore.compat.CompatibilityManager;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.data.RarityDataLoader;
+import org.yanbwe.raritycore.service.ConfigReloadService;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader;
 import org.yanbwe.raritycore.network.DelayedSyncManager;
 import org.yanbwe.raritycore.network.ItemDataSyncManager;
@@ -80,6 +81,7 @@ public class ServiceFactory {
     private void initializeServiceRegistry() {
         // 注册服务,按照依赖关系设置优先级
         registerService(ConfigManager.class, ConfigManager::new, 10);
+        registerService(ConfigReloadService.class, ConfigReloadService::new, 12);
         registerService(ServerConfigManager.class, ServerConfigManager::new, 15);
         registerService(DualCacheManager.class, DualCacheManager::new, 20);
         registerService(CompatibilityManager.class, CompatibilityManager::new, 25);
@@ -272,6 +274,10 @@ public class ServiceFactory {
      */
     public RarityRegistry getRarityRegistry() {
         return getService(RarityRegistry.class);
+    }
+    
+    public ConfigReloadService getConfigReloadService() {
+        return getService(ConfigReloadService.class);
     }
     
     /**

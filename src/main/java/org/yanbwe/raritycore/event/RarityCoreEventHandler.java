@@ -2,6 +2,7 @@ package org.yanbwe.raritycore.event;
 
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -34,8 +35,7 @@ public class RarityCoreEventHandler {
 
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
-        ServiceFactory factory = ServiceFactory.getInstance();
-        factory.getSchedulerService().startScheduledTasks();
+        NeoForge.EVENT_BUS.register(new org.yanbwe.raritycore.tick.ServerTickListener());
     }
 
     @SubscribeEvent

@@ -4,8 +4,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.minecraft.core.registries.BuiltInRegistries;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
 import org.yanbwe.raritycore.network.EditModeRequestPayload;
@@ -152,7 +150,6 @@ public class EditModeManager {
      * @param itemStack 要修改的物品堆
      * @return 是否成功修改
      */
-    @OnlyIn(Dist.CLIENT)
     @SuppressWarnings("null")
     public static boolean modifyItemRarity(ItemStack itemStack) {
         if (!editModeEnabled || itemStack.isEmpty()) {
@@ -206,7 +203,6 @@ public class EditModeManager {
      * @param item 要更新的物品
      * @param rarity 新的稀有度等级
      */
-    @OnlyIn(Dist.CLIENT)
     private static void forceClientCacheUpdate(Item item, int rarity) {
         try {
             // 清空旧缓存

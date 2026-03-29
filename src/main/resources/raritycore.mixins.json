@@ -7,6 +7,9 @@
   "mixins": [
     "AbstractContainerScreenAccessor",
     "ItemStackMixin",
+    "ShapedRecipeAccessor",
+    "ShapelessRecipeAccessor",
+    "SingleItemRecipeAccessor",
     "SmithingTransformRecipeAccessor"
   ],
   "client": [
