@@ -1,8 +1,8 @@
 package org.yanbwe.raritycore.client;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -65,7 +65,7 @@ public class ItemBorderRenderer {
 
         try {
             Identifier textureLocation = Identifier.parse(RarityConstants.BORDER_TEXTURE_PATH + textureName + RarityConstants.TEXTURE_SUFFIX);
-            guiGraphics.blit(textureLocation, x, y, 16, 16, 0, 0, 16, 16);
+            guiGraphics.blit(RenderPipelines.GUI_TEXTURED, textureLocation, x, y, 0.0F, 0.0F, 16, 16, 16, 16);
         } catch (Exception e) {
             RarityCore.LOGGER.warn("Failed to render texture border for rarity {}, falling back to color border: {}", rarity, e.getMessage());
             renderColorBorder(guiGraphics, rarity, x, y);
