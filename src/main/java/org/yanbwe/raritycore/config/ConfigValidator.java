@@ -134,6 +134,7 @@ public class ConfigValidator {
         configObject.addProperty("skipUnconfiguredItems", false);
         configObject.addProperty("enableBatchProcessing", true);
         configObject.addProperty("enableCacheSystem", true);
+        configObject.addProperty("enableSophisticatedCoreAdapter", true);
         
         // 星星显示配置
         JsonObject starDisplay = new JsonObject();

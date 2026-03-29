@@ -28,6 +28,7 @@ public class ClientConfigManager {
     private static boolean enableTooltipInsert = RarityConstants.DEFAULT_ENABLE_TOOLTIP_INSERT; // 是否启用工具提示插入
     private static boolean skipUnconfiguredItems = RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS; // 是否跳过未配置物品的渲染
     private static boolean enableCacheSystem = RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM; // 是否启用缓存系统
+    private static boolean enableSophisticatedCoreAdapter = RarityConstants.DEFAULT_ENABLE_SOPHISTICATED_CORE_ADAPTER; // 是否启用精妙核心适配器
     
     // 配置文件路径
     private static final Path CONFIG_DIR = Paths.get(RarityConstants.CONFIG_DIR_PARENT).resolve(RarityConstants.CONFIG_DIR_NAME);
@@ -142,6 +143,14 @@ public class ClientConfigManager {
                     enableCacheSystem = RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM;
                 }
                 
+                // 读取精妙核心适配器设置
+                if (jsonObject.has("enableSophisticatedCoreAdapter")) {
+                    enableSophisticatedCoreAdapter = jsonObject.get("enableSophisticatedCoreAdapter").getAsBoolean();
+                } else {
+                    // If the config option doesn't exist, use default value
+                    enableSophisticatedCoreAdapter = RarityConstants.DEFAULT_ENABLE_SOPHISTICATED_CORE_ADAPTER;
+                }
+                
                 // 加载星星显示配置
                 StarDisplayConfigManager.loadStarDisplayConfig(jsonObject);
                 
@@ -189,6 +198,7 @@ public class ClientConfigManager {
         configObject.addProperty("enableTooltipInsert", enableTooltipInsert);
         configObject.addProperty("skipUnconfiguredItems", skipUnconfiguredItems);
         configObject.addProperty("enableCacheSystem", enableCacheSystem);
+        configObject.addProperty("enableSophisticatedCoreAdapter", enableSophisticatedCoreAdapter);
         
         // 写入配置文件
         try {
@@ -305,5 +315,19 @@ public class ClientConfigManager {
         } catch (Exception e) {
             RarityCore.LOGGER.warn("Failed to notify cache of config change", e);
         }
+    }
+    
+    /**
+     * 获取是否启用精妙核心适配器
+     */
+    public static boolean isEnableSophisticatedCoreAdapter() {
+        return enableSophisticatedCoreAdapter;
+    }
+    
+    /**
+     * 设置是否启用精妙核心适配器
+     */
+    public static void setEnableSophisticatedCoreAdapter(boolean enable) {
+        enableSophisticatedCoreAdapter = enable;
     }
 }

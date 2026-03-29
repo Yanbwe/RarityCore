@@ -22,6 +22,12 @@ public class SophisticatedCoreAdapter {
             return;
         }
         
+        // 检查客户端配置项是否启用精妙核心适配器
+        if (!org.yanbwe.raritycore.config.ClientConfigManager.isEnableSophisticatedCoreAdapter()) {
+            RarityCore.LOGGER.debug("SophisticatedCore adapter is disabled in client config, skipping initialization");
+            return;
+        }
+        
         try {
             // 设置装饰渲染器
             setSlotDecorationRenderer();
