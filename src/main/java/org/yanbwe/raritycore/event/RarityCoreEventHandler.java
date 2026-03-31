@@ -22,21 +22,9 @@ public class RarityCoreEventHandler {
     @SubscribeEvent
     public void addReloadListeners(AddReloadListenerEvent event) {
         ServiceFactory factory = ServiceFactory.getInstance();
-        event.addListener(factory.getRarityDataLoader());
         
         // 注册NBT匹配配置加载器(支持数据包加载)
         event.addListener(factory.createNbtConfigLoader());
-        
-        // 注册缓存失效监听器到事件总线
-        try {
-            Class<?> listenerClass = Class.forName("org.yanbwe.raritycore.client.CacheInvalidationListener");
-            net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(listenerClass);
-        } catch (ClassNotFoundException e) {
-            org.yanbwe.raritycore.RarityCore.LOGGER.warn("CacheInvalidationListener class not found, skipping registration");
-        }
-        
-        // 加载本地NBT匹配配置
-        org.yanbwe.raritycore.nbtmatching.NbtConfigLoader.loadAllConfigs();
     }
     
     /**

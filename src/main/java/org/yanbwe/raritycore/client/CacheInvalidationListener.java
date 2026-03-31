@@ -1,7 +1,6 @@
 package org.yanbwe.raritycore.client;
 
 import net.minecraft.world.item.Item;
-import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.yanbwe.raritycore.RarityCore;
@@ -31,21 +30,7 @@ public class CacheInvalidationListener {
             RarityCore.LOGGER.error("Error handling rarity change event", e);
         }
     }
-    
-    /**
-     * 监听资源配置重载事件
-     */
-    @SubscribeEvent
-    public static void onResourceReload(AddReloadListenerEvent event) {
-        try {
-            // 协调并执行缓存刷新
-            CacheRefreshCoordinator.coordinateRefresh();
-            RarityCore.LOGGER.info("All caches invalidated due to resource reload");
-        } catch (Exception e) {
-            RarityCore.LOGGER.error("Error handling resource reload event", e);
-        }
-    }
-    
+
     /**
      * 监听客户端配置变更
      * 注意：这需要在ConfigManager中调用相应的方法
@@ -59,7 +44,7 @@ public class CacheInvalidationListener {
             RarityCore.LOGGER.error("Error handling client config change", e);
         }
     }
-    
+
     /**
      * 监听网络同步事件
      */

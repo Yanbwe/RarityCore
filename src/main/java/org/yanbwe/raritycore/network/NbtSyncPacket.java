@@ -212,8 +212,8 @@ public class NbtSyncPacket {
         public void encode(FriendlyByteBuf buf) {
             buf.writeUtf(path);
             buf.writeUtf(type);
-            buf.writeUtf(description);
             buf.writeUtf(valueData);
+            buf.writeUtf(description);
         }
 
         public NbtCondition toCondition() {
