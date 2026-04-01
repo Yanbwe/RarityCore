@@ -9,21 +9,20 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.yanbwe.raritycore.client.ItemBorderRenderer;
+import org.yanbwe.raritycore.client.RarityExclusionManager;
 
 @Mixin(AbstractContainerScreen.class)
 public class AbstractContainerScreenMixin {
 
-    // 注入到renderSlot方法中，在物品和装饰渲染完成后添加边框
     @Inject(
-        method = "renderSlot(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/inventory/Slot;)V", 
-        at = @At(
-            value = "INVOKE", 
-            target = "Lnet/minecraft/client/gui/GuiGraphics;renderItemDecorations(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;IILjava/lang/String;)V",
-            shift = org.spongepowered.asm.mixin.injection.At.Shift.AFTER
-        )
+        method = "renderSlot(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/inventory/Slot;)V",
+        at = @At("HEAD")
     )
     private void renderSlot(GuiGraphics guiGraphics, Slot slot, CallbackInfo ci) {
-        // 在物品渲染后添加稀有度边框
+        if (RarityExclusionManager.isRenderingTooltipItem()) {
+            return;
+        }
+
         ItemStack itemStack = slot.getItem();
         int x = slot.x;
         int y = slot.y;

@@ -8,6 +8,9 @@ import org.yanbwe.raritycore.RarityCore;
  */
 public class CompatibilityManager {
     
+    // ColorTooltips模组检测状态
+    private static boolean isColorTooltipsLoaded = false;
+    
     /**
      * 检查指定模组是否已加载
      * @param modId 模组ID
@@ -17,6 +20,15 @@ public class CompatibilityManager {
         return net.minecraftforge.fml.ModList.get().isLoaded(modId);
     }
     
+    /**
+     * 检查ColorTooltips模组是否已加载
+     * 实时检测模组加载状态，支持不同大小写形式
+     * @return 如果ColorTooltips模组已加载返回true
+     */
+    public static boolean isColorTooltipsLoaded() {
+        return isModLoaded("colortooltips") || isModLoaded("ColorTooltips");
+    }
+    
 
     
     /**
@@ -24,6 +36,12 @@ public class CompatibilityManager {
      */
     public static void initializeCompatibilityAdapters() {
         RarityCore.LOGGER.info("Initializing compatibility adapters...");
+        
+        // 检测ColorTooltips模组
+        isColorTooltipsLoaded = isColorTooltipsLoaded();
+        if (isColorTooltipsLoaded) {
+            RarityCore.LOGGER.info("ColorTooltips mod detected (ID: colortooltips or ColorTooltips), tooltip insertion will be disabled");
+        }
         
         // 初始化精妙核心适配器
         try {

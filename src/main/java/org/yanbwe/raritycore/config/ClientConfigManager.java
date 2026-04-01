@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.compat.CompatibilityManager;
 import org.yanbwe.raritycore.util.RarityConstants;
 
 import java.io.BufferedReader;
@@ -255,8 +256,13 @@ public class ClientConfigManager {
     
     /**
      * 获取是否启用工具提示插入
+     * 如果检测到ColorTooltips模组，则强制禁用工具提示插入
      */
     public static boolean isEnableTooltipInsert() {
+        // 如果ColorTooltips模组已加载，强制禁用工具提示插入
+        if (CompatibilityManager.isColorTooltipsLoaded()) {
+            return false;
+        }
         return enableTooltipInsert;
     }
     
