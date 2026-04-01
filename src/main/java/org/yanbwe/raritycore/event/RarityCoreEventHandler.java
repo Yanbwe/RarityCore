@@ -23,6 +23,9 @@ public class RarityCoreEventHandler {
     public void addReloadListeners(AddReloadListenerEvent event) {
         ServiceFactory factory = ServiceFactory.getInstance();
         
+        // 注册稀有度数据加载器(支持数据包加载基础ID配置)
+        event.addListener(factory.getRarityDataLoader());
+        
         // 注册NBT匹配配置加载器(支持数据包加载)
         event.addListener(factory.createNbtConfigLoader());
     }

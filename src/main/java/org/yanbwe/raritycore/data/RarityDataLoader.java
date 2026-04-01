@@ -74,7 +74,6 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener {
             }
         }
         
-        // 使用统一的配置重载服务进行完整加载
-        org.yanbwe.raritycore.service.ConfigReloadService.reloadOnStartup();
+        RarityCore.LOGGER.info("从数据包成功加载稀有度配置，共处理 {} 个配置文件", jsons.size());
     }
 }
