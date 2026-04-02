@@ -16,3 +16,5 @@ If you need to export the mod as a JAR file usable outside the development envir
 ## **Configuration Guide**
 
 https://github.com/Yanbwe/RarityCore/wiki
+
+`./gradlew publishToMavenLocal`

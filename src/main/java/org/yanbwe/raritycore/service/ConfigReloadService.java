@@ -60,19 +60,19 @@ public class ConfigReloadService {
                 NbtSyncManager.syncNbtRulesToAllPlayers();
             }
                         
-            // 3. 加载 FinalRarityConfig文件夹(第三优先级)
-            if (source != null) {
-                sendProgressMessage(source, Component.translatable("rarity.core.loading_final_rarity_config_folder"));
-            }
-            FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
-                        
-            // 4. 加载 FinalRarity.json 文件(第三优先级)
+            // 3. 加载 FinalRarity.json 文件(第三优先级)
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_final_rarity_file"));
             }
             RarityConfigLoader.loadConfigRarityData();
                         
-            // 5. 加载自动计算的稀有度配置(第四优先级)
+            // 4. 加载 FinalRarityConfig文件夹(第四优先级)
+            if (source != null) {
+                sendProgressMessage(source, Component.translatable("rarity.core.loading_final_rarity_config_folder"));
+            }
+            FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
+                        
+            // 5. 加载自动计算的稀有度配置(第五优先级)
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_auto_rarity_config"));
             }

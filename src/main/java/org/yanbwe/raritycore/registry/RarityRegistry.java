@@ -290,9 +290,11 @@ public class RarityRegistry {
      * 按照以下优先级顺序获取稀有度:
      * 1. NBT匹配配置(最高优先级)
      * 2. 神化模组稀有度
-     * 3. 本模组的稀有度配置(包括配置文件和数据包)
-     * 4. 自动计算的稀有度配置
-     * 5. 原版稀有度映射(最低优先级)
+     * 3. FinalRarity.json文件配置
+     * 4. FinalRarityConfig文件夹配置
+     * 5. 数据包内的ID匹配配置
+     * 6. 自动计算的稀有度配置
+     * 7. 原版稀有度映射(最低优先级)
      * 
      * @param itemId 物品资源位置,用于查找配置的稀有度
      * @param itemStack 物品栈,用于检查NBT数据和神化模组稀有度
@@ -312,13 +314,14 @@ public class RarityRegistry {
             return rarity;
         }
         
-        // 然后检查本模组的稀有度配置(包括配置文件和数据包)- 最高优先级
+        // 然后检查本模组的稀有度配置(包括FinalRarity.json、FinalRarityConfig文件夹和数据包)
+        // 加载顺序决定了优先级:FinalRarity.json < FinalRarityConfig文件夹 < 数据包配置
         rarity = ITEM_RARITY_MAP.get(itemId);
         if (rarity != null) {
             return rarity;
         }
         
-        // 然后检查自动计算的稀有度配置 - 中等优先级(低于 FinalRarity,高于原版)
+        // 然后检查自动计算的稀有度配置 - 优先级低于配置文件,高于原版
         rarity = AUTO_RARITY_MAP.get(itemId);
         if (rarity != null) {
             return rarity;

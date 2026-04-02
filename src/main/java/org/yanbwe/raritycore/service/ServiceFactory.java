@@ -18,6 +18,7 @@ import org.yanbwe.raritycore.nbtmatching.NbtConfigLoader;
 import org.yanbwe.raritycore.network.DelayedSyncManager;
 import org.yanbwe.raritycore.network.NbtSyncManager;
 import org.yanbwe.raritycore.network.SyncBatchManager;
+import org.yanbwe.raritycore.service.ConfigReloadService;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
@@ -117,6 +118,9 @@ public class ServiceFactory {
         // 初始化配置
         ConfigManager.initializeConfigs();
         ServerConfigManager.initializeServerConfigs();
+        
+        // 执行完整的配置重载流程(游戏启动时)
+        ConfigReloadService.reloadOnStartup();
         
         // 初始化缓存系统
         DualCacheManager.initialize();
