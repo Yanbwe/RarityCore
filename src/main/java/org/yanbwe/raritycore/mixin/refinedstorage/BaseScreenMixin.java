@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.yanbwe.raritycore.client.ItemBorderRenderer;
+import org.yanbwe.raritycore.client.RarityExclusionManager;
 
 /**
  * 精致存储BaseScreen混合器
@@ -38,7 +39,7 @@ public class BaseScreenMixin {
      * 统一处理物品渲染后的稀有度边框渲染
      */
     private void handleRenderItem(GuiGraphics graphics, int x, int y, ItemStack stack) {
-        if (stack != null && !stack.isEmpty()) {
+        if (stack != null && !stack.isEmpty() && !RarityExclusionManager.isRenderingTooltipItem()) {
             try {
                 // 调用我们的稀有度边框渲染逻辑
                 ItemBorderRenderer.renderRarityBorder(graphics, stack, x, y);
@@ -57,7 +58,7 @@ public class BaseScreenMixin {
             at = @At("TAIL"),
             remap = false)
     private void onRenderItemFull(GuiGraphics graphics, int x, int y, ItemStack stack, boolean overlay, String text, int textColor, CallbackInfo ci) {
-        if (stack != null && !stack.isEmpty()) {
+        if (stack != null && !stack.isEmpty() && !RarityExclusionManager.isRenderingTooltipItem()) {
             try {
                 // 调用我们的稀有度边框渲染逻辑
                 ItemBorderRenderer.renderRarityBorder(graphics, stack, x, y);

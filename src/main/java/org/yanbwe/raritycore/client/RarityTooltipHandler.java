@@ -24,6 +24,7 @@ import org.yanbwe.raritycore.util.ComponentBuilder;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
 import org.yanbwe.raritycore.util.RarityValidator;
+import org.yanbwe.raritycore.client.RarityExclusionManager;
 
 @EventBusSubscriber(modid = RarityCore.MODID, value = Dist.CLIENT)
 public class RarityTooltipHandler {
@@ -31,10 +32,12 @@ public class RarityTooltipHandler {
     @SubscribeEvent
     @SuppressWarnings("null")
     public static void onItemTooltip(ItemTooltipEvent event) {
-        // 检查是否启用工具提示插入
-        if (!ClientConfigManager.isEnableTooltipInsert()) {
-            return;
-        }
+        RarityExclusionManager.setRenderingTooltipItem(true);
+        try {
+            // 检查是否启用工具提示插入
+            if (!ClientConfigManager.isEnableTooltipInsert()) {
+                return;
+            }
         
         
         ItemStack itemStack = event.getItemStack();
@@ -117,6 +120,9 @@ public class RarityTooltipHandler {
             
             // 高效插入到工具提示
             ComponentBuilder.insertIntoTooltip(event.getToolTip(), rarityComponent);
+        }
+        } finally {
+            RarityExclusionManager.setRenderingTooltipItem(false);
         }
     }
     
