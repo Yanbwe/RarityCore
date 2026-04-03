@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.util.ConfigLoaderUtils;
 
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;

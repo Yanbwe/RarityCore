@@ -8,7 +8,6 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 import org.yanbwe.raritycore.compat.CompatibilityManager;
-import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.event.RarityCoreEventHandler;
 import org.yanbwe.raritycore.network.EditModeRequestPacket;
 import org.yanbwe.raritycore.network.IncrementalSyncPacket;

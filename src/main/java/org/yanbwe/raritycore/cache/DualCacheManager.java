@@ -3,9 +3,11 @@ package org.yanbwe.raritycore.cache;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher;
 import org.yanbwe.raritycore.cache.CacheMetrics.CacheType;
 
 import java.util.concurrent.TimeUnit;
@@ -16,7 +18,9 @@ import java.util.concurrent.TimeUnit;
  * NBT缓存:基于完整NBT数据的LRU缓存,动态构建
  */
 public class DualCacheManager {
-    
+
+    private static final char[] HEX_CHARS = "0123456789abcdef".toCharArray();
+
     // ID缓存 - 永久性,预加载所有物品
     private static volatile Cache<ResourceLocation, Integer> idCache;
     
@@ -133,8 +137,15 @@ public class DualCacheManager {
             }
         }
 
-        // 回退到 ID 缓存
+        // 检查物品是否有NBT匹配规则，如果有则跳过ID缓存
         ResourceLocation idKey = generateIdKey(itemStack);
+        if (idKey != null && NbtRarityMatcher.hasRulesForItem(idKey)) {
+            // 物品有NBT匹配规则，跳过ID缓存，强制重新计算
+            CacheMetrics.recordMiss();
+            return null;
+        }
+
+        // 回退到 ID 缓存
         Integer idResult = idCache.getIfPresent(idKey);
         if (idResult != null) {
             CacheMetrics.recordHit(CacheType.ID);
@@ -172,34 +183,40 @@ public class DualCacheManager {
      */
     public static void handleConfigReload() {
         long currentTime = System.currentTimeMillis();
-        
+
         // 防抖检查:如果正在重载或者距离上次重载时间太短,则跳过
         if (isReloading || (currentTime - lastReloadTime) < MIN_RELOAD_INTERVAL) {
             return;
         }
-        
+
         synchronized (DualCacheManager.class) {
             // 双重检查锁定
             if (isReloading || (currentTime - lastReloadTime) < MIN_RELOAD_INTERVAL) {
                 return;
             }
-            
+
             isReloading = true;
             lastReloadTime = currentTime;
         }
-        
+
         try {
+            // 检查缓存是否已初始化
+            if (idCache == null || nbtCache == null) {
+                RarityCore.LOGGER.warn("DualCacheManager not initialized yet, skipping reload");
+                return;
+            }
+
             // 清空所有缓存
             idCache.invalidateAll();
             nbtCache.invalidateAll();
-            
+
             // 重建ID缓存
             preloadIdCache();
-            
+
             // 重新创建NBT缓存以应用新的容量设置
             nbtCache = createNbtCache();
-            
-            RarityCore.LOGGER.info("Dual cache system reloaded - ID cache: {}, NBT cache: {}", 
+
+            RarityCore.LOGGER.info("Dual cache system reloaded - ID cache: {}, NBT cache: {}",
                 idCache.size(), nbtCache.size());
         } finally {
             isReloading = false;
@@ -208,13 +225,38 @@ public class DualCacheManager {
     
     
     
+    private static final int NBT_HASH_TRUNCATE_LENGTH = 4096;
+    
+    private static volatile long lastNbtKeyErrorTime = 0;
+    private static volatile String lastNbtKeyErrorItem = "";
+    private static final long NBT_KEY_ERROR_COOLDOWN = 5000;
+
     /**
      * 生成ID缓存键
      */
     private static ResourceLocation generateIdKey(ItemStack itemStack) {
         return ForgeRegistries.ITEMS.getKey(itemStack.getItem());
     }
-    
+
+    /**
+     * 检查是否应该跳过NBT缓存键生成
+     * 当物品没有NBT匹配规则时使用
+     */
+    private static boolean shouldSkipNbtKeyGeneration(ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty()) {
+            return true;
+        }
+        Item item = itemStack.getItem();
+        if (item == null) {
+            return true;
+        }
+        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+        if (itemId == null) {
+            return true;
+        }
+        return !org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher.hasRulesForItem(itemId);
+    }
+
     /**
      * 生成NBT缓存键
      */
@@ -223,27 +265,51 @@ public class DualCacheManager {
         if (itemId == null) {
             return "unknown:item";
         }
+
+        if (shouldSkipNbtKeyGeneration(itemStack)) {
+            return itemId.toString();
+        }
+
         StringBuilder key = new StringBuilder(itemId.toString());
-        
+
         if (itemStack.hasTag() && itemStack.getTag() != null) {
             net.minecraft.nbt.CompoundTag tag = itemStack.getTag();
             if (tag != null) {
                 try {
-                    // 使用MD5哈希算法生成NBT数据的哈希值,减少缓存键长度
+                    String nbtString = tag.toString();
+                    byte[] hashInput;
+
+                    if (nbtString.length() > NBT_HASH_TRUNCATE_LENGTH) {
+                        hashInput = nbtString.substring(0, NBT_HASH_TRUNCATE_LENGTH).getBytes();
+                    } else {
+                        hashInput = nbtString.getBytes();
+                    }
+
                     java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-                    byte[] hash = md.digest(tag.toString().getBytes());
-                    StringBuilder hexString = new StringBuilder();
+                    byte[] hash = md.digest(hashInput);
+                    StringBuilder hexString = new StringBuilder(hash.length * 2);
                     for (byte b : hash) {
-                        hexString.append(String.format("%02x", b));
+                        hexString.append(HEX_CHARS[(b >> 4) & 0xF]);
+                        hexString.append(HEX_CHARS[b & 0xF]);
                     }
                     key.append("|nbt:hash:").append(hexString.toString());
+                    if (nbtString.length() > NBT_HASH_TRUNCATE_LENGTH) {
+                        key.append(":truncated");
+                    }
                 } catch (Exception e) {
-                    // 哈希生成失败时回退到原始方式
-                    key.append("|nbt:").append(tag.toString());
+                    String currentItemId = itemId.toString();
+                    long currentTime = System.currentTimeMillis();
+                    if (!currentItemId.equals(lastNbtKeyErrorItem) ||
+                        (currentTime - lastNbtKeyErrorTime) > NBT_KEY_ERROR_COOLDOWN) {
+                        RarityCore.LOGGER.debug("Error generating NBT key for item: {}, using item ID only", currentItemId);
+                        lastNbtKeyErrorItem = currentItemId;
+                        lastNbtKeyErrorTime = currentTime;
+                    }
+                    key.append("|nbt:error");
                 }
             }
         }
-        
+
         return key.toString();
     }
     

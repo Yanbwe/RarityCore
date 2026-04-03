@@ -15,7 +15,6 @@ import org.yanbwe.raritycore.network.NbtSyncManager;
 import org.yanbwe.raritycore.network.SyncBatchManager;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
-import org.yanbwe.raritycore.service.ConfigReloadService;
 
 /**
  * 服务容器

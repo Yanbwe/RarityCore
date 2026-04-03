@@ -12,8 +12,8 @@ import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityConstants;
 
-import java.util.Map;
 import javax.annotation.Nonnull;
+import java.util.Map;
 
 public class RarityDataLoader extends SimpleJsonResourceReloadListener {
     /**

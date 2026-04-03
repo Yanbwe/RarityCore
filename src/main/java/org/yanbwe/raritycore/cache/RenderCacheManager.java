@@ -2,28 +2,39 @@ package org.yanbwe.raritycore.cache;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import org.yanbwe.raritycore.registry.RarityRegistry;
 
 /**
  * 渲染缓存管理器 - 适配器模式
  * 委托所有操作给DualCacheManager以保持API兼容性
  */
 public class RenderCacheManager {
-    
+
     /**
      * 获取物品的缓存稀有度
      */
     public static Integer getCachedRarity(Item item) {
         if (item == null) return null;
-        return DualCacheManager.getCachedRarity(new ItemStack(item));
+        return getCachedRarity(new ItemStack(item));
     }
-    
+
     /**
      * 获取物品堆的缓存稀有度
+     * 如果缓存未命中，会调用RarityRegistry.getRarity()计算稀有度并缓存
      */
     public static Integer getCachedRarity(ItemStack itemStack) {
-        return DualCacheManager.getCachedRarity(itemStack);
+        Integer cachedRarity = DualCacheManager.getCachedRarity(itemStack);
+        if (cachedRarity != null) {
+            return cachedRarity;
+        }
+
+        Integer rarity = RarityRegistry.getRarity(itemStack);
+        if (rarity != null) {
+            cacheItemStackRarity(itemStack, rarity);
+        }
+        return rarity;
     }
-    
+
     /**
      * 缓存物品稀有度
      */
@@ -31,21 +42,21 @@ public class RenderCacheManager {
         if (item == null || rarity == null) return;
         DualCacheManager.cacheRarity(new ItemStack(item), rarity);
     }
-    
+
     /**
      * 缓存物品堆稀有度
      */
     public static void cacheItemStackRarity(ItemStack itemStack, Integer rarity) {
         DualCacheManager.cacheRarity(itemStack, rarity);
     }
-    
+
     /**
      * 清空所有缓存
      */
     public static void clearAllCache() {
         DualCacheManager.handleConfigReload();
     }
-    
+
     /**
      * 获取缓存统计信息
      */

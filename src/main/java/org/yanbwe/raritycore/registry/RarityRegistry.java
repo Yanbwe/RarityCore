@@ -10,7 +10,6 @@ import org.jetbrains.annotations.NotNull;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.compat.CompatibilityChecker;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
-import org.yanbwe.raritycore.nbtmatching.SimpleNbtCache;
 import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -278,11 +277,39 @@ public class RarityRegistry {
         if (item != null) {
             ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
             if (itemId != null && !itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-                net.minecraft.world.item.ItemStack tempStack = new net.minecraft.world.item.ItemStack(item);
-                return getRarityInternal(itemId, tempStack, item);
+                return getRarityFromItemId(itemId, item);
             }
         }
-        return 1; // 默认为普通
+        return 1;
+    }
+
+    private static @NotNull Integer getRarityFromItemId(ResourceLocation itemId, Item item) {
+        Integer rarity = ITEM_RARITY_MAP.get(itemId);
+        if (rarity != null) {
+            return rarity;
+        }
+
+        rarity = AUTO_RARITY_MAP.get(itemId);
+        if (rarity != null) {
+            return rarity;
+        }
+
+        if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
+            if (CompatibilityChecker.isVanillaRarityApiAvailable()) {
+                try {
+                    net.minecraft.world.item.ItemStack stackForRarity = item.getDefaultInstance();
+                    Rarity vanillaRarity = stackForRarity.getRarity();
+                    Integer mappedVanilla = mapVanillaRarity(vanillaRarity);
+                    if (mappedVanilla > 1) {
+                        return mappedVanilla;
+                    }
+                } catch (Throwable e) {
+                    RarityCore.LOGGER.debug("Error checking vanilla rarity for item: {}", itemId, e);
+                }
+            }
+        }
+
+        return 1;
     }
     
     /**
@@ -373,7 +400,7 @@ public class RarityRegistry {
         if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
             if (CompatibilityChecker.isVanillaRarityApiAvailable()) {
                 try {
-                    net.minecraft.world.item.Rarity vanillaRarity;
+                    Rarity vanillaRarity;
                     if (itemStack != null) {
                         vanillaRarity = itemStack.getRarity();
                     } else if (item != null) {
@@ -382,11 +409,10 @@ public class RarityRegistry {
                         return null;
                     }
                     Integer mappedVanilla = mapVanillaRarity(vanillaRarity);
-                    if (mappedVanilla > 1) { // 只有当原版稀有度不是普通时才使用
+                    if (mappedVanilla > 1) {
                         return mappedVanilla;
                     }
                 } catch (Throwable e) {
-                    // 记录异常信息,便于调试
                     RarityCore.LOGGER.debug("Error checking vanilla rarity", e);
                 }
             }

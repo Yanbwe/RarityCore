@@ -7,7 +7,6 @@ import com.google.gson.JsonParser;
 import org.yanbwe.raritycore.RarityCore;
 
 import java.io.BufferedReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;

@@ -15,6 +15,11 @@ public class ApotheosisAdapter {
 
     private static final String AFFIX_DATA_KEY = "affix_data";
     private static final String RARITY_KEY = "rarity";
+    private static final int NBT_STRING_LENGTH_THRESHOLD = 50000;
+
+    private static volatile long lastErrorTime = 0;
+    private static volatile String lastErrorItem = "";
+    private static final long ERROR_COOLDOWN = 5000;
 
     public static void init() {
         if (isInitialized) {
@@ -61,6 +66,19 @@ public class ApotheosisAdapter {
 
         CompoundTag tag = itemStack.getTag();
         String tagString = tag.toString();
+
+        if (tagString.length() > NBT_STRING_LENGTH_THRESHOLD) {
+            String itemId = itemStack.getItem().toString();
+            long currentTime = System.currentTimeMillis();
+            if (!itemId.equals(lastErrorItem) ||
+                (currentTime - lastErrorTime) > ERROR_COOLDOWN) {
+                RarityCore.LOGGER.debug("Skipping apotheosis rarity check for item with oversized NBT: {} (NBT length: {})",
+                    itemId, tagString.length());
+                lastErrorItem = itemId;
+                lastErrorTime = currentTime;
+            }
+            return null;
+        }
 
         if (!tagString.contains(AFFIX_DATA_KEY)) {
             return null;

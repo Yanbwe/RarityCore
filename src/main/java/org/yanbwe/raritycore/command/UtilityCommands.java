@@ -14,7 +14,6 @@ import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.edit.EditModeManager;
 import org.yanbwe.raritycore.network.SyncManager;
 
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;

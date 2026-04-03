@@ -10,6 +10,7 @@ import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.nbtmatching.NbtCondition;
 import org.yanbwe.raritycore.nbtmatching.NbtMatchRule;
 import org.yanbwe.raritycore.nbtmatching.SimpleNbtCache;
+import org.yanbwe.raritycore.cache.DualCacheManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -89,6 +90,7 @@ public class NbtSyncPacket {
             
             // 重新初始化客户端缓存
             SimpleNbtCache.reinitializeCache();
+            DualCacheManager.handleConfigReload();
             
             RarityCore.LOGGER.info("NBT匹配规则同步完成: 应用 {} 条规则", appliedCount);
         });

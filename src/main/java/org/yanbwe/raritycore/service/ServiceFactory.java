@@ -1,9 +1,5 @@
 package org.yanbwe.raritycore.service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.calc.AutoRarityCalculator;
@@ -18,9 +14,13 @@ import org.yanbwe.raritycore.nbtmatching.NbtConfigLoader;
 import org.yanbwe.raritycore.network.DelayedSyncManager;
 import org.yanbwe.raritycore.network.NbtSyncManager;
 import org.yanbwe.raritycore.network.SyncBatchManager;
-import org.yanbwe.raritycore.service.ConfigReloadService;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 服务工厂
