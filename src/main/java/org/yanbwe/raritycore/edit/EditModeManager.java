@@ -1,15 +1,14 @@
 package org.yanbwe.raritycore.edit;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.minecraft.core.registries.BuiltInRegistries;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
 import org.yanbwe.raritycore.network.EditModeRequestPayload;
-import org.yanbwe.raritycore.network.NetworkConstants;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.ArrayList;
@@ -209,12 +208,8 @@ public class EditModeManager {
     @OnlyIn(Dist.CLIENT)
     private static void forceClientCacheUpdate(Item item, int rarity) {
         try {
-            // 清空旧缓存
-            org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
-                
-            // 立即重新缓存新稀有度
             ItemStack itemStack = new ItemStack(item);
-            org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+            org.yanbwe.raritycore.cache.DualCacheManager.updateIdCache(itemStack, rarity > 0 ? rarity : null);
         } catch (Exception e) {
             // 静默失败,等待网络同步后自动更新
         }

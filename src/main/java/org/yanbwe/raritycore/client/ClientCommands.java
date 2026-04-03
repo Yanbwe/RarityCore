@@ -8,7 +8,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.cache.CacheConfig;
 import org.yanbwe.raritycore.cache.DualCacheManager;
-import org.yanbwe.raritycore.cache.RenderCacheManager;
+import org.yanbwe.raritycore.cache.RarityCacheCoordinator;
 
 /**
  * 客户端命令管理器
@@ -23,17 +23,27 @@ public class ClientCommands {
                 // 显示缓存统计信息
                 .then(Commands.literal("stats")
                     .executes(context -> {
-                        RenderCacheManager.CacheStats stats = RenderCacheManager.getCacheStats();
                         boolean isCacheEnabled = org.yanbwe.raritycore.config.ClientConfigManager.isEnableCacheSystem();
                         CacheConfig config = DualCacheManager.getConfig();
+                        RarityCacheCoordinator.CombinedCacheStatistics stats = RarityCacheCoordinator.getStatistics();
                         
                         context.getSource().sendSuccess(() -> Component.translatable("rarity.core.cache_stats_header")
                             .withStyle(ChatFormatting.GOLD), false);
                         context.getSource().sendSuccess(() -> Component.translatable("rarity.core.cache_system_enabled_status", isCacheEnabled ? "启用" : "禁用")
                             .withStyle(isCacheEnabled ? ChatFormatting.GREEN : ChatFormatting.RED), false);
-                        context.getSource().sendSuccess(() -> Component.translatable("rarity.core.cache_hit_rate_display", stats.getHitRate())
+                        
+                        // 显示ID缓存统计
+                        context.getSource().sendSuccess(() -> Component.literal("ID缓存: " + stats.getIdCacheSize() + " 条目 (命中率: " + String.format("%.1f%%", stats.getIdCacheHitRate()) + ")")
                             .withStyle(ChatFormatting.AQUA), false);
-                        context.getSource().sendSuccess(() -> Component.translatable("rarity.core.unified_cache_size", stats.getItemStackCacheSize())
+                        
+                        // 显示组件缓存统计
+                        context.getSource().sendSuccess(() -> Component.literal("组件缓存: " + stats.getComponentCacheSize() + " 条目 (命中率: " + String.format("%.1f%%", stats.getComponentCacheHitRate()) + ")")
+                            .withStyle(ChatFormatting.LIGHT_PURPLE), false);
+                        
+                        // 显示总体统计
+                        context.getSource().sendSuccess(() -> Component.literal("总体命中率: " + String.format("%.1f%%", stats.getOverallHitRate()))
+                            .withStyle(ChatFormatting.YELLOW), false);
+                        context.getSource().sendSuccess(() -> Component.literal("总缓存大小: " + stats.getTotalSize() + " 条目")
                             .withStyle(ChatFormatting.YELLOW), false);
 
                         // 添加缓存配置信息
@@ -55,7 +65,7 @@ public class ClientCommands {
                 // 清空缓存
                 .then(Commands.literal("clear")
                     .executes(context -> {
-                        RenderCacheManager.clearAllCache();
+                        DualCacheManager.handleConfigReload();
                         context.getSource().sendSuccess(() -> Component.translatable("rarity.core.cache_cleared")
                             .withStyle(ChatFormatting.GREEN), false);
                         return 1;

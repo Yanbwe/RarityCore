@@ -1,11 +1,11 @@
 package org.yanbwe.raritycore.registry;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.neoforge.common.NeoForge;
-import net.minecraft.core.registries.BuiltInRegistries;
 import org.jetbrains.annotations.NotNull;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.compat.CompatibilityChecker;
@@ -88,6 +88,9 @@ public class RarityRegistry {
                     RarityChangeEvent.ChangeType.REGISTER : RarityChangeEvent.ChangeType.UPDATE;
                 NeoForge.EVENT_BUS.post(new RarityChangeEvent(item, oldRarity, rarity, changeType));
                 
+                // 实时更新ID缓存（编辑模式支持）
+                org.yanbwe.raritycore.cache.DualCacheManager.updateIdCache(new ItemStack(item), rarity);
+                
                 // 如果需要同步到客户端且当前在服务端环境中,记录变更操作
                 if (syncToClients) {
                     // 记录变更操作
@@ -122,6 +125,9 @@ public class RarityRegistry {
                     NeoForge.EVENT_BUS.post(new RarityChangeEvent(
                         item, removedRarity, null, RarityChangeEvent.ChangeType.REMOVE));
                 }
+                
+                // 实时更新ID缓存（编辑模式支持）- 删除时使缓存失效
+                org.yanbwe.raritycore.cache.DualCacheManager.updateIdCache(new ItemStack(item), null);
                 
                 // 如果需要同步到客户端且当前在服务端环境中,记录删除操作
                 if (syncToClients) {
@@ -387,10 +393,16 @@ public class RarityRegistry {
      * @return 稀有度等级,如果没有匹配则返回null
      */
     private static Integer checkApotheosisRarity(@Nullable ItemStack itemStack) {
-        if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity() && itemStack != null) {
-            return org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(itemStack);
+        if (!org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity()) {
+            return null;
         }
-        return null;
+        if (!org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.isLoaded()) {
+            return null;
+        }
+        if (itemStack == null) {
+            return null;
+        }
+        return org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(itemStack);
     }
     
     /**

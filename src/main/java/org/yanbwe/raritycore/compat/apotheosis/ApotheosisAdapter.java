@@ -46,6 +46,17 @@ public class ApotheosisAdapter {
         }
     }
 
+    /**
+     * 检查神化模组是否已加载
+     * @return 神化模组是否已加载
+     */
+    public static boolean isLoaded() {
+        if (!isInitialized) {
+            init();
+        }
+        return isApotheosisLoaded;
+    }
+
     public static boolean hasApotheosisRarity(ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) {
             return false;

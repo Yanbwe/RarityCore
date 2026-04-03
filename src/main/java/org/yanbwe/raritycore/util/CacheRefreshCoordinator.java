@@ -2,7 +2,7 @@ package org.yanbwe.raritycore.util;
 
 import org.slf4j.Logger;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.cache.DualCacheManager;
+import org.yanbwe.raritycore.cache.RarityCacheCoordinator;
 
 /**
  * 缓存刷新协调器
@@ -17,6 +17,6 @@ public class CacheRefreshCoordinator {
      */
     public static void coordinateRefresh() {
         LOGGER.debug("Coordinating cache refresh...");
-        DualCacheManager.handleConfigReload();
+        RarityCacheCoordinator.handleConfigReload();
     }
 }

@@ -1,21 +1,20 @@
  package org.yanbwe.raritycore.calc;
 
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.*;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
-import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.registry.RarityRegistry;
-import org.yanbwe.raritycore.mixin.SmithingTransformRecipeAccessor;
+ import net.minecraft.ChatFormatting;
+ import net.minecraft.core.registries.BuiltInRegistries;
+ import net.minecraft.network.chat.Component;
+ import net.minecraft.resources.ResourceLocation;
+ import net.minecraft.server.MinecraftServer;
+ import net.minecraft.world.item.Item;
+ import net.minecraft.world.item.ItemStack;
+ import net.minecraft.world.item.crafting.*;
+ import net.neoforged.neoforge.server.ServerLifecycleHooks;
+ import org.yanbwe.raritycore.RarityCore;
+ import org.yanbwe.raritycore.registry.RarityRegistry;
 
-import java.util.*;
+ import java.util.*;
 
-/**
+ /**
  * 自动稀有度计算器
  * 通过合成表反向推导产物的稀有度
  */

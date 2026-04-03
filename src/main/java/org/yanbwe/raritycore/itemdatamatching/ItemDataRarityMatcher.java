@@ -1,10 +1,10 @@
 package org.yanbwe.raritycore.itemdatamatching;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.core.registries.BuiltInRegistries;
 import org.yanbwe.raritycore.RarityCore;
 
 import javax.annotation.Nullable;
@@ -176,6 +176,19 @@ public class ItemDataRarityMatcher {
         return true;
     }
     
+    /**
+     * 检查指定物品是否有组件匹配规则
+     * @param itemId 物品资源位置
+     * @return 如果有规则返回true
+     */
+    public static boolean hasRulesForItem(ResourceLocation itemId) {
+        if (itemId == null) {
+            return false;
+        }
+        List<ItemDataMatchRule> rules = RULES_CACHE.get(itemId);
+        return rules != null && !rules.isEmpty();
+    }
+
     /**
      * 获取规则总数
      * @return 规则数量

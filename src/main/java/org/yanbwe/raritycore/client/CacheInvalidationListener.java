@@ -1,9 +1,9 @@
 package org.yanbwe.raritycore.client;
 
 import net.minecraft.world.item.Item;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
 import org.yanbwe.raritycore.util.CacheRefreshCoordinator;
