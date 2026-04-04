@@ -37,11 +37,16 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
+      - name: 获取tag描述
+        id: body
+        run: echo "BODY=$(git tag -l --format='%(contents)' ${{ steps.version.outputs.VERSION }})" >> $GITHUB_OUTPUT
+
       - name: 创建Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.VERSION }}
           name: RarityCore-${{ steps.version.outputs.VERSION }}
+          body: ${{ steps.body.outputs.BODY }}
           draft: false
           prerelease: false
           files: |
