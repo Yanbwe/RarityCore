@@ -27,6 +27,9 @@ jobs:
         with:
           gradlew-args: --version
 
+      - name: 添加执行权限
+        run: chmod +x gradlew
+
       - name: 构建模组
         run: ./gradlew build
 
