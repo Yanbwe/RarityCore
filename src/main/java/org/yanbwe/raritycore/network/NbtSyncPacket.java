@@ -39,10 +39,10 @@ public class NbtSyncPacket {
     }
 
     private List<NbtRuleData> rules;
-    private boolean isFullSync; // true为全量同步,false为增量同步
+    private boolean isFullSync;
 
     public NbtSyncPacket(List<NbtRuleData> rules, boolean isFullSync) {
-        this.rules = rules;
+        this.rules = new ArrayList<>(rules);
         this.isFullSync = isFullSync;
     }
 
@@ -114,6 +114,7 @@ public class NbtSyncPacket {
         private int priority;
         private int rarity;
         private boolean enabled;
+        private boolean fuzzyMatch;
         private String description;
         private List<ConditionData> conditions;
 
@@ -122,8 +123,9 @@ public class NbtSyncPacket {
             this.priority = rule.getPriority();
             this.rarity = rule.getRarity();
             this.enabled = rule.isEnabled();
+            this.fuzzyMatch = rule.isFuzzyMatch();
             this.description = rule.getDescription();
-            
+
             this.conditions = new ArrayList<>();
             for (NbtCondition condition : rule.getConditions()) {
                 this.conditions.add(new ConditionData(condition));
@@ -135,8 +137,9 @@ public class NbtSyncPacket {
             this.priority = buf.readInt();
             this.rarity = buf.readInt();
             this.enabled = buf.readBoolean();
+            this.fuzzyMatch = buf.readBoolean();
             this.description = buf.readUtf();
-            
+
             int conditionCount = buf.readInt();
             this.conditions = new ArrayList<>();
             for (int i = 0; i < conditionCount; i++) {
@@ -149,8 +152,9 @@ public class NbtSyncPacket {
             buf.writeInt(priority);
             buf.writeInt(rarity);
             buf.writeBoolean(enabled);
+            buf.writeBoolean(fuzzyMatch);
             buf.writeUtf(description);
-            
+
             buf.writeInt(conditions.size());
             for (ConditionData condition : conditions) {
                 condition.encode(buf);
@@ -161,23 +165,24 @@ public class NbtSyncPacket {
             try {
                 ResourceLocation itemLoc = ResourceLocation.parse(itemId);
                 List<NbtCondition> nbtConditions = new ArrayList<>();
-                
+
                 for (ConditionData conditionData : conditions) {
                     NbtCondition condition = conditionData.toCondition();
                     if (condition != null) {
                         nbtConditions.add(condition);
                     }
                 }
-                
+
                 return NbtMatchRule.builder()
                     .itemId(itemLoc)
                     .conditions(nbtConditions)
                     .priority(priority)
                     .rarity(rarity)
                     .enabled(enabled)
+                    .fuzzyMatch(fuzzyMatch)
                     .description(description)
                     .build();
-                    
+
             } catch (Exception e) {
                 RarityCore.LOGGER.warn("转换NBT规则数据时出错: {}", e.getMessage());
                 return null;
@@ -191,16 +196,13 @@ public class NbtSyncPacket {
     public static class ConditionData {
         private String path;
         private String type;
-        private boolean fuzzyMatch;
         private String description;
-        private String valueData; // JSON格式存储条件特定数据
+        private String valueData;
 
         public ConditionData(NbtCondition condition) {
             this.path = condition.getPath();
             this.type = condition.getType().name();
             this.description = condition.getDescription();
-            
-            // 序列化条件特定数据
             this.valueData = serializeConditionData(condition);
         }
 
@@ -240,13 +242,13 @@ public class NbtSyncPacket {
         }
 
         private String serializeConditionData(NbtCondition condition) {
-            // 使用Gson进行安全的JSON序列化,自动处理特殊字符转义
             JsonObject data = new JsonObject();
-            
+
             if (condition instanceof org.yanbwe.raritycore.nbtmatching.EqualsCondition) {
                 Object value = ((org.yanbwe.raritycore.nbtmatching.EqualsCondition) condition).getExpectedValue();
-                // 根据值类型进行适当的序列化
-                if (value instanceof String) {
+                if (value == null) {
+                    data.addProperty("value", "null");
+                } else if (value instanceof String) {
                     data.addProperty("value", (String) value);
                 } else if (value instanceof Number) {
                     data.addProperty("value", (Number) value);
@@ -256,15 +258,19 @@ public class NbtSyncPacket {
                     data.addProperty("value", value.toString());
                 }
             } else if (condition instanceof org.yanbwe.raritycore.nbtmatching.RangeCondition) {
-                org.yanbwe.raritycore.nbtmatching.RangeCondition range = 
+                org.yanbwe.raritycore.nbtmatching.RangeCondition range =
                     (org.yanbwe.raritycore.nbtmatching.RangeCondition) condition;
                 data.addProperty("min", range.getMinValue());
                 data.addProperty("max", range.getMaxValue());
             } else if (condition instanceof org.yanbwe.raritycore.nbtmatching.ContainsCondition) {
                 String substring = ((org.yanbwe.raritycore.nbtmatching.ContainsCondition) condition).getSubstring();
-                data.addProperty("substring", substring);
+                if (substring != null) {
+                    data.addProperty("substring", substring);
+                }
+            } else if (condition instanceof org.yanbwe.raritycore.nbtmatching.ExistsCondition) {
+                // ExistsCondition 不需要额外数据,空对象即可
             }
-            
+
             return data.toString();
         }
 

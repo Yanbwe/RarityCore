@@ -33,7 +33,7 @@ public class IncrementalSyncPacket {
     private List<ChangeOperation> changeOperations;
 
     public IncrementalSyncPacket(List<ChangeOperation> changeOperations) {
-        this.changeOperations = changeOperations;
+        this.changeOperations = new ArrayList<>(changeOperations);
     }
 
     public IncrementalSyncPacket(FriendlyByteBuf buf) {

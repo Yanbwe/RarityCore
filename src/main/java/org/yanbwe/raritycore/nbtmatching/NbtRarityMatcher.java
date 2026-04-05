@@ -196,10 +196,15 @@ public class NbtRarityMatcher {
     
     /**
      * 获取规则缓存(仅供同步使用)
-     * @return 规则缓存的副本
+     * 返回深拷贝以避免并发修改问题
+     * @return 规则缓存的深拷贝副本
      */
     public static Map<ResourceLocation, List<NbtMatchRule>> getRulesCacheForSync() {
-        return new HashMap<>(RULES_CACHE);
+        Map<ResourceLocation, List<NbtMatchRule>> deepCopy = new HashMap<>();
+        for (Map.Entry<ResourceLocation, List<NbtMatchRule>> entry : RULES_CACHE.entrySet()) {
+            deepCopy.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+        }
+        return deepCopy;
     }
     
     /**

@@ -39,8 +39,9 @@ public class NbtConfigLoader extends SimpleJsonResourceReloadListener {
     protected void apply(Map<ResourceLocation, JsonElement> jsons, ResourceManager resourceManager, ProfilerFiller profiler) {
         RarityCore.LOGGER.info("开始从数据包加载NBT匹配配置,找到 {} 个配置文件", jsons.size());
         
-        // 清空现有数据包规则
+        // 清空现有规则(包括数据包和本地规则)
         NbtRarityMatcher.clearAllRules();
+        LOCAL_RULES.clear();
         
         // 加载数据包中的配置
         int loadedCount = 0;
@@ -64,22 +65,22 @@ public class NbtConfigLoader extends SimpleJsonResourceReloadListener {
         
         RarityCore.LOGGER.info("从数据包成功加载 {} 个NBT匹配规则", loadedCount);
         
-        // 加载本地配置文件(优先级更高)
-        loadLocalConfigs();
+        // 加载本地配置文件(优先级更高,不清空已有规则)
+        loadLocalConfigs(false);
     }
     
     /**
      * 加载所有配置(包括数据包和本地配置)
      */
     public static void loadAllConfigs() {
-        // 本地配置会在这个方法中加载
-        loadLocalConfigs();
+        loadLocalConfigs(true);
     }
     
     /**
      * 仅加载本地配置文件(config目录)
+     * @param clearExisting 是否清空现有规则
      */
-    private static void loadLocalConfigs() {
+    private static void loadLocalConfigs(boolean clearExisting) {
         Path configDir = ConfigManager.getConfigDirPath().resolve("nbt_matches");
         
         try {
@@ -90,8 +91,10 @@ public class NbtConfigLoader extends SimpleJsonResourceReloadListener {
             // 清空本地规则缓存
             LOCAL_RULES.clear();
             
-            // 关键:清空NBT匹配器的规则缓存
-            NbtRarityMatcher.clearAllRules();
+            // 根据参数决定是否清空NBT匹配器的规则缓存
+            if (clearExisting) {
+                NbtRarityMatcher.clearAllRules();
+            }
             
             // 加载所有本地配置文件
             loadLocalConfigFiles(configDir);

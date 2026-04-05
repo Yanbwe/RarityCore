@@ -23,59 +23,56 @@ public class NbtSyncManager {
     
     /**
      * 将所有NBT规则同步到指定玩家
+     * 同步执行,确保数据包在配置加载完成后构建
      * @param player 目标玩家
      */
     public static void syncNbtRulesToPlayer(ServerPlayer player) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                List<NbtSyncPacket.NbtRuleData> ruleDataList = getAllRulesAsData();
-                NbtSyncPacket packet = new NbtSyncPacket(ruleDataList, true);
-                
-                NbtSyncPacket.INSTANCE.send(
-                    PacketDistributor.PLAYER.with(() -> player), 
-                    packet
-                );
-                
-                RarityCore.LOGGER.debug("Sent NBT rules sync packet to player {}, rule count: {}", 
-                    player.getName().getString(), ruleDataList.size());
-                    
-            } catch (Exception e) {
-                RarityCore.LOGGER.error("Error syncing NBT rules to player {}: {}", 
-                    player.getName().getString(), e.getMessage());
-            }
-        });
+        try {
+            List<NbtSyncPacket.NbtRuleData> ruleDataList = getAllRulesAsData();
+            NbtSyncPacket packet = new NbtSyncPacket(ruleDataList, true);
+
+            NbtSyncPacket.INSTANCE.send(
+                PacketDistributor.PLAYER.with(() -> player),
+                packet
+            );
+
+            RarityCore.LOGGER.debug("Sent NBT rules sync packet to player {}, rule count: {}",
+                player.getName().getString(), ruleDataList.size());
+
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Error syncing NBT rules to player {}: {}",
+                player.getName().getString(), e.getMessage());
+        }
     }
     
     /**
      * 将所有NBT规则同步到所有在线玩家
+     * 同步执行,确保数据包在配置加载完成后构建
      */
     public static void syncNbtRulesToAllPlayers() {
-        CompletableFuture.runAsync(() -> {
-            try {
-                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-                if (server == null) {
-                    RarityCore.LOGGER.warn("Cannot get server instance, skipping NBT rules sync");
-                    return;
-                }
-                
-                List<NbtSyncPacket.NbtRuleData> ruleDataList = getAllRulesAsData();
-                NbtSyncPacket packet = new NbtSyncPacket(ruleDataList, true);
-                
-                // 发送给所有在线玩家
-                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                    NbtSyncPacket.INSTANCE.send(
-                        PacketDistributor.PLAYER.with(() -> player), 
-                        packet
-                    );
-                }
-                
-                RarityCore.LOGGER.info("Sent NBT rules sync packet to all players, rule count: {}", 
-                    ruleDataList.size());
-                    
-            } catch (Exception e) {
-                RarityCore.LOGGER.error("Error syncing NBT rules to all players: {}", e.getMessage());
+        try {
+            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+            if (server == null) {
+                RarityCore.LOGGER.warn("Cannot get server instance, skipping NBT rules sync");
+                return;
             }
-        });
+
+            List<NbtSyncPacket.NbtRuleData> ruleDataList = getAllRulesAsData();
+            NbtSyncPacket packet = new NbtSyncPacket(ruleDataList, true);
+
+            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                NbtSyncPacket.INSTANCE.send(
+                    PacketDistributor.PLAYER.with(() -> player),
+                    packet
+                );
+            }
+
+            RarityCore.LOGGER.info("Sent NBT rules sync packet to all players, rule count: {}",
+                ruleDataList.size());
+
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Error syncing NBT rules to all players: {}", e.getMessage());
+        }
     }
     
     /**
@@ -136,35 +133,34 @@ public class NbtSyncManager {
     
     /**
      * 增量同步变更的规则
+     * 同步执行,确保数据包在配置加载完成后构建
      * @param changedRules 变更的规则列表
      */
     public static void syncChangedRules(List<NbtMatchRule> changedRules) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                List<NbtSyncPacket.NbtRuleData> ruleDataList = new ArrayList<>();
-                for (NbtMatchRule rule : changedRules) {
-                    ruleDataList.add(new NbtSyncPacket.NbtRuleData(rule));
-                }
-                
-                NbtSyncPacket packet = new NbtSyncPacket(ruleDataList, false);
-                
-                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-                if (server != null) {
-                    for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                        NbtSyncPacket.INSTANCE.send(
-                            PacketDistributor.PLAYER.with(() -> player), 
-                            packet
-                        );
-                    }
-                }
-                
-                RarityCore.LOGGER.debug("Sent incremental NBT rules sync packet, changed rules count: {}", 
-                    ruleDataList.size());
-                    
-            } catch (Exception e) {
-                RarityCore.LOGGER.error("Error in incremental NBT rules sync: {}", e.getMessage());
+        try {
+            List<NbtSyncPacket.NbtRuleData> ruleDataList = new ArrayList<>();
+            for (NbtMatchRule rule : changedRules) {
+                ruleDataList.add(new NbtSyncPacket.NbtRuleData(rule));
             }
-        });
+
+            NbtSyncPacket packet = new NbtSyncPacket(ruleDataList, false);
+
+            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+            if (server != null) {
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    NbtSyncPacket.INSTANCE.send(
+                        PacketDistributor.PLAYER.with(() -> player),
+                        packet
+                    );
+                }
+            }
+
+            RarityCore.LOGGER.debug("Sent incremental NBT rules sync packet, changed rules count: {}",
+                ruleDataList.size());
+
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Error in incremental NBT rules sync: {}", e.getMessage());
+        }
     }
     
     /**

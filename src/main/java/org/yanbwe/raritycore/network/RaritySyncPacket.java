@@ -33,7 +33,7 @@ public class RaritySyncPacket {
     private Map<ResourceLocation, Integer> rarityData;
 
     public RaritySyncPacket(Map<ResourceLocation, Integer> rarityData) {
-        this.rarityData = rarityData;
+        this.rarityData = new HashMap<>(rarityData);
     }
 
     public RaritySyncPacket(FriendlyByteBuf buf) {
