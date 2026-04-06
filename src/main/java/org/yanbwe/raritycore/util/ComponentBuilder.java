@@ -64,21 +64,19 @@ public class ComponentBuilder {
      */
     @Nonnull
     public static MutableComponent buildSpecialRarityComponent(int rarity, ChatFormatting color) {
-        // 检查是否有自定义特殊稀有度文本
         String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(rarity);
-            
-        String textToShow;
+
+        MutableComponent rarityTextComponent;
         if (customText != null && !customText.isEmpty()) {
-            // 使用自定义文本,但保持完整格式:[自定义文本 - 星星]
-            String stars = getStars(rarity);
-            textToShow = "[" + customText + "-" + stars + "]";
+            rarityTextComponent = Component.literal("[" + customText + "] ").withStyle(color);
         } else {
-            // 使用默认格式:[xx 级稀有度 - 星星]
-            String stars = getStars(rarity);
-            textToShow = "[" + rarity + "级稀有度-" + stars + "]";
+            rarityTextComponent = Component.translatable("rarity.core.special.rarity.prefix", rarity).withStyle(color);
         }
-            
-        return Component.literal(textToShow).withStyle(color);
+
+        String stars = getStars(rarity);
+        MutableComponent starsComponent = Component.literal(stars).withStyle(color);
+
+        return Component.empty().append(rarityTextComponent).append(starsComponent);
     }
     
     /**
