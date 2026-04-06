@@ -29,7 +29,7 @@
   "rarity.core.disabled": "禁用",
   "rarity.core.texture_border_toggle_success": "纹理边框已%s",
   "rarity.core.texture_border_toggle_error": "切换纹理边框状态失败",
-  "rarity.core.unusual.tips":"级稀有度-",
+  "rarity.core.unusual.tips":"级稀有度",
   "rarity.core.edit_mode_enabled": "编辑模式已启用",
   "rarity.core.edit_mode_disabled": "编辑模式已禁用",
   "rarity.core.edit_mode_status_enabled": "编辑模式: 已启用 (当前稀有度: %d)",

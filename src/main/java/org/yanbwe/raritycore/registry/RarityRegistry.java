@@ -187,7 +187,7 @@ public class RarityRegistry {
      * 获取物品的完整稀有度工具提示字符串(支持本地化)
      * 返回格式示例:
      * - 普通物品:"[普通] ⭐" (中文) 或 "[Common] ⭐" (英文)
-     * - 高级物品:"[5级稀有度-⭐⭐⭐⭐⭐]"
+     * - 高级物品:"[5级稀有度] ⭐⭐⭐⭐⭐"
      * @param item 要获取工具提示的物品
      * @return 本地化的稀有度工具提示字符串
      */
@@ -218,11 +218,12 @@ public class RarityRegistry {
             String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(displayRarity);
             
             if (customText != null && !customText.isEmpty()) {
-                // 使用自定义文本,但保持完整格式:[自定义文本 - 星星]
-                return "[" + customText + "-" + stars + "]";
+                // 使用自定义文本,保持与标准格式一致:[自定义文本] <星星>
+                return "[" + customText + "] " + stars;
             } else {
-                // 使用默认格式:[xx 级稀有度 - 星星]
-                return "[" + displayRarity + "级稀有度-" + stars + "]";
+                // 使用默认格式,使用本地化文本:[xx级稀有度] <星星>
+                String localizedSuffix = net.minecraft.client.resources.language.I18n.get("rarity.core.unusual.tips");
+                return "[" + displayRarity + localizedSuffix + "]" + stars;
             }
         } else {
             // 标准稀有度(1-7级)

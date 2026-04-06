@@ -77,7 +77,7 @@ public class RarityTooltipHandler {
         MutableComponent prefixComponent;
         
         if (isSpecialRarity) {
-            // 如果稀有度大于7,显示为 [x级稀有度-x(星星)]
+            // 如果稀有度大于7,显示为 [x级稀有度] <星星>
             ChatFormatting uniqueColor = RarityColorUtil.getRarityChatColor(RarityConstants.RARITY_UNIQUE);
             MutableComponent rarityComponent = ComponentBuilder.buildSpecialRarityComponent(displayRarity, uniqueColor);
             
