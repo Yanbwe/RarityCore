@@ -45,8 +45,14 @@ public class ConfigReloadService {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_server_config"));
             }
             ServerConfigManager.loadServerConfig();
+            
+            // 2. 加载客户端配置(包含星星显示配置和自定义等级文本配置)
+            if (source != null) {
+                sendProgressMessage(source, Component.translatable("rarity.core.loading_client_config"));
+            }
+            handleClientSideConfigs();
                         
-            // 2. 加载 NBT 匹配配置(最高优先级)
+            // 3. 加载 NBT 匹配配置(最高优先级)
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_nbt_config"));
             }
@@ -60,34 +66,31 @@ public class ConfigReloadService {
                 NbtSyncManager.syncNbtRulesToAllPlayers();
             }
                         
-            // 3. 加载 FinalRarity.json 文件(第三优先级)
+            // 4. 加载 FinalRarity.json 文件(第三优先级)
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_final_rarity_file"));
             }
             RarityConfigLoader.loadConfigRarityData();
                         
-            // 4. 加载 FinalRarityConfig文件夹(第四优先级)
+            // 5. 加载 FinalRarityConfig文件夹(第四优先级)
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_final_rarity_config_folder"));
             }
             FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
                         
-            // 5. 加载自动计算的稀有度配置(第五优先级)
+            // 6. 加载自动计算的稀有度配置(第五优先级)
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_auto_rarity_config"));
             }
             org.yanbwe.raritycore.calc.AutoRarityConfigManager.loadAutoRarityConfig();
             
-            // 6. 强制处理批处理队列中的操作(关键步骤)
+            // 7. 强制处理批处理队列中的操作(关键步骤)
             processPendingBatchOperations(source);
             
-            // 7. 同步数据到所有客户端
+            // 8. 同步数据到所有客户端
             if (!isStartup) { // 启动时不需要同步,会在玩家登录时处理
                 SyncManager.syncRarityToClientsWithRetry(RarityRegistry.ITEM_RARITY_MAP);
             }
-            
-            // 8. 处理双缓存系统重载
-            handleCacheSystems();
             
             // 9. 发送完成消息(仅在命令调用时)
             if (source != null) {

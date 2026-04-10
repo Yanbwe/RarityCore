@@ -40,6 +40,7 @@
   "rarity.core.edit_mode_delete_mode_enabled": "Delete mode enabled - Click items to remove their rarity configuration",
   "rarity.core.edit_mode_delete_mode_disabled": "Delete mode disabled",
   "rarity.core.loading_server_config": "Loading server configuration...",
+  "rarity.core.loading_client_config": "Loading client configuration...",
   "rarity.core.loading_nbt_config": "Loading NBT matching configuration...",
   "rarity.core.loading_final_rarity_config_folder": "Loading FinalRarityConfig folder...",
   "rarity.core.loading_final_rarity_file": "Loading FinalRarity.json file...",

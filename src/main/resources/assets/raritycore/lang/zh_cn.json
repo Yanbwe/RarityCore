@@ -40,6 +40,7 @@
   "rarity.core.edit_mode_delete_mode_enabled": "已进入删除模式 - 点击物品将删除其稀有度配置",
   "rarity.core.edit_mode_delete_mode_disabled": "已退出删除模式",
   "rarity.core.loading_server_config": "正在加载服务端配置...",
+  "rarity.core.loading_client_config": "正在加载客户端配置...",
   "rarity.core.loading_nbt_config": "正在加载 NBT 匹配配置...",
   "rarity.core.loading_final_rarity_config_folder": "正在加载 FinalRarityConfig 文件夹...",
   "rarity.core.loading_final_rarity_file": "正在加载 FinalRarity.json 文件...",
