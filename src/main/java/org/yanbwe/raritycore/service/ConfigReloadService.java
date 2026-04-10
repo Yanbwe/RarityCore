@@ -87,10 +87,16 @@ public class ConfigReloadService {
                 SyncManager.syncRarityToClientsWithRetry(RarityRegistry.ITEM_RARITY_MAP);
             }
             
-            // 8. 处理双缓存系统重载
+            // 8. 加载客户端配置(包含自定义等级文本配置)
+            if (source != null) {
+                sendProgressMessage(source, Component.translatable("rarity.core.loading_client_config"));
+            }
+            handleClientSideConfigs();
+            
+            // 9. 处理双缓存系统重载
             handleCacheSystems();
             
-            // 9. 发送完成消息(仅在命令调用时)
+            // 10. 发送完成消息(仅在命令调用时)
             if (source != null) {
                 sendCompletionMessage(source);
             }
@@ -182,9 +188,6 @@ public class ConfigReloadService {
             
             // 通知星星显示管理器重新加载配置
             StarDisplayManager.getInstance().reloadConfiguration();
-            
-            // 协调并执行缓存刷新
-            CacheRefreshCoordinator.coordinateRefresh();
             
             // 特别处理skipUnconfiguredItems配置变更
             handleSkipUnconfiguredItemsChange();

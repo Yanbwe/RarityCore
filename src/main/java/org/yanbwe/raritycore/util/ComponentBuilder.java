@@ -53,7 +53,12 @@ public class ComponentBuilder {
         // 使用预构建的星星字符串
         String stars = getStars(rarity);
 
-        return Component.literal(" " + stars).withStyle(color);
+        // 根据配置决定是否应用颜色
+        if (org.yanbwe.raritycore.config.ClientConfigManager.isEnableTooltipColor()) {
+            return Component.literal(" " + stars).withStyle(color);
+        } else {
+            return Component.literal(" " + stars);
+        }
     }
     
     /**
@@ -79,7 +84,12 @@ public class ComponentBuilder {
             textToShow = "[" + rarity + localizedSuffix + "] " + stars;
         }
             
-        return Component.literal(textToShow).withStyle(color);
+        // 根据配置决定是否应用颜色
+        if (org.yanbwe.raritycore.config.ClientConfigManager.isEnableTooltipColor()) {
+            return Component.literal(textToShow).withStyle(color);
+        } else {
+            return Component.literal(textToShow);
+        }
     }
     
     /**
