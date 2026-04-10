@@ -57,6 +57,27 @@ public class ComponentBuilder {
     }
     
     /**
+     * 构建稀有度组件(支持变色控制)
+     * @param rarity 稀有度等级
+     * @param color 颜色格式
+     * @param enableColor 是否启用变色
+     * @return 构建好的组件,永不为null
+     */
+    @Nonnull
+    public static MutableComponent buildRarityComponent(int rarity, ChatFormatting color, boolean enableColor) {
+        if (rarity <= 0) return Component.empty();
+        
+        // 使用预构建的星星字符串
+        String stars = getStars(rarity);
+        
+        if (enableColor) {
+            return Component.literal(" " + stars).withStyle(color);
+        } else {
+            return Component.literal(" " + stars);
+        }
+    }
+    
+    /**
      * 构建特殊稀有度组件(大于 7 级的情况)
      * @param rarity 稀有度等级
      * @param color 颜色格式
@@ -75,6 +96,43 @@ public class ComponentBuilder {
 
         String stars = getStars(rarity);
         MutableComponent starsComponent = Component.literal(stars).withStyle(color);
+
+        return Component.empty().append(rarityTextComponent).append(starsComponent);
+    }
+    
+    /**
+     * 构建特殊稀有度组件(大于 7 级的情况,支持变色控制)
+     * @param rarity 稀有度等级
+     * @param color 颜色格式
+     * @param enableColor 是否启用变色
+     * @return 构建好的组件,永不为null
+     */
+    @Nonnull
+    public static MutableComponent buildSpecialRarityComponent(int rarity, ChatFormatting color, boolean enableColor) {
+        String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(rarity);
+
+        MutableComponent rarityTextComponent;
+        if (customText != null && !customText.isEmpty()) {
+            if (enableColor) {
+                rarityTextComponent = Component.literal("[" + customText + "] ").withStyle(color);
+            } else {
+                rarityTextComponent = Component.literal("[" + customText + "] ");
+            }
+        } else {
+            if (enableColor) {
+                rarityTextComponent = Component.translatable("rarity.core.special.rarity.prefix", rarity).withStyle(color);
+            } else {
+                rarityTextComponent = Component.translatable("rarity.core.special.rarity.prefix", rarity);
+            }
+        }
+
+        String stars = getStars(rarity);
+        MutableComponent starsComponent;
+        if (enableColor) {
+            starsComponent = Component.literal(stars).withStyle(color);
+        } else {
+            starsComponent = Component.literal(stars);
+        }
 
         return Component.empty().append(rarityTextComponent).append(starsComponent);
     }

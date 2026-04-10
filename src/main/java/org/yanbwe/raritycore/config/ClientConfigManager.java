@@ -29,6 +29,7 @@ public class ClientConfigManager {
     private static boolean useTextureBorder = RarityConstants.DEFAULT_USE_TEXTURE_BORDER; // 是否使用纹理边框
     private static boolean enableItemNameColor = RarityConstants.DEFAULT_ENABLE_ITEM_NAME_COLOR; // 是否启用物品名称变色
     private static boolean enableTooltipInsert = RarityConstants.DEFAULT_ENABLE_TOOLTIP_INSERT; // 是否启用工具提示插入
+    private static boolean enableTooltipColor = RarityConstants.DEFAULT_ENABLE_TOOLTIP_COLOR; // 是否启用工具提示稀有度文本变色
     private static boolean skipUnconfiguredItems = RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS; // 是否跳过未配置物品的渲染
     private static boolean enableCacheSystem = RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM; // 是否启用缓存系统
     
@@ -133,6 +134,14 @@ public class ClientConfigManager {
                     enableTooltipInsert = RarityConstants.DEFAULT_ENABLE_TOOLTIP_INSERT;
                 }
                 
+                // Read tooltip color setting
+                if (jsonObject.has("enableTooltipColor")) {
+                    enableTooltipColor = jsonObject.get("enableTooltipColor").getAsBoolean();
+                } else {
+                    // If the config option doesn't exist, use default value
+                    enableTooltipColor = RarityConstants.DEFAULT_ENABLE_TOOLTIP_COLOR;
+                }
+                
                 // 读取跳过未配置物品设置
                 if (jsonObject.has("skipUnconfiguredItems")) {
                     skipUnconfiguredItems = jsonObject.get("skipUnconfiguredItems").getAsBoolean();
@@ -141,8 +150,8 @@ public class ClientConfigManager {
                     skipUnconfiguredItems = RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS;
                 }
                 
-                RarityCore.LOGGER.info("Client config loaded successfully: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}, skipUnconfiguredItems={}", 
-                    enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert, skipUnconfiguredItems);
+                RarityCore.LOGGER.info("Client config loaded successfully: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}, enableTooltipColor={}, skipUnconfiguredItems={}", 
+                    enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert, enableTooltipColor, skipUnconfiguredItems);
             }
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error loading client config file, using default config: {}", CLIENT_CONFIG_FILE, e);
@@ -182,6 +191,7 @@ public class ClientConfigManager {
         configObject.addProperty("useTextureBorder", useTextureBorder);
         configObject.addProperty("enableItemNameColor", enableItemNameColor);
         configObject.addProperty("enableTooltipInsert", enableTooltipInsert);
+        configObject.addProperty("enableTooltipColor", enableTooltipColor);
         configObject.addProperty("skipUnconfiguredItems", skipUnconfiguredItems);
         configObject.addProperty("enableCacheSystem", enableCacheSystem);
         
@@ -189,8 +199,8 @@ public class ClientConfigManager {
         try {
             try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(CLIENT_CONFIG_FILE), StandardCharsets.UTF_8)) {
                 GSON.toJson(configObject, writer);
-                RarityCore.LOGGER.info("Client config saved: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}, skipUnconfiguredItems={}, enableCacheSystem={}", 
-                    enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert, skipUnconfiguredItems, enableCacheSystem);
+                RarityCore.LOGGER.info("Client config saved: enableItemBorderRendering={}, itemBorderStyle={}, useTextureBorder={}, enableItemNameColor={}, enableTooltipInsert={}, enableTooltipColor={}, skipUnconfiguredItems={}, enableCacheSystem={}", 
+                    enableItemBorderRendering, itemBorderStyle, useTextureBorder, enableItemNameColor, enableTooltipInsert, enableTooltipColor, skipUnconfiguredItems, enableCacheSystem);
             }
         } catch (IOException e) {
             RarityCore.LOGGER.error("Cannot save client config file: {}", CLIENT_CONFIG_FILE, e);
@@ -263,6 +273,20 @@ public class ClientConfigManager {
             return false;
         }
         return enableTooltipInsert;
+    }
+    
+    /**
+     * 获取是否启用工具提示稀有度文本变色
+     */
+    public static boolean isEnableTooltipColor() {
+        return enableTooltipColor;
+    }
+    
+    /**
+     * 设置是否启用工具提示稀有度文本变色
+     */
+    public static void setEnableTooltipColor(boolean enable) {
+        enableTooltipColor = enable;
     }
     
     /**

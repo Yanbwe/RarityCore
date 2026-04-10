@@ -70,14 +70,17 @@ public class RarityTooltipHandler {
         // 标准化稀有度值用于颜色获取等内部处理
         rarity = RarityValidator.normalizeRarity(rarity);
         
+        // 检查是否启用工具提示变色
+        boolean enableColor = ClientConfigManager.isEnableTooltipColor();
+        
         // 处理超出范围的稀有度值
-        ChatFormatting color = RarityColorUtil.getRarityChatColor(rarity);
+        ChatFormatting color = enableColor ? RarityColorUtil.getRarityChatColor(rarity) : ChatFormatting.GRAY;
         MutableComponent prefixComponent;
         
         if (isSpecialRarity) {
             // 如果稀有度大于7,显示为 [x级稀有度-x(星星)]
-            ChatFormatting uniqueColor = RarityColorUtil.getRarityChatColor(RarityConstants.RARITY_UNIQUE);
-            MutableComponent rarityComponent = ComponentBuilder.buildSpecialRarityComponent(displayRarity, uniqueColor);
+            ChatFormatting uniqueColor = enableColor ? RarityColorUtil.getRarityChatColor(RarityConstants.RARITY_UNIQUE) : ChatFormatting.GRAY;
+            MutableComponent rarityComponent = ComponentBuilder.buildSpecialRarityComponent(displayRarity, uniqueColor, enableColor);
             
             // 高效插入到工具提示
             ComponentBuilder.insertIntoTooltip(event.getToolTip(), rarityComponent);
@@ -112,7 +115,7 @@ public class RarityTooltipHandler {
             }
         
             // 构建文本(使用组件构建器)
-            MutableComponent starsComponent = ComponentBuilder.buildRarityComponent(rarity, color);
+            MutableComponent starsComponent = ComponentBuilder.buildRarityComponent(rarity, color, enableColor);
             MutableComponent rarityComponent = Component.empty().append(prefixComponent).append(starsComponent).withStyle(color);
             
             // 高效插入到工具提示
