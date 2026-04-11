@@ -119,9 +119,6 @@ public class ServiceFactory {
         ConfigManager.initializeConfigs();
         ServerConfigManager.initializeServerConfigs();
         
-        // 执行完整的配置重载流程(游戏启动时)
-        ConfigReloadService.reloadOnStartup();
-        
         // 初始化缓存系统
         DualCacheManager.initialize();
         

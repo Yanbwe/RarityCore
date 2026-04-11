@@ -89,7 +89,7 @@ public class ComponentBuilder {
 
         MutableComponent rarityTextComponent;
         if (customText != null && !customText.isEmpty()) {
-            rarityTextComponent = Component.literal("[" + customText + "] ").withStyle(color);
+            rarityTextComponent = Component.literal(customText + " ").withStyle(color);
         } else {
             rarityTextComponent = Component.translatable("rarity.core.special.rarity.prefix", rarity).withStyle(color);
         }
@@ -114,9 +114,9 @@ public class ComponentBuilder {
         MutableComponent rarityTextComponent;
         if (customText != null && !customText.isEmpty()) {
             if (enableColor) {
-                rarityTextComponent = Component.literal("[" + customText + "] ").withStyle(color);
+                rarityTextComponent = Component.literal(customText + " ").withStyle(color);
             } else {
-                rarityTextComponent = Component.literal("[" + customText + "] ");
+                rarityTextComponent = Component.literal(customText + " ");
             }
         } else {
             if (enableColor) {

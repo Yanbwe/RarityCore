@@ -39,6 +39,9 @@ public class RarityCoreEventHandler {
         ServiceFactory factory = ServiceFactory.getInstance();
         // 启动调度器服务
         factory.getSchedulerService().startScheduledTasks();
+        
+        // 在服务器启动时加载配置,此时物品注册表已完全填充
+        org.yanbwe.raritycore.service.ConfigReloadService.reloadOnStartup();
     }
     
     /**
