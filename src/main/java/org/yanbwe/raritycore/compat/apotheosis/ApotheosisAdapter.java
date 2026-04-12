@@ -46,6 +46,22 @@ public class ApotheosisAdapter {
         }
     }
 
+    public static void debugCheckItem(ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty()) {
+            RarityCore.LOGGER.debug("[DEBUG] ItemStack is null or empty");
+            return;
+        }
+        
+        RarityCore.LOGGER.debug("[DEBUG] Checking item: {} with {} components", 
+            itemStack.getItem(), itemStack.getComponents().size());
+        
+        DataComponentMap components = itemStack.getComponents();
+        for (TypedDataComponent<?> component : components) {
+            ResourceLocation keyLoc = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(component.type());
+            RarityCore.LOGGER.debug("[DEBUG] Component found: {} = {}", keyLoc, component.value());
+        }
+    }
+
     /**
      * 检查神化模组是否已加载
      * @return 神化模组是否已加载
@@ -105,9 +121,10 @@ public class ApotheosisAdapter {
 
             for (TypedDataComponent<?> component : components) {
                 ResourceLocation keyLoc = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(component.type());
+                String keyStr = keyLoc.toString();
+                Object value = component.value();
 
-                if (keyLoc.equals(rarityComponentLoc)) {
-                    Object value = component.value();
+                if (keyStr.contains("rarity") && keyStr.contains("apotheosis")) {
                     String rarityName = getRarityNameFromHolder(value);
                     if (rarityName != null) {
                         Integer mapped = mapApotheosisRarityString(rarityName);
@@ -115,8 +132,7 @@ public class ApotheosisAdapter {
                             return mapped;
                         }
                     }
-                } else if (keyLoc.equals(purityComponentLoc)) {
-                    Object value = component.value();
+                } else if (keyStr.contains("purity") && keyStr.contains("apotheosis")) {
                     String purityName = getPurityName(value);
                     if (purityName != null) {
                         Integer mapped = mapApotheosisPurityString(purityName);
@@ -140,16 +156,99 @@ public class ApotheosisAdapter {
             return null;
         }
 
-        String str = holder.toString();
-        Matcher matcher = DYNAMIC_HOLDER_PATTERN.matcher(str);
-        if (matcher.find()) {
-            return matcher.group(1);
+        ResourceLocation id = getDynamicHolderId(holder);
+        if (id != null) {
+            return id.getPath();
+        }
+
+        String rarityName = getRarityNameFromLootRarity(holder);
+        if (rarityName != null) {
+            return rarityName;
         }
 
         if (holder instanceof ResourceLocation rl) {
             return rl.getPath();
         }
 
+        String str = holder.toString();
+        Matcher matcher = DYNAMIC_HOLDER_PATTERN.matcher(str);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+
+        if (str.startsWith("LootRarity{")) {
+            int start = str.indexOf('{') + 1;
+            int end = str.lastIndexOf('}');
+            if (end > start) {
+                return str.substring(start, end);
+            }
+        }
+
+        RarityCore.LOGGER.debug("Unable to parse rarity from holder: {} (class: {})", str, holder.getClass().getName());
+        return null;
+    }
+
+    private static ResourceLocation getDynamicHolderId(Object holder) {
+        try {
+            Class<?> dynamicHolderClass = Class.forName("dev.shadowsoffire.placebo.reload.DynamicHolder");
+            if (dynamicHolderClass.isInstance(holder)) {
+                java.lang.reflect.Method getIdMethod = dynamicHolderClass.getMethod("getId");
+                Object idObj = getIdMethod.invoke(holder);
+                if (idObj instanceof ResourceLocation rl) {
+                    return rl;
+                }
+            }
+        } catch (ClassNotFoundException e) {
+            RarityCore.LOGGER.debug("DynamicHolder class not found, using fallback parsing");
+        } catch (NoSuchMethodException e) {
+            RarityCore.LOGGER.debug("DynamicHolder.getId() method not found");
+        } catch (Exception e) {
+            RarityCore.LOGGER.debug("Failed to get DynamicHolder ID via reflection: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private static String getRarityNameFromLootRarity(Object holder) {
+        try {
+            Class<?> lootRarityClass = Class.forName("dev.shadowsoffire.apotheosis.loot.LootRarity");
+            if (lootRarityClass.isInstance(holder)) {
+                Object idObj = invokeMethod(holder, "getId", false);
+                if (idObj instanceof ResourceLocation rl) {
+                    return rl.getPath();
+                }
+                Object keyObj = invokeMethod(holder, "getKey", false);
+                if (keyObj instanceof ResourceLocation keyRl) {
+                    return keyRl.getPath();
+                }
+            }
+        } catch (ClassNotFoundException e) {
+            RarityCore.LOGGER.debug("LootRarity class not found");
+        } catch (Exception e) {
+            RarityCore.LOGGER.debug("Failed to get LootRarity name via reflection: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private static Object invokeMethod(Object target, String methodName, boolean requireNull) {
+        try {
+            Class<?> clazz = target.getClass();
+            while (clazz != null) {
+                try {
+                    java.lang.reflect.Method method = clazz.getDeclaredMethod(methodName);
+                    method.setAccessible(true);
+                    Object result = method.invoke(target);
+                    if (!requireNull && result != null) {
+                        return result;
+                    } else if (result == null && requireNull) {
+                        return result;
+                    }
+                } catch (NoSuchMethodException e) {
+                    clazz = clazz.getSuperclass();
+                }
+            }
+        } catch (Exception e) {
+            RarityCore.LOGGER.debug("Failed to invoke method {}: {}", methodName, e.getMessage());
+        }
         return null;
     }
 
@@ -159,16 +258,21 @@ public class ApotheosisAdapter {
         }
 
         if (value instanceof Enum<?> enumValue) {
-            return enumValue.name().toLowerCase();
+            String name = enumValue.name().toLowerCase();
+            RarityCore.LOGGER.debug("Purity enum value: {} -> {}", enumValue.name(), name);
+            return name;
         }
 
         if (value instanceof String str) {
+            RarityCore.LOGGER.debug("Purity string value: {}", str);
             return str;
         }
 
         String str = value.toString().toLowerCase();
+        RarityCore.LOGGER.debug("Purity toString value: {}, class: {}", str, value.getClass().getName());
         for (String purity : new String[]{"cracked", "chipped", "flawed", "normal", "flawless", "perfect"}) {
             if (str.contains(purity)) {
+                RarityCore.LOGGER.debug("Found purity keyword: {}", purity);
                 return purity;
             }
         }
@@ -213,10 +317,14 @@ public class ApotheosisAdapter {
 
     private static Integer mapApotheosisPurityString(String purityString) {
         if (purityString == null || purityString.isEmpty()) {
+            RarityCore.LOGGER.debug("mapApotheosisPurityString called with null/empty string");
             return null;
         }
 
-        switch (purityString.toLowerCase()) {
+        String lower = purityString.toLowerCase();
+        RarityCore.LOGGER.debug("mapApotheosisPurityString mapping: {} -> {}", purityString, lower);
+
+        switch (lower) {
             case "cracked":
                 return 1;
             case "chipped":
@@ -240,5 +348,33 @@ public class ApotheosisAdapter {
         isApotheosisLoaded = false;
         rarityComponentLoc = null;
         purityComponentLoc = null;
+    }
+
+    private static String getGemIdFromHolder(Object holder) {
+        if (holder == null) {
+            return null;
+        }
+
+        ResourceLocation id = getDynamicHolderId(holder);
+        if (id != null) {
+            return id.toString();
+        }
+
+        String str = holder.toString();
+        Matcher matcher = DYNAMIC_HOLDER_PATTERN.matcher(str);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+
+        return null;
+    }
+
+    private static Integer mapGemRarity(String gemId) {
+        if (gemId == null || gemId.isEmpty()) {
+            return null;
+        }
+
+        RarityCore.LOGGER.debug("Mapping gem ID to rarity: {}", gemId);
+        return 1;
     }
 }

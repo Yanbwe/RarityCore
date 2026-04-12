@@ -316,18 +316,8 @@ public class RarityRegistry {
      */
     private static @NotNull Integer getRarityInternal(ResourceLocation itemId, @Nullable ItemStack itemStack, Item item) {
         Integer rarity;
-        
-        // 首先检查物品数据匹配配置(最高优先级)
-        rarity = checkItemDataRarity(itemStack);
-        if (rarity != null) {
-            // 填充缓存
-            if (itemStack != null) {
-                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
-            }
-            return rarity;
-        }
-        
-        // 然后检查神化模组稀有度
+
+        // 首先检查神化模组稀有度(最高优先级,覆盖配置)
         rarity = checkApotheosisRarity(itemStack);
         if (rarity != null) {
             // 填充缓存
@@ -336,8 +326,18 @@ public class RarityRegistry {
             }
             return rarity;
         }
-        
-        // 然后检查本模组的稀有度配置(包括配置文件和数据包)- 最高优先级
+
+        // 然后检查物品数据匹配配置
+        rarity = checkItemDataRarity(itemStack);
+        if (rarity != null) {
+            // 填充缓存
+            if (itemStack != null) {
+                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+            }
+            return rarity;
+        }
+
+        // 然后检查本模组的稀有度配置(包括配置文件和数据包)
         rarity = ITEM_RARITY_MAP.get(itemId);
         if (rarity != null) {
             // 填充缓存

@@ -14,6 +14,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
@@ -232,6 +233,9 @@ public class RarityManagementCommands {
             try (FileWriter writer = new FileWriter(configFile.toFile())) {
                 gson.toJson(jsonObject, writer);
             }
+
+            // 重新加载配置文件以应用更改
+            RarityConfigLoader.loadConfigRarityData();
         } catch (IOException e) {
             RarityCore.LOGGER.error("Failed to save rarity config", e);
         }
