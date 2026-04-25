@@ -18,6 +18,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
+import org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.ComponentBuilder;
@@ -58,10 +59,15 @@ public class RarityTooltipHandler {
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度,则不插入工具提示
         // 注意:需要检查物品是否真的没有配置,而不是检查rarity是否为null
-        if (ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
+        // 使用包含神化NBT检查的增强版配置检测
+        if (ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item, itemStack)) {
             return;
         }
         
+        // 安全兜底:直接检查神化稀有度,确保工具提示正确反映神化稀有度
+        // 当物品有神化NBT数据但标准流程因缓存/NBT大小/解析等原因未能获取神化稀有度时,
+        // 此兜底确保工具提示使用最高优先级的稀有度
+        rarity = applyApotheosisRarityFallback(itemStack, item, rarity);
         
         // 先检查是否为特殊稀有度(大于7),保存原始值用于显示
         boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;
@@ -124,11 +130,32 @@ public class RarityTooltipHandler {
     }
     
     /**
-     * 检查物品是否有配置的稀有度
+     * 直接检查神化稀有度作为兜底,确保工具提示反映实际神化稀有度
+     * 注意:直接调用神化适配器自身(而非通过RarityRegistry),绕过配置中的 checkApotheosisRarity 开关,
+     * 以免用户因配置关闭导致工具提示回退到ITEMMAP配置值而无法反映实际神化稀有度
+     */
+    private static int applyApotheosisRarityFallback(ItemStack itemStack, Item item, int currentRarity) {
+        if (itemStack == null || itemStack.isEmpty() || !itemStack.hasTag()) {
+            return currentRarity;
+        }
+        
+        // 直接调用神化适配器,绕过RarityRegistry中的配置检查,确保真实反映神化稀有度
+        Integer apothRarity = ApotheosisAdapter.getMappedRarity(itemStack);
+        if (apothRarity != null && apothRarity != currentRarity) {
+            RarityCore.LOGGER.debug("Apotheosis rarity fallback activated for {}: registry={}, apotheosis={}",
+                ForgeRegistries.ITEMS.getKey(item), currentRarity, apothRarity);
+            return apothRarity;
+        }
+        return currentRarity;
+    }
+    
+    /**
+     * 检查物品是否有配置的稀有度(含神化NBT检测)
      * @param item 要检查的物品
+     * @param itemStack 物品栈(用于神化NBT检测)
      * @return 如果物品有配置稀有度返回true,否则返回false
      */
-    private static boolean hasConfiguredRarity(Item item) {
+    private static boolean hasConfiguredRarity(Item item, ItemStack itemStack) {
         if (item == null) {
             return false;
         }
@@ -140,7 +167,19 @@ public class RarityTooltipHandler {
         }
         
         // 检查是否在注册表中有配置
-        return RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId);
+        if (RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId)) {
+            return true;
+        }
+        
+        // 检查神化NBT数据(有神化稀有度也算有配置)
+        if (itemStack != null && itemStack.hasTag()) {
+            Integer apothRarity = RarityRegistry.getDirectApotheosisRarity(itemStack);
+            if (apothRarity != null) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     /**

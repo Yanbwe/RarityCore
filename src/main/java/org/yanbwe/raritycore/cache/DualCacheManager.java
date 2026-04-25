@@ -160,6 +160,8 @@ public class DualCacheManager {
     
     /**
      * 缓存稀有度
+     * 注意:对于含有神化NBT数据的物品,仅缓存到NBT缓存而不同时更新ID缓存,
+     * 以避免神化稀有度污染同类型物品的默认稀有度
      */
     @SuppressWarnings("null")
     public static void cacheRarity(ItemStack itemStack, Integer rarity) {
@@ -167,14 +169,25 @@ public class DualCacheManager {
             return;
         }
         
-        // 总是填充ID缓存
-        ResourceLocation idKey = generateIdKey(itemStack);
-        idCache.put(idKey, rarity);
+        // 检查是否含有神化NBT数据
+        boolean hasApotheosisData = itemStack.hasTag() && itemStack.getTag().toString().contains("affix_data");
         
-        // 条件填充NBT缓存
-        if (config.isNbtCacheEnabled() && itemStack.hasTag()) {
-            String nbtKey = generateNbtKey(itemStack);
-            nbtCache.put(nbtKey, rarity);
+        if (hasApotheosisData) {
+            // 神化物品:仅缓存到NBT缓存,避免污染ID缓存
+            if (config.isNbtCacheEnabled() && itemStack.hasTag()) {
+                String nbtKey = generateNbtKey(itemStack);
+                nbtCache.put(nbtKey, rarity);
+            }
+        } else {
+            // 非神化物品:正常写入ID缓存
+            ResourceLocation idKey = generateIdKey(itemStack);
+            idCache.put(idKey, rarity);
+            
+            // 条件填充NBT缓存
+            if (config.isNbtCacheEnabled() && itemStack.hasTag()) {
+                String nbtKey = generateNbtKey(itemStack);
+                nbtCache.put(nbtKey, rarity);
+            }
         }
     }
     

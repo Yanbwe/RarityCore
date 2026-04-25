@@ -121,18 +121,39 @@ public class ApotheosisAdapter {
 
     /**
      * 从 affix_data 块中提取 rarity 值
+     * 注意:使用匹配键名前导字符(逗号或花括号)的方式定位rarity键,
+     * 避免匹配到其他键名(如some_rarity_data)或值中偶然包含"rarity"的情况
      */
     private static Integer extractRarityFromBlock(String block) {
-        int rarityIndex = block.indexOf(RARITY_KEY);
+        // 循环查找所有"rarity"出现位置,确保匹配的是键名(前有','或'{'后有':')
+        int searchStart = 0;
+        int rarityIndex = -1;
+        
+        while (searchStart < block.length()) {
+            int idx = block.indexOf(RARITY_KEY, searchStart);
+            if (idx == -1) {
+                break;
+            }
+            
+            // 检查是否为键名:前一个字符是','或'{' (或是字符串开头)
+            int keyEnd = idx + RARITY_KEY.length();
+            boolean isKeyPrefix = (idx == 0 || block.charAt(idx - 1) == ',' || block.charAt(idx - 1) == '{');
+            boolean isKeySuffix = (keyEnd < block.length() && block.charAt(keyEnd) == ':');
+            
+            if (isKeyPrefix && isKeySuffix) {
+                rarityIndex = idx;
+                break;
+            }
+            
+            // 继续向后查找
+            searchStart = keyEnd;
+        }
+        
         if (rarityIndex == -1) {
             return null;
         }
 
-        int colonIndex = block.indexOf(":", rarityIndex);
-        if (colonIndex == -1) {
-            return null;
-        }
-
+        int colonIndex = rarityIndex + RARITY_KEY.length(); // ':'的位置
         int quoteStart = block.indexOf("\"", colonIndex);
         if (quoteStart == -1) {
             return null;

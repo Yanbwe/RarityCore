@@ -169,7 +169,8 @@ public class RarityRegistry {
     }
     
     /**
-     * 获取物品的完整稀有度工具提示字符串(支持本地化)
+     * 获取物品的完整稀有度工具提示字符串(支持本地化,基于Item)
+     * 注意:此方法基于Item,无法检测神化NBT稀有度.如需支持神化检测请使用 getLocalizedRarityTooltip(ItemStack)
      * 返回格式示例:
      * - 普通物品:"[普通] ⭐" (中文) 或 "[Common] ⭐" (英文)
      * - 高级物品:"[5级稀有度-⭐⭐⭐⭐⭐]"
@@ -178,39 +179,47 @@ public class RarityRegistry {
      */
     public static @NotNull String getLocalizedRarityTooltip(@Nullable Item item) {
         if (item == null) {
-            return "[普通]"; // 默认返回普通稀有度
+            return "[普通]";
         }
-        
-        // 获取物品稀有度
         Integer rarity = getRarity(item);
-        if (rarity == null) {
-            rarity = RarityConstants.RARITY_COMMON;
+        if (rarity == null) rarity = RarityConstants.RARITY_COMMON;
+        return buildLocalizedRarityTooltip(rarity);
+    }
+    
+    /**
+     * 获取物品栈的完整稀有度工具提示字符串(支持神化NBT稀有度检测)
+     * 与 getLocalizedRarityTooltip(Item) 不同,此方法接受 ItemStack 并支持神化NBT数据,
+     * 能正确反映神化稀有度
+     * @param itemStack 要获取工具提示的物品栈
+     * @return 本地化的稀有度工具提示字符串
+     */
+    public static @NotNull String getLocalizedRarityTooltip(@Nullable ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty()) {
+            return "[普通]";
         }
-        
-        // 先检查是否为特殊稀有度(大于7),保存原始值用于显示
+        Integer rarity = getRarity(itemStack);
+        if (rarity == null) rarity = RarityConstants.RARITY_COMMON;
+        return buildLocalizedRarityTooltip(rarity);
+    }
+    
+    /**
+     * 根据稀有度值构建本地化工具提示字符串(内部公用方法)
+     * 被 getLocalizedRarityTooltip(Item) 和 getLocalizedRarityTooltip(ItemStack) 共用
+     */
+    private static @NotNull String buildLocalizedRarityTooltip(int rarity) {
         boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;
-        int displayRarity = rarity; // 保存用于显示的原始稀有度值
-        
-        // 标准化稀有度值用于内部处理
+        int displayRarity = rarity;
         rarity = org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rarity);
         
-        // 构建工具提示字符串
         if (isSpecialRarity) {
-            // 特殊稀有度(大于 7 级)
             String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(displayRarity);
-            
-            // 检查是否有自定义特殊稀有度文本
             String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(displayRarity);
-            
             if (customText != null && !customText.isEmpty()) {
-                // 使用自定义文本,但保持完整格式:[自定义文本 - 星星]
                 return "[" + customText + "-" + stars + "]";
             } else {
-                // 使用默认格式:[xx 级稀有度 - 星星]
                 return "[" + displayRarity + "级稀有度-" + stars + "]";
             }
         } else {
-            // 标准稀有度(1-7级)
             String rarityKey;
             switch (rarity) {
                 case RarityConstants.RARITY_COMMON:
@@ -238,8 +247,6 @@ public class RarityRegistry {
                     rarityKey = "rarity.core.common";
                     break;
             }
-            
-            // 获取本地化文本
             String localizedLabel = net.minecraft.client.resources.language.I18n.get(rarityKey);
             String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(rarity);
             return localizedLabel + " " + stars;
@@ -377,11 +384,23 @@ public class RarityRegistry {
     }
     
     /**
+     * 获取物品的神化稀有度（公共入口,供外部直接调用）
+     * 当标准获取流程因缓存或配置回退原因未正确返回神化稀有度时,外部可直接调用此方法作为兜底
+     * @param itemStack 物品栈
+     * @return 神化稀有度等级,如果没有神化数据则返回null
+     */
+    @Nullable
+    public static Integer getDirectApotheosisRarity(@Nullable ItemStack itemStack) {
+        return checkApotheosisRarity(itemStack);
+    }
+
+    /**
      * 检查神化模组稀有度
      * 神化稀有度不应该被缓存，因为依赖于物品的实时NBT数据
      * @param itemStack 物品栈
      * @return 稀有度等级,如果没有匹配则返回null
      */
+    @Nullable
     private static Integer checkApotheosisRarity(@Nullable ItemStack itemStack) {
         if (!org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity() || itemStack == null || itemStack.isEmpty()) {
             return null;

@@ -45,8 +45,9 @@ public class ItemStackMixin {
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度,则不修改名称颜色
         // 注意:需要检查物品是否真的没有配置,而不是默认的稀有度1
+        // 使用包含神化NBT检查的增强版配置检测
         Item item = stack.getItem();
-        if (org.yanbwe.raritycore.config.ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
+        if (org.yanbwe.raritycore.config.ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item, stack)) {
             return;
         }
         
@@ -69,11 +70,12 @@ public class ItemStackMixin {
     }
     
     /**
-     * 检查物品是否有配置的稀有度
+     * 检查物品是否有配置的稀有度(含神化NBT检测)
      * @param item 要检查的物品
+     * @param itemStack 物品栈(用于神化NBT检测)
      * @return 如果物品有配置稀有度返回true,否则返回false
      */
-    private boolean hasConfiguredRarity(Item item) {
+    private boolean hasConfiguredRarity(Item item, ItemStack itemStack) {
         if (item == null) {
             return false;
         }
@@ -85,7 +87,19 @@ public class ItemStackMixin {
         }
         
         // 检查是否在注册表中有配置
-        return RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId);
+        if (RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId)) {
+            return true;
+        }
+        
+        // 检查神化NBT数据(有神化稀有度也算有配置)
+        if (itemStack != null && itemStack.hasTag()) {
+            Integer apothRarity = RarityRegistry.getDirectApotheosisRarity(itemStack);
+            if (apothRarity != null) {
+                return true;
+            }
+        }
+        
+        return false;
     }
     
 
