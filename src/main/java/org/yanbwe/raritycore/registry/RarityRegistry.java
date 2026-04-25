@@ -330,9 +330,10 @@ public class RarityRegistry {
         // 然后检查神化模组稀有度
         rarity = checkApotheosisRarity(itemStack);
         if (rarity != null) {
-            // 填充缓存
+            // 神化稀有度取决于ItemStack的数据组件,不是物品类型级别
+            // 使用组件缓存(基于ItemStack NBT哈希)而非ID缓存,防止泄漏到同类型的非神化物品
             if (itemStack != null) {
-                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+                org.yanbwe.raritycore.cache.ComponentCacheManager.cacheRarity(itemStack, rarity);
             }
             return rarity;
         }

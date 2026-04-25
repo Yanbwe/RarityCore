@@ -35,8 +35,11 @@ public class RarityCacheCoordinator {
     /**
      * 获取物品的缓存稀有度
      * 查询逻辑：
-     * 1. 如果物品有组件匹配规则，先查组件缓存
-     * 2. 如果组件缓存未命中或物品无组件匹配规则，查ID缓存
+     * 1. 先查组件缓存(基于ItemStack NBT哈希,能区分不同NBT数据的物品堆)
+     *    如果命中直接返回,避免ID缓存的跨物品堆污染问题
+     * 2. 如果组件缓存未命中且物品有特殊NBT数据(如神化模组组件),
+     *    返回null强制重新计算,防止ID缓存的类型级数据被错误使用
+     * 3. 如果物品没有特殊NBT数据,回退到ID缓存(基于物品类型ID)
      * @param itemStack 物品堆
      * @return 缓存的稀有度，如果不存在返回null
      */
@@ -51,13 +54,22 @@ public class RarityCacheCoordinator {
             return null;
         }
 
-        if (hasComponentMatchRules(itemId)) {
-            Integer componentRarity = ComponentCacheManager.getCachedRarity(itemStack);
-            if (componentRarity != null) {
-                return componentRarity;
-            }
+        // 1. 优先检查组件缓存(基于ItemStack NBT哈希)
+        //    组件缓存能区分相同物品类型但不同NBT数据的物品堆
+        //    这防止了神化模组稀有度(基于ItemStack数据组件)泄漏到同类型的非神化物品
+        Integer componentRarity = ComponentCacheManager.getCachedRarity(itemStack);
+        if (componentRarity != null) {
+            return componentRarity;
         }
 
+        // 2. 如果物品有特殊NBT数据(如神化组件、附魔等),跳过ID缓存
+        //    ID缓存只存储按物品类型区分的稀有度,会错误地应用于所有同类型物品堆
+        //    例如:有神化数据的剑和无神化数据的剑不应共享同一个缓存条目
+        if (ComponentCacheManager.hasNonTrivialData(itemStack)) {
+            return null; // 强制调用方重新计算稀有度
+        }
+
+        // 3. 回退到ID缓存(基于物品类型ID,适用于稀有度仅取决于物品类型的场景)
         return IdCacheManager.getCachedRarity(itemId);
     }
 
@@ -104,6 +116,9 @@ public class RarityCacheCoordinator {
 
     /**
      * 缓存物品稀有度（自动检测组件匹配规则）
+     * 缓存策略:
+     * - 有组件匹配规则或有特殊NBT数据的物品 → 组件缓存(基于NBT哈希,区分不同物品堆)
+     * - 无特殊数据的普通物品 → ID缓存(基于物品类型ID)
      * @param itemStack 物品堆
      * @param rarity 稀有度等级
      */
@@ -118,6 +133,11 @@ public class RarityCacheCoordinator {
         }
 
         boolean hasComponentMatch = hasComponentMatchRules(itemId);
+        // 对有特殊NBT数据的物品也使用组件缓存(如神化模组物品的稀有度基于数据组件)
+        // 这防止了ID缓存污染:同类型但不同NBT数据的物品堆不应共享同一个ID缓存条目
+        if (!hasComponentMatch && ComponentCacheManager.hasNonTrivialData(itemStack)) {
+            hasComponentMatch = true;
+        }
         cacheRarity(itemStack, rarity, hasComponentMatch);
     }
 

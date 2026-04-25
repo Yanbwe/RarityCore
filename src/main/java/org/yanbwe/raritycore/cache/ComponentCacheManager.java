@@ -186,6 +186,40 @@ public class ComponentCacheManager {
     }
 
     /**
+     * 检查物品堆是否有特殊NBT数据(超出id和count)
+     * 用于判断是否应该使用组件缓存而非ID缓存
+     * @param itemStack 物品堆
+     * @return 如果有特殊NBT数据返回true
+     */
+    public static boolean hasNonTrivialData(ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty()) {
+            return false;
+        }
+
+        try {
+            var tag = itemStack.save(net.minecraft.core.RegistryAccess.EMPTY);
+            if (tag instanceof CompoundTag compoundTag) {
+                int extraKeys = 0;
+                for (String keyName : compoundTag.getAllKeys()) {
+                    if (!keyName.equals("id") && !keyName.equals("count")) {
+                        extraKeys++;
+                        if (extraKeys > 0) {
+                            return true; // 存在任何超出基础id/count的数据
+                        }
+                    }
+                }
+            }
+        } catch (IllegalStateException e) {
+            // 注册表访问问题,保守返回false
+            RarityCore.LOGGER.debug("检查NBT数据时出错(注册表访问问题): {}", e.getMessage());
+        } catch (Exception e) {
+            RarityCore.LOGGER.debug("检查NBT数据时出错: {}", e.getMessage());
+        }
+
+        return false;
+    }
+
+    /**
      * 获取缓存统计信息
      */
     public static ComponentCacheStatistics getStatistics() {
