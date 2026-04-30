@@ -130,6 +130,7 @@ public class ConfigValidator {
         configObject.addProperty("itemBorderStyle", 1);
         configObject.addProperty("useTextureBorder", true);
         configObject.addProperty("enableItemNameColor", true);
+        configObject.addProperty("enableTooltipColor", true);
         configObject.addProperty("enableTooltipInsert", true);
         configObject.addProperty("skipUnconfiguredItems", false);
         configObject.addProperty("enableBatchProcessing", true);

@@ -61,6 +61,9 @@ public class RarityRegistry {
             if (itemId != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                 Integer oldRarity = ITEM_RARITY_MAP.put(itemId, rarity);
 
+                // 实时更新ID缓存（编辑模式支持）
+                org.yanbwe.raritycore.cache.DualCacheManager.updateIdCache(new ItemStack(item), rarity);
+
                 RarityChangeEvent.ChangeType changeType = (oldRarity == null) ?
                     RarityChangeEvent.ChangeType.REGISTER : RarityChangeEvent.ChangeType.UPDATE;
                 NeoForge.EVENT_BUS.post(new RarityChangeEvent(item, oldRarity, rarity, changeType));
@@ -88,6 +91,9 @@ public class RarityRegistry {
             Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
             if (itemId != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                 Integer removedRarity = ITEM_RARITY_MAP.remove(itemId);
+
+                // 实时更新ID缓存（编辑模式支持）- 删除时使缓存失效
+                org.yanbwe.raritycore.cache.DualCacheManager.updateIdCache(new ItemStack(item), null);
 
                 if (removedRarity != null) {
                     NeoForge.EVENT_BUS.post(new RarityChangeEvent(
@@ -180,11 +186,12 @@ public class RarityRegistry {
             String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(displayRarity);
             
             if (customText != null && !customText.isEmpty()) {
-                // 使用自定义文本,但保持完整格式:[自定义文本 - 星星]
-                return "[" + customText + "-" + stars + "]";
+                // 使用自定义文本,保持与标准格式一致:[自定义文本] <星星>
+                return "[" + customText + "] " + stars;
             } else {
-                // 使用默认格式:[xx 级稀有度 - 星星]
-                return "[" + displayRarity + "级稀有度-" + stars + "]";
+                // 使用默认格式,使用本地化文本:[xx级稀有度] <星星>
+                String localizedSuffix = net.minecraft.client.resources.language.I18n.get("rarity.core.unusual.tips");
+                return "[" + displayRarity + localizedSuffix + "]" + stars;
             }
         } else {
             // 标准稀有度(1-7级)

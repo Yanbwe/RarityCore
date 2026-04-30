@@ -87,10 +87,13 @@ public class ConfigReloadService {
                 SyncManager.syncRarityToClientsWithRetry(RarityRegistry.ITEM_RARITY_MAP);
             }
             
-            // 8. 处理双缓存系统重载
+            // 8. 处理客户端侧配置和skipUnconfiguredItems变更
+            handleClientSideConfigs();
+            
+            // 9. 处理双缓存系统重载
             handleCacheSystems();
             
-            // 9. 发送完成消息(仅在命令调用时)
+            // 10. 发送完成消息(仅在命令调用时)
             if (source != null) {
                 sendCompletionMessage(source);
             }

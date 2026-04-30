@@ -35,6 +35,9 @@ public class RarityCoreEventHandler {
 
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
+        ServiceFactory factory = ServiceFactory.getInstance();
+        factory.getSchedulerService().startScheduledTasks();
+
         NeoForge.EVENT_BUS.register(new org.yanbwe.raritycore.tick.ServerTickListener());
     }
 

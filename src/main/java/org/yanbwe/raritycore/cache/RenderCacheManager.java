@@ -47,52 +47,61 @@ public class RenderCacheManager {
     }
     
     /**
-     * 获取缓存统计信息
+     * 获取完整的缓存统计信息（含两级缓存明细）
      */
     public static CacheStats getCacheStats() {
-        DualCacheManager.CacheStatistics dualStats = DualCacheManager.getStatistics();
+        RarityCacheCoordinator.CombinedCacheStatistics combined = 
+            RarityCacheCoordinator.getStatistics();
         return new CacheStats(
-            0,
-            0,
-            0,
-            (int) dualStats.getCacheSize(),
-            (int) dualStats.getCacheSize(),
-            dualStats.getOverallHitRate()
+            combined.getIdCacheSize(),
+            combined.getComponentCacheSize(),
+            combined.getTotalSize(),
+            combined.getIdCacheHitRate(),
+            combined.getComponentCacheHitRate(),
+            combined.getOverallHitRate()
         );
     }
     
     /**
-     * 缓存统计信息类(保持向后兼容)
+     * 缓存统计信息类（两级缓存架构）
      */
     public static class CacheStats {
-        private final long hits;
-        private final long misses;
-        private final long clears;
-        private final int rarityCacheSize;
-        private final int itemStackCacheSize;
-        private final double hitRate;
+        private final long idCacheSize;
+        private final long componentCacheSize;
+        private final long totalSize;
+        private final double idCacheHitRate;
+        private final double componentCacheHitRate;
+        private final double overallHitRate;
         
-        public CacheStats(long hits, long misses, long clears, 
-                         int rarityCacheSize, int itemStackCacheSize, double hitRate) {
-            this.hits = hits;
-            this.misses = misses;
-            this.clears = clears;
-            this.rarityCacheSize = rarityCacheSize;
-            this.itemStackCacheSize = itemStackCacheSize;
-            this.hitRate = hitRate;
+        public CacheStats(long idCacheSize, long componentCacheSize, long totalSize,
+                         double idCacheHitRate, double componentCacheHitRate, double overallHitRate) {
+            this.idCacheSize = idCacheSize;
+            this.componentCacheSize = componentCacheSize;
+            this.totalSize = totalSize;
+            this.idCacheHitRate = idCacheHitRate;
+            this.componentCacheHitRate = componentCacheHitRate;
+            this.overallHitRate = overallHitRate;
         }
         
-        public long getHits() { return hits; }
-        public long getMisses() { return misses; }
-        public long getClears() { return clears; }
-        public int getRarityCacheSize() { return rarityCacheSize; }
-        public int getItemStackCacheSize() { return itemStackCacheSize; }
-        public double getHitRate() { return hitRate; }
+        public long getIdCacheSize() { return idCacheSize; }
+        public long getComponentCacheSize() { return componentCacheSize; }
+        public long getTotalSize() { return totalSize; }
+        public double getIdCacheHitRate() { return idCacheHitRate; }
+        public double getComponentCacheHitRate() { return componentCacheHitRate; }
+        public double getOverallHitRate() { return overallHitRate; }
+        
+        // 向后兼容的 getter（旧代码可能依赖这些）
+        public long getHits() { return 0; }
+        public long getMisses() { return 0; }
+        public long getClears() { return 0; }
+        public int getRarityCacheSize() { return (int) idCacheSize; }
+        public int getItemStackCacheSize() { return (int) componentCacheSize; }
+        public double getHitRate() { return overallHitRate; }
         
         @Override
         public String toString() {
-            return String.format("CacheStats{hitRate=%.2f%%, rarityCache=%d, itemStackCache=%d}", 
-                hitRate, rarityCacheSize, itemStackCacheSize);
+            return String.format("CacheStats{ID: %d (%.1f%%), Component: %d (%.1f%%), Total: %d, Overall: %.1f%%}",
+                idCacheSize, idCacheHitRate, componentCacheSize, componentCacheHitRate, totalSize, overallHitRate);
         }
     }
 }

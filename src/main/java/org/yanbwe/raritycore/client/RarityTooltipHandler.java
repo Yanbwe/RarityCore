@@ -31,10 +31,12 @@ public class RarityTooltipHandler {
     @SubscribeEvent
     @SuppressWarnings("null")
     public static void onItemTooltip(ItemTooltipEvent event) {
-        // 检查是否启用工具提示插入
-        if (!ClientConfigManager.isEnableTooltipInsert()) {
-            return;
-        }
+        RarityExclusionManager.setRenderingTooltipItem(true);
+        try {
+            // 检查是否启用工具提示插入
+            if (!ClientConfigManager.isEnableTooltipInsert()) {
+                return;
+            }
         
         
         ItemStack itemStack = event.getItemStack();
@@ -75,7 +77,7 @@ public class RarityTooltipHandler {
         MutableComponent prefixComponent;
         
         if (isSpecialRarity) {
-            // 如果稀有度大于7,显示为 [x级稀有度-x(星星)]
+            // 如果稀有度大于7,显示为 [x级稀有度] <星星>
             ChatFormatting uniqueColor = RarityColorUtil.getRarityChatColor(RarityConstants.RARITY_UNIQUE);
             MutableComponent rarityComponent = ComponentBuilder.buildSpecialRarityComponent(displayRarity, uniqueColor);
             
@@ -87,36 +89,44 @@ public class RarityTooltipHandler {
             // 设置前缀和颜色
             switch (rarity) {
                 case RarityConstants.RARITY_COMMON:
-                    prefixComponent = Component.translatable("rarity.core.common").withStyle(color);
+                    prefixComponent = Component.translatable("rarity.core.common");
                     break;
                 case RarityConstants.RARITY_UNCOMMON:
-                    prefixComponent = Component.translatable("rarity.core.uncommon").withStyle(color);
+                    prefixComponent = Component.translatable("rarity.core.uncommon");
                     break;
                 case RarityConstants.RARITY_RARE:
-                    prefixComponent = Component.translatable("rarity.core.rare").withStyle(color);
+                    prefixComponent = Component.translatable("rarity.core.rare");
                     break;
                 case RarityConstants.RARITY_EPIC:
-                    prefixComponent = Component.translatable("rarity.core.epic").withStyle(color);
+                    prefixComponent = Component.translatable("rarity.core.epic");
                     break;
                 case RarityConstants.RARITY_LEGENDARY:
-                    prefixComponent = Component.translatable("rarity.core.legendary").withStyle(color);
+                    prefixComponent = Component.translatable("rarity.core.legendary");
                     break;
                 case RarityConstants.RARITY_MYTHICAL:
-                    prefixComponent = Component.translatable("rarity.core.mythical").withStyle(color);
+                    prefixComponent = Component.translatable("rarity.core.mythical");
                     break;
                 case RarityConstants.RARITY_UNIQUE:
-                    prefixComponent = Component.translatable("rarity.core.unique").withStyle(color);
+                    prefixComponent = Component.translatable("rarity.core.unique");
                     break;
                 default:
                     return;
             }
+            
+            // 根据配置决定是否应用颜色
+            if (ClientConfigManager.isEnableTooltipColor()) {
+                prefixComponent = prefixComponent.withStyle(color);
+            }
         
             // 构建文本(使用组件构建器)
             MutableComponent starsComponent = ComponentBuilder.buildRarityComponent(rarity, color);
-            MutableComponent rarityComponent = Component.empty().append(prefixComponent).append(starsComponent).withStyle(color);
+            MutableComponent rarityComponent = Component.empty().append(prefixComponent).append(starsComponent);
             
             // 高效插入到工具提示
             ComponentBuilder.insertIntoTooltip(event.getToolTip(), rarityComponent);
+        }
+        } finally {
+            RarityExclusionManager.setRenderingTooltipItem(false);
         }
     }
     
