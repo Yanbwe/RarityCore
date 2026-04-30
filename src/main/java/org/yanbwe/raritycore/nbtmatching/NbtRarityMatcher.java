@@ -9,12 +9,17 @@ import org.yanbwe.raritycore.RarityCore;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
-/**
+import java.util.concurrent.atomic.AtomicInteger;/**
  * NBT稀有度匹配器核心类
  * 负责根据物品的NBT标签匹配对应的稀有度配置
  */
 public class NbtRarityMatcher {
+    
+    /**
+     * 规则版本号——规则变更时递增
+     * 供 NbtSyncManager 判断是否需要重建缓存
+     */
+    private static final AtomicInteger RULE_VERSION = new AtomicInteger(0);
     
     /**
      * 物品ID到匹配规则的映射缓存
@@ -105,6 +110,7 @@ public class NbtRarityMatcher {
         
         // 按优先级降序排序(数值大的优先级高)
         rules.sort((a, b) -> Integer.compare(b.getPriority(), a.getPriority()));
+        RULE_VERSION.incrementAndGet();
         
         RarityCore.LOGGER.debug("注册NBT匹配规则: {} -> 稀有度{} (优先级:{})", 
             rule.getItemId(), rule.getRarity(), rule.getPriority());
@@ -116,6 +122,7 @@ public class NbtRarityMatcher {
      */
     public static void clearRulesForResource(ResourceLocation itemId) {
         RULES_CACHE.remove(itemId);
+        RULE_VERSION.incrementAndGet();
         RarityCore.LOGGER.debug("清除物品 {} 的所有NBT匹配规则", itemId);
     }
     
@@ -124,6 +131,7 @@ public class NbtRarityMatcher {
      */
     public static void reloadRules() {
         RULES_CACHE.clear();
+        RULE_VERSION.incrementAndGet();
         RarityCore.LOGGER.info("NBT匹配规则缓存已清空,等待重新加载配置");
         
         // 触发配置重新加载
@@ -212,6 +220,14 @@ public class NbtRarityMatcher {
      */
     public static void clearAllRules() {
         RULES_CACHE.clear();
+        RULE_VERSION.incrementAndGet();
         RarityCore.LOGGER.debug("已清空所有NBT匹配规则");
+    }
+    
+    /**
+     * 获取当前规则版本号
+     */
+    public static int getRuleVersion() {
+        return RULE_VERSION.get();
     }
 }

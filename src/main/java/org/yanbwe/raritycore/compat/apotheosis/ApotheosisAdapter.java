@@ -65,6 +65,12 @@ public class ApotheosisAdapter {
         }
 
         CompoundTag tag = itemStack.getTag();
+
+        // O(1) 键查找：先检查是否存在 affix_data 键，避免对无神化数据的物品做全量序列化
+        if (!tag.contains(AFFIX_DATA_KEY)) {
+            return null;
+        }
+
         String tagString = tag.toString();
 
         if (tagString.length() > NBT_STRING_LENGTH_THRESHOLD) {
@@ -77,10 +83,6 @@ public class ApotheosisAdapter {
                 lastErrorItem = itemId;
                 lastErrorTime = currentTime;
             }
-            return null;
-        }
-
-        if (!tagString.contains(AFFIX_DATA_KEY)) {
             return null;
         }
 

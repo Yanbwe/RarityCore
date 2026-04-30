@@ -19,8 +19,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class DualCacheManager {
 
-    private static final char[] HEX_CHARS = "0123456789abcdef".toCharArray();
-
     // ID缓存 - 永久性,预加载所有物品
     private static volatile Cache<ResourceLocation, Integer> idCache;
     
@@ -123,12 +121,17 @@ public class DualCacheManager {
             return null;
         }
 
-        if (itemStack.hasTag() && itemStack.getTag().toString().contains("affix_data")) {
+        // 一次获取 tag 引用，避免后续重复调用 getTag() 导致的重复序列化
+        // 使用 CompoundTag.contains(key) 做 O(1) 键查找，而非 toString().contains() 做全量序列化
+        net.minecraft.nbt.CompoundTag tag = itemStack.hasTag() ? itemStack.getTag() : null;
+
+        // 神化物品(有 affix_data 键)不使用常规缓存，强制实时计算
+        if (tag != null && tag.contains("affix_data")) {
             return null;
         }
 
         // 优先检查NBT缓存
-        if (config.isNbtCacheEnabled() && itemStack.hasTag()) {
+        if (config.isNbtCacheEnabled() && tag != null) {
             String nbtKey = generateNbtKey(itemStack);
             Integer nbtResult = nbtCache.getIfPresent(nbtKey);
             if (nbtResult != null) {
@@ -169,12 +172,13 @@ public class DualCacheManager {
             return;
         }
         
-        // 检查是否含有神化NBT数据
-        boolean hasApotheosisData = itemStack.hasTag() && itemStack.getTag().toString().contains("affix_data");
+        // 一次获取 tag 引用，使用 O(1) 键查找代替全量 toString() 序列化
+        net.minecraft.nbt.CompoundTag tag = itemStack.hasTag() ? itemStack.getTag() : null;
+        boolean hasApotheosisData = tag != null && tag.contains("affix_data");
         
         if (hasApotheosisData) {
             // 神化物品:仅缓存到NBT缓存,避免污染ID缓存
-            if (config.isNbtCacheEnabled() && itemStack.hasTag()) {
+            if (config.isNbtCacheEnabled()) {
                 String nbtKey = generateNbtKey(itemStack);
                 nbtCache.put(nbtKey, rarity);
             }
@@ -184,7 +188,7 @@ public class DualCacheManager {
             idCache.put(idKey, rarity);
             
             // 条件填充NBT缓存
-            if (config.isNbtCacheEnabled() && itemStack.hasTag()) {
+            if (config.isNbtCacheEnabled() && tag != null) {
                 String nbtKey = generateNbtKey(itemStack);
                 nbtCache.put(nbtKey, rarity);
             }
@@ -238,12 +242,6 @@ public class DualCacheManager {
     
     
     
-    private static final int NBT_HASH_TRUNCATE_LENGTH = 4096;
-    
-    private static volatile long lastNbtKeyErrorTime = 0;
-    private static volatile String lastNbtKeyErrorItem = "";
-    private static final long NBT_KEY_ERROR_COOLDOWN = 5000;
-
     /**
      * 生成ID缓存键
      */
@@ -288,38 +286,10 @@ public class DualCacheManager {
         if (itemStack.hasTag() && itemStack.getTag() != null) {
             net.minecraft.nbt.CompoundTag tag = itemStack.getTag();
             if (tag != null) {
-                try {
-                    String nbtString = tag.toString();
-                    byte[] hashInput;
-
-                    if (nbtString.length() > NBT_HASH_TRUNCATE_LENGTH) {
-                        hashInput = nbtString.substring(0, NBT_HASH_TRUNCATE_LENGTH).getBytes();
-                    } else {
-                        hashInput = nbtString.getBytes();
-                    }
-
-                    java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-                    byte[] hash = md.digest(hashInput);
-                    StringBuilder hexString = new StringBuilder(hash.length * 2);
-                    for (byte b : hash) {
-                        hexString.append(HEX_CHARS[(b >> 4) & 0xF]);
-                        hexString.append(HEX_CHARS[b & 0xF]);
-                    }
-                    key.append("|nbt:hash:").append(hexString.toString());
-                    if (nbtString.length() > NBT_HASH_TRUNCATE_LENGTH) {
-                        key.append(":truncated");
-                    }
-                } catch (Exception e) {
-                    String currentItemId = itemId.toString();
-                    long currentTime = System.currentTimeMillis();
-                    if (!currentItemId.equals(lastNbtKeyErrorItem) ||
-                        (currentTime - lastNbtKeyErrorTime) > NBT_KEY_ERROR_COOLDOWN) {
-                        RarityCore.LOGGER.debug("Error generating NBT key for item: {}, using item ID only", currentItemId);
-                        lastNbtKeyErrorItem = currentItemId;
-                        lastNbtKeyErrorTime = currentTime;
-                    }
-                    key.append("|nbt:error");
-                }
+                // 使用 CompoundTag.hashCode() 替代 toString()+MD5
+                // hashCode() 遍历 NBT 树使用原始类型操作，无需字符串序列化
+                int nbtHash = tag.hashCode();
+                key.append("|nbt:").append(nbtHash);
             }
         }
 

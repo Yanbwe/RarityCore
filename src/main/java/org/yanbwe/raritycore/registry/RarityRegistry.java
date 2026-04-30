@@ -336,21 +336,27 @@ public class RarityRegistry {
      * @return 物品的稀有度等级(1-7),如果没有找到匹配的稀有度,返回1(普通)
      */
     private static @NotNull Integer getRarityInternal(ResourceLocation itemId, @Nullable ItemStack itemStack, Item item) {
-        // 首先检查NBT匹配配置(最高优先级)
-        Integer rarity = checkNbtRarity(itemStack);
-        if (rarity != null) {
-            return rarity;
-        }
+        // 快速路径：无 NBT 数据的物品直接跳过 NBT 匹配和神化检查
+        // 这两个检查都依赖 NBT 数据，对于绝大多数普通物品这是零成本的短路
+        boolean hasTag = itemStack != null && itemStack.hasTag();
         
-        // 然后检查神化模组稀有度
-        rarity = checkApotheosisRarity(itemStack);
-        if (rarity != null) {
-            return rarity;
+        if (hasTag) {
+            // 首先检查NBT匹配配置(最高优先级)
+            Integer rarity = checkNbtRarity(itemStack);
+            if (rarity != null) {
+                return rarity;
+            }
+            
+            // 然后检查神化模组稀有度
+            rarity = checkApotheosisRarity(itemStack);
+            if (rarity != null) {
+                return rarity;
+            }
         }
         
         // 然后检查本模组的稀有度配置(包括FinalRarity.json、FinalRarityConfig文件夹和数据包)
         // 加载顺序决定了优先级:FinalRarity.json < FinalRarityConfig文件夹 < 数据包配置
-        rarity = ITEM_RARITY_MAP.get(itemId);
+        Integer rarity = ITEM_RARITY_MAP.get(itemId);
         if (rarity != null) {
             return rarity;
         }

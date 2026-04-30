@@ -48,8 +48,8 @@ public class AutoRarityCalculator {
     // 轮次计数器
     private static int currentRound = 0;
     
-    // C 列表:待处理物品队列
-    private static List<Item> pendingItemList = new ArrayList<>();
+    // C 列表:待处理物品队列(ArrayDeque: O(1) poll, 替代 ArrayList 的 O(n) remove(0))
+    private static ArrayDeque<Item> pendingItemList = new ArrayDeque<>();
     
     // 所有轮次的结果 Map(E1, E2, E3...)
     private static Map<Integer, Map<Item, Integer>> allRoundResults = new HashMap<>();
@@ -103,7 +103,7 @@ public class AutoRarityCalculator {
         currentRound = 1;
         
         // 初始化数据结构
-        pendingItemList = new ArrayList<>();
+        pendingItemList = new ArrayDeque<>();
         allRoundResults = new HashMap<>();
         currentRoundResults = new HashMap<>();
         itemFirstRoundMap = new HashMap<>();
@@ -249,7 +249,7 @@ public class AutoRarityCalculator {
         int processedInThisTick = 0;
         while (processedInThisTick < ITEMS_PER_TICK && !pendingItemList.isEmpty()) {
             // 从 C 列表取出一个物品进行处理
-            Item material = pendingItemList.remove(0);
+            Item material = pendingItemList.pollFirst();
             processMaterial(material);
             processedInThisTick++;
             processedItemsInRound++;
@@ -757,71 +757,37 @@ public class AutoRarityCalculator {
             return;
         }
         
-        // 使用服务器 tick 调度器实现延迟执行
-        final int[] delayTicks = {200}; // 10 秒 = 200 tick
-        final boolean[] executed = {false}; // 标记是否已执行
-        
-        server.addTickable(new Runnable() {
-            @Override
-            public void run() {
-                // 如果已执行,直接返回并移除 tickable
-                if (executed[0]) {
-                    return;
-                }
-                
-                if (delayTicks[0] > 0) {
-                    delayTicks[0]--;
-                    return;
-                }
-                
-                // 标记为已执行
-                executed[0] = true;
-                
+        // 使用 ScheduledExecutorService 延迟执行，替代 server.addTickable 每 tick 递减计数器
+        java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "RarityCore-AutoReload");
+            t.setDaemon(true);
+            return t;
+        }).schedule(() -> {
+            // 通过 server.execute 回到主线程执行重载
+            server.execute(() -> {
                 try {
-                    // 第一次重载
                     org.yanbwe.raritycore.service.ConfigReloadService.reloadFromCommand(null);
                     RarityCore.LOGGER.info("First auto reload completed");
                     
-                    // 短暂延迟后执行第二次重载(确保所有配置完全应用)
-                    final int[] innerDelay = {20}; // 1 秒 = 20 tick
-                    final boolean[] innerExecuted = {false};
+                    // 1 秒延迟后执行第二次重载
+                    try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
                     
-                    server.addTickable(new Runnable() {
-                        @Override
-                        public void run() {
-                            // 如果已执行,直接返回
-                            if (innerExecuted[0]) {
-                                return;
-                            }
+                    server.execute(() -> {
+                        try {
+                            org.yanbwe.raritycore.service.ConfigReloadService.reloadFromCommand(null);
+                            RarityCore.LOGGER.info("Second auto reload completed");
                             
-                            if (innerDelay[0] > 0) {
-                                innerDelay[0]--;
-                                return;
-                            }
-                            
-                            // 标记为已执行
-                            innerExecuted[0] = true;
-                            
-                            try {
-                                // 第二次重载
-                                org.yanbwe.raritycore.service.ConfigReloadService.reloadFromCommand(null);
-                                RarityCore.LOGGER.info("Second auto reload completed");
-                                
-                                // 发送完成提示
-                                sendToAllPlayers(Component.translatable("rarity.core.auto_reload_complete_message")
-                                    .withStyle(ChatFormatting.YELLOW).withStyle(ChatFormatting.BOLD));
-                                
-                            } catch (Exception e) {
-                                RarityCore.LOGGER.error("Error during second auto reload", e);
-                            }
+                            sendToAllPlayers(Component.translatable("rarity.core.auto_reload_complete_message")
+                                .withStyle(ChatFormatting.YELLOW).withStyle(ChatFormatting.BOLD));
+                        } catch (Exception e) {
+                            RarityCore.LOGGER.error("Error during second auto reload", e);
                         }
                     });
-                    
                 } catch (Exception e) {
                     RarityCore.LOGGER.error("Error during first auto reload", e);
                 }
-            }
-        });
+            });
+        }, 10, java.util.concurrent.TimeUnit.SECONDS);
     }
     
 
@@ -846,7 +812,7 @@ public class AutoRarityCalculator {
         AutoRarityConfigManager.cleanupAutoNbtFiles();
         
         // 清空所有缓存和数据结构
-        pendingItemList = new ArrayList<>();
+        pendingItemList = new ArrayDeque<>();
         allRoundResults = new HashMap<>();
         currentRoundResults = new HashMap<>();
         itemFirstRoundMap = new HashMap<>();

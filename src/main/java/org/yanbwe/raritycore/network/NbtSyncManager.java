@@ -22,6 +22,13 @@ import java.util.concurrent.TimeUnit;
 public class NbtSyncManager {
     
     /**
+     * 缓存的 NbtRuleData 列表及对应的规则版本号
+     * 只有规则版本发生变化时才重建，避免每次同步都重新遍历拷贝
+     */
+    private static List<NbtSyncPacket.NbtRuleData> cachedRuleData = null;
+    private static int cachedRuleVersion = -1;
+    
+    /**
      * 将所有NBT规则同步到指定玩家
      * 同步执行,确保数据包在配置加载完成后构建
      * @param player 目标玩家
@@ -76,11 +83,19 @@ public class NbtSyncManager {
     }
     
     /**
-     * 获取所有规则的数据表示
+     * 获取所有规则的数据表示(带版本感知缓存)
+     * 规则未变更时直接返回上次构建的列表
      */
     private static List<NbtSyncPacket.NbtRuleData> getAllRulesAsData() {
-        List<NbtSyncPacket.NbtRuleData> dataList = new ArrayList<>();
+        int currentVersion = NbtRarityMatcher.getRuleVersion();
         
+        // 版本匹配——直接返回缓存
+        if (cachedRuleVersion == currentVersion && cachedRuleData != null) {
+            return cachedRuleData;
+        }
+        
+        // 重建缓存
+        List<NbtSyncPacket.NbtRuleData> dataList = new ArrayList<>();
         Map<ResourceLocation, List<NbtMatchRule>> rulesCache = 
             NbtRarityMatcher.getRulesCacheForSync();
             
@@ -90,6 +105,8 @@ public class NbtSyncManager {
             }
         }
         
+        cachedRuleData = dataList;
+        cachedRuleVersion = currentVersion;
         return dataList;
     }
     

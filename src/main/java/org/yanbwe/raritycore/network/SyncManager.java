@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 同步管理器
@@ -19,22 +20,53 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class SyncManager {
     
     /**
+     * 配置版本号——每次重载配置时递增
+     * 客户端存储最近收到的版本号，登录时比对以跳过重复同步
+     */
+    private static final AtomicInteger CONFIG_VERSION = new AtomicInteger(1);
+    
+    /**
+     * 获取当前配置版本号
+     */
+    public static int getConfigVersion() {
+        return CONFIG_VERSION.get();
+    }
+    
+    /**
+     * 递增配置版本号(配置重载时调用)
+     */
+    public static void bumpConfigVersion() {
+        CONFIG_VERSION.incrementAndGet();
+    }
+    
+    /**
      * 变更操作缓冲区
      */
     private static final List<ChangeOperation> CHANGE_OPERATIONS_BUFFER = new CopyOnWriteArrayList<>();
     
     /**
-     * 将所有稀有度数据同步到客户端(全量同步)
+     * 将所有稀有度数据同步到客户端(全量同步,含当前版本号)
      * @param itemRarityMap 物品稀有度映射
      */
     public static void syncRarityToClients(Map<ResourceLocation, Integer> itemRarityMap) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null && itemRarityMap != null) {
-            // 直接使用原始映射，避免不必要的对象创建
-            RaritySyncPacket packet = new RaritySyncPacket(itemRarityMap);
-            
-            // 发送到所有在线玩家
+            RaritySyncPacket packet = new RaritySyncPacket(CONFIG_VERSION.get(), itemRarityMap);
             sendPacketToAllPlayers(packet, RaritySyncPacket.INSTANCE);
+        }
+    }
+    
+    /**
+     * 向单个玩家同步稀有度数据(版本感知)
+     * 客户端会检查版本号，若已是最新则跳过数据处理
+     * @param player 目标玩家
+     * @param itemRarityMap 物品稀有度映射
+     */
+    public static void syncRarityToPlayer(ServerPlayer player, Map<ResourceLocation, Integer> itemRarityMap) {
+        if (player != null && itemRarityMap != null) {
+            RaritySyncPacket packet = new RaritySyncPacket(CONFIG_VERSION.get(), itemRarityMap);
+            RaritySyncPacket.INSTANCE.send(
+                PacketDistributor.PLAYER.with(() -> player), packet);
         }
     }
     
@@ -100,10 +132,7 @@ public class SyncManager {
     public static void syncRarityToClientsWithRetry(Map<ResourceLocation, Integer> itemRarityMap) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null && itemRarityMap != null) {
-            // 直接使用原始映射，避免不必要的对象创建
-            RaritySyncPacket packet = new RaritySyncPacket(itemRarityMap);
-            
-            // 使用重试管理器发送
+            RaritySyncPacket packet = new RaritySyncPacket(CONFIG_VERSION.get(), itemRarityMap);
             NetworkRetryManager.sendFullSyncWithRetry(packet);
         }
     }

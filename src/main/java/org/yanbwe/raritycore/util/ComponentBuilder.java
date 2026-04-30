@@ -49,11 +49,8 @@ public class ComponentBuilder {
     @Nonnull
     public static MutableComponent buildRarityComponent(int rarity, ChatFormatting color) {
         if (rarity <= 0) return Component.empty();
-        
-        // 使用预构建的星星字符串
         String stars = getStars(rarity);
-
-        return Component.literal(" " + stars).withStyle(color);
+        return Component.literal(" ").append(stars).withStyle(color);
     }
     
     /**
@@ -66,14 +63,11 @@ public class ComponentBuilder {
     @Nonnull
     public static MutableComponent buildRarityComponent(int rarity, ChatFormatting color, boolean enableColor) {
         if (rarity <= 0) return Component.empty();
-        
-        // 使用预构建的星星字符串
         String stars = getStars(rarity);
-        
         if (enableColor) {
-            return Component.literal(" " + stars).withStyle(color);
+            return Component.literal(" ").append(stars).withStyle(color);
         } else {
-            return Component.literal(" " + stars);
+            return Component.literal(" ").append(stars);
         }
     }
     

@@ -133,7 +133,7 @@ public class SimpleNbtCache {
         }
 
         ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(stack.getItem());
-        if (itemId != null) {
+        if (itemId != null && RarityCore.LOGGER.isDebugEnabled()) {
             RarityCore.LOGGER.debug("[NBT缓存] getCachedRarity: 物品ID={}, hasTag={}, tag={}", 
                 itemId, stack.hasTag(), stack.hasTag() ? stack.getTag().toString() : "null");
         }

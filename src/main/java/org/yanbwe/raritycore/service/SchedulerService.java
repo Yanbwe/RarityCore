@@ -60,11 +60,13 @@ public class SchedulerService {
             }
         }, 0, 2000, TimeUnit.MILLISECONDS); // 每2秒检查一次,与批处理窗口匹配
         
-        // 添加自动稀有度计算的 tick 任务
+        // 添加自动稀有度计算的 tick 任务(仅计算时实际执行)
         syncScheduler.scheduleAtFixedRate(() -> {
             try {
-                // 每 2 tick 调用计算器，减少性能开销
-                serviceFactory.getAutoRarityCalculator().tick();
+                var calculator = serviceFactory.getAutoRarityCalculator();
+                if (calculator.isCalculating()) {
+                    calculator.tick();
+                }
             } catch (Exception e) {
                 RarityCore.LOGGER.error("Error occurred during auto rarity calculation tick", e);
             }
