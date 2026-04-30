@@ -146,9 +146,9 @@ public class ComponentCacheManager {
     }
 
     /**
-     * 生成组件缓存键
+     * 生成组件缓存键（性能优化版）
      * 格式: itemId|nbt:组件哈希值
-     * 使用 hashCode() 替代 MD5 以提升性能
+     * 优化：直接计算哈希而不创建过滤后的NBT副本，减少内存分配和复制开销
      * @param itemStack 物品堆
      * @return 缓存键，如果无法生成返回null
      */
@@ -163,16 +163,19 @@ public class ComponentCacheManager {
         try {
             var tag = itemStack.save(net.minecraft.core.RegistryAccess.EMPTY);
             if (tag instanceof CompoundTag compoundTag) {
-                CompoundTag filteredTag = new CompoundTag();
-
+                // P3 FIX: 直接计算哈希而不创建NBT副本
+                // 仅对 id/count 之外的键计算哈希，避免不必要的对象创建
+                int nbtHash = 0;
+                boolean hasExtraData = false;
                 for (String keyName : compoundTag.getAllKeys()) {
                     if (!keyName.equals("id") && !keyName.equals("count")) {
-                        filteredTag.put(keyName, compoundTag.get(keyName));
+                        hasExtraData = true;
+                        nbtHash = 31 * nbtHash + keyName.hashCode();
+                        nbtHash = 31 * nbtHash + compoundTag.get(keyName).hashCode();
                     }
                 }
 
-                if (!filteredTag.isEmpty()) {
-                    int nbtHash = filteredTag.hashCode();
+                if (hasExtraData) {
                     key.append("|nbt:").append(nbtHash);
                 }
             }

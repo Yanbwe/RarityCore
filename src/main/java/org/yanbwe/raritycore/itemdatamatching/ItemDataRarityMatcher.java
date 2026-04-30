@@ -43,20 +43,61 @@ public class ItemDataRarityMatcher {
 
     
     /**
-     * 获取物品的物品数据匹配稀有度(带缓存)
+     * 获取物品的物品数据匹配稀有度(性能优化版)
+     * 先检查是否有匹配规则，仅当规则存在时才序列化NBT，
+     * 避免对无规则物品（绝大多数）进行昂贵的全量NBT序列化
      * @param itemStack 要检查的物品堆
      * @return 匹配的稀有度等级,如果没有匹配则返回null
      */
     @Nullable
     public static Integer getItemDataMatchedRarity(ItemStack itemStack) {
-        if (getItemStackTag(itemStack) == null) {
+        if (itemStack == null || itemStack.isEmpty()) {
             return null;
         }
         
-        // 直接计算稀有度，缓存由RarityRegistry统一处理
-        Integer calculatedRarity = calculateWithoutCache(itemStack);
+        Item item = itemStack.getItem();
+        if (item == null) {
+            return null;
+        }
         
-        return calculatedRarity;
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+        if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
+            return null;
+        }
+        
+        // P0 FIX: 先检查规则，无规则直接返回，避免昂贵的NBT序列化
+        List<ItemDataMatchRule> rules = RULES_CACHE.getOrDefault(itemId, Collections.emptyList());
+        if (rules.isEmpty()) {
+            return null;
+        }
+        
+        // P1 FIX: 仅序列化一次，将tag传递给matchNbt避免重复序列化
+        return calculateWithPrecomputedRules(itemStack, rules);
+    }
+    
+    /**
+     * 使用预获取的规则列表计算稀有度（内部优化路径）
+     * 仅序列化ItemStack一次，使用matchesNbt避免规则内重复序列化
+     * @param itemStack 物品堆
+     * @param rules 预获取的匹配规则列表（非空）
+     * @return 计算的稀有度
+     */
+    @Nullable
+    private static Integer calculateWithPrecomputedRules(ItemStack itemStack, List<ItemDataMatchRule> rules) {
+        CompoundTag nbt = getItemStackTag(itemStack);
+        if (nbt == null) {
+            return null;
+        }
+        
+        // 规则已经在注册时按优先级排序好了
+        // 查找第一个匹配的规则（使用matchesNbt避免重复序列化）
+        for (ItemDataMatchRule rule : rules) {
+            if (rule != null && rule.isEnabled() && rule.matchesNbt(nbt)) {
+                return rule.getRarity();
+            }
+        }
+        
+        return null;
     }
     
     /**
@@ -65,7 +106,7 @@ public class ItemDataRarityMatcher {
      * @return 计算的稀有度
      */
     public static Integer calculateWithoutCache(ItemStack itemStack) {
-        if (getItemStackTag(itemStack) == null) {
+        if (itemStack == null || itemStack.isEmpty()) {
             return null;
         }
         
@@ -84,15 +125,8 @@ public class ItemDataRarityMatcher {
             return null;
         }
         
-        // 规则已经在注册时按优先级排序好了
-        // 查找第一个匹配的规则
-        for (ItemDataMatchRule rule : rules) {
-            if (rule != null && rule.isEnabled() && rule.matches(itemStack)) {
-                return rule.getRarity();
-            }
-        }
-        
-        return null;
+        // 使用优化路径：序列化一次，规则复用该tag
+        return calculateWithPrecomputedRules(itemStack, rules);
     }
     
     /**

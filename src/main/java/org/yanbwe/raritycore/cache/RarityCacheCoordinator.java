@@ -33,13 +33,12 @@ public class RarityCacheCoordinator {
     }
 
     /**
-     * 获取物品的缓存稀有度
+     * 获取物品的缓存稀有度（性能优化版，含神化模组兼容）
      * 查询逻辑：
-     * 1. 先查组件缓存(基于ItemStack NBT哈希,能区分不同NBT数据的物品堆)
-     *    如果命中直接返回,避免ID缓存的跨物品堆污染问题
-     * 2. 如果组件缓存未命中且物品有特殊NBT数据(如神化模组组件),
-     *    返回null强制重新计算,防止ID缓存的类型级数据被错误使用
-     * 3. 如果物品没有特殊NBT数据,回退到ID缓存(基于物品类型ID)
+     * 1. 无组件匹配规则 + 神化模组未激活 → 直接ID缓存（快速路径，无序列化）
+     * 2. 无组件匹配规则 + 神化模组激活 → 必须先检查组件缓存和hasNonTrivialData
+     *    （神化物品的稀有度基于组件数据，不能用类型级ID缓存）
+     * 3. 有组件匹配规则 → 完整逻辑：组件缓存 → hasNonTrivialData → ID缓存
      * @param itemStack 物品堆
      * @return 缓存的稀有度，如果不存在返回null
      */
@@ -54,22 +53,25 @@ public class RarityCacheCoordinator {
             return null;
         }
 
+        // P2 FIX: 无组件匹配规则且神化未激活 → 快速ID缓存路径
+        // 神化激活时必须走完整逻辑，因为神化物品的稀有度基于组件数据
+        if (!hasComponentMatchRules(itemId) && !isApotheosisActive()) {
+            return IdCacheManager.getCachedRarity(itemId);
+        }
+
+        // 以下为需要组件感知缓存的逻辑
         // 1. 优先检查组件缓存(基于ItemStack NBT哈希)
-        //    组件缓存能区分相同物品类型但不同NBT数据的物品堆
-        //    这防止了神化模组稀有度(基于ItemStack数据组件)泄漏到同类型的非神化物品
         Integer componentRarity = ComponentCacheManager.getCachedRarity(itemStack);
         if (componentRarity != null) {
             return componentRarity;
         }
 
         // 2. 如果物品有特殊NBT数据(如神化组件、附魔等),跳过ID缓存
-        //    ID缓存只存储按物品类型区分的稀有度,会错误地应用于所有同类型物品堆
-        //    例如:有神化数据的剑和无神化数据的剑不应共享同一个缓存条目
         if (ComponentCacheManager.hasNonTrivialData(itemStack)) {
             return null; // 强制调用方重新计算稀有度
         }
 
-        // 3. 回退到ID缓存(基于物品类型ID,适用于稀有度仅取决于物品类型的场景)
+        // 3. 回退到ID缓存
         return IdCacheManager.getCachedRarity(itemId);
     }
 
@@ -115,10 +117,11 @@ public class RarityCacheCoordinator {
     }
 
     /**
-     * 缓存物品稀有度（自动检测组件匹配规则）
+     * 缓存物品稀有度（自动检测组件匹配规则，性能优化版 + 神化兼容）
      * 缓存策略:
-     * - 有组件匹配规则或有特殊NBT数据的物品 → 组件缓存(基于NBT哈希,区分不同物品堆)
-     * - 无特殊数据的普通物品 → ID缓存(基于物品类型ID)
+     * - 有组件匹配规则的物品 → 组件缓存(基于NBT哈希,区分不同物品堆)
+     * - 神化模组激活且有非平凡NBT的物品 → 组件缓存(防止ID缓存污染神化物品)
+     * - 其他物品 → ID缓存(基于物品类型ID)
      * @param itemStack 物品堆
      * @param rarity 稀有度等级
      */
@@ -133,12 +136,16 @@ public class RarityCacheCoordinator {
         }
 
         boolean hasComponentMatch = hasComponentMatchRules(itemId);
-        // 对有特殊NBT数据的物品也使用组件缓存(如神化模组物品的稀有度基于数据组件)
-        // 这防止了ID缓存污染:同类型但不同NBT数据的物品堆不应共享同一个ID缓存条目
-        if (!hasComponentMatch && ComponentCacheManager.hasNonTrivialData(itemStack)) {
-            hasComponentMatch = true;
+        if (hasComponentMatch) {
+            // 有组件匹配规则 → 必须区分不同NBT的物品堆
+            ComponentCacheManager.cacheRarity(itemStack, rarity);
+        } else if (isApotheosisActive() && ComponentCacheManager.hasNonTrivialData(itemStack)) {
+            // 神化模组激活 + 物品有特殊NBT → 组件缓存(防止ID缓存污染)
+            ComponentCacheManager.cacheRarity(itemStack, rarity);
+        } else {
+            // 普通物品 → ID缓存（快速路径）
+            IdCacheManager.cacheRarity(itemId, rarity);
         }
-        cacheRarity(itemStack, rarity, hasComponentMatch);
     }
 
     /**
@@ -200,6 +207,21 @@ public class RarityCacheCoordinator {
      */
     public static boolean hasComponentMatchRules(ResourceLocation itemId) {
         return ItemDataRarityMatcher.hasRulesForItem(itemId);
+    }
+
+    /**
+     * 检查神化模组兼容是否激活（影响缓存策略选择）
+     * 仅在检查神化稀有度配置启用且神化模组已加载时返回true
+     * @return 神化兼容是否处于激活状态
+     */
+    private static boolean isApotheosisActive() {
+        try {
+            return org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity()
+                && org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.isLoaded();
+        } catch (Exception e) {
+            // 安全回退：如果无法检查神化状态，保守返回false使用快速路径
+            return false;
+        }
     }
 
     /**
