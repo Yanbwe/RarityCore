@@ -76,7 +76,7 @@ public class ComponentBuilder {
         if (customText != null && !customText.isEmpty()) {
             // 使用自定义文本,保持与标准格式一致:[自定义文本] <星星>
             String stars = getStars(rarity);
-            textToShow = "[" + customText + "] " + stars;
+            textToShow = "" + customText + "" + stars;
         } else {
             // 使用默认格式,使用本地化文本:[xx级稀有度] <星星>
             String localizedSuffix = net.minecraft.client.resources.language.I18n.get("rarity.core.unusual.tips");

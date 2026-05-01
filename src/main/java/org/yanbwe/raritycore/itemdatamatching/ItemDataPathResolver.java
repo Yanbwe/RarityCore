@@ -42,26 +42,115 @@ public class ItemDataPathResolver {
      * @param path 物品数据路径
      * @return 解析到的标签,如果路径无效则返回null
      */
+    /** "minecraft:custom_data" 组件的注册键 */
+    private static final String CUSTOM_DATA_KEY = "minecraft:custom_data";
+
+    /**
+     * 旧式 NBT 键名 → 新式 DataComponent 注册键映射
+     * 用于向后兼容旧配置文件中的路径
+     */
+    private static final java.util.Map<String, String> LEGACY_KEY_MAPPING = java.util.Map.ofEntries(
+        java.util.Map.entry("Enchantments", "minecraft:enchantments"),
+        java.util.Map.entry("StoredEnchantments", "minecraft:stored_enchantments"),
+        java.util.Map.entry("display", "minecraft:custom_name"),
+        java.util.Map.entry("Damage", "minecraft:damage"),
+        java.util.Map.entry("RepairCost", "minecraft:repair_cost"),
+        java.util.Map.entry("AttributeModifiers", "minecraft:attribute_modifiers"),
+        java.util.Map.entry("CustomPotionEffects", "minecraft:potion_contents"),
+        java.util.Map.entry("Potion", "minecraft:potion_contents"),
+        java.util.Map.entry("HideFlags", "minecraft:hide_tooltip")
+    );
+
+    /**
+     * 将包含旧式键名的路径段转换为新式键名 (仅转换每个路径段的第一部分).
+     * 例如: "Enchantments[0].id" → "minecraft:enchantments[0].id"
+     */
+    private static String translateLegacyKeyInFirstSegment(String path) {
+        // 提取第一个路径段 (直到 '.' 或 '[', 或整个路径)
+        int endIndex = path.length();
+        int dotIndex = path.indexOf('.');
+        int bracketIndex = path.indexOf('[');
+
+        if (dotIndex >= 0) endIndex = Math.min(endIndex, dotIndex);
+        if (bracketIndex >= 0) endIndex = Math.min(endIndex, bracketIndex);
+
+        String firstSegment = path.substring(0, endIndex);
+        String rest = path.substring(endIndex);
+
+        String mapped = LEGACY_KEY_MAPPING.get(firstSegment);
+        if (mapped != null) {
+            return mapped + rest;
+        }
+
+        return path;
+    }
+
     @Nullable
     public static Tag resolve(CompoundTag nbt, String path) {
         if (nbt == null || path == null || path.isEmpty()) {
             return null;
         }
-        
+
         try {
             // 检查是否包含通配符
             if (path.contains("[*]")) {
                 List<Tag> results = resolveWildcardPath(nbt, path);
-                // 对于通配符路径,返回第一个匹配的结果或者null
+                if (results.isEmpty()) {
+                    // 向后兼容: 通配符路径也尝试 "components." 前缀
+                    String translatedPath = translateLegacyPath(path);
+                    if (translatedPath != null && !translatedPath.equals(path)) {
+                        results = resolveWildcardPath(nbt, translatedPath);
+                    }
+                }
                 return results.isEmpty() ? null : results.get(0);
             }
-            
-            // 直接从nbt开始解析路径
-            return resolvePathRecursive(nbt, path);
+
+            // 尝试直接解析路径 (适用于新格式路径, 如 "components.minecraft:enchantments")
+            Tag result = resolvePathRecursive(nbt, path);
+            if (result != null) {
+                return result;
+            }
+
+            // 向后兼容: 尝试转换后的路径
+            String translatedPath = translateLegacyPath(path);
+            if (translatedPath != null && !translatedPath.equals(path)) {
+                result = resolvePathRecursive(nbt, translatedPath);
+                if (result != null) {
+                    return result;
+                }
+            }
+
+            return null;
         } catch (Exception e) {
             RarityCore.LOGGER.debug("解析物品数据路径 '{}' 时发生错误: {}", path, e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * 将旧式路径转换为新格式路径. 返回 null 表示无法转换 (不改变原路径).
+     */
+    @Nullable
+    private static String translateLegacyPath(String path) {
+        // "tag.XXX" → "components.minecraft:custom_data.XXX"
+        if (path.startsWith("tag.")) {
+            String remainingPath = path.substring(4);
+            return "components." + CUSTOM_DATA_KEY + "." + remainingPath;
+        }
+
+        // "Count" → "count"
+        if (path.equals("Count")) {
+            return "count";
+        }
+
+        // 新格式路径不需要转换
+        if (path.startsWith("components.") || path.equals("id") || path.equals("count")) {
+            return path;
+        }
+
+        // 旧式路径: 转换键名 + 添加 "components." 前缀
+        String translatedKey = translateLegacyKeyInFirstSegment(path);
+        return "components." + translatedKey;
     }
     
     /**

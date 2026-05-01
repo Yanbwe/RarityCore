@@ -62,7 +62,12 @@ public class RarityRegistry {
                 Integer oldRarity = ITEM_RARITY_MAP.put(itemId, rarity);
 
                 // 实时更新ID缓存（编辑模式支持）
-                org.yanbwe.raritycore.cache.DualCacheManager.updateIdCache(new ItemStack(item), rarity);
+                // 保护: 数据加载时 Holder 组件可能尚未绑定, 静默跳过缓存更新
+                try {
+                    org.yanbwe.raritycore.cache.DualCacheManager.updateIdCache(new ItemStack(item), rarity);
+                } catch (Exception e) {
+                    RarityCore.LOGGER.debug("无法更新ID缓存 (物品组件未绑定): {}", itemId);
+                }
 
                 RarityChangeEvent.ChangeType changeType = (oldRarity == null) ?
                     RarityChangeEvent.ChangeType.REGISTER : RarityChangeEvent.ChangeType.UPDATE;
@@ -93,7 +98,12 @@ public class RarityRegistry {
                 Integer removedRarity = ITEM_RARITY_MAP.remove(itemId);
 
                 // 实时更新ID缓存（编辑模式支持）- 删除时使缓存失效
-                org.yanbwe.raritycore.cache.DualCacheManager.updateIdCache(new ItemStack(item), null);
+                // 保护: 数据加载时 Holder 组件可能尚未绑定, 静默跳过缓存更新
+                try {
+                    org.yanbwe.raritycore.cache.DualCacheManager.updateIdCache(new ItemStack(item), null);
+                } catch (Exception e) {
+                    RarityCore.LOGGER.debug("无法更新ID缓存 (物品组件未绑定): {}", itemId);
+                }
 
                 if (removedRarity != null) {
                     NeoForge.EVENT_BUS.post(new RarityChangeEvent(
@@ -254,11 +264,28 @@ public class RarityRegistry {
         if (item != null) {
             Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
             if (itemId != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
-                ItemStack tempStack = new ItemStack(item);
-                return getRarityInternal(itemId, tempStack, item);
+                try {
+                    ItemStack tempStack = new ItemStack(item);
+                    return getRarityInternal(itemId, tempStack, item);
+                } catch (Exception e) {
+                    // 数据加载早期阶段, Holder 组件尚未绑定
+                    // 回退: 只检查 ID 映射, 跳过需要 ItemStack 的检查
+                    RarityCore.LOGGER.debug("无法创建临时ItemStack (组件未绑定): {}, 回退到ID检查", itemId);
+                    return getRarityByIdOnly(itemId);
+                }
             }
         }
         return 1; // 默认为普通
+    }
+
+    /**
+     * 仅通过 ID 映射查询稀有度 (当 ItemStack 无法创建时的回退路径)
+     */
+    private static @NotNull Integer getRarityByIdOnly(Identifier itemId) {
+        Integer rarity = ITEM_RARITY_MAP.get(itemId);
+        if (rarity != null) return rarity;
+        rarity = AUTO_RARITY_MAP.get(itemId);
+        return rarity != null ? rarity : 1;
     }
     
     private static @NotNull Integer getRarityInternal(Identifier itemId, @Nullable ItemStack itemStack, Item item) {

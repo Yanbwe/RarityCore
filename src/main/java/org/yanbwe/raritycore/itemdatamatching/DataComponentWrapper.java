@@ -1,19 +1,23 @@
 package org.yanbwe.raritycore.itemdatamatching;
 
+import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.Objects;
 
+/**
+ * DataComponentWrapper - 包装 ItemStack 的数据组件信息
+ * 完全基于 DataComponent API.
+ */
 public class DataComponentWrapper {
     private final ItemStack itemStack;
     private final int count;
-    private final String componentsString;
+    private final DataComponentMap components;
 
     public DataComponentWrapper(ItemStack itemStack) {
         this.itemStack = itemStack;
         this.count = itemStack.getCount();
-        this.componentsString = itemStack.getComponentsPatch() != null ?
-            itemStack.getComponentsPatch().toString() : "";
+        this.components = itemStack.getComponents();
     }
 
     public ItemStack getItemStack() {
@@ -24,8 +28,8 @@ public class DataComponentWrapper {
         return count;
     }
 
-    public String getComponentsString() {
-        return componentsString;
+    public DataComponentMap getComponents() {
+        return components;
     }
 
     @Override
@@ -35,11 +39,11 @@ public class DataComponentWrapper {
         DataComponentWrapper that = (DataComponentWrapper) o;
         return count == that.count &&
             Objects.equals(itemStack.getItem(), that.itemStack.getItem()) &&
-            Objects.equals(componentsString, that.componentsString);
+            Objects.equals(components.toString(), that.components.toString());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(itemStack.getItem(), count, componentsString);
+        return Objects.hash(itemStack.getItem(), count, components.toString());
     }
 }

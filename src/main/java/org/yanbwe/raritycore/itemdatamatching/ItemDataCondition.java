@@ -1,10 +1,11 @@
 package org.yanbwe.raritycore.itemdatamatching;
 
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * 物品数据条件表达式抽象类
- * 定义了物品数据匹配的基本接口和通用属性
+ * 完全基于 DataComponent API，不再使用 NBT CompoundTag.
  */
 public abstract class ItemDataCondition {
     
@@ -45,11 +46,12 @@ public abstract class ItemDataCondition {
     }
     
     /**
-     * 执行匹配逻辑
-     * @param nbt 要匹配的NBT标签
+     * 执行匹配逻辑 (基于 DataComponent API)
+     * @param components 物品的 DataComponentMap
+     * @param itemStack  物品堆 (用于 id/count 等路径)
      * @return 是否匹配成功
      */
-    public abstract boolean matches(CompoundTag nbt);
+    public abstract boolean matches(DataComponentMap components, ItemStack itemStack);
     
     /**
      * 获取物品数据路径

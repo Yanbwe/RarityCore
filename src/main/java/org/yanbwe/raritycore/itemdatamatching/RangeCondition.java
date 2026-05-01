@@ -1,7 +1,7 @@
 package org.yanbwe.raritycore.itemdatamatching;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
 
@@ -22,26 +22,26 @@ public class RangeCondition extends ItemDataCondition {
     }
 
     @Override
-    public boolean matches(CompoundTag nbt) {
-        if (ItemDataPathResolver.containsWildcard(path)) {
-            return matchesWildcard(nbt);
+    public boolean matches(DataComponentMap components, ItemStack itemStack) {
+        if (DataComponentPathResolver.containsWildcard(path)) {
+            return matchesWildcard(components, itemStack);
         }
 
-        Tag tag = ItemDataPathResolver.resolve(nbt, path);
-        if (tag == null) {
+        Object value = DataComponentPathResolver.resolve(components, itemStack, path);
+        if (value == null) {
             return false;
         }
 
-        return isInRange(tag, minValue, maxValue);
+        return isInRange(value, minValue, maxValue);
     }
 
-    private boolean matchesWildcard(CompoundTag nbt) {
-        List<Tag> results = ItemDataPathResolver.resolveWildcardPath(nbt, path);
+    private boolean matchesWildcard(DataComponentMap components, ItemStack itemStack) {
+        List<Object> results = DataComponentPathResolver.resolveWildcard(components, itemStack, path);
         if (results.isEmpty()) {
             return false;
         }
 
-        for (Tag result : results) {
+        for (Object result : results) {
             if (isInRange(result, minValue, maxValue)) {
                 return true;
             }
@@ -50,27 +50,17 @@ public class RangeCondition extends ItemDataCondition {
         return false;
     }
 
-    private boolean isInRange(Tag tag, Number min, Number max) {
+    private boolean isInRange(Object value, Number min, Number max) {
         try {
-            double value;
-            if (tag instanceof net.minecraft.nbt.IntTag intTag) {
-                value = intTag.asInt().orElse(0);
-            } else if (tag instanceof net.minecraft.nbt.LongTag longTag) {
-                value = longTag.asLong().orElse(0L);
-            } else if (tag instanceof net.minecraft.nbt.FloatTag floatTag) {
-                value = floatTag.asFloat().orElse(0f);
-            } else if (tag instanceof net.minecraft.nbt.DoubleTag doubleTag) {
-                value = doubleTag.asDouble().orElse(0d);
-            } else if (tag instanceof net.minecraft.nbt.ByteTag byteTag) {
-                value = byteTag.asByte().orElse((byte)0);
-            } else if (tag instanceof net.minecraft.nbt.ShortTag shortTag) {
-                value = shortTag.asShort().orElse((short)0);
+            double numericValue;
+            if (value instanceof Number num) {
+                numericValue = num.doubleValue();
             } else {
-                value = Double.parseDouble(tag.toString());
+                numericValue = Double.parseDouble(value.toString());
             }
             double minVal = min.doubleValue();
             double maxVal = max.doubleValue();
-            return value >= minVal && value <= maxVal;
+            return numericValue >= minVal && numericValue <= maxVal;
         } catch (Exception e) {
             return false;
         }

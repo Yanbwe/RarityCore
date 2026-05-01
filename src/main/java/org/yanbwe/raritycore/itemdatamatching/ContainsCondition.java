@@ -1,8 +1,7 @@
 package org.yanbwe.raritycore.itemdatamatching;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
 
@@ -20,35 +19,27 @@ public class ContainsCondition extends ItemDataCondition {
     }
 
     @Override
-    public boolean matches(CompoundTag nbt) {
-        if (ItemDataPathResolver.containsWildcard(path)) {
-            return matchesWildcard(nbt);
+    public boolean matches(DataComponentMap components, ItemStack itemStack) {
+        if (DataComponentPathResolver.containsWildcard(path)) {
+            return matchesWildcard(components, itemStack);
         }
 
-        Tag tag = ItemDataPathResolver.resolve(nbt, path);
-        if (tag == null) {
+        Object value = DataComponentPathResolver.resolve(components, itemStack, path);
+        if (value == null) {
             return false;
         }
 
-        if (tag instanceof StringTag stringTag) {
-            return stringTag.asString().orElse("").contains(substring);
-        }
-
-        return tag.toString().contains(substring);
+        return value.toString().contains(substring);
     }
 
-    private boolean matchesWildcard(CompoundTag nbt) {
-        List<Tag> results = ItemDataPathResolver.resolveWildcardPath(nbt, path);
+    private boolean matchesWildcard(DataComponentMap components, ItemStack itemStack) {
+        List<Object> results = DataComponentPathResolver.resolveWildcard(components, itemStack, path);
         if (results.isEmpty()) {
             return false;
         }
 
-        for (Tag result : results) {
-            if (result instanceof StringTag stringTag) {
-                if (stringTag.asString().orElse("").contains(substring)) {
-                    return true;
-                }
-            } else if (result.toString().contains(substring)) {
+        for (Object result : results) {
+            if (result.toString().contains(substring)) {
                 return true;
             }
         }

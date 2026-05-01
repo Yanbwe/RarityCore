@@ -1,7 +1,7 @@
 package org.yanbwe.raritycore.itemdatamatching;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.List;
 
@@ -19,27 +19,27 @@ public class EqualsCondition extends ItemDataCondition {
     }
 
     @Override
-    public boolean matches(CompoundTag nbt) {
-        if (ItemDataPathResolver.containsWildcard(path)) {
-            return matchesWildcard(nbt);
+    public boolean matches(DataComponentMap components, ItemStack itemStack) {
+        if (DataComponentPathResolver.containsWildcard(path)) {
+            return matchesWildcard(components, itemStack);
         }
 
-        Tag actualTag = ItemDataPathResolver.resolve(nbt, path);
-        if (actualTag == null) {
+        Object actualValue = DataComponentPathResolver.resolve(components, itemStack, path);
+        if (actualValue == null) {
             return false;
         }
 
-        return compareTags(actualTag, expectedValue);
+        return compareValues(actualValue, expectedValue);
     }
 
-    private boolean matchesWildcard(CompoundTag nbt) {
-        List<Tag> results = ItemDataPathResolver.resolveWildcardPath(nbt, path);
+    private boolean matchesWildcard(DataComponentMap components, ItemStack itemStack) {
+        List<Object> results = DataComponentPathResolver.resolveWildcard(components, itemStack, path);
         if (results.isEmpty()) {
             return false;
         }
 
-        for (Tag result : results) {
-            if (compareTags(result, expectedValue)) {
+        for (Object result : results) {
+            if (compareValues(result, expectedValue)) {
                 return true;
             }
         }
@@ -47,19 +47,14 @@ public class EqualsCondition extends ItemDataCondition {
         return false;
     }
 
-    private boolean compareTags(Tag actual, Object expected) {
+    @SuppressWarnings("unchecked")
+    private boolean compareValues(Object actual, Object expected) {
         if (expected == null) {
-            return actual == null || actual.getId() == 0;
+            return actual == null;
         }
 
         String actualString = actual.toString();
-
-        String expectedString;
-        if (expected instanceof String) {
-            expectedString = (String) expected;
-        } else {
-            expectedString = expected.toString();
-        }
+        String expectedString = expected.toString();
 
         if (expected instanceof Number) {
             try {
@@ -72,7 +67,7 @@ public class EqualsCondition extends ItemDataCondition {
         }
 
         if (expected instanceof Boolean) {
-            return actualString.equals(expected.toString());
+            return actualString.equals(expectedString);
         }
 
         return actualString.equals(expectedString);

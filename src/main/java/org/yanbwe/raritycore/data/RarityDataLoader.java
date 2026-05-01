@@ -48,7 +48,6 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener<JsonEleme
                                 .orElse(null);
 
                         if (item == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
-                            RarityCore.LOGGER.warn("Unknown item '{}' in rarity data file '{}'", itemIdString, location);
                             continue;
                         }
 

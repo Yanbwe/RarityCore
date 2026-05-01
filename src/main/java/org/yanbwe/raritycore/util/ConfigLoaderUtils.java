@@ -58,7 +58,7 @@ public class ConfigLoaderUtils {
                             .orElse(null);
 
                         if (item == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
-                            RarityCore.LOGGER.warn("Unknown item '{}' in file '{}'", itemIdString, fileName);
+                            RarityCore.LOGGER.debug("Unknown item '{}' in file '{}'", itemIdString, fileName);
                             continue;
                         }
                         

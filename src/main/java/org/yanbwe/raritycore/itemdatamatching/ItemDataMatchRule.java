@@ -35,6 +35,26 @@ public class ItemDataMatchRule {
             return false;
         }
 
+        if (!enabled) {
+            return false;
+        }
+
+        if (conditions == null || conditions.isEmpty()) {
+            return false;
+        }
+
+        // 直接从 DataComponentWrapper 获取 DataComponentMap 和 ItemStack
+        net.minecraft.core.component.DataComponentMap components = data.getComponents();
+        net.minecraft.world.item.ItemStack itemStack = data.getItemStack();
+
+        // 所有条件之间是 AND 关系
+        for (ItemDataCondition condition : conditions) {
+            if (!condition.matches(components, itemStack)) {
+                return false;
+            }
+        }
+
+        // 所有条件都满足
         if (fuzzyMatch) {
             return true;
         } else {
@@ -42,7 +62,9 @@ public class ItemDataMatchRule {
         }
     }
 
+    @Deprecated
     private boolean hasExactItemDataStructure(DataComponentWrapper data, List<ItemDataCondition> conditions) {
+        // 精确结构检查 (简化实现)
         return true;
     }
 
