@@ -133,12 +133,6 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 repositories {
     // Put repositories for dependencies here
     // ForgeGradle automatically adds the Forge maven and Maven Central for you
-
-    // If you have mod jar dependencies in ./libs, you can declare them as a repository like so.
-    // See https://docs.gradle.org/current/userguide/declaring_repositories.html#sub:flat_dir_resolver
-    // flatDir {
-    //     dir 'libs'
-    // }
 }
 
 dependencies {
@@ -166,6 +160,11 @@ dependencies {
 
     implementation 'org.spongepowered:mixin:0.8.5'
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+
+    // KubeJS optional integration (from libs/)
+    compileOnly files('libs/kubejs-forge-2001.6.5-build.26.jar')
+    compileOnly files('libs/rhino-forge-2001.2.3-build.10.jar')
+    compileOnly files('libs/architectury-9.2.14-forge.jar')
 
 }
 

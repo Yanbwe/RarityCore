@@ -172,6 +172,7 @@ public class ConfigValidator {
         configObject.addProperty("checkVanillaRarity", true);
         configObject.addProperty("checkApotheosisRarity", true);
         configObject.addProperty("enableGetRarityWarning", true);
+        configObject.addProperty("enableNbtRarityControl", false);
         
         return configObject;
     }

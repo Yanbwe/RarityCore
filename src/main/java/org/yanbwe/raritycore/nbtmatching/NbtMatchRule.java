@@ -56,69 +56,31 @@ public class NbtMatchRule {
      * @return 是否匹配
      */
     public boolean matches(ItemStack itemStack) {
-        if (RarityCore.LOGGER.isDebugEnabled()) {
-            RarityCore.LOGGER.debug("[NbtMatchRule] matches: 开始匹配规则, itemId={}, fuzzyMatch={}", itemId, fuzzyMatch);
-        }
-        
         if (itemStack == null || itemStack.isEmpty()) {
-            if (RarityCore.LOGGER.isDebugEnabled()) {
-                RarityCore.LOGGER.debug("[NbtMatchRule] matches: 物品为空");
-            }
             return false;
         }
-        
+
         if (!itemStack.hasTag()) {
-            if (RarityCore.LOGGER.isDebugEnabled()) {
-                RarityCore.LOGGER.debug("[NbtMatchRule] matches: 物品没有tag");
-            }
             return false;
         }
-        
+
         CompoundTag nbt = itemStack.getTag();
-        if (RarityCore.LOGGER.isDebugEnabled()) {
-            RarityCore.LOGGER.debug("[NbtMatchRule] matches: 物品NBT={}", nbt);
-        }
-        
-        // 无论是模糊匹配还是精确匹配，条件之间都是AND关系
-        // 先检查所有条件是否满足
-        for (int i = 0; i < conditions.size(); i++) {
-            NbtCondition condition = conditions.get(i);
-            if (RarityCore.LOGGER.isDebugEnabled()) {
-                RarityCore.LOGGER.debug("[NbtMatchRule] matches: 检查条件 {}/{}, path={}, type={}", 
-                     i + 1, conditions.size(), condition.getPath(), condition.getType());
-            }
+
+        // 条件之间都是AND关系
+        for (NbtCondition condition : conditions) {
             if (!condition.matches(nbt)) {
-                if (RarityCore.LOGGER.isDebugEnabled()) {
-                    RarityCore.LOGGER.debug("[NbtMatchRule] matches: 条件 {}/{} 不匹配", i + 1, conditions.size());
-                }
-                return false; // 任一条件不满足就失败
-            }
-            if (RarityCore.LOGGER.isDebugEnabled()) {
-                RarityCore.LOGGER.debug("[NbtMatchRule] matches: 条件 {}/{} 匹配成功", i + 1, conditions.size());
+                return false;
             }
         }
-        
-        // 所有条件都满足后，根据匹配类型决定是否最终匹配成功
+
         if (fuzzyMatch) {
-            // 模糊匹配：条件满足即可，允许额外标签
-            if (RarityCore.LOGGER.isDebugEnabled()) {
-                RarityCore.LOGGER.debug("[NbtMatchRule] matches: 模糊匹配成功");
-            }
             return true;
-        } else {
-            // 精确匹配：除了满足条件外，还要检查是否有多余标签
-            if (RarityCore.LOGGER.isDebugEnabled()) {
-                RarityCore.LOGGER.debug("[NbtMatchRule] matches: 精确匹配检查");
-            }
-            return hasExactNbtStructure(itemStack, nbt);
         }
+        return hasExactNbtStructure(itemStack, nbt);
     }
-    
+
     /**
      * 检查物品是否具有精确的NBT结构（不允许额外标签）
-     * @param itemStack 物品堆
-     * @param nbt NBT标签
-     * @return 是否具有精确结构
      */
     private boolean hasExactNbtStructure(ItemStack itemStack, CompoundTag nbt) {
         // TODO: 实现精确NBT结构匹配

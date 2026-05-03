@@ -131,5 +131,13 @@
   "rarity.core.auto_reload_complete": "Auto reload complete, new rarity configuration is now active",
   "rarity.core.auto_reload_failed": "Auto reload failed, please manually execute /raritycore reload",
   "raritycore.message.vanilla_rarity_unavailable": "§c[RarityCore] Vanilla rarity check module is unavailable in current environment, functionality automatically degraded",
-  "raritycore.message.vanilla_rarity_cause": "§7This is typically caused by other mods modifying Minecraft's internal APIs"
+  "raritycore.message.vanilla_rarity_cause": "§7This is typically caused by other mods modifying Minecraft's internal APIs",
+  "rarity.core.edit_toggle": "Edit mode: %s",
+  "rarity.core.edit_mode": "Edit mode set to: %s",
+  "rarity.core.edit_param_rarity": "Rarity parameter set to: %d",
+  "rarity.core.edit_param_autoReload": "AutoReload parameter set to: %s",
+  "rarity.core.edit_param_stringContains": "StringContains set to: %s",
+  "rarity.core.edit_param_ignore": "Ignore tags set to: %s",
+  "rarity.core.edit_mode_no_rarity": "Rarity cleared (no rarity)",
+  "rarity.core.export_rarity_success": "Rarity level %d data exported to: %s"
 }

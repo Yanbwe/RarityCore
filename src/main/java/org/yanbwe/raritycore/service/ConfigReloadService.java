@@ -6,8 +6,10 @@ import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
+import org.yanbwe.raritycore.config.RarityClientConfigManager;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.config.ServerConfigManager;
+import org.yanbwe.raritycore.config.TagRarityConfigManager;
 import org.yanbwe.raritycore.nbtmatching.NbtConfigLoader;
 import org.yanbwe.raritycore.nbtmatching.SimpleNbtCache;
 import org.yanbwe.raritycore.network.ChangeOperation;
@@ -51,6 +53,9 @@ public class ConfigReloadService {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_client_config"));
             }
             handleClientSideConfigs();
+
+            // 2.5 加载 TagRarity 批量分配配置
+            TagRarityConfigManager.loadConfig();
                         
             // 3. 加载 NBT 匹配配置(最高优先级)
             if (source != null) {

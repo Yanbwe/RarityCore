@@ -50,6 +50,12 @@ public class ConfigManager {
         
         // 初始化客户端配置
         ClientConfigManager.initialize();
+
+        // 初始化 RarityClientConfig（逐级视觉表现配置）
+        RarityClientConfigManager.initialize();
+
+        // 初始化 TagRarity 批量分配
+        TagRarityConfigManager.initialize();
         
         // 初始化星星显示配置
         StarDisplayConfigManager.initialize();

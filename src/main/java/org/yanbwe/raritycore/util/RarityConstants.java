@@ -20,6 +20,8 @@ public class RarityConstants {
     public static final String CONFIG_DIR_NAME = "raritycore";
     public static final String CLIENT_CONFIG_FILE_NAME = "client.json";
     public static final String SERVER_CONFIG_FILE_NAME = "server.json";
+    public static final String RARITY_CLIENT_CONFIG_FILE_NAME = "RarityClientConfig.json";
+    public static final String TAG_RARITY_CONFIG_FILE_NAME = "TagRarity.json";
     public static final String FINAL_RARITY_FILE_NAME = "FinalRarity.json";
     public static final String FINAL_RARITY_CONFIG_FOLDER_NAME = "FinalRarityConfig";
     

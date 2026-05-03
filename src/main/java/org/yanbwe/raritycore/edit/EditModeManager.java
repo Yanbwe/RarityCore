@@ -1,230 +1,389 @@
 package org.yanbwe.raritycore.edit;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.registries.ForgeRegistries;
+import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
 import org.yanbwe.raritycore.network.EditModeRequestPacket;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * 编辑模式管理器
- * 管理全局编辑模式状态和当前选中的稀有度等级
+ * 管理编辑模式状态、模式和参数
+ * 支持 Normal 模式（写入 FinalRarity.json）和 FullMatch 模式（NBT 匹配配置）
  */
 public class EditModeManager {
-    
+
+    /** 编辑模式枚举 */
+    public enum EditMode {
+        NORMAL,    // 普通模式：写入 FinalRarity.json
+        FULLMATCH  // 全匹配模式：创建 NBT 匹配配置
+    }
+
     // 编辑模式开关
     private static boolean editModeEnabled = false;
-    
-    // 当前选中的稀有度等级 (1-7)
+
+    // 当前编辑模式
+    private static EditMode currentMode = EditMode.NORMAL;
+
+    // 当前选中的稀有度等级 (≥0，0 表示"无稀有度")
     private static int currentRarity = 1;
-    
-    // 删除模式开关
-    private static boolean deleteModeEnabled = false;
-    
+
+    // FullMatch 模式参数
+    private static boolean autoReload = false;
+    private static String ignoreTags = "";
+    private static boolean stringContains = true; // 字符串类型 NBT 是否用 contains 匹配
+
     // 可用的稀有度等级列表
     private static final List<Integer> AVAILABLE_RARITIES = new ArrayList<>();
-    
+
     static {
-        // 初始化可用稀有度等级
-        for (int i = 1; i <= 7; i++) {
+        for (int i = 0; i <= 7; i++) {
             AVAILABLE_RARITIES.add(i);
         }
     }
-    
-    /**
-     * 切换编辑模式
-     * @return 新的编辑模式状态
-     */
-    public static boolean toggleEditMode() {
-        editModeEnabled = !editModeEnabled;
-        if (editModeEnabled) {
-            currentRarity = 1; // 重置为默认稀有度
-        }
-        return editModeEnabled;
-    }
-    
-    /**
-     * 设置编辑模式状态
-     * @param enabled 是否启用编辑模式
-     */
+
+    // ---- 模式控制 ----
+
     public static void setEditMode(boolean enabled) {
         editModeEnabled = enabled;
         if (enabled) {
-            currentRarity = 1; // 重置为默认稀有度
+            currentRarity = 1;
         }
     }
-    
-    /**
-     * 获取编辑模式状态
-     * @return 是否处于编辑模式
-     */
+
+    public static boolean toggleEditMode() {
+        editModeEnabled = !editModeEnabled;
+        if (editModeEnabled) {
+            currentRarity = 1;
+        }
+        return editModeEnabled;
+    }
+
     public static boolean isEditModeEnabled() {
         return editModeEnabled;
     }
-    
-    /**
-     * 切换到下一个稀有度等级
-     */
-    public static void nextRarity() {
-        if (!editModeEnabled) return;
-        
-        int currentIndex = AVAILABLE_RARITIES.indexOf(currentRarity);
-        int nextIndex = (currentIndex + 1) % AVAILABLE_RARITIES.size();
-        currentRarity = AVAILABLE_RARITIES.get(nextIndex);
+
+    public static void setMode(EditMode mode) {
+        currentMode = mode;
     }
-    
-    /**
-     * 切换到上一个稀有度等级
-     */
-    public static void previousRarity() {
-        if (!editModeEnabled) return;
-        
-        int currentIndex = AVAILABLE_RARITIES.indexOf(currentRarity);
-        int previousIndex = (currentIndex - 1 + AVAILABLE_RARITIES.size()) % AVAILABLE_RARITIES.size();
-        currentRarity = AVAILABLE_RARITIES.get(previousIndex);
+
+    public static EditMode getCurrentMode() {
+        return currentMode;
     }
-    
-    /**
-     * 设置指定的稀有度等级
-     * @param rarity 稀有度等级 (1-7)
-     */
+
+    // ---- 稀有度控制 ----
+
     public static void setRarity(int rarity) {
-        if (rarity >= 1 && rarity <= 7) {
+        if (rarity >= 0) {
             currentRarity = rarity;
         }
     }
-    
-    /**
-     * 获取当前选中的稀有度等级
-     * @return 当前稀有度等级
-     */
+
     public static int getCurrentRarity() {
         return currentRarity;
     }
-    
-    /**
-     * 切换删除模式
-     * @return 新的删除模式状态
-     */
-    public static boolean toggleDeleteMode() {
-        if (!editModeEnabled) return false;
-        deleteModeEnabled = !deleteModeEnabled;
-        return deleteModeEnabled;
+
+    public static void nextRarity() {
+        if (!editModeEnabled) return;
+        currentRarity++;
     }
-    
-    /**
-     * 设置删除模式状态
-     * @param enabled 是否启用删除模式
-     */
-    public static void setDeleteMode(boolean enabled) {
-        if (editModeEnabled) {
-            deleteModeEnabled = enabled;
+
+    public static void previousRarity() {
+        if (!editModeEnabled) return;
+        if (currentRarity > 0) {
+            currentRarity--;
         }
     }
-    
-    /**
-     * 获取删除模式状态
-     * @return 是否处于删除模式
-     */
-    public static boolean isDeleteModeEnabled() {
-        return deleteModeEnabled && editModeEnabled;
-    }
-    
-    /**
-     * 获取可用稀有度等级列表
-     * @return 稀有度等级列表
-     */
+
     public static List<Integer> getAvailableRarities() {
         return new ArrayList<>(AVAILABLE_RARITIES);
     }
-    
+
+    // ---- FullMatch 参数 ----
+
+    public static void setAutoReload(boolean value) {
+        autoReload = value;
+    }
+
+    public static boolean isAutoReload() {
+        return autoReload;
+    }
+
+    public static void setIgnoreTags(String tags) {
+        ignoreTags = tags != null ? tags : "";
+    }
+
+    public static String getIgnoreTags() {
+        return ignoreTags;
+    }
+
+    public static void setStringContains(boolean value) {
+        stringContains = value;
+    }
+
+    public static boolean isStringContains() {
+        return stringContains;
+    }
+
+    // ---- 兼容旧 API（删除模式已合并为 rarity=0）----
+
+    @Deprecated
+    public static boolean isDeleteModeEnabled() {
+        return currentRarity == 0;
+    }
+
+    @Deprecated
+    public static void setDeleteMode(boolean enabled) {
+        if (enabled) currentRarity = 0;
+    }
+
+    @Deprecated
+    public static boolean toggleDeleteMode() {
+        if (!editModeEnabled) return false;
+        currentRarity = (currentRarity == 0) ? 1 : 0;
+        return currentRarity == 0;
+    }
+
+    // ---- 核心编辑逻辑 ----
+
     /**
      * 在编辑模式下修改物品稀有度
-     * @param itemStack 要修改的物品堆
-     * @return 是否成功修改
      */
     @OnlyIn(Dist.CLIENT)
     @SuppressWarnings("null")
     public static boolean modifyItemRarity(ItemStack itemStack) {
-        if (!editModeEnabled || itemStack.isEmpty()) {
-            return false;
-        }
-            
+        if (!editModeEnabled || itemStack.isEmpty()) return false;
+
         Item item = itemStack.getItem();
-        if (item == null) {
-            return false;
-        }
-            
-        // 获取物品 ID
+        if (item == null) return false;
+
         ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-        if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-            return false;
+        if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) return false;
+
+        // TacZ 物品在 Normal 模式下走特殊处理
+        if (currentMode == EditMode.NORMAL && org.yanbwe.raritycore.compat.tacz.TacZAdapter.isInitialized()) {
+            org.yanbwe.raritycore.compat.tacz.TacZAdapter.TacZItemType tacZType =
+                org.yanbwe.raritycore.compat.tacz.TacZAdapter.getTacZItemType(itemStack);
+            if (tacZType != org.yanbwe.raritycore.compat.tacz.TacZAdapter.TacZItemType.NONE) {
+                return handleTacZEdit(itemId, itemStack, item);
+            }
         }
-            
-        // 检查是否在多人游戏中
-        Minecraft mc = Minecraft.getInstance();
-        boolean isMultiplayer = mc.getConnection() != null;
-        
-        if (isMultiplayer) {
-            // 多人游戏:发送请求包到服务端,由服务端保存配置并同步
-            EditModeRequestPacket packet = new EditModeRequestPacket(
-                itemId, 
-                deleteModeEnabled ? 0 : currentRarity, 
-                deleteModeEnabled
-            );
+
+        if (currentMode == EditMode.FULLMATCH) {
+            return handleFullMatchEdit(itemId, itemStack, item);
+        } else {
+            return handleNormalEdit(itemId, item);
+        }
+    }
+
+    private static boolean handleNormalEdit(ResourceLocation itemId, Item item) {
+        boolean isSingleplayer = Minecraft.getInstance().getSingleplayerServer() != null;
+        if (!isSingleplayer) {
+            EditModeRequestPacket packet = new EditModeRequestPacket(itemId, currentRarity, false,
+                EditMode.NORMAL.ordinal(), autoReload, ignoreTags);
             EditModeRequestPacket.INSTANCE.sendToServer(packet);
         } else {
-            // 单人游戏:本地处理并保存配置
-            if (deleteModeEnabled) {
-                RarityRegistry.unregister(item, false);
-                RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), 0);
-            } else {
-                RarityRegistry.register(item, currentRarity, false);
-                RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), currentRarity);
-            }
-            RarityRegistry.syncRarityToClientsWithRetry();
+            handleNormalEditServer(itemId, item);
         }
-                    
-        // 立即刷新本地缓存,确保显示效果立即生效
-        forceClientCacheUpdate(item, deleteModeEnabled ? 0 : currentRarity);
-            
+        forceClientCacheUpdate(item, currentRarity);
         return true;
     }
-        
+
+    /** TacZ 物品编辑：写入 editTacZ_<itemId>.json */
+    private static boolean handleTacZEdit(ResourceLocation itemId, ItemStack itemStack, Item item) {
+        if (currentRarity == 0) return false;
+        boolean isSingleplayer = Minecraft.getInstance().getSingleplayerServer() != null;
+        if (!isSingleplayer) {
+            // TODO: 多人 TacZ 支持（通过扩展包传送 NBT 信息）
+            EditModeRequestPacket packet = new EditModeRequestPacket(itemId, currentRarity, false,
+                EditMode.NORMAL.ordinal(), autoReload, ignoreTags);
+            EditModeRequestPacket.INSTANCE.sendToServer(packet);
+        } else {
+            handleTacZEditServer(itemId, itemStack, item);
+        }
+        forceClientCacheUpdate(item, currentRarity);
+        return true;
+    }
+
+    /** 服务端 TacZ 编辑处理 */
+    public static void handleTacZEditServer(ResourceLocation itemId, ItemStack itemStack, Item item) {
+        String nbtKey = org.yanbwe.raritycore.compat.tacz.TacZAdapter.getTacZNbtPath(itemStack);
+        String nbtValue = org.yanbwe.raritycore.compat.tacz.TacZAdapter.getTacZNbtValue(itemStack);
+        if (nbtKey == null || nbtValue == null) return;
+
+        com.google.gson.JsonObject root = new com.google.gson.JsonObject();
+        root.addProperty("item_id", itemId.toString());
+        root.addProperty("rarity", currentRarity);
+        com.google.gson.JsonArray conditions = new com.google.gson.JsonArray();
+        com.google.gson.JsonObject cond = new com.google.gson.JsonObject();
+        cond.addProperty("path", nbtKey);
+        cond.addProperty("type", "equals");
+        cond.addProperty("value", nbtValue);
+        conditions.add(cond);
+        root.add("conditions", conditions);
+
+        String fileName = "editTacZ_" + itemId.getNamespace() + "_" + itemId.getPath();
+        java.nio.file.Path nbtDir = org.yanbwe.raritycore.config.ConfigManager.getConfigDirPath().resolve("nbt_matches");
+        try {
+            java.nio.file.Files.createDirectories(nbtDir);
+            java.nio.file.Path file = nbtDir.resolve(fileName + ".json");
+            com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
+            java.io.OutputStreamWriter writer = new java.io.OutputStreamWriter(
+                java.nio.file.Files.newOutputStream(file), java.nio.charset.StandardCharsets.UTF_8);
+            gson.toJson(root, writer);
+            writer.close();
+            RarityCore.LOGGER.info("Created TacZ NBT config: {}", file);
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Failed to create TacZ NBT config", e);
+        }
+
+        RarityRegistry.syncRarityToClientsWithRetry();
+    }
+
+    /** 服务端 Normal 模式处理（供网络包和单人游戏共用） */
+    public static void handleNormalEditServer(ResourceLocation itemId, Item item) {
+        if (currentRarity == 0) {
+            RarityRegistry.unregister(item, false);
+        } else {
+            RarityRegistry.register(item, currentRarity, false);
+        }
+        RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), currentRarity);
+        RarityRegistry.syncRarityToClientsWithRetry();
+    }
+
+    private static boolean handleFullMatchEdit(ResourceLocation itemId, ItemStack itemStack, Item item) {
+        if (currentRarity == 0) return false; // FullMatch 模式不支持 rarity=0
+
+        boolean isSingleplayer = Minecraft.getInstance().getSingleplayerServer() != null;
+
+        if (!isSingleplayer) {
+            EditModeRequestPacket packet = new EditModeRequestPacket(itemId, currentRarity, false,
+                EditMode.FULLMATCH.ordinal(), autoReload, ignoreTags);
+            EditModeRequestPacket.INSTANCE.sendToServer(packet);
+        } else {
+            handleFullMatchEditServer(itemId, itemStack, item);
+            // FullMatch 模式触发 NBT 配置重载，使新规则立即生效
+            org.yanbwe.raritycore.nbtmatching.NbtConfigLoader.loadAllConfigs();
+        }
+        return true;
+    }
+
+    /** 服务端 FullMatch 模式处理 */
+    public static void handleFullMatchEditServer(ResourceLocation itemId, ItemStack itemStack, Item item) {
+        if (itemStack == null || !itemStack.hasTag()) return;
+
+        CompoundTag tag = itemStack.getTag();
+        if (tag == null) return;
+
+        // 解析忽略列表
+        Set<String> ignoredSet = new HashSet<>();
+        if (!ignoreTags.isEmpty()) {
+            for (String part : ignoreTags.split("\\|")) {
+                String trimmed = part.trim();
+                if (!trimmed.isEmpty()) ignoredSet.add(trimmed);
+            }
+        }
+
+        // 构建 NBT 匹配 JSON
+        createFullMatchConfig(itemId, tag, ignoredSet);
+        RarityRegistry.syncRarityToClientsWithRetry();
+
+        if (autoReload) {
+            org.yanbwe.raritycore.nbtmatching.NbtConfigLoader.loadAllConfigs();
+        }
+    }
+
     /**
-     * 强制更新客户端本地缓存
-     * 在网络同步之前立即刷新显示效果
-     * @param item 要更新的物品
-     * @param rarity 新的稀有度等级
+     * 创建 FullMatch NBT 匹配配置文件
      */
+    private static void createFullMatchConfig(ResourceLocation itemId, CompoundTag tag, Set<String> ignoredSet) {
+        com.google.gson.JsonObject root = new com.google.gson.JsonObject();
+        root.addProperty("item_id", itemId.toString());
+        root.addProperty("rarity", currentRarity);
+
+        com.google.gson.JsonArray conditions = new com.google.gson.JsonArray();
+
+        for (String key : tag.getAllKeys()) {
+            if (ignoredSet.contains(key)) continue;
+            net.minecraft.nbt.Tag nbtTag = tag.get(key);
+            conditions.add(buildCondition(key, nbtTag));
+        }
+
+        root.add("conditions", conditions);
+
+        // 写入文件：edit_<itemId>_<N>.json
+        String baseName = "edit_" + itemId.getNamespace() + "_" + itemId.getPath();
+        java.nio.file.Path nbtDir = org.yanbwe.raritycore.config.ConfigManager.getConfigDirPath().resolve("nbt_matches");
+        try {
+            java.nio.file.Files.createDirectories(nbtDir);
+            java.nio.file.Path file = findNextAvailableFile(nbtDir, baseName);
+            com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
+            java.io.OutputStreamWriter writer = new java.io.OutputStreamWriter(
+                java.nio.file.Files.newOutputStream(file), java.nio.charset.StandardCharsets.UTF_8);
+            gson.toJson(root, writer);
+            writer.close();
+            RarityCore.LOGGER.info("Created FullMatch NBT config: {}", file);
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Failed to create FullMatch NBT config", e);
+        }
+    }
+
+    private static com.google.gson.JsonObject buildCondition(String key, net.minecraft.nbt.Tag nbtTag) {
+        com.google.gson.JsonObject cond = new com.google.gson.JsonObject();
+        cond.addProperty("path", key);
+
+        int tagId = nbtTag.getId();
+        // 字符串(8)、复合(10)、列表(9)在 stringContains=true 时用 contains 匹配
+        boolean useContains = stringContains &&
+            (tagId == net.minecraft.nbt.Tag.TAG_STRING
+             || tagId == net.minecraft.nbt.Tag.TAG_COMPOUND
+             || tagId == net.minecraft.nbt.Tag.TAG_LIST);
+
+        if (useContains) {
+            cond.addProperty("type", "contains");
+            cond.addProperty("substring", nbtTag.getAsString());
+        } else {
+            cond.addProperty("type", "equals");
+            cond.addProperty("value", nbtTag.getAsString());
+        }
+
+        return cond;
+    }
+
+    private static java.nio.file.Path findNextAvailableFile(java.nio.file.Path dir, String baseName) {
+        for (int i = 1; i < 1000; i++) {
+            java.nio.file.Path candidate = dir.resolve(baseName + "_" + i + ".json");
+            if (!java.nio.file.Files.exists(candidate)) {
+                return candidate;
+            }
+        }
+        return dir.resolve(baseName + ".json");
+    }
+
     @OnlyIn(Dist.CLIENT)
     private static void forceClientCacheUpdate(Item item, int rarity) {
         try {
-            // 清空旧缓存
             org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
-                
-            // 立即重新缓存新稀有度
-            ItemStack itemStack = new ItemStack(item);
-            org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
-        } catch (Exception e) {
-            // 静默失败,等待网络同步后自动更新
-        }
+            ItemStack stacking = new ItemStack(item);
+            org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(stacking, rarity);
+        } catch (Exception ignored) {}
     }
-    
-    /**
-     * 重置编辑模式状态
-     */
+
     public static void reset() {
         editModeEnabled = false;
+        currentMode = EditMode.NORMAL;
         currentRarity = 1;
-        deleteModeEnabled = false;
+        autoReload = false;
+        ignoreTags = "";
+        stringContains = true;
     }
 }

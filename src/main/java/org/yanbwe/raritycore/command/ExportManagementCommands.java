@@ -1,6 +1,7 @@
 package org.yanbwe.raritycore.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -42,6 +43,12 @@ public class ExportManagementCommands {
                 .then(Commands.literal("mod")
                     .then(Commands.argument("modid", ResourceLocationArgument.id())
                         .executes(context -> exportModRarityData(context.getSource(), ResourceLocationArgument.getId(context, "modid")))
+                    )
+                )
+                .then(Commands.literal("rarity")
+                    .then(Commands.argument("level", IntegerArgumentType.integer(1, 7))
+                        .executes(context -> exportRarityByLevel(context.getSource(),
+                            IntegerArgumentType.getInteger(context, "level")))
                     )
                 )
             )
@@ -220,6 +227,46 @@ public class ExportManagementCommands {
         }
     }
     
+    /**
+     * 导出指定稀有度等级的物品
+     */
+    private static int exportRarityByLevel(CommandSourceStack source, int level) {
+        try {
+            Path configDir = ConfigManager.getConfigDirPath();
+            Files.createDirectories(configDir);
+
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String fileName = "export_rarity_" + level + "_" + timestamp + ".json";
+            Path exportFile = configDir.resolve(fileName);
+
+            exportRarityByLevelToFile(exportFile, level);
+
+            source.sendSuccess(() -> Component.translatable("rarity.core.export_rarity_success", level, exportFile.toString())
+                .withStyle(ChatFormatting.GREEN), false);
+            return 1;
+        } catch (IOException e) {
+            RarityCore.LOGGER.error("Failed to export rarity {}", level, e);
+            source.sendSuccess(() -> Component.translatable("rarity.core.export_failed", e.getMessage())
+                .withStyle(ChatFormatting.RED), false);
+            return 0;
+        }
+    }
+
+    private static void exportRarityByLevelToFile(Path exportFile, int level) throws IOException {
+        java.util.LinkedHashMap<String, Integer> exportData = new java.util.LinkedHashMap<>();
+
+        for (Map.Entry<ResourceLocation, Integer> entry : RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
+            if (entry.getValue() == level) {
+                exportData.put(entry.getKey().toString(), entry.getValue());
+            }
+        }
+
+        com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
+        try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(exportFile), StandardCharsets.UTF_8)) {
+            gson.toJson(exportData, writer);
+        }
+    }
+
     /**
      * 导出稀有度数据到文件
      */

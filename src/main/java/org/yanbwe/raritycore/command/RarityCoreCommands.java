@@ -14,6 +14,7 @@ public class RarityCoreCommands {
         RarityManagementCommands.register(dispatcher);
         ConfigManagementCommands.register(dispatcher);
         ExportManagementCommands.register(dispatcher);
+        EditCommands.register(dispatcher);
         UtilityCommands.register(dispatcher);
         
         // 注册客户端命令(无需OP权限)

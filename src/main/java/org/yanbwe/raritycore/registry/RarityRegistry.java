@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.compat.CompatibilityChecker;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
+import org.yanbwe.raritycore.event.RarityQueryEvent;
 import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -336,45 +337,79 @@ public class RarityRegistry {
      * @return 物品的稀有度等级(1-7),如果没有找到匹配的稀有度,返回1(普通)
      */
     private static @NotNull Integer getRarityInternal(ResourceLocation itemId, @Nullable ItemStack itemStack, Item item) {
-        // 快速路径：无 NBT 数据的物品直接跳过 NBT 匹配和神化检查
-        // 这两个检查都依赖 NBT 数据，对于绝大多数普通物品这是零成本的短路
+        int result;
+        String source = "vanilla";
+
         boolean hasTag = itemStack != null && itemStack.hasTag();
         
         if (hasTag) {
-            // 首先检查NBT匹配配置(最高优先级)
-            Integer rarity = checkNbtRarity(itemStack);
-            if (rarity != null) {
-                return rarity;
+            int nbtControlRarity = org.yanbwe.raritycore.nbtmatching.NbtRarityControlHandler.getNbtControlRarity(itemStack);
+            if (nbtControlRarity > 0) {
+                result = nbtControlRarity;
+                source = "nbt_control";
+                return fireQueryEvent(itemStack, result, source);
             }
             
-            // 然后检查神化模组稀有度
+            Integer rarity = checkNbtRarity(itemStack);
+            if (rarity != null) {
+                result = rarity;
+                source = "nbt";
+                return fireQueryEvent(itemStack, result, source);
+            }
+            
             rarity = checkApotheosisRarity(itemStack);
             if (rarity != null) {
-                return rarity;
+                result = rarity;
+                source = "apotheosis";
+                return fireQueryEvent(itemStack, result, source);
+            }
+
+            rarity = checkIronSpellbooksRarity(itemStack);
+            if (rarity != null) {
+                result = rarity;
+                source = "irons_spellbooks";
+                return fireQueryEvent(itemStack, result, source);
             }
         }
         
-        // 然后检查本模组的稀有度配置(包括FinalRarity.json、FinalRarityConfig文件夹和数据包)
-        // 加载顺序决定了优先级:FinalRarity.json < FinalRarityConfig文件夹 < 数据包配置
         Integer rarity = ITEM_RARITY_MAP.get(itemId);
         if (rarity != null) {
-            return rarity;
+            result = rarity;
+            source = "registry";
+            return fireQueryEvent(itemStack, result, source);
+        }
+
+        int tagRarity = org.yanbwe.raritycore.config.TagRarityConfigManager.getHighestTagRarity(item);
+        if (tagRarity > 1) {
+            result = tagRarity;
+            source = "tag";
+            return fireQueryEvent(itemStack, result, source);
         }
         
-        // 然后检查自动计算的稀有度配置 - 优先级低于配置文件,高于原版
         rarity = AUTO_RARITY_MAP.get(itemId);
         if (rarity != null) {
-            return rarity;
+            result = rarity;
+            source = "auto";
+            return fireQueryEvent(itemStack, result, source);
         }
         
-        // 最后检查原版稀有度映射(最低优先级)
         rarity = checkVanillaRarity(itemStack, item);
         if (rarity != null) {
-            return rarity;
+            result = rarity;
+            source = "vanilla";
+            return fireQueryEvent(itemStack, result, source);
         }
         
-        // 默认返回普通稀有度
-        return 1;
+        result = 1;
+        return fireQueryEvent(itemStack, result, source);
+    }
+
+    /** 触发 RarityQueryEvent 并返回最终稀有度 */
+    private static int fireQueryEvent(@Nullable ItemStack itemStack, int rarity, String source) {
+        RarityQueryEvent event = new RarityQueryEvent(
+            itemStack != null ? itemStack : ItemStack.EMPTY, rarity, source);
+        MinecraftForge.EVENT_BUS.post(event);
+        return event.getRarity();
     }
     
     /**
@@ -446,6 +481,17 @@ public class RarityRegistry {
         }
 
         return org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(itemStack);
+    }
+    
+    /**
+     * 检查 Iron's Spellbooks 稀有度
+     */
+    @Nullable
+    private static Integer checkIronSpellbooksRarity(@Nullable ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty() || !itemStack.hasTag()) {
+            return null;
+        }
+        return org.yanbwe.raritycore.compat.ironsspellbooks.IronSpellbooksAdapter.getMappedRarity(itemStack);
     }
     
     /**

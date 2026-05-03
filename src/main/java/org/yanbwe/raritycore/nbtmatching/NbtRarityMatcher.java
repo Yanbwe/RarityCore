@@ -49,49 +49,30 @@ public class NbtRarityMatcher {
      */
     public static Integer calculateWithoutCache(ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty() || !itemStack.hasTag()) {
-            RarityCore.LOGGER.debug("[NBT匹配] calculateWithoutCache: 物品为空或无tag");
             return null;
         }
 
         Item item = itemStack.getItem();
         if (item == null) {
-            RarityCore.LOGGER.debug("[NBT匹配] calculateWithoutCache: 物品item为null");
             return null;
         }
 
         ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
         if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-            RarityCore.LOGGER.debug("[NBT匹配] calculateWithoutCache: 无法获取有效物品ID");
             return null;
         }
-
-        RarityCore.LOGGER.debug("[NBT匹配] calculateWithoutCache: 物品ID={}, 开始匹配规则", itemId);
 
         List<NbtMatchRule> rules = RULES_CACHE.getOrDefault(itemId, Collections.emptyList());
         if (rules.isEmpty()) {
-            RarityCore.LOGGER.debug("[NBT匹配] calculateWithoutCache: 没有为物品 {} 找到规则", itemId);
             return null;
         }
 
-        RarityCore.LOGGER.debug("[NBT匹配] calculateWithoutCache: 为物品 {} 找到 {} 条规则,开始遍历", itemId, rules.size());
-
-        // 规则已经在注册时按优先级排序好了
-        // 查找第一个匹配的规则
-        for (int i = 0; i < rules.size(); i++) {
-            NbtMatchRule rule = rules.get(i);
-            if (rule != null && rule.isEnabled()) {
-                RarityCore.LOGGER.debug("[NBT匹配] calculateWithoutCache: 尝试规则 {}, 稀有度={}, 优先级={}", 
-                    i, rule.getRarity(), rule.getPriority());
-                boolean matchResult = rule.matches(itemStack);
-                RarityCore.LOGGER.debug("[NBT匹配] calculateWithoutCache: 规则 {} 匹配结果={}", i, matchResult);
-                if (matchResult) {
-                    RarityCore.LOGGER.debug("[NBT匹配] calculateWithoutCache: 规则 {} 匹配成功,返回稀有度 {}", i, rule.getRarity());
-                    return rule.getRarity();
-                }
+        for (NbtMatchRule rule : rules) {
+            if (rule != null && rule.isEnabled() && rule.matches(itemStack)) {
+                return rule.getRarity();
             }
         }
 
-        RarityCore.LOGGER.debug("[NBT匹配] calculateWithoutCache: 没有规则匹配成功");
         return null;
     }
     

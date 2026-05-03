@@ -132,5 +132,13 @@
   "rarity.core.auto_reload_complete": "自动重载完成，新的稀有度配置已生效",
   "rarity.core.auto_reload_failed": "自动重载失败，请手动执行 /raritycore reload",
   "raritycore.message.vanilla_rarity_unavailable": "§c[稀有度核心] <原版稀有度检查功能> 在当前环境中不可用，功能已自动关闭",
-  "raritycore.message.vanilla_rarity_cause": "§7这通常是由于其它模组修改了原版 API 导致的"
+  "raritycore.message.vanilla_rarity_cause": "§7这通常是由于其它模组修改了原版 API 导致的",
+  "rarity.core.edit_toggle": "编辑模式: %s",
+  "rarity.core.edit_mode": "编辑模式已设置为: %s",
+  "rarity.core.edit_param_rarity": "稀有度参数已设置为: %d",
+  "rarity.core.edit_param_autoReload": "自动重载参数已设置为: %s",
+  "rarity.core.edit_param_stringContains": "字符串包含匹配已设置为: %s",
+  "rarity.core.edit_param_ignore": "忽略标签已设置为: %s",
+  "rarity.core.edit_mode_no_rarity": "已清除稀有度（无稀有度）",
+  "rarity.core.export_rarity_success": "稀有度等级 %d 数据已导出到: %s"
 }

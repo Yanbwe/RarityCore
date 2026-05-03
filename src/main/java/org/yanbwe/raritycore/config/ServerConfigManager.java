@@ -26,6 +26,7 @@ public class ServerConfigManager {
     private static boolean checkVanillaRarity = RarityConstants.DEFAULT_CHECK_VANILLA_RARITY; // 是否检查原版稀有度
     private static boolean checkApotheosisRarity = RarityConstants.DEFAULT_CHECK_APOTHEOSIS_RARITY; // 是否检查神化模组稀有度
     private static boolean enableGetRarityWarning = RarityConstants.DEFAULT_ENABLE_GET_RARITY_WARNING; // 是否启用 getRarity() 可用性警告
+    private static boolean enableNbtRarityControl = false; // 是否启用物品 NBT 稀有度控制（默认关闭）
     
     // 配置文件路径
     private static final Path CONFIG_DIR = Paths.get(RarityConstants.CONFIG_DIR_PARENT).resolve(RarityConstants.CONFIG_DIR_NAME);
@@ -99,9 +100,14 @@ public class ServerConfigManager {
                 } else {
                     enableGetRarityWarning = RarityConstants.DEFAULT_ENABLE_GET_RARITY_WARNING;
                 }
+
+                // 读取 NBT 稀有度控制开关设置
+                if (jsonObject.has("enableNbtRarityControl")) {
+                    enableNbtRarityControl = jsonObject.get("enableNbtRarityControl").getAsBoolean();
+                }
                 
-                RarityCore.LOGGER.info("Server config loaded successfully: checkVanillaRarity={}, checkApotheosisRarity={}, enableGetRarityWarning={}", 
-                    checkVanillaRarity, checkApotheosisRarity, enableGetRarityWarning);
+                RarityCore.LOGGER.info("Server config loaded successfully: checkVanillaRarity={}, checkApotheosisRarity={}, enableGetRarityWarning={}, enableNbtRarityControl={}", 
+                    checkVanillaRarity, checkApotheosisRarity, enableGetRarityWarning, enableNbtRarityControl);
             }
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error loading server config file, using default config: {}", SERVER_CONFIG_FILE, e);
@@ -141,13 +147,14 @@ public class ServerConfigManager {
         configObject.addProperty("checkVanillaRarity", checkVanillaRarity);
         configObject.addProperty("checkApotheosisRarity", checkApotheosisRarity);
         configObject.addProperty("enableGetRarityWarning", enableGetRarityWarning);
+        configObject.addProperty("enableNbtRarityControl", enableNbtRarityControl);
         
         // 写入配置文件
         try {
             try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(SERVER_CONFIG_FILE), StandardCharsets.UTF_8)) {
                 GSON.toJson(configObject, writer);
-                RarityCore.LOGGER.info("Server config saved: checkVanillaRarity={}, checkApotheosisRarity={}, enableGetRarityWarning={}", 
-                    checkVanillaRarity, checkApotheosisRarity, enableGetRarityWarning);
+                RarityCore.LOGGER.info("Server config saved: checkVanillaRarity={}, checkApotheosisRarity={}, enableGetRarityWarning={}, enableNbtRarityControl={}", 
+                    checkVanillaRarity, checkApotheosisRarity, enableGetRarityWarning, enableNbtRarityControl);
             }
         } catch (IOException e) {
             RarityCore.LOGGER.error("Cannot save server config file: {}", SERVER_CONFIG_FILE, e);
@@ -210,6 +217,23 @@ public class ServerConfigManager {
     
 
     
+    /**
+     * 获取是否启用 NBT 稀有度控制
+     */
+    public static boolean isEnableNbtRarityControl() {
+        return enableNbtRarityControl;
+    }
+
+    /**
+     * 设置是否启用 NBT 稀有度控制
+     */
+    public static void setEnableNbtRarityControl(boolean enable) {
+        if (enableNbtRarityControl != enable) {
+            enableNbtRarityControl = enable;
+            notifyConfigChange();
+        }
+    }
+
     /**
      * 通知配置变更
      */

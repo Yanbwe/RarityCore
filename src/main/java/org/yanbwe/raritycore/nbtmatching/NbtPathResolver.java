@@ -44,33 +44,21 @@ public class NbtPathResolver {
     @Nullable
     public static Tag resolve(CompoundTag nbt, String path) {
         if (nbt == null || path == null || path.isEmpty()) {
-            RarityCore.LOGGER.debug("[NBT路径解析] resolve: nbt或path为空, nbt={}, path={}", nbt, path);
             return null;
         }
 
-        RarityCore.LOGGER.debug("[NBT路径解析] resolve: 开始解析路径 '{}', NBT内容: {}", path, nbt);
-        
         try {
-            // 检查是否是根级路径(以"tag."开头或其他根级字段)
             if (isRootLevelPath(path)) {
-                RarityCore.LOGGER.debug("[NBT路径解析] resolve: 识别为根级路径");
                 return resolveRootPath(nbt, path);
             }
-            
-            // 检查是否包含通配符
+
             if (path.contains("[*]")) {
-                RarityCore.LOGGER.debug("[NBT路径解析] resolve: 识别为通配符路径");
                 List<Tag> results = resolveWildcardPath(nbt, path);
-                // 对于通配符路径,返回第一个匹配的结果或者null
                 return results.isEmpty() ? null : results.get(0);
             }
-            
-            RarityCore.LOGGER.debug("[NBT路径解析] resolve: 使用普通递归解析");
-            Tag result = resolvePathRecursive(nbt, path);
-            RarityCore.LOGGER.debug("[NBT路径解析] resolve: 解析路径 '{}' 结果: {}", path, result);
-            return result;
+
+            return resolvePathRecursive(nbt, path);
         } catch (Exception e) {
-            RarityCore.LOGGER.debug("解析NBT路径 '{}' 时发生错误: {}", path, e.getMessage());
             return null;
         }
     }
@@ -420,31 +408,11 @@ public class NbtPathResolver {
      * @return 解析结果
      */
     private static Tag resolveRootPath(CompoundTag tag, String rootPath) {
-        RarityCore.LOGGER.debug("[NBT路径解析] resolveRootPath: 输入tag={}, rootPath={}", tag, rootPath);
-        
-        // 构建完整的物品NBT结构
-        CompoundTag itemNbt = new CompoundTag();
-        itemNbt.put("tag", tag);
-        
         // 如果路径以"tag."开头,去掉前缀
-        String actualPath = rootPath;
         if (rootPath.startsWith("tag.")) {
-            actualPath = rootPath.substring(4);
-            RarityCore.LOGGER.debug("[NBT路径解析] resolveRootPath: 去除tag.前缀,actualPath={}", actualPath);
-            Tag result = resolvePathRecursive(tag, actualPath);
-            RarityCore.LOGGER.debug("[NBT路径解析] resolveRootPath: 解析结果={}", result);
-            return result;
+            return resolvePathRecursive(tag, rootPath.substring(4));
         }
-        
-        // 处理其他根级字段
-        if (rootPath.equals("Count") || rootPath.equals("id")) {
-            // 这些需要从完整的物品NBT中获取,但当前只传入了tag部分
-            // 在实际使用中,可能需要修改调用方传入完整NBT
-            RarityCore.LOGGER.debug("[NBT路径解析] resolveRootPath: 根级字段需要完整NBT,暂不支持");
-            return null;
-        }
-        
-        RarityCore.LOGGER.debug("[NBT路径解析] resolveRootPath: 无匹配路径,返回null");
+        // 其他根级字段需要完整NBT,暂不支持
         return null;
     }
 }

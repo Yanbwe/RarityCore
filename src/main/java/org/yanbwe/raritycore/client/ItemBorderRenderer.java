@@ -9,8 +9,8 @@ import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.config.ClientConfigManager;
+import org.yanbwe.raritycore.config.RarityClientConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
-import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
 import org.yanbwe.raritycore.util.RarityValidator;
 
@@ -67,6 +67,11 @@ public class ItemBorderRenderer {
         
         // 遵循模组包容性原则:小于1视为1,大于7视为7
         rarity = RarityValidator.normalizeRarity(rarity);
+
+        // 检查 RarityClientConfig 中该等级的渲染开关（client.json 总开关已通过）
+        if (!RarityClientConfigManager.isRendererEnabled(rarity)) {
+            return;
+        }
         
         // 根据配置选择渲染方式
         if (ClientConfigManager.isUseTextureBorder()) {
@@ -87,13 +92,13 @@ public class ItemBorderRenderer {
      */
     @SuppressWarnings("null")
     private static void renderTextureBorder(GuiGraphics guiGraphics, int rarity, int x, int y) {
-        // 构造纹理路径,例如: raritycore:textures/border/rarity_1.png
-        String textureName = "rarity_" + rarity;
+        // 从 RarityClientConfig 获取该等级的纹理路径
+        String texturePath = RarityClientConfigManager.getRarityTexture(rarity);
         ResourceLocation textureLocation = null;
         
         try {
             // 安全解析纹理路径
-            textureLocation = ResourceLocation.parse(RarityConstants.BORDER_TEXTURE_PATH + textureName + RarityConstants.TEXTURE_SUFFIX);
+            textureLocation = ResourceLocation.parse(texturePath);
         } catch (Exception e) {
             // 路径解析失败,回退到颜色边框
             RarityCore.LOGGER.warn("Failed to parse texture path for rarity {}, falling back to color border: {}", rarity, e.getMessage());
@@ -120,8 +125,10 @@ public class ItemBorderRenderer {
     }
     
     private static void renderColorBorder(GuiGraphics guiGraphics, int rarity, int x, int y) {
-        // 根据稀有度获取对应颜色
-        int borderColor = RarityColorUtil.getRarityArgbColor(rarity);
+        // 从 RarityClientConfig 获取该等级的 RGB 颜色
+        int rgbColor = RarityClientConfigManager.getRarityColor(rarity);
+        // 补全 alpha 通道为完全不透明
+        int borderColor = 0xFF000000 | rgbColor;
         
         // 启用混合模式以确保透明度正确显示
         RenderSystem.enableBlend();
@@ -130,8 +137,7 @@ public class ItemBorderRenderer {
         if (ClientConfigManager.getItemBorderStyle() == 1) {
             // 实心边框 - 50%半透明,16x16大小
             // 通过将alpha值设置为0x80(128/255 ≈ 50%透明度)实现半透明
-            int alphaMask = 0x80000000;  // 50%透明度的alpha值
-            int translucentColor = (borderColor & 0x00FFFFFF) | alphaMask;  // 保留RGB值,设置alpha为50%
+            int translucentColor = (borderColor & 0x00FFFFFF) | 0x80000000;
             
             // 绘制16x16区域的半透明背景
             guiGraphics.fill(x, y, x + 16, y + 16, translucentColor);

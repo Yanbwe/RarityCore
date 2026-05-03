@@ -65,6 +65,17 @@ public class CompatibilityManager {
             RarityCore.LOGGER.error("Failed to initialize Apotheosis compatibility adapter", e);
         }
         
+        // 初始化 Iron's Spellbooks 适配器
+        try {
+            Class.forName("io.redspace.ironsspellbooks.IronsSpellbooks");
+            org.yanbwe.raritycore.compat.ironsspellbooks.IronSpellbooksAdapter.init();
+            RarityCore.LOGGER.info("Iron's Spellbooks compatibility adapter initialized");
+        } catch (ClassNotFoundException e) {
+            RarityCore.LOGGER.debug("Iron's Spellbooks not found, skipping compatibility adapter");
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Failed to initialize Iron's Spellbooks compatibility adapter", e);
+        }
+
         // 初始化精致存储适配器
         try {
             Class.forName("com.refinedmods.refinedstorage.screen.BaseScreen");
@@ -74,6 +85,14 @@ public class CompatibilityManager {
             RarityCore.LOGGER.debug("Refined Storage not found, skipping compatibility adapter");
         } catch (Exception e) {
             RarityCore.LOGGER.error("Failed to initialize Refined Storage compatibility adapter", e);
+        }
+        
+        // 初始化 TacZ 适配器
+        try {
+            org.yanbwe.raritycore.compat.tacz.TacZAdapter.init();
+            RarityCore.LOGGER.info("TacZ compatibility adapter check completed");
+        } catch (Exception e) {
+            RarityCore.LOGGER.debug("TacZ check failed, skipping compatibility adapter");
         }
         
         // TODO: 在此处添加其他模组的兼容性检测和初始化
