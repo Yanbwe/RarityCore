@@ -2,10 +2,8 @@ package org.yanbwe.raritycore.mixin;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -47,12 +45,10 @@ public class ItemStackMixin {
         // 注意:需要检查物品是否真的没有配置,而不是默认的稀有度1
         // 使用包含神化NBT检查的增强版配置检测
         Item item = stack.getItem();
-        if (org.yanbwe.raritycore.config.ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item, stack)) {
+        if (org.yanbwe.raritycore.config.ClientConfigManager.isSkipUnconfiguredItems() && !RarityRegistry.hasConfiguredRarity(item, stack)) {
             return;
         }
         
-
-
         // 标准化稀有度值,遵循模组的包容性原则
         rarity = RarityValidator.normalizeRarity(rarity);
         
@@ -69,38 +65,4 @@ public class ItemStackMixin {
         cir.setReturnValue(originalName.copy().withStyle(color));
     }
     
-    /**
-     * 检查物品是否有配置的稀有度(含神化NBT检测)
-     * @param item 要检查的物品
-     * @param itemStack 物品栈(用于神化NBT检测)
-     * @return 如果物品有配置稀有度返回true,否则返回false
-     */
-    private boolean hasConfiguredRarity(Item item, ItemStack itemStack) {
-        if (item == null) {
-            return false;
-        }
-        
-        // 获取物品ID
-        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-        if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-            return false;
-        }
-        
-        // 检查是否在注册表中有配置
-        if (RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId)) {
-            return true;
-        }
-        
-        // 检查神化NBT数据(有神化稀有度也算有配置)
-        if (itemStack != null && itemStack.hasTag()) {
-            Integer apothRarity = RarityRegistry.getDirectApotheosisRarity(itemStack);
-            if (apothRarity != null) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-
 }

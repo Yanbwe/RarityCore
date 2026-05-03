@@ -121,9 +121,16 @@ public class NbtMatchRule {
      * @return 是否具有精确结构
      */
     private boolean hasExactNbtStructure(ItemStack itemStack, CompoundTag nbt) {
-        // 这是一个简化的实现
-        // 实际应用中可能需要更复杂的逻辑来检查是否有多余标签
-        // 目前先返回true，表示暂时不检查额外标签
+        // TODO: 实现精确NBT结构匹配
+        // 当前行为：始终返回true，导致fuzzyMatch:false（精确匹配）和fuzzyMatch:true（模糊匹配）
+        // 行为完全相同。配置了精确匹配(fuzzyMatch=false)的规则期望仅当物品NBT与条件完全匹配时才生效，
+        // 但实际效果等价于模糊匹配——只要所有指定条件满足即匹配，不检查是否存在额外的未覆盖键。
+        // 
+        // 未来实现建议：
+        // 1. 遍历物品的NBT树，收集所有存在的键路径
+        // 2. 与已定义的条件路径进行对比，检查是否存在条件未覆盖的额外键
+        // 3. 如果存在额外键 → 返回false（精确匹配失败）
+        // 4. 注意：需要处理"标签"(tag)键下的嵌套子键，并考虑某些模组自动添加的元数据键
         return true;
     }
     

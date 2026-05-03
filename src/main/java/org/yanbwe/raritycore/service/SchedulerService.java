@@ -1,6 +1,7 @@
 package org.yanbwe.raritycore.service;
 
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.network.SyncManager;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -48,12 +49,16 @@ public class SchedulerService {
             }
         }, 5, TimeUnit.SECONDS);
         
+        // 增量同步检查任务：此处保持 scheduleAtFixedRate 是安全的，
+        // 因为实际同步工作由 syncIncrementalChangesToClients() 内部管理，
+        // 且本调度器为单线程，即使单次执行超时也不会并发执行。
+        // 若未来改为多线程调度器，应同步改为 scheduleWithFixedDelay。
         syncScheduler.scheduleAtFixedRate(() -> {
             try {
                 // 使用批处理管理器检查是否需要同步
                 int pendingCount = serviceFactory.getSyncBatchManager().getPendingOperationCount();
                 if (pendingCount > 0) {
-                    serviceFactory.getSyncManager().syncIncrementalChangesToClients();
+                    SyncManager.syncIncrementalChangesToClients();
                 }
             } catch (Exception e) {
                 RarityCore.LOGGER.error("增量同步过程中发生错误", e);
@@ -61,7 +66,9 @@ public class SchedulerService {
         }, 0, 2000, TimeUnit.MILLISECONDS); // 每2秒检查一次,与批处理窗口匹配
         
         // 添加自动稀有度计算的 tick 任务(仅计算时实际执行)
-        syncScheduler.scheduleAtFixedRate(() -> {
+        // 使用 scheduleWithFixedDelay 而非 scheduleAtFixedRate，确保两次执行之间至少间隔 100ms，
+        // 避免因单次 tick() 超时（如大量物品计算）导致任务堆积
+        syncScheduler.scheduleWithFixedDelay(() -> {
             try {
                 var calculator = serviceFactory.getAutoRarityCalculator();
                 if (calculator.isCalculating()) {
@@ -70,7 +77,7 @@ public class SchedulerService {
             } catch (Exception e) {
                 RarityCore.LOGGER.error("Error occurred during auto rarity calculation tick", e);
             }
-        }, 100, 100, TimeUnit.MILLISECONDS); // 100ms 后开始,每 100ms(2tick) 执行一次
+        }, 100, 100, TimeUnit.MILLISECONDS); // 首次 100ms 后开始，上次执行完成后至少间隔 100ms 再执行
     }
     
     /**

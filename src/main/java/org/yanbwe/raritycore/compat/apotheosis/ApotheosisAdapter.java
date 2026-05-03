@@ -15,11 +15,6 @@ public class ApotheosisAdapter {
 
     private static final String AFFIX_DATA_KEY = "affix_data";
     private static final String RARITY_KEY = "rarity";
-    private static final int NBT_STRING_LENGTH_THRESHOLD = 50000;
-
-    private static volatile long lastErrorTime = 0;
-    private static volatile String lastErrorItem = "";
-    private static final long ERROR_COOLDOWN = 5000;
 
     public static void init() {
         if (isInitialized) {
@@ -55,7 +50,8 @@ public class ApotheosisAdapter {
 
     /**
      * 计算物品的神化稀有度
-     * 使用包含模式检测 NBT 数据中的稀有度信息
+     * 直接通过 NBT API 访问 affix_data.rarity，避免 toString() 全量序列化
+     * 使用 O(1) 键查找替代字符串解析
      * @param itemStack 物品栈
      * @return 计算得到的稀有度，如果没有则返回 null
      */
@@ -66,107 +62,21 @@ public class ApotheosisAdapter {
 
         CompoundTag tag = itemStack.getTag();
 
-        // O(1) 键查找：先检查是否存在 affix_data 键，避免对无神化数据的物品做全量序列化
+        // O(1) 键查找：检查是否存在 affix_data 键
         if (!tag.contains(AFFIX_DATA_KEY)) {
             return null;
         }
 
-        String tagString = tag.toString();
+        // 直接 NBT API 访问：getCompound 在键存在时安全，
+        // 内部使用 contains(key, TAG_COMPOUND) 做类型检查
+        CompoundTag affixData = tag.getCompound(AFFIX_DATA_KEY);
 
-        if (tagString.length() > NBT_STRING_LENGTH_THRESHOLD) {
-            String itemId = itemStack.getItem().toString();
-            long currentTime = System.currentTimeMillis();
-            if (!itemId.equals(lastErrorItem) ||
-                (currentTime - lastErrorTime) > ERROR_COOLDOWN) {
-                RarityCore.LOGGER.debug("Skipping apotheosis rarity check for item with oversized NBT: {} (NBT length: {})",
-                    itemId, tagString.length());
-                lastErrorItem = itemId;
-                lastErrorTime = currentTime;
-            }
+        // getString 在键缺失时返回 "" — 直接访问是安全的
+        String rarityString = affixData.getString(RARITY_KEY);
+        if (rarityString.isEmpty()) {
             return null;
         }
 
-        int affixDataStart = tagString.indexOf(AFFIX_DATA_KEY);
-        int braceStart = tagString.indexOf("{", affixDataStart);
-        int braceEnd = findMatchingBrace(tagString, braceStart);
-
-        if (braceStart == -1 || braceEnd == -1) {
-            return null;
-        }
-
-        String affixDataBlock = tagString.substring(braceStart, braceEnd + 1);
-        return extractRarityFromBlock(affixDataBlock);
-    }
-
-    /**
-     * 查找匹配的右括号
-     */
-    private static int findMatchingBrace(String str, int openBraceIndex) {
-        if (str.charAt(openBraceIndex) != '{') {
-            return -1;
-        }
-
-        int depth = 1;
-        for (int i = openBraceIndex + 1; i < str.length(); i++) {
-            char c = str.charAt(i);
-            if (c == '{') {
-                depth++;
-            } else if (c == '}') {
-                depth--;
-                if (depth == 0) {
-                    return i;
-                }
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * 从 affix_data 块中提取 rarity 值
-     * 注意:使用匹配键名前导字符(逗号或花括号)的方式定位rarity键,
-     * 避免匹配到其他键名(如some_rarity_data)或值中偶然包含"rarity"的情况
-     */
-    private static Integer extractRarityFromBlock(String block) {
-        // 循环查找所有"rarity"出现位置,确保匹配的是键名(前有','或'{'后有':')
-        int searchStart = 0;
-        int rarityIndex = -1;
-        
-        while (searchStart < block.length()) {
-            int idx = block.indexOf(RARITY_KEY, searchStart);
-            if (idx == -1) {
-                break;
-            }
-            
-            // 检查是否为键名:前一个字符是','或'{' (或是字符串开头)
-            int keyEnd = idx + RARITY_KEY.length();
-            boolean isKeyPrefix = (idx == 0 || block.charAt(idx - 1) == ',' || block.charAt(idx - 1) == '{');
-            boolean isKeySuffix = (keyEnd < block.length() && block.charAt(keyEnd) == ':');
-            
-            if (isKeyPrefix && isKeySuffix) {
-                rarityIndex = idx;
-                break;
-            }
-            
-            // 继续向后查找
-            searchStart = keyEnd;
-        }
-        
-        if (rarityIndex == -1) {
-            return null;
-        }
-
-        int colonIndex = rarityIndex + RARITY_KEY.length(); // ':'的位置
-        int quoteStart = block.indexOf("\"", colonIndex);
-        if (quoteStart == -1) {
-            return null;
-        }
-
-        int quoteEnd = block.indexOf("\"", quoteStart + 1);
-        if (quoteEnd == -1) {
-            return null;
-        }
-
-        String rarityString = block.substring(quoteStart + 1, quoteEnd);
         return mapApotheosisRarityString(rarityString);
     }
 

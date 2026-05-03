@@ -8,7 +8,6 @@ package org.yanbwe.raritycore.client;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
@@ -60,7 +59,7 @@ public class RarityTooltipHandler {
         // 如果启用了跳过未配置物品且物品没有配置稀有度,则不插入工具提示
         // 注意:需要检查物品是否真的没有配置,而不是检查rarity是否为null
         // 使用包含神化NBT检查的增强版配置检测
-        if (ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item, itemStack)) {
+        if (ClientConfigManager.isSkipUnconfiguredItems() && !RarityRegistry.hasConfiguredRarity(item, itemStack)) {
             return;
         }
         
@@ -147,39 +146,6 @@ public class RarityTooltipHandler {
             return apothRarity;
         }
         return currentRarity;
-    }
-    
-    /**
-     * 检查物品是否有配置的稀有度(含神化NBT检测)
-     * @param item 要检查的物品
-     * @param itemStack 物品栈(用于神化NBT检测)
-     * @return 如果物品有配置稀有度返回true,否则返回false
-     */
-    private static boolean hasConfiguredRarity(Item item, ItemStack itemStack) {
-        if (item == null) {
-            return false;
-        }
-        
-        // 获取物品ID
-        ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
-        if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-            return false;
-        }
-        
-        // 检查是否在注册表中有配置
-        if (RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId)) {
-            return true;
-        }
-        
-        // 检查神化NBT数据(有神化稀有度也算有配置)
-        if (itemStack != null && itemStack.hasTag()) {
-            Integer apothRarity = RarityRegistry.getDirectApotheosisRarity(itemStack);
-            if (apothRarity != null) {
-                return true;
-            }
-        }
-        
-        return false;
     }
     
     /**

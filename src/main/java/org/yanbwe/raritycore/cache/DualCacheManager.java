@@ -296,6 +296,62 @@ public class DualCacheManager {
         return key.toString();
     }
     
+    // ========================
+    // SimpleNbtCache 委托接口
+    // ========================
+    
+    /**
+     * 直接查询NBT缓存（供SimpleNbtCache委托使用）
+     * 仅查询共享的NBT缓存，不进行ID缓存回退或神化物品检查
+     * @param nbtKey NBT缓存键（由SimpleNbtCache.generateNbtCacheKey生成）
+     * @return 缓存的稀有度，未命中返回null
+     */
+    public static Integer getCachedNbtRarity(String nbtKey) {
+        if (nbtKey == null || nbtKey.isEmpty() || nbtCache == null) {
+            return null;
+        }
+        return nbtCache.getIfPresent(nbtKey);
+    }
+    
+    /**
+     * 直接写入NBT缓存（供SimpleNbtCache委托使用）
+     * @param nbtKey NBT缓存键
+     * @param rarity 稀有度值
+     */
+    public static void cacheNbtRarity(String nbtKey, Integer rarity) {
+        if (nbtKey == null || nbtKey.isEmpty() || rarity == null || nbtCache == null) {
+            return;
+        }
+        nbtCache.put(nbtKey, rarity);
+    }
+    
+    /**
+     * 清除指定NBT缓存条目（供SimpleNbtCache委托使用）
+     * @param nbtKey NBT缓存键
+     */
+    public static void invalidateNbtCacheEntry(String nbtKey) {
+        if (nbtKey != null && !nbtKey.isEmpty() && nbtCache != null) {
+            nbtCache.invalidate(nbtKey);
+        }
+    }
+    
+    /**
+     * 清空所有NBT缓存（供SimpleNbtCache.reinitializeCache委托使用）
+     */
+    public static void invalidateAllNbtCache() {
+        if (nbtCache != null) {
+            nbtCache.invalidateAll();
+        }
+    }
+    
+    /**
+     * 获取NBT缓存当前大小
+     * @return 缓存条目数
+     */
+    public static long getNbtCacheSize() {
+        return nbtCache != null ? nbtCache.size() : 0;
+    }
+    
     /**
      * 获取缓存统计信息
      */

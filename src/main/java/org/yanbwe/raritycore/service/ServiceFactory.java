@@ -11,10 +11,7 @@ import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.data.RarityDataLoader;
 import org.yanbwe.raritycore.nbtmatching.NbtConfigLoader;
-import org.yanbwe.raritycore.network.DelayedSyncManager;
-import org.yanbwe.raritycore.network.NbtSyncManager;
 import org.yanbwe.raritycore.network.SyncBatchManager;
-import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.ArrayList;
@@ -82,13 +79,11 @@ public class ServiceFactory {
         // 注册服务，按照依赖关系设置优先级
         registerService(ConfigManager.class, ConfigManager::new, 10);
         registerService(ServerConfigManager.class, ServerConfigManager::new, 15);
-        registerService(DualCacheManager.class, DualCacheManager::new, 20);
         registerService(CompatibilityManager.class, CompatibilityManager::new, 25);
         registerService(CompatibilityChecker.class, CompatibilityChecker::new, 30);
-        registerService(SyncManager.class, SyncManager::new, 35);
-        registerService(NbtSyncManager.class, NbtSyncManager::new, 40);
-        registerService(DelayedSyncManager.class, DelayedSyncManager::new, 45);
         registerService(SyncBatchManager.class, SyncBatchManager::new, 50);
+        // DualCacheManager, SyncManager, NbtSyncManager, DelayedSyncManager 已移除注册：
+        // 这些类的所有方法均为 public static，无需通过 ServiceFactory 获取空壳实例
         registerService(AutoRarityConfigManager.class, AutoRarityConfigManager::new, 55);
         registerService(AutoRarityCalculator.class, AutoRarityCalculator::new, 60);
         registerService(RarityRegistry.class, RarityRegistry::new, 65);
@@ -180,43 +175,11 @@ public class ServiceFactory {
     }
     
     /**
-     * 获取双缓存管理器
-     * @return 双缓存管理器实例
-     */
-    public DualCacheManager getDualCacheManager() {
-        return getService(DualCacheManager.class);
-    }
-    
-    /**
      * 获取稀有度数据加载器
      * @return 稀有度数据加载器实例
      */
     public RarityDataLoader getRarityDataLoader() {
         return RarityDataLoader.INSTANCE;
-    }
-    
-    /**
-     * 获取同步管理器
-     * @return 同步管理器实例
-     */
-    public SyncManager getSyncManager() {
-        return getService(SyncManager.class);
-    }
-    
-    /**
-     * 获取NBT同步管理器
-     * @return NBT同步管理器实例
-     */
-    public NbtSyncManager getNbtSyncManager() {
-        return getService(NbtSyncManager.class);
-    }
-    
-    /**
-     * 获取延迟同步管理器
-     * @return 延迟同步管理器实例
-     */
-    public DelayedSyncManager getDelayedSyncManager() {
-        return getService(DelayedSyncManager.class);
     }
     
     /**

@@ -73,6 +73,9 @@ public class AutoRarityCalculator {
     private static int processedItemsInRound = 0; // 本轮已处理物品数
     private static long lastProgressUpdateTime = 0; // 上次进度更新时间(毫秒)
     
+    // 自动重载调度器（存储引用以避免线程池泄漏，确保在任务完成后调用 shutdown 回收资源）
+    private static java.util.concurrent.ScheduledExecutorService autoReloadExecutor;
+    
     /**
      * 计算任务单元(保留用于兼容性)
      */
@@ -316,7 +319,8 @@ public class AutoRarityCalculator {
                 updateRarityWithMax(outputItem, outputRarity);
                 
             } catch (Exception e) {
-                // 跳过此配方
+                RarityCore.LOGGER.debug("Skipping recipe {} for material {}: {} - {}",
+                    recipe.getId(), materialId, e.getClass().getSimpleName(), e.getMessage(), e);
             }
         }
     }
@@ -750,6 +754,7 @@ public class AutoRarityCalculator {
     
     /**
      * 安排自动重载(10 秒后执行两次重载)
+     * 使用实例引用管理 ScheduledExecutorService 生命周期，避免每次调用创建新线程池而不回收
      */
     private static void scheduleAutoReload() {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
@@ -757,36 +762,48 @@ public class AutoRarityCalculator {
             return;
         }
         
-        // 使用 ScheduledExecutorService 延迟执行，替代 server.addTickable 每 tick 递减计数器
-        java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+        // 关闭之前可能泄漏的 executor（如果存在且未关闭）
+        if (autoReloadExecutor != null && !autoReloadExecutor.isShutdown()) {
+            autoReloadExecutor.shutdown();
+        }
+        
+        // 创建新的 ScheduledExecutorService 并存储引用以实现后续关闭
+        autoReloadExecutor = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "RarityCore-AutoReload");
             t.setDaemon(true);
             return t;
-        }).schedule(() -> {
-            // 通过 server.execute 回到主线程执行重载
-            server.execute(() -> {
-                try {
-                    org.yanbwe.raritycore.service.ConfigReloadService.reloadFromCommand(null);
-                    RarityCore.LOGGER.info("First auto reload completed");
-                    
-                    // 1 秒延迟后执行第二次重载
-                    try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
-                    
-                    server.execute(() -> {
-                        try {
-                            org.yanbwe.raritycore.service.ConfigReloadService.reloadFromCommand(null);
-                            RarityCore.LOGGER.info("Second auto reload completed");
-                            
-                            sendToAllPlayers(Component.translatable("rarity.core.auto_reload_complete_message")
-                                .withStyle(ChatFormatting.YELLOW).withStyle(ChatFormatting.BOLD));
-                        } catch (Exception e) {
-                            RarityCore.LOGGER.error("Error during second auto reload", e);
-                        }
-                    });
-                } catch (Exception e) {
-                    RarityCore.LOGGER.error("Error during first auto reload", e);
-                }
-            });
+        });
+        
+        autoReloadExecutor.schedule(() -> {
+            try {
+                // 通过 server.execute 回到主线程执行重载
+                server.execute(() -> {
+                    try {
+                        org.yanbwe.raritycore.service.ConfigReloadService.reloadFromCommand(null);
+                        RarityCore.LOGGER.info("First auto reload completed");
+                        
+                        // 1 秒延迟后执行第二次重载
+                        try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+                        
+                        server.execute(() -> {
+                            try {
+                                org.yanbwe.raritycore.service.ConfigReloadService.reloadFromCommand(null);
+                                RarityCore.LOGGER.info("Second auto reload completed");
+                                
+                                sendToAllPlayers(Component.translatable("rarity.core.auto_reload_complete_message")
+                                    .withStyle(ChatFormatting.YELLOW).withStyle(ChatFormatting.BOLD));
+                            } catch (Exception e) {
+                                RarityCore.LOGGER.error("Error during second auto reload", e);
+                            }
+                        });
+                    } catch (Exception e) {
+                        RarityCore.LOGGER.error("Error during first auto reload", e);
+                    }
+                });
+            } finally {
+                // 延迟任务已触发，关闭 executor 释放线程资源（防止线程池泄漏）
+                autoReloadExecutor.shutdown();
+            }
         }, 10, java.util.concurrent.TimeUnit.SECONDS);
     }
     

@@ -165,19 +165,6 @@ public class ConfigReloadService {
     }
     
     /**
-     * 处理双缓存系统
-     */
-    private static void handleCacheSystems() {
-        try {
-            // 协调并执行缓存刷新
-            CacheRefreshCoordinator.coordinateRefresh();
-            RarityCore.LOGGER.info("Dual cache system reloaded successfully");
-        } catch (Exception e) {
-            RarityCore.LOGGER.error("Error handling cache systems during reload", e);
-        }
-    }
-    
-    /**
      * 处理客户端侧配置
      */
     private static void handleClientSideConfigs() {
