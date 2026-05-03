@@ -29,6 +29,22 @@ public class NetworkRetryManager {
             return t;
         }
     );
+
+    /**
+     * 关闭重试调度器，释放线程资源
+     * 在服务器停止时调用，确保 JVM 能干净退出
+     */
+    public static void shutdown() {
+        retryScheduler.shutdown();
+        try {
+            if (!retryScheduler.awaitTermination(3, TimeUnit.SECONDS)) {
+                retryScheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            retryScheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+    }
     
     /**
      * 调度延迟重试任务

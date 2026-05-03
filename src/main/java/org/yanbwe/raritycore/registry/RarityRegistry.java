@@ -1,5 +1,6 @@
 package org.yanbwe.raritycore.registry;
 
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -340,14 +341,20 @@ public class RarityRegistry {
         int result;
         String source = "vanilla";
 
-        boolean hasTag = itemStack != null && itemStack.hasTag();
+        // 预读取 NBT tag 一次，避免后续 checkNbtRarity/checkApotheosisRarity/checkIronSpellbooksRarity
+        // 各自重复调用 itemStack.hasTag()/getTag()（Forge 中 getTag() 可能创建防御性副本）
+        CompoundTag tag = (itemStack != null && itemStack.hasTag()) ? itemStack.getTag() : null;
         
-        if (hasTag) {
-            int nbtControlRarity = org.yanbwe.raritycore.nbtmatching.NbtRarityControlHandler.getNbtControlRarity(itemStack);
-            if (nbtControlRarity > 0) {
-                result = nbtControlRarity;
-                source = "nbt_control";
-                return fireQueryEvent(itemStack, result, source);
+        if (tag != null) {
+            // NBT 稀有度控制（最高优先级）—— 直接使用已读取的 tag，跳过 NbtRarityControlHandler 内部的重复 hasTag/getTag
+            if (org.yanbwe.raritycore.config.ServerConfigManager.isEnableNbtRarityControl()
+                    && tag.contains("raritycore:data", CompoundTag.TAG_COMPOUND)) {
+                CompoundTag data = tag.getCompound("raritycore:data");
+                if (data.contains("Level", CompoundTag.TAG_INT)) {
+                    result = data.getInt("Level");
+                    source = "nbt_control";
+                    return fireQueryEvent(itemStack, result, source);
+                }
             }
             
             Integer rarity = checkNbtRarity(itemStack);
@@ -357,7 +364,7 @@ public class RarityRegistry {
                 return fireQueryEvent(itemStack, result, source);
             }
             
-            rarity = checkApotheosisRarity(itemStack);
+            rarity = checkApotheosisRarityWithTag(itemStack, tag);
             if (rarity != null) {
                 result = rarity;
                 source = "apotheosis";
@@ -481,6 +488,21 @@ public class RarityRegistry {
         }
 
         return org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(itemStack);
+    }
+
+    /**
+     * 检查神化模组稀有度（使用已读取的 CompoundTag，避免重复 getTag()）
+     * @param itemStack 物品栈（仅用于状态检查）
+     * @param tag 已读取的 CompoundTag
+     * @return 稀有度等级,如果没有匹配则返回null
+     */
+    @Nullable
+    private static Integer checkApotheosisRarityWithTag(@Nullable ItemStack itemStack, @Nullable CompoundTag tag) {
+        if (!org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity() || itemStack == null || itemStack.isEmpty() || tag == null) {
+            return null;
+        }
+
+        return org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.calculateApotheosisRarityFromTag(tag);
     }
     
     /**

@@ -59,6 +59,9 @@ public class RarityCoreEventHandler {
         
         // 关闭延迟同步管理器
         org.yanbwe.raritycore.network.DelayedSyncManager.shutdown();
+
+        // 关闭网络重试管理器线程池
+        org.yanbwe.raritycore.network.NetworkRetryManager.shutdown();
     }
     
     /**

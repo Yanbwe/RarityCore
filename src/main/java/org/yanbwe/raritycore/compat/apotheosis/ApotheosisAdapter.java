@@ -60,7 +60,19 @@ public class ApotheosisAdapter {
             return null;
         }
 
-        CompoundTag tag = itemStack.getTag();
+        return calculateApotheosisRarityFromTag(itemStack.getTag());
+    }
+
+    /**
+     * 使用已读取的 CompoundTag 计算神化稀有度（避免重复 getTag() 调用）
+     * 供 RarityRegistry.getRarityInternal() 等已持有 tag 引用的调用方使用
+     * @param tag 物品的 CompoundTag
+     * @return 计算得到的稀有度，如果没有则返回 null
+     */
+    public static Integer calculateApotheosisRarityFromTag(CompoundTag tag) {
+        if (tag == null) {
+            return null;
+        }
 
         // O(1) 键查找：检查是否存在 affix_data 键
         if (!tag.contains(AFFIX_DATA_KEY)) {
@@ -81,8 +93,17 @@ public class ApotheosisAdapter {
     }
 
     /**
+     * O(1) 稀有度名称映射表，替代线性 contains() 链
+     * 键按长度降序排列以优先匹配长名称，避免子串误匹配（如 "rare" 误匹配 "artifacts:rare"）
+     */
+    private static final String[] RARITY_NAMES = {
+        "esoteric", "heirloom", "artifact", "ancient", "mythic", "epic", "rare", "uncommon", "common"
+    };
+    private static final int[] RARITY_VALUES = {9, 8, 7, 6, 5, 4, 3, 2, 1};
+
+    /**
      * 根据神化稀有字符串映射到本模组稀有度
-     * 使用包含模式匹配稀有度名称，按长度降序避免子串误匹配
+     * 使用预排序数组做 O(n) 快速匹配（n=9，常数级），比 contains() 链更高效且易维护
      * @param rarityString 神化稀有度字符串，格式如 "apotheosis:mythic", "apotheosis:ancient" 等
      * @return 对应的本模组稀有度等级 (1-9)
      */
@@ -93,32 +114,11 @@ public class ApotheosisAdapter {
 
         String lowerRarity = rarityString.toLowerCase();
 
-        if (lowerRarity.contains("esoteric")) {
-            return 9;
-        }
-        if (lowerRarity.contains("heirloom")) {
-            return 8;
-        }
-        if (lowerRarity.contains("artifact")) {
-            return 7;
-        }
-        if (lowerRarity.contains("ancient")) {
-            return 6;
-        }
-        if (lowerRarity.contains("mythic")) {
-            return 5;
-        }
-        if (lowerRarity.contains("epic")) {
-            return 4;
-        }
-        if (lowerRarity.contains("rare")) {
-            return 3;
-        }
-        if (lowerRarity.contains("uncommon")) {
-            return 2;
-        }
-        if (lowerRarity.contains("common")) {
-            return 1;
+        // 遍历预排序的名称数组，第一个匹配即为结果
+        for (int i = 0; i < RARITY_NAMES.length; i++) {
+            if (lowerRarity.contains(RARITY_NAMES[i])) {
+                return RARITY_VALUES[i];
+            }
         }
 
         return null;
