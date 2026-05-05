@@ -84,11 +84,10 @@ public class IronSpellbooksAdapter {
     }
 
     /**
-     * 法术等级 → 稀有度映射：1→1, 2→2, … 7→7, 8+→7
+     * 法术等级 → 稀有度映射：直接映射法术等级为稀有度等级，不设上限
      */
     private static int mapSpellLevel(int spellLevel) {
         if (spellLevel < 1) return 1;
-        if (spellLevel > 7) return 7;
         return spellLevel;
     }
 
