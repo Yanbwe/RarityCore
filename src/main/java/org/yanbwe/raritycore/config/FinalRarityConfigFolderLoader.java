@@ -2,6 +2,7 @@ package org.yanbwe.raritycore.config;
 
 
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.util.ConfigLoaderUtils;
 
 import java.io.IOException;
@@ -11,6 +12,8 @@ import java.nio.file.Path;
 /**
  * FinalRarityConfig文件夹加载器
  * 负责加载config/raritycore/FinalRarityConfig文件夹中的所有JSON配置文件
+ *
+ * v13 新增: invalidateCaches() — 配置保存后触发缓存失效
  */
 public class FinalRarityConfigFolderLoader {
 
@@ -61,5 +64,20 @@ public class FinalRarityConfigFolderLoader {
      */
     private static void loadRarityDataFromFile(Path configFile) {
         ConfigLoaderUtils.loadJsonConfigFileWithBatch(configFile, configFile.getFileName().toString(), true);
+    }
+
+    // ──────────── v13 新增: 缓存失效 ────────────
+
+    /**
+     * 使所有缓存失效 — 配置保存后在编辑模式中调用
+     * 确保缓存中过期的稀有度数据被清除，下次查询时从最新配置重新加载
+     */
+    public static void invalidateCaches() {
+        try {
+            DualCacheManager.handleConfigReload();
+            RarityCore.LOGGER.debug("FinalRarityConfigFolderLoader: Cache invalidated after config change");
+        } catch (Exception e) {
+            RarityCore.LOGGER.warn("Failed to invalidate caches after config change", e);
+        }
     }
 }

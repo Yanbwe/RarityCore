@@ -5,25 +5,30 @@ package org.yanbwe.raritycore.client;
   名字下面显示稀有度等级
  */
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.config.ClientConfigManager;
+import org.yanbwe.raritycore.config.RarityClientConfig;
+import org.yanbwe.raritycore.event.RarityTooltipEvent;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.ComponentBuilder;
-import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
 import org.yanbwe.raritycore.util.RarityValidator;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @EventBusSubscriber(modid = RarityCore.MODID, value = Dist.CLIENT)
 public class RarityTooltipHandler {
@@ -72,21 +77,42 @@ public class RarityTooltipHandler {
         // 标准化稀有度值用于颜色获取等内部处理
         rarity = RarityValidator.normalizeRarity(rarity);
         
-        // 处理超出范围的稀有度值
-        ChatFormatting color = RarityColorUtil.getRarityChatColor(rarity);
+        // 从 RarityClientConfig 获取该等级的客户端配置
+        RarityClientConfig clientConfig = RarityClientConfig.getInstance();
+        
+        // RarityClientConfig 的 per-level tooltips 开关：如果该等级配置为不显示 tooltip，则跳过
+        // 注：此开关仅在 RarityClientConfig 已加载时生效（非空配置）
+        if (!clientConfig.isEmpty() && !clientConfig.isTooltipsEnabled(rarity)) {
+            return;
+        }
+        
+        // 从 RarityClientConfig 获取 RGB 颜色（含等级 >7 回退）
+        // 使用 TextColor.fromRgb() + Style.EMPTY.withColor() 替代 ChatFormatting
+        int rgbColor = clientConfig.getColor(rarity);
         MutableComponent prefixComponent;
         
         if (isSpecialRarity) {
             // 如果稀有度大于7,显示为 [x级稀有度] <星星>
-            ChatFormatting uniqueColor = RarityColorUtil.getRarityChatColor(RarityConstants.RARITY_UNIQUE);
-            MutableComponent rarityComponent = ComponentBuilder.buildSpecialRarityComponent(displayRarity, uniqueColor);
+            // 特殊稀有度颜色沿用等级 7（UNIQUE）的配置
+            int uniqueRgbColor = clientConfig.getColor(RarityConstants.RARITY_UNIQUE);
+            MutableComponent rarityComponent = ComponentBuilder.buildSpecialRarityComponent(displayRarity, uniqueRgbColor);
             
-            // 高效插入到工具提示
-            ComponentBuilder.insertIntoTooltip(event.getToolTip(), rarityComponent);
+            // 触发 RarityTooltipEvent，允许监听器修改 tooltip 组件
+            List<Component> tipComponents = new ArrayList<>();
+            tipComponents.add(rarityComponent);
+            RarityTooltipEvent tipEvent = new RarityTooltipEvent(itemStack, displayRarity, tipComponents, true);
+            NeoForge.EVENT_BUS.post(tipEvent);
+            
+            // 插入事件中所有组件到工具提示（逆序插入以保持顺序，使用快照副本防止并发修改）
+            List<Component> tooltip = event.getToolTip();
+            List<Component> eventComponents = new ArrayList<>(tipEvent.getTooltipComponents());
+            for (int i = eventComponents.size() - 1; i >= 0; i--) {
+                tooltip.add(1, eventComponents.get(i));
+            }
             return;
         } else {
             
-            // 设置前缀和颜色
+            // 设置前缀
             switch (rarity) {
                 case RarityConstants.RARITY_COMMON:
                     prefixComponent = Component.translatable("rarity.core.common");
@@ -113,17 +139,28 @@ public class RarityTooltipHandler {
                     return;
             }
             
-            // 根据配置决定是否应用颜色
+            // 应用前缀颜色：client.json 的 enableTooltipColor 为总闸
+            // 关闭时 RarityClientConfig 颜色不生效；开启时使用 RarityClientConfig 定义的 RGB 颜色
             if (ClientConfigManager.isEnableTooltipColor()) {
-                prefixComponent = prefixComponent.withStyle(color);
+                prefixComponent = prefixComponent.withStyle(Style.EMPTY.withColor(rgbColor));
             }
         
-            // 构建文本(使用组件构建器)
-            MutableComponent starsComponent = ComponentBuilder.buildRarityComponent(rarity, color);
+            // 构建星星组件（使用 RGB 颜色版本，内部同样检查总闸）
+            MutableComponent starsComponent = ComponentBuilder.buildRarityComponent(rarity, rgbColor);
             MutableComponent rarityComponent = Component.empty().append(prefixComponent).append(starsComponent);
             
-            // 高效插入到工具提示
-            ComponentBuilder.insertIntoTooltip(event.getToolTip(), rarityComponent);
+            // 触发 RarityTooltipEvent，允许监听器修改 tooltip 组件
+            List<Component> tipComponents = new ArrayList<>();
+            tipComponents.add(rarityComponent);
+            RarityTooltipEvent tipEvent = new RarityTooltipEvent(itemStack, displayRarity, tipComponents, false);
+            NeoForge.EVENT_BUS.post(tipEvent);
+            
+            // 插入事件中所有组件到工具提示（逆序插入以保持顺序，使用快照副本防止并发修改）
+            List<Component> tooltip = event.getToolTip();
+            List<Component> eventComponents = new ArrayList<>(tipEvent.getTooltipComponents());
+            for (int i = eventComponents.size() - 1; i >= 0; i--) {
+                tooltip.add(1, eventComponents.get(i));
+            }
         }
         } finally {
             RarityExclusionManager.setRenderingTooltipItem(false);

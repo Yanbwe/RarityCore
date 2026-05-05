@@ -1,7 +1,9 @@
 package org.yanbwe.raritycore.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.ChatFormatting;
+import net.minecraft.SharedConstants;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
@@ -41,6 +43,11 @@ public class ExportManagementCommands {
                 .then(Commands.literal("mod")
                     .then(Commands.argument("modid", ResourceLocationArgument.id())
                         .executes(context -> exportModRarityData(context.getSource(), ResourceLocationArgument.getId(context, "modid")))
+                    )
+                )
+                .then(Commands.literal("rarity")
+                    .then(Commands.argument("rarity", IntegerArgumentType.integer(1, 7))
+                        .executes(context -> exportRarityData(context.getSource(), IntegerArgumentType.getInteger(context, "rarity")))
                     )
                 )
             )
@@ -257,6 +264,58 @@ public class ExportManagementCommands {
         com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
         try (FileWriter writer = new FileWriter(exportFile.toFile())) {
             gson.toJson(exportData, writer);
+        }
+    }
+    
+    /**
+     * 导出指定稀有度等级的所有物品数据
+     * 遍历 ITEM_RARITY_MAP，筛选出指定稀有度等级的物品并导出为 JSON 文件
+     */
+    private static int exportRarityData(CommandSourceStack source, int rarity) {
+        // 筛选指定稀有度等级的物品
+        java.util.LinkedHashMap<String, Integer> filteredData = new java.util.LinkedHashMap<>();
+        for (Map.Entry<ResourceLocation, Integer> entry : RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
+            if (entry.getValue() == rarity) {
+                filteredData.put(entry.getKey().toString(), entry.getValue());
+            }
+        }
+        
+        // 空结果时给出提示
+        if (filteredData.isEmpty()) {
+            source.sendSuccess(() -> Component.literal("没有找到稀有度为 " + rarity + " 的物品").withStyle(ChatFormatting.YELLOW), false);
+            return 1;
+        }
+        
+        try {
+            // 使用 ConfigManager 提供的路径
+            Path configDir = ConfigManager.getConfigDirPath();
+            Files.createDirectories(configDir);
+            
+            // 获取当前 Minecraft 版本
+            String mcVersion;
+            try {
+                mcVersion = SharedConstants.getCurrentVersion().getName();
+            } catch (IllegalStateException e) {
+                mcVersion = "1.21.1"; // 安全回退
+            }
+            
+            // 生成带 Minecraft 版本和时间戳的文件名
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+            String fileName = "export_rarity_" + rarity + "_" + mcVersion + "_" + timestamp + ".json";
+            Path exportFile = configDir.resolve(fileName);
+            
+            // 使用 prettyPrint 导出 JSON
+            com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
+            try (FileWriter writer = new FileWriter(exportFile.toFile())) {
+                gson.toJson(filteredData, writer);
+            }
+            
+            source.sendSuccess(() -> Component.translatable("rarity.core.export_rarity_success", exportFile.toString()).withStyle(ChatFormatting.GREEN), false);
+            return 1;
+        } catch (IOException e) {
+            RarityCore.LOGGER.error("Failed to export rarity data", e);
+            source.sendSuccess(() -> Component.translatable("rarity.core.export_failed", e.getMessage()).withStyle(ChatFormatting.RED), false);
+            return 0;
         }
     }
 }

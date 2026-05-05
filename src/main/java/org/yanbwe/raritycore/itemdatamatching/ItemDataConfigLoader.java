@@ -6,6 +6,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
 
@@ -71,10 +72,20 @@ public class ItemDataConfigLoader extends SimpleJsonResourceReloadListener {
     
     /**
      * 加载所有配置(包括数据包和本地配置)
+     * v13: 加载后触发缓存失效确保规则立即生效
      */
     public static void loadAllConfigs() {
         // 本地配置会在这个方法中加载
         loadLocalConfigs();
+
+        // v13: 配置更新后使所有缓存失效
+        // 确保 FullMatch 生成的规则立即生效，旧的缓存稀有度数据被清除
+        try {
+            DualCacheManager.handleConfigReload();
+            RarityCore.LOGGER.debug("ItemDataConfigLoader: Cache invalidated after loadAllConfigs()");
+        } catch (Exception e) {
+            RarityCore.LOGGER.warn("Failed to invalidate caches after loadAllConfigs()", e);
+        }
     }
     
     /**

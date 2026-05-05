@@ -3,6 +3,7 @@ package org.yanbwe.raritycore.compat;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter;
 import org.yanbwe.raritycore.compat.refinedstorage.RefinedStorageCompat;
+import org.yanbwe.raritycore.compat.ironsspells.IronSpellsAdapter;
 
 /**
  * 兼容性管理器
@@ -60,6 +61,17 @@ public class CompatibilityManager {
             RarityCore.LOGGER.debug("Refined Storage not found, skipping compatibility adapter");
         } catch (Exception e) {
             RarityCore.LOGGER.error("Failed to initialize Refined Storage compatibility adapter", e);
+        }
+        
+        // 初始化 Iron's Spells 适配器
+        try {
+            Class.forName("io.redspace.ironsspellbooks.IronsSpellbooks");
+            IronSpellsAdapter.init();
+            RarityCore.LOGGER.info("Iron's Spells compatibility adapter initialized");
+        } catch (ClassNotFoundException e) {
+            RarityCore.LOGGER.debug("Iron's Spells not found, skipping compatibility adapter");
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Failed to initialize Iron's Spells compatibility adapter", e);
         }
         
         // TODO: 在此处添加其他模组的兼容性检测和初始化

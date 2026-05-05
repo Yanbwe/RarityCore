@@ -26,6 +26,7 @@ public class ServerConfigManager {
     private static boolean checkVanillaRarity = RarityConstants.DEFAULT_CHECK_VANILLA_RARITY; // 是否检查原版稀有度
     private static boolean checkApotheosisRarity = RarityConstants.DEFAULT_CHECK_APOTHEOSIS_RARITY; // 是否检查神化模组稀有度
     private static boolean enableGetRarityWarning = RarityConstants.DEFAULT_ENABLE_GET_RARITY_WARNING; // 是否启用 getRarity() 可用性警告
+    private static boolean enableComponentRarityControl = RarityConstants.DEFAULT_ENABLE_COMPONENT_RARITY_CONTROL; // 是否启用组件稀有度控制
     
     // 配置文件路径
     private static final Path CONFIG_DIR = Paths.get(RarityConstants.CONFIG_DIR_PARENT).resolve(RarityConstants.CONFIG_DIR_NAME);
@@ -100,8 +101,15 @@ public class ServerConfigManager {
                     enableGetRarityWarning = RarityConstants.DEFAULT_ENABLE_GET_RARITY_WARNING;
                 }
                 
-                RarityCore.LOGGER.info("Server config loaded successfully: checkVanillaRarity={}, checkApotheosisRarity={}, enableGetRarityWarning={}", 
-                    checkVanillaRarity, checkApotheosisRarity, enableGetRarityWarning);
+                // 读取组件稀有度控制设置
+                if (jsonObject.has("enableComponentRarityControl")) {
+                    enableComponentRarityControl = jsonObject.get("enableComponentRarityControl").getAsBoolean();
+                } else {
+                    enableComponentRarityControl = RarityConstants.DEFAULT_ENABLE_COMPONENT_RARITY_CONTROL;
+                }
+                
+                RarityCore.LOGGER.info("Server config loaded successfully: checkVanillaRarity={}, checkApotheosisRarity={}, enableGetRarityWarning={}, enableComponentRarityControl={}", 
+                    checkVanillaRarity, checkApotheosisRarity, enableGetRarityWarning, enableComponentRarityControl);
             }
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error loading server config file, using default config: {}", SERVER_CONFIG_FILE, e);
@@ -109,6 +117,7 @@ public class ServerConfigManager {
             checkVanillaRarity = RarityConstants.DEFAULT_CHECK_VANILLA_RARITY;
             checkApotheosisRarity = RarityConstants.DEFAULT_CHECK_APOTHEOSIS_RARITY;
             enableGetRarityWarning = RarityConstants.DEFAULT_ENABLE_GET_RARITY_WARNING;
+            enableComponentRarityControl = RarityConstants.DEFAULT_ENABLE_COMPONENT_RARITY_CONTROL;
             // 重新创建配置文件以恢复默认设置
             createDefaultServerConfig();
         }
@@ -141,13 +150,14 @@ public class ServerConfigManager {
         configObject.addProperty("checkVanillaRarity", checkVanillaRarity);
         configObject.addProperty("checkApotheosisRarity", checkApotheosisRarity);
         configObject.addProperty("enableGetRarityWarning", enableGetRarityWarning);
+        configObject.addProperty("enableComponentRarityControl", enableComponentRarityControl);
         
         // 写入配置文件
         try {
             try (FileWriter writer = new FileWriter(SERVER_CONFIG_FILE.toString())) {
                 GSON.toJson(configObject, writer);
-                RarityCore.LOGGER.info("Server config saved: checkVanillaRarity={}, checkApotheosisRarity={}, enableGetRarityWarning={}", 
-                    checkVanillaRarity, checkApotheosisRarity, enableGetRarityWarning);
+                RarityCore.LOGGER.info("Server config saved: checkVanillaRarity={}, checkApotheosisRarity={}, enableGetRarityWarning={}, enableComponentRarityControl={}", 
+                    checkVanillaRarity, checkApotheosisRarity, enableGetRarityWarning, enableComponentRarityControl);
             }
         } catch (IOException e) {
             RarityCore.LOGGER.error("Cannot save server config file: {}", SERVER_CONFIG_FILE, e);
@@ -208,6 +218,25 @@ public class ServerConfigManager {
         }
     }
     
+    /**
+     * 获取是否启用组件稀有度控制
+     */
+    public static boolean isEnableComponentRarityControl() {
+        return enableComponentRarityControl;
+    }
+    
+    /**
+     * 设置是否启用组件稀有度控制
+     */
+    public static void setEnableComponentRarityControl(boolean enable) {
+        if (enableComponentRarityControl != enable) {
+            enableComponentRarityControl = enable;
+            // 通知相关系统配置已变更
+            notifyConfigChange();
+        }
+    }
+    
+ 
 
     
     /**

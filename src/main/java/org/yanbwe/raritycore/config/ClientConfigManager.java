@@ -56,6 +56,9 @@ public class ClientConfigManager {
         
         // 加载客户端配置
         loadClientConfig();
+        
+        // 加载 RarityClientConfig（按稀有度逐级客户端配置）
+        RarityClientConfigLoader.load();
     }
     
     /**

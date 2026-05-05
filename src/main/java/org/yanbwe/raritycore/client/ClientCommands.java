@@ -10,6 +10,8 @@ import org.yanbwe.raritycore.cache.CacheConfig;
 import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.cache.RarityCacheCoordinator;
 import org.yanbwe.raritycore.config.ClientConfigManager;
+import org.yanbwe.raritycore.config.RarityClientConfig;
+import org.yanbwe.raritycore.config.RarityClientConfigLoader;
 
 /**
  * 客户端命令管理器
@@ -20,6 +22,17 @@ public class ClientCommands {
     
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("raritycore-client")
+            // 重载 RarityClientConfig 配置（客户端专用，不在服务端 reload 中触发）
+            .then(Commands.literal("reload")
+                .executes(context -> {
+                    RarityClientConfigLoader.load();
+                    int levelCount = RarityClientConfig.getInstance().size();
+                    context.getSource().sendSuccess(() -> Component.translatable(
+                        "rarity.core.rarity_client_config_reloaded", levelCount)
+                        .withStyle(ChatFormatting.GREEN), false);
+                    return 1;
+                })
+            )
             .then(Commands.literal("cache")
                 // 显示缓存统计信息
                 .then(Commands.literal("stats")

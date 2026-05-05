@@ -1,8 +1,9 @@
 package org.yanbwe.raritycore.mixin;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -12,8 +13,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.config.ClientConfigManager;
+import org.yanbwe.raritycore.config.RarityClientConfig;
 import org.yanbwe.raritycore.registry.RarityRegistry;
-import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
 import org.yanbwe.raritycore.util.RarityValidator;
 
@@ -24,7 +25,7 @@ public class ItemStackMixin {
     private void modifyHoverName(CallbackInfoReturnable<Component> cir) {
         ItemStack stack = (ItemStack) (Object) this;
         
-        // 检查是否启用物品名称变色功能
+        // 检查是否启用物品名称变色功能 (client.json 总闸)
         if (!ClientConfigManager.isEnableItemNameColor()) {
             return;
         }
@@ -42,17 +43,14 @@ public class ItemStackMixin {
                 
         // 如果仍然没有获取到稀有度,使用默认值
         if (rarity == null || rarity < 1) {
-            return; // 直接返回,不修改名称颜色
+            return;
         }
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度,则不修改名称颜色
-        // 注意:需要检查物品是否真的没有配置,而不是默认的稀有度1
         Item item = stack.getItem();
         if (ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
             return;
         }
-        
-
 
         // 标准化稀有度值,遵循模组的包容性原则
         rarity = RarityValidator.normalizeRarity(rarity);
@@ -62,12 +60,21 @@ public class ItemStackMixin {
             return;
         }
         
-        // 获取对应颜色
-        ChatFormatting color = RarityColorUtil.getRarityChatColor(rarity);
+        // 从 RarityClientConfig 获取该等级的 RGB 颜色
+        // 使用 TextColor.fromRgb() + Style.EMPTY.withColor() 替代 ChatFormatting
+        RarityClientConfig clientConfig = RarityClientConfig.getInstance();
+        
+        // 检查 RarityClientConfig 的 per-level nameColor 开关
+        if (!clientConfig.isEmpty() && !clientConfig.isNameColorEnabled(rarity)) {
+            return;
+        }
+        
+        int rgbColor = clientConfig.getColor(rarity);
         Component originalName = cir.getReturnValue();
         
-        // 设置带有颜色格式的名称并取消默认返回值
-        cir.setReturnValue(originalName.copy().withStyle(color));
+        // 使用 RGB 颜色设置物品名称
+        Style coloredStyle = Style.EMPTY.withColor(TextColor.fromRgb(rgbColor));
+        cir.setReturnValue(originalName.copy().withStyle(coloredStyle));
     }
     
     /**

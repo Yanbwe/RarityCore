@@ -165,6 +165,118 @@ public class ConfigValidator {
     }
 
     /**
+     * 创建默认 RarityClientConfig 配置对象。
+     *
+     * <p>结构：
+     * <pre>{@code
+     * {
+     *   "rarities": {
+     *     "1": { "color": "#FFFFFF", "texture": "...", "tooltips": true, "renderer": true, "nameColor": true },
+     *     ...
+     *     "7": { "color": "#FF5555", "texture": "...", "tooltips": true, "renderer": true, "nameColor": true }
+     *   }
+     * }
+     * }</pre>
+     *
+     * @return 默认的 RarityClientConfig JSON 对象
+     */
+    public static JsonObject createDefaultRarityClientConfig() {
+        JsonObject root = new JsonObject();
+        JsonObject rarities = new JsonObject();
+
+        // 等级 1 — 普通 (亮灰 #CCCCCC)
+        rarities.add("1", createRarityClientEntry("#CCCCCC",
+                "raritycore:textures/border/rarity_1.png"));
+
+        // 等级 2 — 稀有 (亮绿 #55FF55)
+        rarities.add("2", createRarityClientEntry("#55FF55",
+                "raritycore:textures/border/rarity_2.png"));
+
+        // 等级 3 — 罕见 (亮青 #55FFFF)
+        rarities.add("3", createRarityClientEntry("#55FFFF",
+                "raritycore:textures/border/rarity_3.png"));
+
+        // 等级 4 — 史诗 (亮紫 #FF55FF)
+        rarities.add("4", createRarityClientEntry("#FF55FF",
+                "raritycore:textures/border/rarity_4.png"));
+
+        // 等级 5 — 传说 (亮金 #FFCC00)
+        rarities.add("5", createRarityClientEntry("#FFCC00",
+                "raritycore:textures/border/rarity_5.png"));
+
+        // 等级 6 — 神话 (亮红 #FF6666)
+        rarities.add("6", createRarityClientEntry("#FF6666",
+                "raritycore:textures/border/rarity_6.png"));
+
+        // 等级 7 — 唯一 (深红 #FF3333)
+        rarities.add("7", createRarityClientEntry("#FF3333",
+                "raritycore:textures/border/rarity_7.png"));
+
+        root.add("rarities", rarities);
+        return root;
+    }
+
+    /**
+     * 创建单个稀有度等级的客户端配置条目。
+     *
+     * @param colorHex RGB 颜色（#RRGGBB 格式）
+     * @param texture  纹理路径
+     * @return JSON 对象
+     */
+    private static JsonObject createRarityClientEntry(String colorHex, String texture) {
+        JsonObject entry = new JsonObject();
+        entry.addProperty("color", colorHex);
+        entry.addProperty("texture", texture);
+        entry.addProperty("tooltips", true);
+        entry.addProperty("renderer", true);
+        entry.addProperty("nameColor", true);
+        return entry;
+    }
+
+    /**
+     * 创建默认 Tag 稀有度配置对象。
+     *
+     * <p>结构：
+     * <pre>{@code
+     * {
+     *   "tag_rules": [
+     *     { "tag": "forge:ingots/netherite", "rarity": 5 },
+     *     { "tag": "forge:gems/diamond", "rarity": 4 },
+     *     { "tag": "minecraft:swords", "rarity": 2 }
+     *   ]
+     * }
+     * }</pre>
+     *
+     * <p>规则按稀有度降序排列，运行时找到第一个匹配的 Tag 即返回，
+     * 从而自动取最高稀有度。</p>
+     *
+     * @return 默认的 TagRarity JSON 对象
+     */
+    public static JsonObject createDefaultTagRarityConfig() {
+        JsonObject root = new JsonObject();
+
+        com.google.gson.JsonArray tagRules = new com.google.gson.JsonArray();
+
+        com.google.gson.JsonObject netheriteRule = new com.google.gson.JsonObject();
+        netheriteRule.addProperty("tag", "forge:ingots/netherite");
+        netheriteRule.addProperty("rarity", 5);
+        tagRules.add(netheriteRule);
+
+        com.google.gson.JsonObject diamondRule = new com.google.gson.JsonObject();
+        diamondRule.addProperty("tag", "forge:gems/diamond");
+        diamondRule.addProperty("rarity", 4);
+        tagRules.add(diamondRule);
+
+        com.google.gson.JsonObject swordsRule = new com.google.gson.JsonObject();
+        swordsRule.addProperty("tag", "minecraft:swords");
+        swordsRule.addProperty("rarity", 2);
+        tagRules.add(swordsRule);
+
+        root.add("tag_rules", tagRules);
+        return root;
+    }
+
+    /**
      * 创建默认服务端配置对象
      * @return 默认服务端配置对象
      */
@@ -174,6 +286,7 @@ public class ConfigValidator {
         configObject.addProperty("checkVanillaRarity", true);
         configObject.addProperty("checkApotheosisRarity", true);
         configObject.addProperty("enableGetRarityWarning", true);
+        configObject.addProperty("enableComponentRarityControl", false);
         
         return configObject;
     }

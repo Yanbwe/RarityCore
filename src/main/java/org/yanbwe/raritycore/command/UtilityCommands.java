@@ -4,9 +4,13 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
@@ -42,9 +46,59 @@ public class UtilityCommands {
                 )
                 .then(Commands.literal("toggle")
                     .executes(context -> toggleEditMode(context.getSource()))
+                    .then(Commands.argument("state", BoolArgumentType.bool())
+                        .executes(context -> setEditModeExplicit(
+                            context.getSource(),
+                            BoolArgumentType.getBool(context, "state")
+                        ))
+                    )
+                )
+                .then(Commands.literal("mode")
+                    .then(Commands.argument("type", StringArgumentType.word())
+                        .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
+                            java.util.stream.Stream.of("normal", "fullmatch"), builder))
+                        .executes(context -> setEditModeType(
+                            context.getSource(),
+                            StringArgumentType.getString(context, "type")
+                        ))
+                    )
                 )
                 .then(Commands.literal("status")
                     .executes(context -> showEditModeStatus(context.getSource()))
+                )
+                .then(Commands.literal("parameter")
+                    .then(Commands.literal("rarity")
+                        .then(Commands.argument("value", IntegerArgumentType.integer(0))
+                            .executes(context -> setParameterRarity(
+                                context.getSource(),
+                                IntegerArgumentType.getInteger(context, "value")
+                            ))
+                        )
+                    )
+                    .then(Commands.literal("autoReload")
+                        .then(Commands.argument("value", BoolArgumentType.bool())
+                            .executes(context -> setParameterAutoReload(
+                                context.getSource(),
+                                BoolArgumentType.getBool(context, "value")
+                            ))
+                        )
+                    )
+                    .then(Commands.literal("ignore")
+                        .then(Commands.argument("value", StringArgumentType.greedyString())
+                            .executes(context -> setParameterIgnore(
+                                context.getSource(),
+                                StringArgumentType.getString(context, "value")
+                            ))
+                        )
+                    )
+                    .then(Commands.literal("stringContains")
+                        .then(Commands.argument("value", BoolArgumentType.bool())
+                            .executes(context -> setParameterStringContains(
+                                context.getSource(),
+                                BoolArgumentType.getBool(context, "value")
+                            ))
+                        )
+                    )
                 )
             )
             .then(Commands.literal("perf")
@@ -99,17 +153,30 @@ public class UtilityCommands {
     }
     
     /**
-     * 显示编辑模式状态
+     * 显示编辑模式状态 (v13 增强: 显示模式类型和参数)
      */
     private static int showEditModeStatus(CommandSourceStack source) {
         boolean isEnabled = EditModeManager.isEditModeEnabled();
         int currentRarity = EditModeManager.getCurrentRarity();
-        
+        String modeName = EditModeManager.getModeName();
+
         if (isEnabled) {
-            source.sendSuccess(() -> Component.translatable("rarity.core.edit_mode_status_enabled", currentRarity)
+            source.sendSuccess(() -> Component.literal("Edit mode: ENABLED")
                 .withStyle(ChatFormatting.GREEN), false);
+            source.sendSuccess(() -> Component.literal("  Mode: " + modeName)
+                .withStyle(ChatFormatting.AQUA), false);
+            source.sendSuccess(() -> Component.literal("  Rarity: " + currentRarity)
+                .withStyle(ChatFormatting.YELLOW), false);
+            source.sendSuccess(() -> Component.literal("  AutoReload: " + EditModeManager.isAutoReload())
+                .withStyle(ChatFormatting.WHITE), false);
+            source.sendSuccess(() -> Component.literal("  StringContains: " + EditModeManager.isStringContains())
+                .withStyle(ChatFormatting.WHITE), false);
+            if (!EditModeManager.getIgnoreComponents().isEmpty()) {
+                source.sendSuccess(() -> Component.literal("  Ignore: " + EditModeManager.getIgnoreComponents())
+                    .withStyle(ChatFormatting.WHITE), false);
+            }
         } else {
-            source.sendSuccess(() -> Component.translatable("rarity.core.edit_mode_status_disabled")
+            source.sendSuccess(() -> Component.literal("Edit mode: DISABLED")
                 .withStyle(ChatFormatting.YELLOW), false);
         }
         return 1;
@@ -201,5 +268,76 @@ public class UtilityCommands {
             source.sendSuccess(() -> Component.translatable("rarity.core.texture_border_toggle_error").withStyle(ChatFormatting.RED), false);
             return 0;
         }
+    }
+
+    // ──────────── v13 新增: 编辑模式命令执行器 ────────────
+
+    /**
+     * 显式设置编辑模式开关 (toggle <true|false>)
+     */
+    private static int setEditModeExplicit(CommandSourceStack source, boolean enabled) {
+        EditModeManager.setEditMode(enabled);
+        if (enabled) {
+            source.sendSuccess(() -> Component.literal("Edit mode enabled").withStyle(ChatFormatting.GREEN), false);
+        } else {
+            source.sendSuccess(() -> Component.literal("Edit mode disabled").withStyle(ChatFormatting.YELLOW), false);
+        }
+        return 1;
+    }
+
+    /**
+     * 设置编辑模式类型 (mode <normal|fullmatch>)
+     */
+    private static int setEditModeType(CommandSourceStack source, String modeName) {
+        String normalized = modeName.toLowerCase();
+        if (!"normal".equals(normalized) && !"fullmatch".equals(normalized)) {
+            source.sendSuccess(() -> Component.literal("Invalid mode: " + modeName + ". Use 'normal' or 'fullmatch'")
+                .withStyle(ChatFormatting.RED), false);
+            return 0;
+        }
+        EditModeManager.setModeByName(normalized);
+        source.sendSuccess(() -> Component.literal("Edit mode set to: " + EditModeManager.getModeName())
+            .withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+
+    /**
+     * 设置 rarity 参数 (parameter rarity <value>)
+     */
+    private static int setParameterRarity(CommandSourceStack source, int value) {
+        EditModeManager.setRarity(value);
+        source.sendSuccess(() -> Component.literal("Rarity parameter set to: " + value)
+            .withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+
+    /**
+     * 设置 autoReload 参数 (parameter autoReload <value>)
+     */
+    private static int setParameterAutoReload(CommandSourceStack source, boolean value) {
+        EditModeManager.setAutoReload(value);
+        source.sendSuccess(() -> Component.literal("AutoReload parameter set to: " + value)
+            .withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+
+    /**
+     * 设置 ignore 参数 (parameter ignore <value>)
+     */
+    private static int setParameterIgnore(CommandSourceStack source, String value) {
+        EditModeManager.setIgnoreComponents(value);
+        source.sendSuccess(() -> Component.literal("Ignore components set to: " + value)
+            .withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+
+    /**
+     * 设置 stringContains 参数 (parameter stringContains <value>)
+     */
+    private static int setParameterStringContains(CommandSourceStack source, boolean value) {
+        EditModeManager.setStringContains(value);
+        source.sendSuccess(() -> Component.literal("StringContains parameter set to: " + value)
+            .withStyle(ChatFormatting.GREEN), false);
+        return 1;
     }
 }

@@ -13,9 +13,12 @@ import org.yanbwe.raritycore.cache.ComponentCacheManager;
 import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.compat.CompatibilityChecker;
 import org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter;
+import org.yanbwe.raritycore.compat.ironsspells.IronSpellsAdapter;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.config.StarDisplayConfigManager;
+import org.yanbwe.raritycore.config.TagRarityConfig;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
+import org.yanbwe.raritycore.event.RarityQueryEvent;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher;
 import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.SyncManager;
@@ -260,7 +263,7 @@ public class RarityRegistry {
     
     /**
      * 获取物品栈的稀有度等级(支持物品数据)
-     * 优先级顺序:物品数据匹配 > 神化模组稀有度 > 本模组稀有度(配置和数据包) > 原版稀有度映射
+     * 优先级顺序:物品数据匹配 > 神化模组稀有度 > Iron's Spells法术稀有度 > 本模组稀有度(配置和数据包) > Tag稀有度 > 自动计算稀有度 > 原版稀有度映射
      * @param itemStack 要查稀有度的物品栈
      * @return 物品的稀有度等级(1-7)
      */
@@ -281,7 +284,7 @@ public class RarityRegistry {
     
     /**
      * 获取物品的稀有度等级
-     * 优先级顺序:物品数据匹配 > 神化模组稀有度 > 本模组稀有度(配置和数据包) > 原版稀有度映射
+     * 优先级顺序:物品数据匹配 > 神化模组稀有度 > Iron's Spells法术稀有度 > 本模组稀有度(配置和数据包) > Tag稀有度 > 自动计算稀有度 > 原版稀有度映射
      * @param item 要查稀有度的物品
      * @return 物品的稀有度等级(1-7)
      */
@@ -301,9 +304,11 @@ public class RarityRegistry {
      * 按照以下优先级顺序获取稀有度:
      * 1. 物品数据匹配配置(最高优先级)
      * 2. 神化模组稀有度
-     * 3. 本模组的稀有度配置(包括配置文件和数据包)
-     * 4. 自动计算的稀有度配置
-     * 5. 原版稀有度映射(最低优先级)
+     * 3. Iron's Spells 法术稀有度
+     * 4. 本模组的稀有度配置(包括配置文件和数据包)
+     * 5. Tag 稀有度配置(TagRarity.json)
+     * 6. 自动计算的稀有度配置
+     * 7. 原版稀有度映射(最低优先级)
      * 
      * @param itemId 物品资源位置,用于查找配置的稀有度
      * @param itemStack 物品栈,用于检查物品数据和神化模组稀有度
@@ -313,9 +318,20 @@ public class RarityRegistry {
     private static @NotNull Integer getRarityInternal(ResourceLocation itemId, @Nullable ItemStack itemStack, Item item) {
         Integer rarity;
         
+        // 最高优先级：检查组件稀有度控制（Component 驱动，凌驾一切）
+        rarity = checkComponentRarity(itemStack);
+        if (rarity != null) {
+            rarity = postRarityQuery(itemStack, rarity, "component");
+            if (itemStack != null) {
+                ComponentCacheManager.cacheRarity(itemStack, rarity);
+            }
+            return rarity;
+        }
+        
         // 首先检查物品数据匹配配置(最高优先级)
         rarity = checkItemDataRarity(itemStack);
         if (rarity != null) {
+            rarity = postRarityQuery(itemStack, rarity, "itemdata");
             // 填充缓存
             if (itemStack != null) {
                 DualCacheManager.cacheRarity(itemStack, rarity);
@@ -326,8 +342,21 @@ public class RarityRegistry {
         // 然后检查神化模组稀有度
         rarity = checkApotheosisRarity(itemStack);
         if (rarity != null) {
+            rarity = postRarityQuery(itemStack, rarity, "apotheosis");
             // 神化稀有度取决于ItemStack的数据组件,不是物品类型级别
             // 使用组件缓存(基于ItemStack NBT哈希)而非ID缓存,防止泄漏到同类型的非神化物品
+            if (itemStack != null) {
+                ComponentCacheManager.cacheRarity(itemStack, rarity);
+            }
+            return rarity;
+        }
+        
+        // 然后检查 Iron's Spells 法术稀有度
+        rarity = checkIronSpellsRarity(itemStack);
+        if (rarity != null) {
+            rarity = postRarityQuery(itemStack, rarity, "ironspells");
+            // Iron's Spells 稀有度基于 ItemStack 的 spell_container 组件
+            // 使用组件缓存(基于ItemStack NBT哈希)而非ID缓存,防止泄漏到同类型的非法术物品
             if (itemStack != null) {
                 ComponentCacheManager.cacheRarity(itemStack, rarity);
             }
@@ -337,6 +366,7 @@ public class RarityRegistry {
         // 然后检查本模组的稀有度配置(包括配置文件和数据包)- 最高优先级
         rarity = ITEM_RARITY_MAP.get(itemId);
         if (rarity != null) {
+            rarity = postRarityQuery(itemStack, rarity, "itemmap");
             // 填充缓存
             if (itemStack != null) {
                 DualCacheManager.cacheRarity(itemStack, rarity);
@@ -344,9 +374,22 @@ public class RarityRegistry {
             return rarity;
         }
         
+        // 然后检查 Tag 稀有度配置 - 中等优先级(介于 ITEM_RARITY_MAP 和 AUTO_RARITY_MAP 之间)
+        rarity = checkTagRarity(itemStack);
+        if (rarity != null) {
+            rarity = postRarityQuery(itemStack, rarity, "tag");
+            // Tag 稀有度基于物品 Tag 成员关系,而非物品类型级别
+            // 使用组件缓存(基于 ItemStack NBT 哈希)而非 ID 缓存,防止泄漏到同类型非 Tag 物品
+            if (itemStack != null) {
+                ComponentCacheManager.cacheRarity(itemStack, rarity);
+            }
+            return rarity;
+        }
+
         // 然后检查自动计算的稀有度配置 - 中等优先级(低于 FinalRarity,高于原版)
         rarity = AUTO_RARITY_MAP.get(itemId);
         if (rarity != null) {
+            rarity = postRarityQuery(itemStack, rarity, "autorarity");
             // 填充缓存
             if (itemStack != null) {
                 DualCacheManager.cacheRarity(itemStack, rarity);
@@ -357,6 +400,7 @@ public class RarityRegistry {
         // 最后检查原版稀有度映射(最低优先级)
         rarity = checkVanillaRarity(itemStack, item);
         if (rarity != null) {
+            rarity = postRarityQuery(itemStack, rarity, "vanilla");
             // 填充缓存
             if (itemStack != null) {
                 DualCacheManager.cacheRarity(itemStack, rarity);
@@ -366,9 +410,34 @@ public class RarityRegistry {
         
         // 默认返回普通稀有度
         rarity = 1;
+        rarity = postRarityQuery(itemStack, rarity, "default");
         // 填充缓存
         if (itemStack != null) {
             DualCacheManager.cacheRarity(itemStack, rarity);
+        }
+        return rarity;
+    }
+    
+    /**
+     * 发布 RarityQueryEvent 并处理覆盖逻辑。
+     * <p>
+     * 在 {@link #getRarityInternal(ResourceLocation, ItemStack, Item)} 确定稀有度后、
+     * 返回结果前调用。如果事件被监听器取消，返回覆盖后的稀有度值。
+     * </p>
+     *
+     * @param itemStack 被查询的物品栈
+     * @param rarity    当前确定的稀有度等级
+     * @param source    查询来源标识（如 "component"、"apotheosis"、"tag" 等）
+     * @return 事件未取消时返回原始稀有度，否则返回覆盖后的稀有度
+     */
+    private static int postRarityQuery(@Nullable ItemStack itemStack, int rarity, String source) {
+        if (itemStack == null || itemStack.isEmpty()) {
+            return rarity;
+        }
+        RarityQueryEvent event = new RarityQueryEvent(itemStack, rarity, source);
+        NeoForge.EVENT_BUS.post(event);
+        if (event.isCanceled()) {
+            return event.getOverriddenRarity();
         }
         return rarity;
     }
@@ -403,6 +472,77 @@ public class RarityRegistry {
         return ApotheosisAdapter.getMappedRarity(itemStack);
     }
     
+    /**
+     * 检查组件稀有度控制（最高优先级）
+     * 从物品的 DataComponents.CUSTOM_DATA 中读取 "raritycore" 复合标签中的 Level 字段。
+     * 仅当 {@link ServerConfigManager#isEnableComponentRarityControl()} 返回 true 时生效。
+     * 使用 {@link ComponentCacheManager} 单独缓存，避免污染 ID 缓存。
+     *
+     * @param itemStack 物品栈
+     * @return 稀有度等级，无效或未启用时返回 null
+     */
+    private static Integer checkComponentRarity(@Nullable ItemStack itemStack) {
+        if (!ServerConfigManager.isEnableComponentRarityControl()) {
+            return null;
+        }
+        if (itemStack == null || itemStack.isEmpty()) {
+            return null;
+        }
+        Integer rarity = ComponentRarityReader.readLevel(itemStack);
+        if (rarity != null) {
+            // 组件稀有度基于 ItemStack 的 DataComponent 内容，而非物品类型级别
+            // 使用组件缓存（基于 ItemStack NBT 哈希）而非 ID 缓存，防止泄漏到同类型不同物品
+            ComponentCacheManager.cacheRarity(itemStack, rarity);
+        }
+        return rarity;
+    }
+
+    /**
+     * 检查 Iron's Spells 法术稀有度
+     * <p>
+     * 通过 {@link IronSpellsAdapter} 读取法术卷轴的 spell_container 组件，
+     * 提取法术等级并映射为本模组稀有度。
+     * 仅当 Iron's Spells 模组已加载且有有效法术数据时返回非 null 值。
+     * </p>
+     *
+     * @param itemStack 物品栈
+     * @return 稀有度等级，如果模组未加载或无有效法术数据则返回 null
+     */
+    private static Integer checkIronSpellsRarity(@Nullable ItemStack itemStack) {
+        if (!IronSpellsAdapter.isLoaded()) {
+            return null;
+        }
+        if (itemStack == null) {
+            return null;
+        }
+        return IronSpellsAdapter.getMappedRarity(itemStack);
+    }
+
+    /**
+     * 检查 Tag 稀有度配置。
+     *
+     * <p>遍历 {@link TagRarityConfig} 中按稀有度降序排列的规则列表,
+     * 对每个规则使用 {@code itemStack.getItem().builtInRegistryHolder().is(tagKey)}
+     * 判断物品是否属于该 Tag。找到第一个匹配即返回对应的稀有度等级,
+     * 因为规则已按稀有度降序排列,第一个匹配的即为最高稀有度。</p>
+     *
+     * @param itemStack 物品栈
+     * @return 稀有度等级,如果没有匹配则返回 null
+     */
+    private static Integer checkTagRarity(@Nullable ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty()) {
+            return null;
+        }
+
+        for (TagRarityConfig.TagRarityEntry entry : TagRarityConfig.getRules()) {
+            if (itemStack.getItem().builtInRegistryHolder().is(entry.tagKey())) {
+                return entry.rarity();
+            }
+        }
+
+        return null;
+    }
+
     /**
      * 检查原版稀有度
      * @param itemStack 物品栈

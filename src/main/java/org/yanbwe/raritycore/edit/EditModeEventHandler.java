@@ -15,6 +15,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.lwjgl.glfw.GLFW;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.compat.tacz.TacZAdapter;
 import org.yanbwe.raritycore.mixin.AbstractContainerScreenAccessor;
 
 /**
@@ -66,16 +67,30 @@ public class EditModeEventHandler {
             return;
         }
         
-        // 修改物品稀有度
+        // 修改物品稀有度 (v13: 根据模式自动分派 Normal/FullMatch 逻辑)
         if (ClientEditModeHandler.modifyItemRarity(itemStack)) {
             // 显示反馈消息
             LocalPlayer player = Minecraft.getInstance().player;
             if (player != null) {
                 int currentRarity = EditModeManager.getCurrentRarity();
-                player.displayClientMessage(
-                    Component.translatable("rarity.core.edit_mode_applied", currentRarity), 
-                    true
-                );
+                String modeName = EditModeManager.getModeName();
+                if ("fullmatch".equals(modeName)) {
+                    player.displayClientMessage(
+                        Component.translatable("rarity.core.edit_mode_applied_fullmatch", currentRarity),
+                        true
+                    );
+                } else if (TacZAdapter.isTacZItem(itemStack)) {
+                    // TacZ Normal 模式: 显示 TacZ 物品专用反馈
+                    player.displayClientMessage(
+                        Component.translatable("rarity.core.edit_mode_applied_tacz", currentRarity),
+                        true
+                    );
+                } else {
+                    player.displayClientMessage(
+                        Component.translatable("rarity.core.edit_mode_applied", currentRarity),
+                        true
+                    );
+                }
             }
         }
         

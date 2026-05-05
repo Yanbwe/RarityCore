@@ -3,6 +3,8 @@ package org.yanbwe.raritycore.util;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.StarDisplayConfigManager;
 
@@ -64,6 +66,29 @@ public class ComponentBuilder {
     }
     
     /**
+     * 构建稀有度组件(RGB 颜色版本，使用 RarityClientConfig 颜色)。
+     * <p>使用 {@link TextColor#fromRgb(int)} + {@link Style#EMPTY Style.EMPTY.withColor(int)}
+     * 替代旧的 {@link ChatFormatting} 体系。
+     *
+     * @param rarity   稀有度等级
+     * @param rgbColor RGB 颜色值（0xRRGGBB 格式）
+     * @return 构建好的组件,永不为null
+     */
+    @Nonnull
+    public static MutableComponent buildRarityComponent(int rarity, int rgbColor) {
+        if (rarity <= 0) return Component.empty();
+
+        String stars = getStars(rarity);
+
+        // 根据配置决定是否应用颜色（client.json 总闸）
+        if (ClientConfigManager.isEnableTooltipColor()) {
+            return Component.literal(" " + stars).withStyle(Style.EMPTY.withColor(rgbColor));
+        } else {
+            return Component.literal(" " + stars);
+        }
+    }
+
+    /**
      * 构建特殊稀有度组件(大于 7 级的情况)
      * @param rarity 稀有度等级
      * @param color 颜色格式
@@ -89,6 +114,38 @@ public class ComponentBuilder {
         // 根据配置决定是否应用颜色
         if (ClientConfigManager.isEnableTooltipColor()) {
             return Component.literal(textToShow).withStyle(color);
+        } else {
+            return Component.literal(textToShow);
+        }
+    }
+
+    /**
+     * 构建特殊稀有度组件(RGB 颜色版本)。
+     * <p>使用 {@link TextColor#fromRgb(int)} + {@link Style#EMPTY Style.EMPTY.withColor(int)}
+     * 替代旧的 {@link ChatFormatting} 体系。
+     *
+     * @param rarity   稀有度等级
+     * @param rgbColor RGB 颜色值（0xRRGGBB 格式）
+     * @return 构建好的组件,永不为null
+     */
+    @Nonnull
+    public static MutableComponent buildSpecialRarityComponent(int rarity, int rgbColor) {
+        // 检查是否有自定义特殊稀有度文本
+        String customText = StarDisplayConfigManager.getCustomSpecialRarityText(rarity);
+
+        String textToShow;
+        if (customText != null && !customText.isEmpty()) {
+            String stars = getStars(rarity);
+            textToShow = "[" + customText + "] " + stars;
+        } else {
+            String localizedSuffix = Component.translatable("rarity.core.unusual.tips").getString();
+            String stars = getStars(rarity);
+            textToShow = "[" + rarity + localizedSuffix + "] " + stars;
+        }
+
+        // 根据配置决定是否应用颜色（client.json 总闸）
+        if (ClientConfigManager.isEnableTooltipColor()) {
+            return Component.literal(textToShow).withStyle(Style.EMPTY.withColor(rgbColor));
         } else {
             return Component.literal(textToShow);
         }

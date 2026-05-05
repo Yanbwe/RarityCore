@@ -9,8 +9,8 @@ import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.config.ClientConfigManager;
+import org.yanbwe.raritycore.config.RarityClientConfig;
 import org.yanbwe.raritycore.registry.RarityRegistry;
-import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
 import org.yanbwe.raritycore.util.RarityValidator;
 
@@ -24,7 +24,7 @@ public class ItemBorderRenderer {
      * @param y Y坐标
      */
     public static void renderRarityBorder(GuiGraphics guiGraphics, ItemStack itemStack, int x, int y) {
-        // 检查是否启用了边框渲染
+        // 检查是否启用了边框渲染 (client.json 总闸)
         if (!ClientConfigManager.isEnableItemBorderRendering()) {
             return;
         }
@@ -39,9 +39,7 @@ public class ItemBorderRenderer {
         boolean isCacheEnabled = ClientConfigManager.isEnableCacheSystem();
         
         if (isCacheEnabled) {
-            // 获取物品栈的稀有度(使用缓存)
             rarity = RenderCacheManager.getCachedRarity(itemStack);
-            // 如果缓存没有命中,则从注册表获取并缓存
             if (rarity == null) {
                 rarity = RarityRegistry.getRarity(itemStack);
                 if (rarity != null) {
@@ -49,102 +47,97 @@ public class ItemBorderRenderer {
                 }
             }
         } else {
-            // 缓存系统禁用时直接获取稀有度
             rarity = RarityRegistry.getRarity(itemStack);
         }
         
-        // 如果仍然没有获取到稀有度,使用默认值
         if (rarity == null) {
             rarity = RarityConstants.RARITY_COMMON;
         }
         
-        // 如果启用了跳过未配置物品且物品没有配置稀有度,则不渲染
-        // 注意:需要检查物品是否真的没有配置,而不是默认的稀有度1
         Item item = itemStack.getItem();
         if (ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
             return;
         }
         
-        // 遵循模组包容性原则:小于1视为1,大于7视为7
         rarity = RarityValidator.normalizeRarity(rarity);
+        
+        // 从 RarityClientConfig 获取该等级的客户端配置
+        RarityClientConfig clientConfig = RarityClientConfig.getInstance();
+        
+        // 检查 RarityClientConfig 的 per-level renderer 开关
+        if (!clientConfig.isEmpty() && !clientConfig.isRendererEnabled(rarity)) {
+            return;
+        }
         
         // 根据配置选择渲染方式
         if (ClientConfigManager.isUseTextureBorder()) {
-            // 使用纹理渲染边框
-            renderTextureBorder(guiGraphics, rarity, x, y);
+            // 从 RarityClientConfig 获取纹理路径，回退到默认路径
+            String texturePath = clientConfig.getTexture(rarity);
+            renderTextureBorder(guiGraphics, texturePath, x, y);
         } else {
-            // 使用颜色渲染边框
-            renderColorBorder(guiGraphics, rarity, x, y);
+            // 使用 RarityClientConfig 的 RGB 颜色渲染边框
+            int rgbColor = clientConfig.getColor(rarity);
+            renderColorBorder(guiGraphics, rgbColor, x, y);
         }
     }
     
     /**
      * 使用纹理渲染边框
      * @param guiGraphics GUI图形上下文
-     * @param rarity 稀有度等级
+     * @param texturePath 纹理资源路径
      * @param x X坐标
      * @param y Y坐标
      */
-    @SuppressWarnings("null")
-    private static void renderTextureBorder(GuiGraphics guiGraphics, int rarity, int x, int y) {
-        // 构造纹理路径,例如: raritycore:textures/border/rarity_1.png
-        String textureName = "rarity_" + rarity;
+    private static void renderTextureBorder(GuiGraphics guiGraphics, String texturePath, int x, int y) {
         ResourceLocation textureLocation = null;
         
         try {
-            // 安全解析纹理路径
-            textureLocation = ResourceLocation.parse(RarityConstants.BORDER_TEXTURE_PATH + textureName + RarityConstants.TEXTURE_SUFFIX);
+            textureLocation = ResourceLocation.parse(texturePath);
         } catch (Exception e) {
-            // 路径解析失败,回退到颜色边框
-            RarityCore.LOGGER.warn("Failed to parse texture path for rarity {}, falling back to color border: {}", rarity, e.getMessage());
-            renderColorBorder(guiGraphics, rarity, x, y);
+            RarityCore.LOGGER.warn("Failed to parse texture path '{}', falling back to color border: {}", texturePath, e.getMessage());
+            RarityClientConfig clientConfig = RarityClientConfig.getInstance();
+            int rarity = 1; // fallback
+            renderColorBorder(guiGraphics, clientConfig.getColor(rarity), x, y);
             return;
         }
         
-        // 尝试绘制纹理边框
         try {
-            // 启用混合模式以确保纹理透明度正确显示
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
-            
-            // 使用 blit 方法,指定完整的纹理坐标和裁剪尺寸
-            // 参数顺序:ResourceLocation texture, int x, int y, float z, 
-            //           int uOffset, int vOffset, int uWidth, int vHeight, 
-            //           int textureWidth, int textureHeight
             guiGraphics.blit(textureLocation, x, y, 0, 0, 16, 16, 16, 16);
         } catch (Exception e) {
-            // 如果纹理加载失败,回退到颜色边框
-            RarityCore.LOGGER.warn("Failed to load texture for rarity {}, falling back to color border: {}", rarity, e.getMessage());
-            renderColorBorder(guiGraphics, rarity, x, y);
+            RarityCore.LOGGER.warn("Failed to load texture '{}', falling back to color border: {}", texturePath, e.getMessage());
+            RarityClientConfig clientConfig = RarityClientConfig.getInstance();
+            int rarity = 1;
+            renderColorBorder(guiGraphics, clientConfig.getColor(rarity), x, y);
         }
     }
     
-    private static void renderColorBorder(GuiGraphics guiGraphics, int rarity, int x, int y) {
-        // 根据稀有度获取对应颜色
-        int borderColor = RarityColorUtil.getRarityArgbColor(rarity);
+    /**
+     * 使用 RGB 颜色渲染边框
+     * @param guiGraphics GUI 图形上下文
+     * @param rgbColor    RGB 颜色值 (0xRRGGBB)
+     * @param x           X 坐标
+     * @param y           Y 坐标
+     */
+    private static void renderColorBorder(GuiGraphics guiGraphics, int rgbColor, int x, int y) {
+        // 添加完全不透明 alpha 通道
+        int argbColor = 0xFF000000 | (rgbColor & 0x00FFFFFF);
         
-        // 启用混合模式以确保透明度正确显示
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         
         if (ClientConfigManager.getItemBorderStyle() == 1) {
-            // 实心边框 - 50%半透明,16x16大小
-            // 通过将alpha值设置为0x80(128/255 ≈ 50%透明度)实现半透明
-            int alphaMask = 0x80000000;  // 50%透明度的alpha值
-            int translucentColor = (borderColor & 0x00FFFFFF) | alphaMask;  // 保留RGB值,设置alpha为50%
-            
-            // 绘制16x16区域的半透明背景
+            // 实心边框 - 50%半透明
+            int alphaMask = 0x80000000;
+            int translucentColor = (argbColor & 0x00FFFFFF) | alphaMask;
             guiGraphics.fill(x, y, x + 16, y + 16, translucentColor);
         } else {
-            // 空心边框 - 16x16 像素的物品槽,边框宽度为1像素
-            // 上边框
-            guiGraphics.fill(x, y, x + 16, y + 1, borderColor);
-            // 下边框
-            guiGraphics.fill(x, y + 15, x + 16, y + 16, borderColor);
-            // 左边框
-            guiGraphics.fill(x, y, x + 1, y + 16, borderColor);
-            // 右边框
-            guiGraphics.fill(x + 15, y, x + 16, y + 16, borderColor);
+            // 空心边框
+            guiGraphics.fill(x, y, x + 16, y + 1, argbColor);
+            guiGraphics.fill(x, y + 15, x + 16, y + 16, argbColor);
+            guiGraphics.fill(x, y, x + 1, y + 16, argbColor);
+            guiGraphics.fill(x + 15, y, x + 16, y + 16, argbColor);
         }
     }
     

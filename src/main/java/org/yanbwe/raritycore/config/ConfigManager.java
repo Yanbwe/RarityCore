@@ -53,6 +53,9 @@ public class ConfigManager {
         
         // 初始化星星显示配置
         StarDisplayConfigManager.initialize();
+
+        // 初始化 Tag 稀有度配置
+        TagRarityConfigLoader.initialize();
     }
     
     /**
