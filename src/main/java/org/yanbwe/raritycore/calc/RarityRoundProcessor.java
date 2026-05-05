@@ -11,6 +11,7 @@ import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.mixin.SmithingTransformRecipeAccessor;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 /**
@@ -91,39 +92,7 @@ public class RarityRoundProcessor {
             // 遍历配料的所有物品,取最低稀有度
             Integer minRarity = null;
             for (ItemStack stack : ingredient.getItems()) {
-                Item item = stack.getItem();
-
-                // 先查注册表
-                ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
-                Integer rarity = null;
-                if (itemId != null) {
-                    rarity = RarityRegistry.ITEM_RARITY_MAP.get(itemId);
-                }
-
-                // 注册表无则查缓存(先全局后当前轮),仍无则查原版
-                if (rarity == null) {
-                    rarity = AutoRarityCalculator.maxRarityCache.get(item);
-                    if (rarity == null) {
-                        rarity = AutoRarityCalculator.currentRoundResults.get(item);
-                    }
-                }
-
-                // 最后检查原版稀有度
-                if (rarity == null && ServerConfigManager.isCheckVanillaRarity()) {
-                    try {
-                        net.minecraft.world.item.Rarity vanillaRarity = stack.getRarity();
-                        if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
-                            rarity = 3;
-                        } else if (vanillaRarity == net.minecraft.world.item.Rarity.RARE) {
-                            rarity = 4;
-                        } else if (vanillaRarity == net.minecraft.world.item.Rarity.EPIC) {
-                            rarity = 5;
-                        }
-                    } catch (Throwable e) {
-                        // 忽略异常,继续返回 null
-                    }
-                }
-
+                Integer rarity = resolveItemRarity(stack.getItem(), stack);
                 if (rarity != null) {
                     if (minRarity == null || rarity < minRarity) {
                         minRarity = rarity;
@@ -176,36 +145,7 @@ public class RarityRoundProcessor {
 
         Integer minRarity = null;
         for (ItemStack stack : ingredient.getItems()) {
-            Item item = stack.getItem();
-
-            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
-            Integer rarity = null;
-            if (itemId != null) {
-                rarity = RarityRegistry.ITEM_RARITY_MAP.get(itemId);
-            }
-
-            if (rarity == null) {
-                rarity = AutoRarityCalculator.maxRarityCache.get(item);
-                if (rarity == null) {
-                    rarity = AutoRarityCalculator.currentRoundResults.get(item);
-                }
-            }
-
-            if (rarity == null && ServerConfigManager.isCheckVanillaRarity()) {
-                try {
-                    net.minecraft.world.item.Rarity vanillaRarity = stack.getRarity();
-                    if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
-                        rarity = 3;
-                    } else if (vanillaRarity == net.minecraft.world.item.Rarity.RARE) {
-                        rarity = 4;
-                    } else if (vanillaRarity == net.minecraft.world.item.Rarity.EPIC) {
-                        rarity = 5;
-                    }
-                } catch (Throwable e) {
-                    // 忽略异常
-                }
-            }
-
+            Integer rarity = resolveItemRarity(stack.getItem(), stack);
             if (rarity != null) {
                 if (minRarity == null || rarity < minRarity) {
                     minRarity = rarity;
@@ -214,6 +154,49 @@ public class RarityRoundProcessor {
         }
 
         return minRarity != null ? minRarity : 1;
+    }
+
+    /**
+     * 解析物品稀有度：注册表 → maxRarityCache → currentRoundResults → 原版 getRarity()
+     * @param item 目标物品
+     * @param testStack 用于原版稀有度查询的 ItemStack（通常来自 Ingredient.getItems()）
+     * @return 稀有度值 3-5（原版映射），null 表示无法解析
+     */
+    @Nullable
+    private static Integer resolveItemRarity(Item item, ItemStack testStack) {
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+        Integer rarity = null;
+
+        // 1. 查注册表
+        if (itemId != null) {
+            rarity = RarityRegistry.ITEM_RARITY_MAP.get(itemId);
+        }
+
+        // 2. 查缓存：先全局后当前轮
+        if (rarity == null) {
+            rarity = AutoRarityCalculator.maxRarityCache.get(item);
+            if (rarity == null) {
+                rarity = AutoRarityCalculator.currentRoundResults.get(item);
+            }
+        }
+
+        // 3. 查原版稀有度
+        if (rarity == null && ServerConfigManager.isCheckVanillaRarity()) {
+            try {
+                net.minecraft.world.item.Rarity vanillaRarity = testStack.getRarity();
+                if (vanillaRarity == net.minecraft.world.item.Rarity.UNCOMMON) {
+                    rarity = 3;
+                } else if (vanillaRarity == net.minecraft.world.item.Rarity.RARE) {
+                    rarity = 4;
+                } else if (vanillaRarity == net.minecraft.world.item.Rarity.EPIC) {
+                    rarity = 5;
+                }
+            } catch (Exception ignored) {
+                // 原版 API 不可用时返回 null
+            }
+        }
+
+        return rarity;
     }
 
     /** 根据配方类型和配料稀有度计算产物稀有度 */

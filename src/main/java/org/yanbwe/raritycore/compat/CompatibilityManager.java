@@ -28,19 +28,6 @@ public class CompatibilityManager {
     public static void initializeCompatibilityAdapters() {
         RarityCore.LOGGER.info("Initializing compatibility adapters...");
         
-        // 初始化精妙核心适配器（暂时禁用）
-        /*
-        try {
-            Class.forName("net.p3pp3rf1y.sophisticatedcore.client.gui.StorageScreenBase");
-            org.yanbwe.raritycore.compat.sophisticatedcore.SophisticatedCoreAdapter.init();
-            RarityCore.LOGGER.info("SophisticatedCore compatibility adapter initialized");
-        } catch (ClassNotFoundException e) {
-            RarityCore.LOGGER.debug("SophisticatedCore not found, skipping compatibility adapter");
-        } catch (Exception e) {
-            RarityCore.LOGGER.error("Failed to initialize SophisticatedCore compatibility adapter", e);
-        }
-        */
-        
         // 初始化神化模组适配器
         try {
             Class.forName("dev.shadowsoffire.apotheosis.adventure.loot.LootRarity");

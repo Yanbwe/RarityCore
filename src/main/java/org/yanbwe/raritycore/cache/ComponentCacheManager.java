@@ -3,12 +3,13 @@ package org.yanbwe.raritycore.cache;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.component.TypedDataComponent;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.RarityCore;
 
 import java.util.Comparator;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -187,10 +188,25 @@ public class ComponentCacheManager {
     }
 
     /**
-     * 检查物品堆是否有特殊NBT数据(超出id和count)
-     * 用于判断是否应该使用组件缓存而非ID缓存
+     * 原版总是存在的基础组件，这些组件不会使物品被判定为"有非平凡数据"。
+     * 任何不在此集合中的组件（包括模组组件）将被视为非平凡数据。
+     */
+    private static final Set<String> VANILLA_TRIVIAL_COMPONENTS = Set.of(
+        "minecraft:damage",
+        "minecraft:max_damage",
+        "minecraft:max_stack_size",
+        "minecraft:rarity",
+        "minecraft:enchantment_glint_override",
+        "minecraft:item_name",
+        "minecraft:lore",
+        "minecraft:custom_name"
+    );
+
+    /**
+     * 检查物品堆是否有特殊数据（超出原版基础组件）
+     * 直接遍历 DataComponentMap，避免 itemStack.save() 的全量 NBT 序列化开销。
      * @param itemStack 物品堆
-     * @return 如果有特殊NBT数据返回true
+     * @return 如果有非平凡数据返回true
      */
     public static boolean hasNonTrivialData(ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) {
@@ -198,19 +214,24 @@ public class ComponentCacheManager {
         }
 
         try {
-            var tag = itemStack.save(net.minecraft.core.RegistryAccess.EMPTY);
-            if (tag instanceof CompoundTag compoundTag) {
-                for (String keyName : compoundTag.getAllKeys()) {
-                    if (!keyName.equals("id") && !keyName.equals("count")) {
-                        return true; // 存在任何超出基础id/count的数据
-                    }
+            DataComponentMap components = itemStack.getComponents();
+            if (components == null || components.isEmpty()) {
+                return false;
+            }
+
+            for (TypedDataComponent<?> tc : components) {
+                String key = tc.type().toString();
+                // 任何非 minecraft: 前缀的组件都是模组数据 → 非平凡
+                if (!key.startsWith("minecraft:")) {
+                    return true;
+                }
+                // 检查是否不在原版基础组件白名单中
+                if (!VANILLA_TRIVIAL_COMPONENTS.contains(key)) {
+                    return true;
                 }
             }
-        } catch (IllegalStateException e) {
-            // 注册表访问问题,保守返回false
-            RarityCore.LOGGER.debug("检查NBT数据时出错(注册表访问问题): {}", e.getMessage());
         } catch (Exception e) {
-            RarityCore.LOGGER.debug("检查NBT数据时出错: {}", e.getMessage());
+            RarityCore.LOGGER.debug("检查非平凡数据时出错: {}", e.getMessage());
         }
 
         return false;

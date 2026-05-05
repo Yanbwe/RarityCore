@@ -159,7 +159,7 @@ public class RarityClientConfig {
             }
         }
         // 理论上不会到此处（等级 1 必定由默认配置填充），防御性返回
-        return new RarityEntry(0xFFFFFF, "", true, true, true);
+        return new RarityEntry(0xCCCCCC, "", true, true, true);
     }
 
     // ===============================================================

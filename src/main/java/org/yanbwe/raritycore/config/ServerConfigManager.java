@@ -8,8 +8,9 @@ import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
 import org.yanbwe.raritycore.util.RarityConstants;
 
 import java.io.BufferedReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -76,7 +77,7 @@ public class ServerConfigManager {
      * 从文件加载服务端配置
      */
     private static void loadServerConfigFromFile() {
-        try (BufferedReader reader = Files.newBufferedReader(SERVER_CONFIG_FILE)) {
+        try (BufferedReader reader = Files.newBufferedReader(SERVER_CONFIG_FILE, StandardCharsets.UTF_8)) {
             JsonObject jsonObject = GSON.fromJson(reader, JsonObject.class);
             
             if (jsonObject != null) {
@@ -132,7 +133,7 @@ public class ServerConfigManager {
         
         // 写入默认配置文件
         try {
-            try (FileWriter writer = new FileWriter(SERVER_CONFIG_FILE.toString())) {
+            try (Writer writer = Files.newBufferedWriter(SERVER_CONFIG_FILE, StandardCharsets.UTF_8)) {
                 GSON.toJson(configObject, writer);
                 RarityCore.LOGGER.info("Created default server config file: {}", SERVER_CONFIG_FILE);
             }
@@ -154,7 +155,7 @@ public class ServerConfigManager {
         
         // 写入配置文件
         try {
-            try (FileWriter writer = new FileWriter(SERVER_CONFIG_FILE.toString())) {
+            try (Writer writer = Files.newBufferedWriter(SERVER_CONFIG_FILE, StandardCharsets.UTF_8)) {
                 GSON.toJson(configObject, writer);
                 RarityCore.LOGGER.info("Server config saved: checkVanillaRarity={}, checkApotheosisRarity={}, enableGetRarityWarning={}, enableComponentRarityControl={}", 
                     checkVanillaRarity, checkApotheosisRarity, enableGetRarityWarning, enableComponentRarityControl);

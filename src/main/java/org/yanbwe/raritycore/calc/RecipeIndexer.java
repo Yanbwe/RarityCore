@@ -9,6 +9,7 @@ import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.mixin.SmithingTransformRecipeAccessor;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 配方索引器 — 按需构建和维护配料→配方映射
@@ -18,6 +19,9 @@ public class RecipeIndexer {
 
     /** 缓存的配方管理器引用,供惰性查询使用 */
     private static RecipeManager recipeManager;
+
+    /** 缓存的测试用 ItemStack，避免每次 findRecipesForItem 都 new ItemStack */
+    private static final Map<Item, ItemStack> testStackCache = new ConcurrentHashMap<>();
 
     /**
      * 初始化配方索引器(替代原先的 buildIngredientRecipeMap 全量预建)
@@ -45,7 +49,7 @@ public class RecipeIndexer {
         }
 
         List<Recipe<?>> result = new ArrayList<>();
-        ItemStack testStack = new ItemStack(targetItem);
+        ItemStack testStack = testStackCache.computeIfAbsent(targetItem, ItemStack::new);
 
         for (RecipeHolder<?> holder : recipeManager.getRecipes()) {
             Recipe<?> recipe = holder.value();

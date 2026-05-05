@@ -8,6 +8,8 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
 import org.yanbwe.raritycore.RarityCore;
 
+import java.lang.reflect.Method;
+
 /**
  * Iron's Spells 'n Spellbooks 兼容适配器。
  *
@@ -20,11 +22,15 @@ import org.yanbwe.raritycore.RarityCore;
  */
 public class IronSpellsAdapter {
 
-    private static boolean isIronSpellsLoaded = false;
-    private static boolean isInitialized = false;
+    private static volatile boolean isIronSpellsLoaded = false;
+    private static volatile boolean isInitialized = false;
 
     /** 组件键名匹配用的 ResourceLocation，初始化后缓存在此 */
-    private static ResourceLocation spellContainerKey;
+    private static volatile ResourceLocation spellContainerKey;
+
+    /** 缓存的反射方法引用，避免热路径上重复调用 getMethod() */
+    private static volatile Method cachedGetSpellAtIndex;
+    private static volatile Method cachedGetLevel;
 
     /**
      * 初始化适配器。
@@ -54,6 +60,23 @@ public class IronSpellsAdapter {
         }
 
         spellContainerKey = ResourceLocation.fromNamespaceAndPath("irons_spellbooks", "spell_container");
+
+        // 缓存反射方法引用，避免热路径上每次调用都执行 getMethod() 查找
+        try {
+            Class<?> spellContainerClass = Class.forName(
+                "io.redspace.ironsspellbooks.api.spells.SpellContainer");
+            cachedGetSpellAtIndex = spellContainerClass.getMethod("getSpellAtIndex", int.class);
+
+            Class<?> spellDataClass = Class.forName(
+                "io.redspace.ironsspellbooks.api.spells.SpellData");
+            cachedGetLevel = spellDataClass.getMethod("getLevel");
+        } catch (Exception e) {
+            RarityCore.LOGGER.warn("Failed to cache Iron's Spells method references: {}", e.getMessage());
+            isIronSpellsLoaded = false;
+            isInitialized = true;
+            return;
+        }
+
         RarityCore.LOGGER.info("Iron's Spells compatibility adapter initialized, target component: {}", spellContainerKey);
         isInitialized = true;
     }
@@ -130,17 +153,11 @@ public class IronSpellsAdapter {
      * </ul>
      */
     private static int invokeSpellLevel(Object spellContainer) throws Exception {
-        // spellContainer.getSpellAtIndex(0) → SpellData
-        Object spellData = spellContainer.getClass()
-                .getMethod("getSpellAtIndex", int.class)
-                .invoke(spellContainer, 0);
+        Object spellData = cachedGetSpellAtIndex.invoke(spellContainer, 0);
         if (spellData == null) {
             throw new IllegalStateException("No spell at index 0");
         }
-        // spellData.getLevel() → int
-        return (int) spellData.getClass()
-                .getMethod("getLevel")
-                .invoke(spellData);
+        return (int) cachedGetLevel.invoke(spellData);
     }
 
     /**
@@ -150,5 +167,7 @@ public class IronSpellsAdapter {
         isInitialized = false;
         isIronSpellsLoaded = false;
         spellContainerKey = null;
+        cachedGetSpellAtIndex = null;
+        cachedGetLevel = null;
     }
 }

@@ -62,7 +62,7 @@ public final class RarityCoreAPI {
     public static final int MAX_RARITY = RarityConstants.MAX_RARITY;
 
     /** 默认 RGB 颜色值 (白色) */
-    public static final int DEFAULT_RGB_COLOR = 0xFFFFFF;
+    public static final int DEFAULT_RGB_COLOR = 0xCCCCCC;
 
     // ══════════════════════════════════════════════════════
     // 稀有度注册与查询

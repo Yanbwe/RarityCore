@@ -28,8 +28,8 @@ public class AutoRarityCalculator {
     // 轮次计数器
     static int currentRound = 0;
 
-    // C 列表:待处理物品队列
-    private static List<Item> pendingItemList = new ArrayList<>();
+    // C 列表:待处理物品队列 (ArrayDeque 提供 O(1) 两端操作)
+    private static Deque<Item> pendingItemList = new ArrayDeque<>();
 
     // 所有轮次的结果 Map(E1, E2, E3...)
     static Map<Integer, Map<Item, Integer>> allRoundResults = new HashMap<>();
@@ -90,7 +90,7 @@ public class AutoRarityCalculator {
         currentRound = 1;
 
         // 初始化数据结构
-        pendingItemList = new ArrayList<>();
+        pendingItemList = new ArrayDeque<>();
         allRoundResults = new HashMap<>();
         currentRoundResults = new HashMap<>();
         itemFirstRoundMap = new HashMap<>();
@@ -119,7 +119,8 @@ public class AutoRarityCalculator {
         // 每 tick 处理最多 20 个物品
         int processedInThisTick = 0;
         while (processedInThisTick < ITEMS_PER_TICK && !pendingItemList.isEmpty()) {
-            Item material = pendingItemList.remove(0);
+            Item material = pendingItemList.pollFirst();
+            if (material == null) break;
             // 惰性索引:确保该物品的配方在 RarityRoundProcessor 查询前已缓存
             ResourceLocation materialId = BuiltInRegistries.ITEM.getKey(material);
             if (materialId != null) {
@@ -160,7 +161,7 @@ public class AutoRarityCalculator {
         AutoRarityConfigManager.cleanupAutoNbtFiles();
 
         // 清空所有缓存和数据结构
-        pendingItemList = new ArrayList<>();
+        pendingItemList = new ArrayDeque<>();
         allRoundResults = new HashMap<>();
         currentRoundResults = new HashMap<>();
         itemFirstRoundMap = new HashMap<>();

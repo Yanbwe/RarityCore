@@ -43,6 +43,11 @@ public class NetworkRetryManager {
     }
 
     private static void sendPayloadWithRetry(CustomPacketPayload payload, int maxRetries, long baseDelay) {
+        if (maxRetries <= 0) {
+            RarityCore.LOGGER.error("Payload retry exhausted before start: {}", payload);
+            return;
+        }
+
         int attempts = 0;
         Exception lastException = null;
 
@@ -69,8 +74,9 @@ public class NetworkRetryManager {
                     RarityCore.LOGGER.warn("Payload sending failed (attempt {}/{}), retrying in {}ms: {}",
                         attempts, maxRetries, delay, e.getMessage());
 
+                    final int remainingRetries = maxRetries - attempts;
                     scheduleRetry(() -> {
-                        sendPayloadWithRetry(payload, maxRetries, baseDelay);
+                        sendPayloadWithRetry(payload, remainingRetries, baseDelay);
                     }, delay);
                     return;
                 }
@@ -88,7 +94,12 @@ public class NetworkRetryManager {
     }
 
     private static void sendToPlayerWithRetryInternal(ServerPlayer player, CustomPacketPayload payload,
-                                                      int maxRetries, long baseDelay) {
+                                                       int maxRetries, long baseDelay) {
+        if (maxRetries <= 0) {
+            RarityCore.LOGGER.error("Player payload retry exhausted before start: {}", payload);
+            return;
+        }
+
         int attempts = 0;
         Exception lastException = null;
 
@@ -106,8 +117,9 @@ public class NetworkRetryManager {
                     RarityCore.LOGGER.warn("Payload sending to player {} failed (attempt {}/{}), retrying in {}ms: {}",
                         player.getName().getString(), attempts, maxRetries, delay, e.getMessage());
 
+                    final int remainingRetries = maxRetries - attempts;
                     scheduleRetry(() -> {
-                        sendToPlayerWithRetryInternal(player, payload, maxRetries, baseDelay);
+                        sendToPlayerWithRetryInternal(player, payload, remainingRetries, baseDelay);
                     }, delay);
                     return;
                 }
