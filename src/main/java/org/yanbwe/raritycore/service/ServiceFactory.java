@@ -14,7 +14,6 @@ import org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader;
 import org.yanbwe.raritycore.network.DelayedSyncManager;
 import org.yanbwe.raritycore.network.ItemDataSyncManager;
 import org.yanbwe.raritycore.network.SyncBatchManager;
-import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.ArrayList;
@@ -82,10 +81,7 @@ public class ServiceFactory {
         // 注册服务,按照依赖关系设置优先级
         registerService(ConfigManager.class, ConfigManager::new, 10);
         registerService(ServerConfigManager.class, ServerConfigManager::new, 15);
-        registerService(DualCacheManager.class, DualCacheManager::new, 20);
         registerService(CompatibilityManager.class, CompatibilityManager::new, 25);
-        registerService(CompatibilityChecker.class, CompatibilityChecker::new, 30);
-        registerService(SyncManager.class, SyncManager::new, 35);
         registerService(ItemDataSyncManager.class, ItemDataSyncManager::new, 40);
         registerService(DelayedSyncManager.class, DelayedSyncManager::new, 45);
         registerService(SyncBatchManager.class, SyncBatchManager::new, 50);
@@ -180,27 +176,11 @@ public class ServiceFactory {
     }
     
     /**
-     * 获取双缓存管理器
-     * @return 双缓存管理器实例
-     */
-    public DualCacheManager getDualCacheManager() {
-        return getService(DualCacheManager.class);
-    }
-    
-    /**
      * 获取稀有度数据加载器
      * @return 稀有度数据加载器实例
      */
     public RarityDataLoader getRarityDataLoader() {
         return RarityDataLoader.INSTANCE;
-    }
-    
-    /**
-     * 获取同步管理器
-     * @return 同步管理器实例
-     */
-    public SyncManager getSyncManager() {
-        return getService(SyncManager.class);
     }
     
     /**
@@ -257,14 +237,6 @@ public class ServiceFactory {
      */
     public CompatibilityManager getCompatibilityManager() {
         return getService(CompatibilityManager.class);
-    }
-    
-    /**
-     * 获取兼容性检查器
-     * @return 兼容性检查器实例
-     */
-    public CompatibilityChecker getCompatibilityChecker() {
-        return getService(CompatibilityChecker.class);
     }
     
     /**

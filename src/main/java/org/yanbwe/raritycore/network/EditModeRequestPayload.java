@@ -11,8 +11,20 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
 import org.yanbwe.raritycore.registry.RarityRegistry;
+import org.yanbwe.raritycore.util.RarityConstants;
 
 public record EditModeRequestPayload(ResourceLocation itemId, int rarity, boolean deleteMode) implements CustomPacketPayload {
+    /** 紧凑构造函数 — 对载荷字段进行边界验证，防止恶意/异常数据导致的问题，超限仅记录警告不阻止处理 */
+    public EditModeRequestPayload {
+        if (itemId == null) {
+            RarityCore.LOGGER.warn("EditModeRequestPayload: itemId is null, this may cause NullPointerException downstream");
+        }
+        if (!deleteMode && (rarity < RarityConstants.MIN_RARITY || rarity > RarityConstants.MAX_RARITY)) {
+            RarityCore.LOGGER.warn("EditModeRequestPayload: rarity {} is outside valid range [{}-{}] for non-delete operation",
+                rarity, RarityConstants.MIN_RARITY, RarityConstants.MAX_RARITY);
+        }
+    }
+
     public static final CustomPacketPayload.Type<EditModeRequestPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.EDIT_MODE_REQUEST_CHANNEL));
     public static final StreamCodec<FriendlyByteBuf, EditModeRequestPayload> STREAM_CODEC = StreamCodec.composite(
             ResourceLocation.STREAM_CODEC,

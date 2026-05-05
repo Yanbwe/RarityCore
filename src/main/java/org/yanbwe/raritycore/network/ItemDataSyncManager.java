@@ -6,9 +6,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.itemdatamatching.ContainsCondition;
+import org.yanbwe.raritycore.itemdatamatching.EqualsCondition;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataCondition;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataMatchRule;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher;
+import org.yanbwe.raritycore.itemdatamatching.RangeCondition;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -103,7 +106,7 @@ public class ItemDataSyncManager {
     private static String serializeConditionData(ItemDataCondition condition) {
         com.google.gson.JsonObject data = new com.google.gson.JsonObject();
 
-        if (condition instanceof org.yanbwe.raritycore.itemdatamatching.EqualsCondition equalsCondition) {
+        if (condition instanceof EqualsCondition equalsCondition) {
             Object value = equalsCondition.getExpectedValue();
             if (value instanceof String s) {
                 data.addProperty("value", s);
@@ -114,10 +117,10 @@ public class ItemDataSyncManager {
             } else {
                 data.addProperty("value", value.toString());
             }
-        } else if (condition instanceof org.yanbwe.raritycore.itemdatamatching.RangeCondition rangeCondition) {
+        } else if (condition instanceof RangeCondition rangeCondition) {
             data.addProperty("min", rangeCondition.getMinValue());
             data.addProperty("max", rangeCondition.getMaxValue());
-        } else if (condition instanceof org.yanbwe.raritycore.itemdatamatching.ContainsCondition containsCondition) {
+        } else if (condition instanceof ContainsCondition containsCondition) {
             data.addProperty("value", containsCondition.getSubstring());
         }
 

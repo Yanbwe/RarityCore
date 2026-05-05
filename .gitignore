@@ -121,3 +121,5 @@ runs/
 /bin/
 /gradle/
 /.eclipse/
+AGENTS.md
+.tmp

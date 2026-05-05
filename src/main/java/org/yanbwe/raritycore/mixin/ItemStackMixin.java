@@ -10,6 +10,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.yanbwe.raritycore.cache.RenderCacheManager;
+import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -23,18 +25,18 @@ public class ItemStackMixin {
         ItemStack stack = (ItemStack) (Object) this;
         
         // 检查是否启用物品名称变色功能
-        if (!org.yanbwe.raritycore.config.ClientConfigManager.isEnableItemNameColor()) {
+        if (!ClientConfigManager.isEnableItemNameColor()) {
             return;
         }
         
         // 获取物品的稀有度(支持 NBT 匹配,使用物品堆缓存)
-        Integer rarity = org.yanbwe.raritycore.cache.RenderCacheManager.getCachedRarity(stack);
+        Integer rarity = RenderCacheManager.getCachedRarity(stack);
                 
         // 如果缓存未命中,则从注册表获取并缓存
         if (rarity == null) {
             rarity = RarityRegistry.getRarity(stack);
             if (rarity != null) {
-                org.yanbwe.raritycore.cache.RenderCacheManager.cacheItemStackRarity(stack, rarity);
+                RenderCacheManager.cacheItemStackRarity(stack, rarity);
             }
         }
                 
@@ -46,7 +48,7 @@ public class ItemStackMixin {
         // 如果启用了跳过未配置物品且物品没有配置稀有度,则不修改名称颜色
         // 注意:需要检查物品是否真的没有配置,而不是默认的稀有度1
         Item item = stack.getItem();
-        if (org.yanbwe.raritycore.config.ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
+        if (ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
             return;
         }
         

@@ -1,11 +1,26 @@
 package org.yanbwe.raritycore.cache;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import net.minecraft.core.registries.BuiltInRegistries;
+import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
+import org.yanbwe.raritycore.util.RarityConstants;
+
+import java.io.BufferedReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * 缓存系统配置
  */
 public class CacheConfig {
+    /** 缓存配置文件路径 */
+    private static final Path CACHE_CONFIG_FILE = Paths.get(RarityConstants.CONFIG_DIR_PARENT)
+        .resolve(RarityConstants.CONFIG_DIR_NAME)
+        .resolve("cache.json");
+
     private int maxCacheSize = 10000;
 
     private boolean dynamicCapacityEnabled = true;
@@ -22,7 +37,35 @@ public class CacheConfig {
         loadFromConfig();
     }
 
+    /**
+     * 从配置文件加载缓存参数。如果配置文件不存在或读取失败，使用硬编码默认值。
+     */
     private void loadFromConfig() {
+        if (!Files.exists(CACHE_CONFIG_FILE)) {
+            return; // 配置文件不存在，使用硬编码默认值
+        }
+
+        try (BufferedReader reader = Files.newBufferedReader(CACHE_CONFIG_FILE)) {
+            Gson gson = JsonPerformanceOptimizer.getOptimizedGson();
+            JsonObject jsonObject = gson.fromJson(reader, JsonObject.class);
+
+            if (jsonObject != null) {
+                if (jsonObject.has("maxCacheSize")) {
+                    this.maxCacheSize = Math.max(1, jsonObject.get("maxCacheSize").getAsInt());
+                }
+
+                if (jsonObject.has("dynamicCapacityMultiplier")) {
+                    this.dynamicCapacityMultiplier = Math.max(0.1,
+                        jsonObject.get("dynamicCapacityMultiplier").getAsDouble());
+                }
+
+                RarityCore.LOGGER.info("Cache config loaded: maxCacheSize={}, dynamicCapacityMultiplier={}",
+                    maxCacheSize, dynamicCapacityMultiplier);
+            }
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Failed to load cache config from {}, using hardcoded defaults",
+                CACHE_CONFIG_FILE, e);
+        }
     }
 
     /**

@@ -1,7 +1,6 @@
 package org.yanbwe.raritycore.util;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.yanbwe.raritycore.RarityCore;
@@ -18,7 +17,7 @@ import java.nio.file.Path;
  */
 public class ConfigFileUtils {
     
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = JsonPerformanceOptimizer.getOptimizedGson();
     
     /**
      * 确保目录存在,如果不存在则创建

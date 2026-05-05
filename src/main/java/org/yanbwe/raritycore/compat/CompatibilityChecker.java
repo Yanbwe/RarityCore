@@ -5,6 +5,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.config.ServerConfigManager;
 
 /**
  * 兼容性检查器
@@ -24,7 +25,7 @@ public class CompatibilityChecker {
     @SuppressWarnings("null")
     public static void notifyPlayersOfCompatibilityIssue() {
         // 检查配置是否启用警告
-        if (!org.yanbwe.raritycore.config.ServerConfigManager.isEnableGetRarityWarning()) {
+        if (!ServerConfigManager.isEnableGetRarityWarning()) {
             return; // 配置禁用则不发送警告
         }
         

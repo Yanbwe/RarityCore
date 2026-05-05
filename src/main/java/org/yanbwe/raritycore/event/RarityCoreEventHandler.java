@@ -7,6 +7,14 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.command.RarityCoreCommands;
+import org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader;
+import org.yanbwe.raritycore.network.DelayedSyncManager;
+import org.yanbwe.raritycore.network.ItemDataSyncManager;
+import org.yanbwe.raritycore.network.NetworkRetryManager;
+import org.yanbwe.raritycore.network.SyncManager;
+import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.service.ServiceFactory;
 
 /**
@@ -32,11 +40,11 @@ public class RarityCoreEventHandler {
             Class<?> listenerClass = Class.forName("org.yanbwe.raritycore.client.CacheInvalidationListener");
             net.neoforged.neoforge.common.NeoForge.EVENT_BUS.register(listenerClass);
         } catch (ClassNotFoundException e) {
-            org.yanbwe.raritycore.RarityCore.LOGGER.warn("CacheInvalidationListener class not found, skipping registration");
+            RarityCore.LOGGER.warn("CacheInvalidationListener class not found, skipping registration");
         }
         
         // 加载本地物品数据匹配配置
-        org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader.loadAllConfigs();
+        ItemDataConfigLoader.loadAllConfigs();
     }
     
     /**
@@ -61,10 +69,13 @@ public class RarityCoreEventHandler {
         factory.getSchedulerService().stopScheduledTasks();
         
         // 清空变更缓冲区
-        org.yanbwe.raritycore.network.SyncManager.clearChangeBuffer();
+        SyncManager.clearChangeBuffer();
         
         // 关闭延迟同步管理器
-        org.yanbwe.raritycore.network.DelayedSyncManager.shutdown();
+        DelayedSyncManager.shutdown();
+
+        // 关闭网络重试管理器
+        NetworkRetryManager.shutdown();
     }
     
     /**
@@ -73,7 +84,7 @@ public class RarityCoreEventHandler {
      */
     @SubscribeEvent
     public void registerCommands(RegisterCommandsEvent event) {
-        org.yanbwe.raritycore.command.RarityCoreCommands.register(event.getDispatcher());
+        RarityCoreCommands.register(event.getDispatcher());
     }
     
     /**
@@ -85,10 +96,10 @@ public class RarityCoreEventHandler {
         // 登录时向玩家发送完整稀有度数据
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             // 发送完整稀有度数据
-            org.yanbwe.raritycore.network.SyncManager.syncRarityToClients(org.yanbwe.raritycore.registry.RarityRegistry.getItemRarityMap());
+            SyncManager.syncRarityToClients(RarityRegistry.getItemRarityMap());
             
             // 发送物品数据匹配规则
-            org.yanbwe.raritycore.network.ItemDataSyncManager.syncItemDataRulesToPlayer(serverPlayer);
+            ItemDataSyncManager.syncItemDataRulesToPlayer(serverPlayer);
         }
     }
 }

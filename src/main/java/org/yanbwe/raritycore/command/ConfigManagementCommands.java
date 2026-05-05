@@ -6,9 +6,15 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.cache.DualCacheManager;
+import org.yanbwe.raritycore.cache.RenderCacheManager;
+import org.yanbwe.raritycore.client.ItemBorderRenderer;
+import org.yanbwe.raritycore.client.RarityTooltipHandler;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.ConfigValidator;
 import org.yanbwe.raritycore.config.ServerConfigManager;
+import org.yanbwe.raritycore.service.ConfigReloadService;
+import org.yanbwe.raritycore.util.StarDisplayManager;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,7 +54,7 @@ public class ConfigManagementCommands {
      */
     private static int reloadRarityData(CommandSourceStack source) {
         // 使用统一的配置重载服务
-        org.yanbwe.raritycore.service.ConfigReloadService.reloadFromCommand(source);
+        ConfigReloadService.reloadFromCommand(source);
         return 1;
     }
     
@@ -59,10 +65,10 @@ public class ConfigManagementCommands {
         ClientConfigManager.loadClientConfig();
         
         // 通知星星显示管理器重新加载配置
-        org.yanbwe.raritycore.util.StarDisplayManager.getInstance().reloadConfiguration();
+        StarDisplayManager.getInstance().reloadConfiguration();
         
         // 处理客户端配置变更对缓存的影响
-        org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
+        DualCacheManager.handleConfigReload();
         
         // 特别处理skipUnconfiguredItems配置变更 - 通知相关渲染系统
         handleSkipUnconfiguredItemsChange();
@@ -79,13 +85,13 @@ public class ConfigManagementCommands {
     private static void handleSkipUnconfiguredItemsChange() {
         try {
             // 通知边框渲染器重新评估渲染逻辑
-            org.yanbwe.raritycore.client.ItemBorderRenderer.handleSkipConfigChange();
+            ItemBorderRenderer.handleSkipConfigChange();
             
             // 通知工具提示处理器重新评估插入逻辑
-            org.yanbwe.raritycore.client.RarityTooltipHandler.handleSkipConfigChange();
+            RarityTooltipHandler.handleSkipConfigChange();
             
             // 使相关缓存失效
-            org.yanbwe.raritycore.cache.RenderCacheManager.clearAllCache();
+            RenderCacheManager.clearAllCache();
             
             RarityCore.LOGGER.info("skipUnconfiguredItems config change handled, related systems refreshed");
         } catch (Exception e) {

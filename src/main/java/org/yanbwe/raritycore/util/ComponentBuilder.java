@@ -3,6 +3,8 @@ package org.yanbwe.raritycore.util;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import org.yanbwe.raritycore.config.ClientConfigManager;
+import org.yanbwe.raritycore.config.StarDisplayConfigManager;
 
 import javax.annotation.Nonnull;
 
@@ -54,7 +56,7 @@ public class ComponentBuilder {
         String stars = getStars(rarity);
 
         // 根据配置决定是否应用颜色
-        if (org.yanbwe.raritycore.config.ClientConfigManager.isEnableTooltipColor()) {
+        if (ClientConfigManager.isEnableTooltipColor()) {
             return Component.literal(" " + stars).withStyle(color);
         } else {
             return Component.literal(" " + stars);
@@ -70,7 +72,7 @@ public class ComponentBuilder {
     @Nonnull
     public static MutableComponent buildSpecialRarityComponent(int rarity, ChatFormatting color) {
         // 检查是否有自定义特殊稀有度文本
-        String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(rarity);
+        String customText = StarDisplayConfigManager.getCustomSpecialRarityText(rarity);
             
         String textToShow;
         if (customText != null && !customText.isEmpty()) {
@@ -79,13 +81,13 @@ public class ComponentBuilder {
             textToShow = "[" + customText + "] " + stars;
         } else {
             // 使用默认格式,使用本地化文本:[xx级稀有度] <星星>
-            String localizedSuffix = net.minecraft.client.resources.language.I18n.get("rarity.core.unusual.tips");
+            String localizedSuffix = Component.translatable("rarity.core.unusual.tips").getString();
             String stars = getStars(rarity);
             textToShow = "[" + rarity + localizedSuffix + "] " + stars;
         }
             
         // 根据配置决定是否应用颜色
-        if (org.yanbwe.raritycore.config.ClientConfigManager.isEnableTooltipColor()) {
+        if (ClientConfigManager.isEnableTooltipColor()) {
             return Component.literal(textToShow).withStyle(color);
         } else {
             return Component.literal(textToShow);

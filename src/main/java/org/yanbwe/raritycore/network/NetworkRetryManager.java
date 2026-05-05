@@ -117,4 +117,27 @@ public class NetworkRetryManager {
         RarityCore.LOGGER.error("Failed to send payload to player {} after {} attempts. Last error: {}",
             player.getName().getString(), maxRetries, lastException != null ? lastException.getMessage() : "Unknown error");
     }
+
+    public static void shutdown() {
+        if (retryScheduler != null && !retryScheduler.isShutdown()) {
+            RarityCore.LOGGER.debug("Shutting down NetworkRetryManager executor");
+            retryScheduler.shutdown();
+            try {
+                if (!retryScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    RarityCore.LOGGER.warn("NetworkRetryManager executor did not terminate gracefully, forcing shutdown");
+                    retryScheduler.shutdownNow();
+                    if (!retryScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                        RarityCore.LOGGER.error("NetworkRetryManager executor could not be terminated");
+                    }
+                } else {
+                    RarityCore.LOGGER.debug("NetworkRetryManager executor terminated gracefully");
+                }
+            } catch (InterruptedException e) {
+                RarityCore.LOGGER.warn("Interrupted while waiting for NetworkRetryManager executor to terminate");
+                retryScheduler.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+        RarityCore.LOGGER.debug("NetworkRetryManager shutdown completed");
+    }
 }

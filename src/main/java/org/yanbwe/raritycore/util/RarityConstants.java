@@ -69,4 +69,12 @@ public class RarityConstants {
     // 服务端配置默认值
     public static final boolean DEFAULT_CHECK_APOTHEOSIS_RARITY = true; // 默认启用神化模组稀有度检查
     public static final boolean DEFAULT_ENABLE_GET_RARITY_WARNING = true; // 默认启用 getRarity() 可用性警告
+    
+    // 监控与健康检查阈值
+    /** ITEM_RARITY_MAP 条目数警告阈值，超过此值表明确实配置错误导致的无界增长 */
+    public static final int ITEM_RARITY_MAP_WARNING_THRESHOLD = 10000;
+
+    // 同步批处理配置默认值
+    /** SyncBatchManager 最大待处理操作数默认值 */
+    public static final int DEFAULT_MAX_PENDING_OPERATIONS = 1000;
 }

@@ -7,6 +7,7 @@ import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,7 +23,7 @@ import java.util.Map;
  */
 public class ItemDataConfigLoader extends SimpleJsonResourceReloadListener {
     
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = JsonPerformanceOptimizer.getOptimizedGson();
     private static final String DATA_PACK_FOLDER = "item_data_matches"; // 数据包中的文件夹名
     
     // 本地配置规则缓存(来自config目录)

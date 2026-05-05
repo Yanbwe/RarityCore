@@ -1,7 +1,6 @@
 package org.yanbwe.raritycore.command;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.brigadier.CommandDispatcher;
@@ -10,9 +9,15 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.config.ClientConfigManager;
+import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
+import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.edit.EditModeManager;
 import org.yanbwe.raritycore.network.SyncManager;
+import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
+import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -115,11 +120,11 @@ public class UtilityCommands {
      */
     private static int showPerformanceStats(CommandSourceStack source) {
         // 获取各种性能指标
-        org.yanbwe.raritycore.cache.RenderCacheManager.CacheStats cacheStats = 
-            org.yanbwe.raritycore.cache.RenderCacheManager.getCacheStats();
+        RenderCacheManager.CacheStats cacheStats = 
+            RenderCacheManager.getCacheStats();
         
         int pendingChanges = SyncManager.getPendingChangeCount();
-        int registrySize = org.yanbwe.raritycore.registry.RarityRegistry.ITEM_RARITY_MAP.size();
+        int registrySize = RarityRegistry.ITEM_RARITY_MAP.size();
         
         source.sendSuccess(() -> Component.translatable("rarity.core.performance_stats_title").withStyle(ChatFormatting.GOLD), false);
         source.sendSuccess(() -> Component.translatable("rarity.core.registry_size", registrySize).withStyle(ChatFormatting.YELLOW), false);
@@ -136,11 +141,11 @@ public class UtilityCommands {
      */
     private static int triggerManualOptimization(CommandSourceStack source) {
         // 清理缓存
-        org.yanbwe.raritycore.cache.RenderCacheManager.clearAllCache();
+        RenderCacheManager.clearAllCache();
         
         // 重新加载配置
-        org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
-        org.yanbwe.raritycore.config.RarityConfigLoader.loadConfigRarityData();
+        FinalRarityConfigFolderLoader.loadFinalRarityConfigFolder();
+        RarityConfigLoader.loadConfigRarityData();
         
         source.sendSuccess(() -> Component.translatable("rarity.core.optimization_completed").withStyle(ChatFormatting.GREEN), false);
         return 1;
@@ -156,7 +161,7 @@ public class UtilityCommands {
         
         // 尝试保存到配置文件
         try {
-            Path configDir = org.yanbwe.raritycore.config.ConfigManager.getConfigDirPath();
+            Path configDir = ConfigManager.getConfigDirPath();
             Files.createDirectories(configDir);
             
             Path configFile = ClientConfigManager.getClientConfigPath();
@@ -183,7 +188,7 @@ public class UtilityCommands {
             jsonObject.addProperty("useTextureBorder", newState);
             
             // 写入配置文件
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            Gson gson = JsonPerformanceOptimizer.getOptimizedGson();
             try (FileWriter writer = new FileWriter(configFile.toFile())) {
                 gson.toJson(jsonObject, writer);
             }

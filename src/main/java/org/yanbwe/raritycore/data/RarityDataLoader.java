@@ -1,6 +1,5 @@
 package org.yanbwe.raritycore.data;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -9,7 +8,9 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
 import org.yanbwe.raritycore.registry.RarityRegistry;
+import org.yanbwe.raritycore.service.ConfigReloadService;
 import org.yanbwe.raritycore.util.RarityConstants;
 
 import javax.annotation.Nonnull;
@@ -22,7 +23,7 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener {
     public static final RarityDataLoader INSTANCE = new RarityDataLoader();
 
     public RarityDataLoader() {
-        super(new Gson(), "rarity");
+        super(JsonPerformanceOptimizer.getOptimizedGson(), "rarity");
     }
 
     /**
@@ -75,6 +76,6 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener {
         }
         
         // 使用统一的配置重载服务进行完整加载
-        org.yanbwe.raritycore.service.ConfigReloadService.reloadOnStartup();
+        ConfigReloadService.reloadOnStartup();
     }
 }

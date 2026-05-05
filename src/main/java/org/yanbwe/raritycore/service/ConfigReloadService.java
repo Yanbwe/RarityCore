@@ -5,6 +5,10 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.cache.RenderCacheManager;
+import org.yanbwe.raritycore.calc.AutoRarityConfigManager;
+import org.yanbwe.raritycore.client.ItemBorderRenderer;
+import org.yanbwe.raritycore.client.RarityTooltipHandler;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
@@ -77,7 +81,7 @@ public class ConfigReloadService {
             if (source != null) {
                 sendProgressMessage(source, Component.translatable("rarity.core.loading_auto_rarity_config"));
             }
-            org.yanbwe.raritycore.calc.AutoRarityConfigManager.loadAutoRarityConfig();
+            AutoRarityConfigManager.loadAutoRarityConfig();
             
             // 6. 强制处理批处理队列中的操作(关键步骤)
             processPendingBatchOperations(source);
@@ -203,13 +207,13 @@ public class ConfigReloadService {
     private static void handleSkipUnconfiguredItemsChange() {
         try {
             // 通知边框渲染器重新评估渲染逻辑
-            org.yanbwe.raritycore.client.ItemBorderRenderer.handleSkipConfigChange();
+            ItemBorderRenderer.handleSkipConfigChange();
             
             // 通知工具提示处理器重新评估插入逻辑
-            org.yanbwe.raritycore.client.RarityTooltipHandler.handleSkipConfigChange();
+            RarityTooltipHandler.handleSkipConfigChange();
             
             // 使相关缓存失效
-            org.yanbwe.raritycore.cache.RenderCacheManager.clearAllCache();
+            RenderCacheManager.clearAllCache();
             
             RarityCore.LOGGER.info("skipUnconfiguredItems config change processed, related systems refreshed");
         } catch (Exception e) {

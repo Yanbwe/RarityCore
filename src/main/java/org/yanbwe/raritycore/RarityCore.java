@@ -9,6 +9,7 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import org.slf4j.Logger;
+import org.yanbwe.raritycore.compat.CompatibilityChecker;
 import org.yanbwe.raritycore.compat.CompatibilityManager;
 import org.yanbwe.raritycore.event.RarityCoreEventHandler;
 import org.yanbwe.raritycore.service.ServiceFactory;
@@ -30,7 +31,7 @@ public class RarityCore {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        event.enqueueWork(org.yanbwe.raritycore.compat.CompatibilityChecker::performCompatibilityCheck);
+        event.enqueueWork(CompatibilityChecker::performCompatibilityCheck);
 
         event.enqueueWork(CompatibilityManager::initializeCompatibilityAdapters);
     }

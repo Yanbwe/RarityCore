@@ -1,9 +1,9 @@
 package org.yanbwe.raritycore.config;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
 
 import java.io.BufferedReader;
 import java.io.FileOutputStream;
@@ -19,7 +19,7 @@ import java.nio.file.Path;
  */
 public class ConfigValidator {
 
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = JsonPerformanceOptimizer.getOptimizedGson();
 
     /**
      * 验证并更新配置文件

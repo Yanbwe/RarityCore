@@ -2,11 +2,13 @@ package org.yanbwe.raritycore.cache;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.RarityCore;
 
+import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -146,9 +148,10 @@ public class ComponentCacheManager {
     }
 
     /**
-     * 生成组件缓存键（性能优化版）
+     * 生成组件缓存键（DataComponentMap哈希版）
      * 格式: itemId|nbt:组件哈希值
-     * 优化：直接计算哈希而不创建过滤后的NBT副本，减少内存分配和复制开销
+     * 优化：直接基于DataComponentMap计算哈希，避免itemStack.save()的完整NBT序列化开销
+     * 按组件类型名排序迭代，确保哈希确定性
      * @param itemStack 物品堆
      * @return 缓存键，如果无法生成返回null
      */
@@ -161,26 +164,21 @@ public class ComponentCacheManager {
         StringBuilder key = new StringBuilder(itemId.toString());
 
         try {
-            var tag = itemStack.save(net.minecraft.core.RegistryAccess.EMPTY);
-            if (tag instanceof CompoundTag compoundTag) {
-                // P3 FIX: 直接计算哈希而不创建NBT副本
-                // 仅对 id/count 之外的键计算哈希，避免不必要的对象创建
-                int nbtHash = 0;
-                boolean hasExtraData = false;
-                for (String keyName : compoundTag.getAllKeys()) {
-                    if (!keyName.equals("id") && !keyName.equals("count")) {
-                        hasExtraData = true;
-                        nbtHash = 31 * nbtHash + keyName.hashCode();
-                        nbtHash = 31 * nbtHash + compoundTag.get(keyName).hashCode();
-                    }
-                }
+            DataComponentMap components = itemStack.getComponents();
+            if (components != null && !components.isEmpty()) {
+                // P2 FIX: 直接基于DataComponentMap计算哈希，避免昂贵的itemStack.save()全NBT序列化
+                // 对组件类型和值进行哈希计算，按类型名排序确保确定性
+                int componentHash = components.stream()
+                    .sorted(Comparator.comparing(tc -> tc.type().toString()))
+                    .mapToInt(tc -> {
+                        int h = tc.type().hashCode();
+                        Object value = tc.value();
+                        return 31 * h + (value != null ? value.hashCode() : 0);
+                    })
+                    .reduce(0, (a, b) -> 31 * a + b);
 
-                if (hasExtraData) {
-                    key.append("|nbt:").append(nbtHash);
-                }
+                key.append("|nbt:").append(componentHash);
             }
-        } catch (IllegalStateException e) {
-            RarityCore.LOGGER.debug("生成组件缓存键时出错(注册表访问问题，仅使用物品ID): {}", e.getMessage());
         } catch (Exception e) {
             RarityCore.LOGGER.debug("生成组件缓存键时出错: {}", e.getMessage());
         }
@@ -202,13 +200,9 @@ public class ComponentCacheManager {
         try {
             var tag = itemStack.save(net.minecraft.core.RegistryAccess.EMPTY);
             if (tag instanceof CompoundTag compoundTag) {
-                int extraKeys = 0;
                 for (String keyName : compoundTag.getAllKeys()) {
                     if (!keyName.equals("id") && !keyName.equals("count")) {
-                        extraKeys++;
-                        if (extraKeys > 0) {
-                            return true; // 存在任何超出基础id/count的数据
-                        }
+                        return true; // 存在任何超出基础id/count的数据
                     }
                 }
             }

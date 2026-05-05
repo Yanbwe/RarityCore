@@ -67,7 +67,7 @@ public class EditModeEventHandler {
         }
         
         // 修改物品稀有度
-        if (EditModeManager.modifyItemRarity(itemStack)) {
+        if (ClientEditModeHandler.modifyItemRarity(itemStack)) {
             // 显示反馈消息
             LocalPlayer player = Minecraft.getInstance().player;
             if (player != null) {

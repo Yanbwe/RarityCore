@@ -1,6 +1,7 @@
 package org.yanbwe.raritycore.registry;
 
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -8,11 +9,19 @@ import net.minecraft.world.item.Rarity;
 import net.neoforged.neoforge.common.NeoForge;
 import org.jetbrains.annotations.NotNull;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.cache.ComponentCacheManager;
+import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.compat.CompatibilityChecker;
+import org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter;
+import org.yanbwe.raritycore.config.ServerConfigManager;
+import org.yanbwe.raritycore.config.StarDisplayConfigManager;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
+import org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher;
 import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.SyncManager;
+import org.yanbwe.raritycore.util.ComponentBuilder;
 import org.yanbwe.raritycore.util.RarityConstants;
+import org.yanbwe.raritycore.util.RarityValidator;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -83,13 +92,16 @@ public class RarityRegistry {
             if (itemId != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
                 Integer oldRarity = ITEM_RARITY_MAP.put(itemId, rarity);
                 
+                // 监控 ITEM_RARITY_MAP 无界增长：当条目数超过阈值时记录警告
+                checkMapGrowthWarning(ITEM_RARITY_MAP.size());
+                
                 // 发布稀有度变更事件
                 RarityChangeEvent.ChangeType changeType = (oldRarity == null) ? 
                     RarityChangeEvent.ChangeType.REGISTER : RarityChangeEvent.ChangeType.UPDATE;
                 NeoForge.EVENT_BUS.post(new RarityChangeEvent(item, oldRarity, rarity, changeType));
                 
                 // 实时更新ID缓存（编辑模式支持）
-                org.yanbwe.raritycore.cache.DualCacheManager.updateIdCache(new ItemStack(item), rarity);
+                DualCacheManager.updateIdCache(new ItemStack(item), rarity);
                 
                 // 如果需要同步到客户端且当前在服务端环境中,记录变更操作
                 if (syncToClients) {
@@ -127,7 +139,7 @@ public class RarityRegistry {
                 }
                 
                 // 实时更新ID缓存（编辑模式支持）- 删除时使缓存失效
-                org.yanbwe.raritycore.cache.DualCacheManager.updateIdCache(new ItemStack(item), null);
+                DualCacheManager.updateIdCache(new ItemStack(item), null);
                 
                 // 如果需要同步到客户端且当前在服务端环境中,记录删除操作
                 if (syncToClients) {
@@ -153,7 +165,7 @@ public class RarityRegistry {
      */
     public static @NotNull Integer getNormalizedRarity(@Nullable Item item) {
         Integer rawRarity = getRarity(item);
-        return org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rawRarity);
+        return RarityValidator.normalizeRarity(rawRarity);
     }
     
     /**
@@ -164,23 +176,7 @@ public class RarityRegistry {
      */
     public static @NotNull Integer getNormalizedRarity(@Nullable ItemStack itemStack) {
         Integer rawRarity = getRarity(itemStack);
-        return org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rawRarity);
-    }
-    
-    /**
-     * 获取本地化文本
-     * @param key 本地化键
-     * @return 本地化文本
-     */
-    private static String getLocalizedText(String key) {
-        try {
-            // 直接使用和原版工具提示系统一样的方式
-            return net.minecraft.client.resources.language.I18n.get(key);
-        } catch (Exception e) {
-            // 本地化失败时返回原始键
-            RarityCore.LOGGER.debug("Error getting localized text for key: {}", key, e);
-            return key;
-        }
+        return RarityValidator.normalizeRarity(rawRarity);
     }
     
     /**
@@ -207,22 +203,22 @@ public class RarityRegistry {
         int displayRarity = rarity; // 保存用于显示的原始稀有度值
         
         // 标准化稀有度值用于内部处理
-        rarity = org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rarity);
+        rarity = RarityValidator.normalizeRarity(rarity);
         
         // 构建工具提示字符串
         if (isSpecialRarity) {
             // 特殊稀有度(大于 7 级)
-            String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(displayRarity);
+            String stars = ComponentBuilder.getStars(displayRarity);
             
             // 检查是否有自定义特殊稀有度文本
-            String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(displayRarity);
+            String customText = StarDisplayConfigManager.getCustomSpecialRarityText(displayRarity);
             
             if (customText != null && !customText.isEmpty()) {
                 // 使用自定义文本,保持与标准格式一致:[自定义文本] <星星>
                 return "[" + customText + "] " + stars;
             } else {
                 // 使用默认格式,使用本地化文本:[xx级稀有度] <星星>
-                String localizedSuffix = net.minecraft.client.resources.language.I18n.get("rarity.core.unusual.tips");
+                String localizedSuffix = Component.translatable("rarity.core.unusual.tips").getString();
                 return "[" + displayRarity + localizedSuffix + "]" + stars;
             }
         } else {
@@ -256,8 +252,8 @@ public class RarityRegistry {
             }
             
             // 获取本地化文本
-            String localizedLabel = net.minecraft.client.resources.language.I18n.get(rarityKey);
-            String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(rarity);
+            String localizedLabel = Component.translatable(rarityKey).getString();
+            String stars = ComponentBuilder.getStars(rarity);
             return localizedLabel + " " + stars;
         }
     }
@@ -322,7 +318,7 @@ public class RarityRegistry {
         if (rarity != null) {
             // 填充缓存
             if (itemStack != null) {
-                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+                DualCacheManager.cacheRarity(itemStack, rarity);
             }
             return rarity;
         }
@@ -333,7 +329,7 @@ public class RarityRegistry {
             // 神化稀有度取决于ItemStack的数据组件,不是物品类型级别
             // 使用组件缓存(基于ItemStack NBT哈希)而非ID缓存,防止泄漏到同类型的非神化物品
             if (itemStack != null) {
-                org.yanbwe.raritycore.cache.ComponentCacheManager.cacheRarity(itemStack, rarity);
+                ComponentCacheManager.cacheRarity(itemStack, rarity);
             }
             return rarity;
         }
@@ -343,7 +339,7 @@ public class RarityRegistry {
         if (rarity != null) {
             // 填充缓存
             if (itemStack != null) {
-                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+                DualCacheManager.cacheRarity(itemStack, rarity);
             }
             return rarity;
         }
@@ -353,7 +349,7 @@ public class RarityRegistry {
         if (rarity != null) {
             // 填充缓存
             if (itemStack != null) {
-                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+                DualCacheManager.cacheRarity(itemStack, rarity);
             }
             return rarity;
         }
@@ -363,7 +359,7 @@ public class RarityRegistry {
         if (rarity != null) {
             // 填充缓存
             if (itemStack != null) {
-                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+                DualCacheManager.cacheRarity(itemStack, rarity);
             }
             return rarity;
         }
@@ -372,7 +368,7 @@ public class RarityRegistry {
         rarity = 1;
         // 填充缓存
         if (itemStack != null) {
-            org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+            DualCacheManager.cacheRarity(itemStack, rarity);
         }
         return rarity;
     }
@@ -386,7 +382,7 @@ public class RarityRegistry {
         if (itemStack == null || itemStack.isEmpty()) {
             return null;
         }
-        return org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher.getItemDataMatchedRarity(itemStack);
+        return ItemDataRarityMatcher.getItemDataMatchedRarity(itemStack);
     }
     
     /**
@@ -395,16 +391,16 @@ public class RarityRegistry {
      * @return 稀有度等级,如果没有匹配则返回null
      */
     private static Integer checkApotheosisRarity(@Nullable ItemStack itemStack) {
-        if (!org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity()) {
+        if (!ServerConfigManager.isCheckApotheosisRarity()) {
             return null;
         }
-        if (!org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.isLoaded()) {
+        if (!ApotheosisAdapter.isLoaded()) {
             return null;
         }
         if (itemStack == null) {
             return null;
         }
-        return org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(itemStack);
+        return ApotheosisAdapter.getMappedRarity(itemStack);
     }
     
     /**
@@ -414,7 +410,7 @@ public class RarityRegistry {
      * @return 稀有度等级,如果没有匹配则返回null
      */
     private static Integer checkVanillaRarity(@Nullable ItemStack itemStack, Item item) {
-        if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckVanillaRarity()) {
+        if (ServerConfigManager.isCheckVanillaRarity()) {
             if (CompatibilityChecker.isVanillaRarityApiAvailable()) {
                 try {
                     Rarity vanillaRarity;
@@ -507,7 +503,65 @@ public class RarityRegistry {
         return SyncManager.getPendingChangeCount();
     }
     
-
+    // ==================== 监控与健康检查 ====================
     
+    /**
+     * 获取 ITEM_RARITY_MAP 当前条目数量，方便外部监控
+     * @return 当前映射中的条目总数
+     */
+    public static int getMapSize() {
+        return ITEM_RARITY_MAP.size();
+    }
+    
+    /**
+     * 检查 ITEM_RARITY_MAP 大小并记录警告。
+     * 当条目数超过 {@link RarityConstants#ITEM_RARITY_MAP_WARNING_THRESHOLD} 时记录 WARN 日志。
+     * 这通常表明配置错误（如循环配置加载）导致的无界增长。
+     *
+     * @param currentSize 当前映射大小
+     */
+    private static void checkMapGrowthWarning(int currentSize) {
+        if (currentSize > RarityConstants.ITEM_RARITY_MAP_WARNING_THRESHOLD) {
+            RarityCore.LOGGER.warn(
+                "ITEM_RARITY_MAP 条目数 ({}) 已超过警告阈值 ({}). "
+                    + "这可能表明配置加载循环或数据包错误导致无界增长. "
+                    + "请检查配置文件和数据包是否正确. "
+                    + "可以使用 pruneInvalidEntries() 手动清理无效条目.",
+                currentSize,
+                RarityConstants.ITEM_RARITY_MAP_WARNING_THRESHOLD
+            );
+        }
+    }
+    
+    /**
+     * 清理 ITEM_RARITY_MAP 中引用无效物品 ID 的条目。
+     * 
+     * <p><b>使用建议：</b>此方法应在配置重载（handleConfigReload）或定期
+     * 健康检查时手动调用，不建议自动调用 — 可能意外移除用户自定义稀有度
+     * 配置中有效但尚未加载的物品。</p>
+     * 
+     * <p>遍历当前映射中的所有条目，移除那些在 {@link BuiltInRegistries#ITEM}
+     * 中不存在的物品 ID 对应的条目。此操作不会触发同步或事件发布，
+     * 仅执行清理。</p>
+     *
+     * @return 被移除的无效条目数量
+     */
+    public static int pruneInvalidEntries() {
+        int removedCount = 0;
+        for (ResourceLocation itemId : ITEM_RARITY_MAP.keySet()) {
+            if (!BuiltInRegistries.ITEM.containsKey(itemId)) {
+                ITEM_RARITY_MAP.remove(itemId);
+                removedCount++;
+            }
+        }
+        if (removedCount > 0) {
+            RarityCore.LOGGER.info(
+                "从 ITEM_RARITY_MAP 中清理了 {} 个无效条目 (剩余 {} 个)",
+                removedCount,
+                ITEM_RARITY_MAP.size()
+            );
+        }
+        return removedCount;
+    }
 
 }

@@ -5,9 +5,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter;
+import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher;
 
 import javax.annotation.Nullable;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 稀有度缓存协调器
@@ -15,20 +18,23 @@ import javax.annotation.Nullable;
  */
 public class RarityCacheCoordinator {
 
-    private static volatile boolean initialized = false;
+    private static final AtomicBoolean initialized = new AtomicBoolean(false);
+
+    /** 神化模组激活状态缓存 — 避免快速路径中每次调用都进入 try-catch */
+    private static volatile boolean cachedApotheosisActive = false;
+    private static volatile boolean apotheosisActiveChecked = false;
 
     /**
      * 初始化缓存系统
      */
     public static void initialize() {
-        if (initialized) {
-            return;
+        if (!initialized.compareAndSet(false, true)) {
+            return; // Another thread already completed or is completing initialization
         }
 
         IdCacheManager.initialize();
         ComponentCacheManager.initialize();
 
-        initialized = true;
         RarityCore.LOGGER.info("稀有度缓存协调器初始化完成");
     }
 
@@ -197,6 +203,8 @@ public class RarityCacheCoordinator {
     public static void handleConfigReload() {
         IdCacheManager.handleConfigReload();
         ComponentCacheManager.handleConfigReload();
+        // 重置神化激活状态缓存，强制下次调用时重新评估
+        apotheosisActiveChecked = false;
         RarityCore.LOGGER.info("稀有度缓存系统重载完成");
     }
 
@@ -210,18 +218,25 @@ public class RarityCacheCoordinator {
     }
 
     /**
-     * 检查神化模组兼容是否激活（影响缓存策略选择）
-     * 仅在检查神化稀有度配置启用且神化模组已加载时返回true
+     * 检查神化模组兼容是否激活（影响缓存策略选择）— 懒加载缓存版本
+     * 首次调用时执行 try-catch 检查并缓存结果；后续调用直接返回缓存值。
+     * 配置重载后通过 handleConfigReload() 重置缓存，触发重新评估。
      * @return 神化兼容是否处于激活状态
      */
     private static boolean isApotheosisActive() {
+        if (apotheosisActiveChecked) {
+            return cachedApotheosisActive;
+        }
+        // 首次调用：执行实际检查并缓存结果
         try {
-            return org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity()
-                && org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.isLoaded();
+            cachedApotheosisActive = ServerConfigManager.isCheckApotheosisRarity()
+                && ApotheosisAdapter.isLoaded();
         } catch (Exception e) {
             // 安全回退：如果无法检查神化状态，保守返回false使用快速路径
-            return false;
+            cachedApotheosisActive = false;
         }
+        apotheosisActiveChecked = true;
+        return cachedApotheosisActive;
     }
 
     /**

@@ -1,6 +1,8 @@
 package org.yanbwe.raritycore.service;
 
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.compat.CompatibilityChecker;
+import org.yanbwe.raritycore.network.SyncManager;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,7 +35,7 @@ public class SchedulerService {
         // 延时发送兼容性提示(等待世界完全加载)
         syncScheduler.schedule(() -> {
             try {
-                serviceFactory.getCompatibilityChecker().notifyPlayersOfCompatibilityIssue();
+                CompatibilityChecker.notifyPlayersOfCompatibilityIssue();
             } catch (Exception e) {
                 RarityCore.LOGGER.debug("Failed to send compatibility notification", e);
             }
@@ -53,7 +55,7 @@ public class SchedulerService {
                 // 使用批处理管理器检查是否需要同步
                 int pendingCount = serviceFactory.getSyncBatchManager().getPendingOperationCount();
                 if (pendingCount > 0) {
-                    serviceFactory.getSyncManager().syncIncrementalChangesToClients();
+                    SyncManager.syncIncrementalChangesToClients();
                 }
             } catch (Exception e) {
                 RarityCore.LOGGER.error("增量同步过程中发生错误", e);

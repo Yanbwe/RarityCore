@@ -14,6 +14,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record ItemDataSyncPayload(List<ItemDataRuleDataPayload> rules, boolean isFullSync) implements CustomPacketPayload {
+    /** 紧凑构造函数 — 对规则列表大小进行边界检查，超限仅记录警告不阻止发送 */
+    public ItemDataSyncPayload {
+        int size = rules.size();
+        if (size > NetworkConstants.MAX_ITEM_DATA_RULES) {
+            RarityCore.LOGGER.warn("ItemDataSyncPayload: Rules list size {} exceeds recommended limit of {} entries. "
+                + "This may cause network performance degradation or client buffer overflow.",
+                size, NetworkConstants.MAX_ITEM_DATA_RULES);
+        }
+    }
+
     public static final CustomPacketPayload.Type<ItemDataSyncPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.ITEM_DATA_SYNC_CHANNEL));
     public static final StreamCodec<FriendlyByteBuf, ItemDataSyncPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.collection(ArrayList::new, ItemDataRuleDataPayload.STREAM_CODEC),

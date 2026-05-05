@@ -2,6 +2,7 @@ package org.yanbwe.raritycore.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
+import org.yanbwe.raritycore.client.ClientCommands;
 
 /**
  * 主命令类 - 整合所有子命令模块
@@ -17,7 +18,7 @@ public class RarityCoreCommands {
         UtilityCommands.register(dispatcher);
         
         // 注册客户端命令(无需OP权限)
-        org.yanbwe.raritycore.client.ClientCommands.register(dispatcher);
+        ClientCommands.register(dispatcher);
     }
     
     /**

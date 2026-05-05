@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.cache.CacheConfig;
 import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.cache.RarityCacheCoordinator;
+import org.yanbwe.raritycore.config.ClientConfigManager;
 
 /**
  * 客户端命令管理器
@@ -23,7 +24,7 @@ public class ClientCommands {
                 // 显示缓存统计信息
                 .then(Commands.literal("stats")
                     .executes(context -> {
-                        boolean isCacheEnabled = org.yanbwe.raritycore.config.ClientConfigManager.isEnableCacheSystem();
+                        boolean isCacheEnabled = ClientConfigManager.isEnableCacheSystem();
                         CacheConfig config = DualCacheManager.getConfig();
                         RarityCacheCoordinator.CombinedCacheStatistics stats = RarityCacheCoordinator.getStatistics();
                         

@@ -1,7 +1,16 @@
 package org.yanbwe.raritycore.network;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import net.minecraft.resources.ResourceLocation;
+import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
+import org.yanbwe.raritycore.util.RarityConstants;
 
+import java.io.BufferedReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -14,8 +23,17 @@ public class SyncBatchManager {
     // 批处理配置常量
     private static final int BATCH_SIZE_THRESHOLD = 50; // 批量阈值
     private static final long BATCH_TIME_WINDOW_MS = 2000; // 2秒时间窗口
-    private static final int MAX_PENDING_OPERATIONS = 1000; // 最大待处理操作数
+    private static volatile int maxPendingOperations = RarityConstants.DEFAULT_MAX_PENDING_OPERATIONS; // 最大待处理操作数
     private static final int HIGH_PRIORITY_THRESHOLD = 10; // 高优先级阈值
+
+    // 配置文件路径（遵循 CacheConfig 模式）
+    private static final Path SYNC_BATCH_CONFIG_FILE = Paths.get(RarityConstants.CONFIG_DIR_PARENT)
+        .resolve(RarityConstants.CONFIG_DIR_NAME)
+        .resolve("sync_batch.json");
+
+    static {
+        loadMaxPendingOperations();
+    }
     
     // 待处理的变更操作缓冲区
     private static final List<ChangeOperation> pendingOperations = new ArrayList<>();
@@ -56,7 +74,7 @@ public class SyncBatchManager {
     public static boolean addOperation(ChangeOperation operation, SyncPriority priority) {
         synchronized (batchLock) {
             // 检查是否超过最大容量
-            if (pendingOperations.size() >= MAX_PENDING_OPERATIONS) {
+            if (pendingOperations.size() >= maxPendingOperations) {
                 return true; // 立即发送
             }
             
@@ -153,6 +171,55 @@ public class SyncBatchManager {
         }
     }
     
+    /**
+     * 获取当前最大待处理操作数配置值
+     */
+    public static int getMaxPendingOperations() {
+        return maxPendingOperations;
+    }
+
+    /**
+     * 从配置文件加载最大待处理操作数。
+     * 遵循 CacheConfig.loadFromConfig() 模式：
+     * - 配置文件不存在时使用硬编码默认值
+     * - 读取失败时回退到默认值
+     * - 记录日志显示当前使用的值
+     */
+    public static void loadMaxPendingOperations() {
+        if (!Files.exists(SYNC_BATCH_CONFIG_FILE)) {
+            RarityCore.LOGGER.info("SyncBatchManager config file not found, using default maxPendingOperations={}",
+                maxPendingOperations);
+            return;
+        }
+
+        try (BufferedReader reader = Files.newBufferedReader(SYNC_BATCH_CONFIG_FILE)) {
+            Gson gson = JsonPerformanceOptimizer.getOptimizedGson();
+            JsonObject jsonObject = gson.fromJson(reader, JsonObject.class);
+
+            if (jsonObject != null && jsonObject.has("maxPendingOperations")) {
+                int loadedValue = jsonObject.get("maxPendingOperations").getAsInt();
+                // 验证范围：最少 1，最大不限（但建议合理范围）
+                maxPendingOperations = Math.max(1, loadedValue);
+                RarityCore.LOGGER.info("SyncBatchManager config loaded: maxPendingOperations={} (from file)",
+                    maxPendingOperations);
+            } else {
+                RarityCore.LOGGER.info("SyncBatchManager config file has no maxPendingOperations, using default={}",
+                    maxPendingOperations);
+            }
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Failed to load SyncBatchManager config from {}, using default maxPendingOperations={}",
+                SYNC_BATCH_CONFIG_FILE, maxPendingOperations, e);
+        }
+    }
+
+    /**
+     * 重新加载最大待处理操作数配置（支持运行时配置热更新）
+     */
+    public static void reloadConfig() {
+        loadMaxPendingOperations();
+        RarityCore.LOGGER.info("SyncBatchManager config reloaded: maxPendingOperations={}", maxPendingOperations);
+    }
+
     /**
      * 合并重复操作以减少网络传输
      * @param operations 原始操作列表

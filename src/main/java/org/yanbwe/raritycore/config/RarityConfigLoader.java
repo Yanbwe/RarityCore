@@ -1,10 +1,10 @@
 package org.yanbwe.raritycore.config;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.util.ConfigLoaderUtils;
+import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -12,7 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class RarityConfigLoader {
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = JsonPerformanceOptimizer.getOptimizedGson();
 
     /**
      * 从配置文件加载稀有度数据
@@ -57,7 +57,7 @@ public class RarityConfigLoader {
      */
     private static boolean tryOptimizedParsing(Path configFile) {
         try {
-            org.yanbwe.raritycore.util.JsonPerformanceOptimizer.parseRarityConfigOptimized(configFile);
+            JsonPerformanceOptimizer.parseRarityConfigOptimized(configFile);
             return true;
         } catch (Exception e) {
             RarityCore.LOGGER.debug("Optimized parsing failed, falling back to traditional method: {}", e.getMessage());

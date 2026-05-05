@@ -1,9 +1,10 @@
 package org.yanbwe.raritycore.config;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.cache.RarityCacheCoordinator;
+import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
 import org.yanbwe.raritycore.util.RarityConstants;
 
 import java.io.BufferedReader;
@@ -19,7 +20,7 @@ import java.nio.file.Paths;
  */
 public class ServerConfigManager {
     
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = JsonPerformanceOptimizer.getOptimizedGson();
     
     // 服务端配置
     private static boolean checkVanillaRarity = RarityConstants.DEFAULT_CHECK_VANILLA_RARITY; // 是否检查原版稀有度
@@ -213,7 +214,7 @@ public class ServerConfigManager {
      * 通知配置变更
      */
     private static void notifyConfigChange() {
-        // 简单的日志记录,实际的重新加载将在下次数据加载时发生
-        RarityCore.LOGGER.info("Server configuration changed, will apply on next data reload");
+        RarityCore.LOGGER.info("Server configuration changed, invalidating caches...");
+        RarityCacheCoordinator.handleConfigReload();
     }
 }

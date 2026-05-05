@@ -13,6 +13,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.calc.AutoRarityCalculator;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.network.SyncManager;
@@ -246,7 +247,7 @@ public class RarityManagementCommands {
      */
     private static int recalculateAutoRarity(CommandSourceStack source) {
         try {
-            org.yanbwe.raritycore.calc.AutoRarityCalculator.forceRecalculate();
+            AutoRarityCalculator.forceRecalculate();
 
             source.sendSuccess(() -> Component.translatable("rarity.core.auto_calculation_starting_recalculate"), true);
             return 1;

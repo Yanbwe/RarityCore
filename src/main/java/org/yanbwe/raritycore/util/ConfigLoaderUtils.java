@@ -8,6 +8,8 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.network.ChangeOperation;
+import org.yanbwe.raritycore.network.SyncBatchManager;
+import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,7 +24,7 @@ import java.util.function.Consumer;
  * 消除重复代码,提高代码可维护性
  */
 public class ConfigLoaderUtils {
-    private static final Gson GSON = new Gson();
+    private static final Gson GSON = JsonPerformanceOptimizer.getOptimizedGson();
     
     /**
      * 通用的JSON配置文件加载方法
@@ -97,12 +99,12 @@ public class ConfigLoaderUtils {
                     itemId, 
                     rarity == 0 ? null : rarity
                 );
-                org.yanbwe.raritycore.network.SyncBatchManager.addOperation(operation);
+                SyncBatchManager.addOperation(operation);
             } else {
                 // 直接注册到稀有度注册表
                 net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(itemId);
                 if (item != null) {
-                    org.yanbwe.raritycore.registry.RarityRegistry.register(item, rarity, false);
+                    RarityRegistry.register(item, rarity, false);
                 }
             }
         });

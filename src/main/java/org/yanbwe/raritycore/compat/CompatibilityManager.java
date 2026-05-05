@@ -1,6 +1,8 @@
 package org.yanbwe.raritycore.compat;
 
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter;
+import org.yanbwe.raritycore.compat.refinedstorage.RefinedStorageCompat;
 
 /**
  * 兼容性管理器
@@ -41,7 +43,7 @@ public class CompatibilityManager {
         // 初始化神化模组适配器
         try {
             Class.forName("dev.shadowsoffire.apotheosis.adventure.loot.LootRarity");
-            org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.init();
+            ApotheosisAdapter.init();
             RarityCore.LOGGER.info("Apotheosis compatibility adapter initialized");
         } catch (ClassNotFoundException e) {
             RarityCore.LOGGER.debug("Apotheosis not found, skipping compatibility adapter");
@@ -52,7 +54,7 @@ public class CompatibilityManager {
         // 初始化精致存储适配器
         try {
             Class.forName("com.refinedmods.refinedstorage.screen.BaseScreen");
-            org.yanbwe.raritycore.compat.refinedstorage.RefinedStorageCompat.initialize();
+            RefinedStorageCompat.initialize();
             RarityCore.LOGGER.info("Refined Storage compatibility adapter initialized");
         } catch (ClassNotFoundException e) {
             RarityCore.LOGGER.debug("Refined Storage not found, skipping compatibility adapter");

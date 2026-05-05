@@ -8,6 +8,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.client.CacheInvalidationListener;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import javax.annotation.Nonnull;
@@ -16,6 +17,16 @@ import java.util.List;
 import java.util.Optional;
 
 public record IncrementalSyncPayload(List<ChangeOperationData> changeOperations) implements CustomPacketPayload {
+    /** 紧凑构造函数 — 对操作列表大小进行边界检查，超限仅记录警告不阻止发送 */
+    public IncrementalSyncPayload {
+        int size = changeOperations.size();
+        if (size > NetworkConstants.MAX_INCREMENTAL_OPERATIONS) {
+            RarityCore.LOGGER.warn("IncrementalSyncPayload: Operations list size {} exceeds recommended limit of {}. "
+                + "This may cause network performance degradation or client buffer overflow.",
+                size, NetworkConstants.MAX_INCREMENTAL_OPERATIONS);
+        }
+    }
+
     public static final CustomPacketPayload.Type<IncrementalSyncPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.INCREMENTAL_SYNC_CHANNEL));
     @SuppressWarnings("unchecked")
     public static final StreamCodec<FriendlyByteBuf, IncrementalSyncPayload> STREAM_CODEC = StreamCodec.composite(
@@ -60,7 +71,7 @@ public record IncrementalSyncPayload(List<ChangeOperationData> changeOperations)
             }
 
             RarityCore.LOGGER.debug("Incremental sync completed: applied={}, skipped={}", appliedCount, skippedCount);
-            org.yanbwe.raritycore.client.CacheInvalidationListener.onNetworkSync();
+            CacheInvalidationListener.onNetworkSync();
         });
     }
 
