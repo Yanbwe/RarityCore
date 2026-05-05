@@ -1,91 +1,65 @@
 package org.yanbwe.raritycore.compat.ironsspells;
 
-import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.component.TypedDataComponent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
 import org.yanbwe.raritycore.RarityCore;
 
-import java.util.List;
-
 /**
- * Iron's Spells 'n Spellbooks 兼容适配器
- * <p>
- * 解析法术卷轴 Data Component 中的法术等级，映射为本模组稀有度。
- * 法术等级映射规则：level 1→稀有度1, level 2→2, ..., level 7→7, level 8+→7。
- * </p>
- * <p>
- * 优先级：与神化模组映射同级——Item Data 匹配配置之后、ITEM_RARITY_MAP 之前。
- * </p>
- * <p>
- * 数据结构：{@code irons_spellbooks:spell_container} 组件包含 {@code data()} 列表，
- * 列表中每个元素有 {@code level()} 方法。组件键名包含命名空间冒号。
- * </p>
+ * Iron's Spells 'n Spellbooks 兼容适配器。
+ *
+ * <p>采用与 {@code ApotheosisAdapter} 一致的组件遍历模式：
+ * 通过 {@code itemStack.getComponents()} 遍历所有 DataComponent，
+ * 按 ResourceLocation 键名匹配 {@code irons_spellbooks:spell_container}，
+ * 获取组件值后反射读取法术等级。</p>
+ *
+ * <p>映射规则：level 1→1, 2→2, …, 7→7, 8+→7</p>
  */
 public class IronSpellsAdapter {
 
     private static boolean isIronSpellsLoaded = false;
     private static boolean isInitialized = false;
-    private static DataComponentType<?> spellContainerType;
+
+    /** 组件键名匹配用的 ResourceLocation，初始化后缓存在此 */
+    private static ResourceLocation spellContainerKey;
 
     /**
-     * 初始化适配器
-     * <p>
-     * 先通过 Class.forName 检测 irons_spellbooks 模组类是否存在，
-     * 再通过 {@link ModList#get()#isLoaded(String)} 确认模组加载状态，
-     * 最后从 {@link BuiltInRegistries#DATA_COMPONENT_TYPE} 获取
-     * {@code irons_spellbooks:spell_container} 组件类型。
-     * </p>
+     * 初始化适配器。
+     * <p>通过 Class.forName + ModList.isLoaded 双重确认模组加载状态，
+     * 成功后将组件键名 (irons_spellbooks:spell_container) 缓存在字段中，
+     * 供 {@link #getMappedRarity(ItemStack)} 在遍历组件时做比对。</p>
      */
     public static void init() {
         if (isInitialized) {
             return;
         }
 
-        // Class.forName 检测模组是否存在（类加载层面）
         try {
             Class.forName("io.redspace.ironsspellbooks.IronsSpellbooks");
         } catch (ClassNotFoundException e) {
-            RarityCore.LOGGER.debug("Iron's Spells 'n Spellbooks mod not detected via Class.forName, skipping compatibility adapter");
+            RarityCore.LOGGER.debug("Iron's Spells mod not detected via Class.forName, skipping");
             isInitialized = true;
             return;
         }
 
-        // ModList 确认模组加载状态（FML 层面）
         isIronSpellsLoaded = ModList.get().isLoaded("irons_spellbooks");
 
         if (!isIronSpellsLoaded) {
-            RarityCore.LOGGER.debug("Iron's Spells 'n Spellbooks mod not loaded in ModList, skipping compatibility adapter");
+            RarityCore.LOGGER.debug("Iron's Spells mod not loaded in ModList, skipping");
             isInitialized = true;
             return;
         }
 
-        try {
-            // 获取 irons_spellbooks:spell_container 组件类型（键名包含命名空间冒号）
-            ResourceLocation componentLoc = ResourceLocation.fromNamespaceAndPath("irons_spellbooks", "spell_container");
-            spellContainerType = BuiltInRegistries.DATA_COMPONENT_TYPE.get(componentLoc);
-
-            if (spellContainerType == null) {
-                RarityCore.LOGGER.warn("Iron's Spells spell_container component type not found in registry at {}",
-                        componentLoc);
-                isIronSpellsLoaded = false;
-            } else {
-                RarityCore.LOGGER.info("Iron's Spells compatibility adapter initialized, component type: {}",
-                        componentLoc);
-            }
-
-            isInitialized = true;
-        } catch (Exception e) {
-            RarityCore.LOGGER.error("Failed to initialize Iron's Spells compatibility adapter", e);
-            isInitialized = true;
-        }
+        spellContainerKey = ResourceLocation.fromNamespaceAndPath("irons_spellbooks", "spell_container");
+        RarityCore.LOGGER.info("Iron's Spells compatibility adapter initialized, target component: {}", spellContainerKey);
+        isInitialized = true;
     }
 
     /**
-     * 检查 Iron's Spells 模组是否已加载
-     *
-     * @return 模组是否已加载
+     * 检查 Iron's Spells 模组是否已加载。
      */
     public static boolean isLoaded() {
         if (!isInitialized) {
@@ -95,64 +69,86 @@ public class IronSpellsAdapter {
     }
 
     /**
-     * 获取 Iron's Spells 法术等级映射的稀有度
-     * <p>
-     * 通过 {@code irons_spellbooks:spell_container} 组件读取物品的法术数据，
-     * 反射调用 {@code data()} 获取法术列表，取第一个法术的 {@code level()}，
-     * 按映射规则转换为稀有度等级。
-     * </p>
-     * <p>
-     * 映射规则：level 1→1, 2→2, ..., 7→7, 8+→7
-     * </p>
+     * 从 Iron's Spells 法术卷轴获取映射后的稀有度。
+     *
+     * <p>遍历物品所有 DataComponent，按键名找到
+     * {@code irons_spellbooks:spell_container}，
+     * 反射获取法术等级并映射为本模组稀有度。</p>
      *
      * @param itemStack 物品栈
-     * @return 映射的稀有度等级（1-7），如果物品没有法术容器组件则返回 null
+     * @return 稀有度 1–7，若无有效法术数据返回 null
      */
     public static Integer getMappedRarity(ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) {
             return null;
         }
-
         if (!isInitialized) {
             init();
         }
-
-        if (!isIronSpellsLoaded || spellContainerType == null) {
+        if (!isIronSpellsLoaded || spellContainerKey == null) {
             return null;
         }
 
         try {
-            // 通过注册的 ComponentType 获取 irons_spellbooks:spell_container 组件
-            Object spellContainer = itemStack.get(spellContainerType);
-            if (spellContainer == null) {
-                return null;
+            DataComponentMap components = itemStack.getComponents();
+
+            for (TypedDataComponent<?> tc : components) {
+                ResourceLocation keyLoc = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(tc.type());
+                if (!spellContainerKey.equals(keyLoc)) {
+                    continue;
+                }
+
+                Object spellContainer = tc.value();
+                if (spellContainer == null) {
+                    return null;
+                }
+
+                // 反射获取法术等级：调用 spellContainer.getSpellAtIndex(0).getLevel()
+                int level = invokeSpellLevel(spellContainer);
+                if (level < 1) {
+                    return null;
+                }
+
+                return level;
             }
 
-            // 反射调用 data() 方法获取法术列表
-            List<?> spells = (List<?>) spellContainer.getClass().getMethod("data").invoke(spellContainer);
-            if (spells == null || spells.isEmpty()) {
-                return null;
-            }
-
-            // 取第一个法术元素，反射调用 level() 获取法术等级
-            Object firstSpell = spells.get(0);
-            int level = (int) firstSpell.getClass().getMethod("level").invoke(firstSpell);
-
-            // 映射：level 1→1, 2→2, ..., 7→7, 8+→7
-            return Math.min(level, 7);
+            return null;
 
         } catch (Exception e) {
-            RarityCore.LOGGER.debug("Failed to get mapped Iron's Spells rarity for item: {}", itemStack.getItem(), e);
+            RarityCore.LOGGER.warn("Iron's Spells adapter failed for item {}: {}",
+                    itemStack.getItem(), e.toString());
             return null;
         }
     }
 
     /**
-     * 重置适配器状态（用于热重载场景）
+     * 反射调用 spellContainer.getSpellAtIndex(0).getLevel() 获取法术等级。
+     * <p>SpellContainer API:
+     * <ul>
+     *   <li>{@code getSpellAtIndex(int)} → SpellData</li>
+     *   <li>{@code SpellData.getLevel()} → int</li>
+     * </ul>
+     */
+    private static int invokeSpellLevel(Object spellContainer) throws Exception {
+        // spellContainer.getSpellAtIndex(0) → SpellData
+        Object spellData = spellContainer.getClass()
+                .getMethod("getSpellAtIndex", int.class)
+                .invoke(spellContainer, 0);
+        if (spellData == null) {
+            throw new IllegalStateException("No spell at index 0");
+        }
+        // spellData.getLevel() → int
+        return (int) spellData.getClass()
+                .getMethod("getLevel")
+                .invoke(spellData);
+    }
+
+    /**
+     * 重置适配器状态（用于热重载）。
      */
     public static void reset() {
         isInitialized = false;
         isIronSpellsLoaded = false;
-        spellContainerType = null;
+        spellContainerKey = null;
     }
 }

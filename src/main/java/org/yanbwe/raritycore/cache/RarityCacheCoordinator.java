@@ -6,6 +6,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter;
+import org.yanbwe.raritycore.compat.ironsspells.IronSpellsAdapter;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher;
 
@@ -23,6 +24,10 @@ public class RarityCacheCoordinator {
     /** 神化模组激活状态缓存 — 避免快速路径中每次调用都进入 try-catch */
     private static volatile boolean cachedApotheosisActive = false;
     private static volatile boolean apotheosisActiveChecked = false;
+
+    /** Iron's Spells 模组激活状态缓存 — 避免快速路径中每次调用都进入 try-catch */
+    private static volatile boolean cachedIronSpellsActive = false;
+    private static volatile boolean ironSpellsActiveChecked = false;
 
     /**
      * 初始化缓存系统
@@ -59,9 +64,9 @@ public class RarityCacheCoordinator {
             return null;
         }
 
-        // P2 FIX: 无组件匹配规则且神化未激活 → 快速ID缓存路径
-        // 神化激活时必须走完整逻辑，因为神化物品的稀有度基于组件数据
-        if (!hasComponentMatchRules(itemId) && !isApotheosisActive()) {
+        // P2 FIX: 无组件匹配规则且神化/Iron's Spells 均未激活 → 快速ID缓存路径
+        // 神化/Iron's Spells 激活时必须走完整逻辑，因为它们的稀有度基于组件数据
+        if (!hasComponentMatchRules(itemId) && !isApotheosisActive() && !isIronSpellsActive()) {
             return IdCacheManager.getCachedRarity(itemId);
         }
 
@@ -145,8 +150,8 @@ public class RarityCacheCoordinator {
         if (hasComponentMatch) {
             // 有组件匹配规则 → 必须区分不同NBT的物品堆
             ComponentCacheManager.cacheRarity(itemStack, rarity);
-        } else if (isApotheosisActive() && ComponentCacheManager.hasNonTrivialData(itemStack)) {
-            // 神化模组激活 + 物品有特殊NBT → 组件缓存(防止ID缓存污染)
+        } else if ((isApotheosisActive() || isIronSpellsActive()) && ComponentCacheManager.hasNonTrivialData(itemStack)) {
+            // 神化/Iron's Spells 激活 + 物品有特殊NBT → 组件缓存(防止ID缓存污染)
             ComponentCacheManager.cacheRarity(itemStack, rarity);
         } else {
             // 普通物品 → ID缓存（快速路径）
@@ -203,8 +208,9 @@ public class RarityCacheCoordinator {
     public static void handleConfigReload() {
         IdCacheManager.handleConfigReload();
         ComponentCacheManager.handleConfigReload();
-        // 重置神化激活状态缓存，强制下次调用时重新评估
+        // 重置神化和 Iron's Spells 激活状态缓存，强制下次调用时重新评估
         apotheosisActiveChecked = false;
+        ironSpellsActiveChecked = false;
         RarityCore.LOGGER.info("稀有度缓存系统重载完成");
     }
 
@@ -237,6 +243,25 @@ public class RarityCacheCoordinator {
         }
         apotheosisActiveChecked = true;
         return cachedApotheosisActive;
+    }
+
+    /**
+     * 检查 Iron's Spells 兼容是否激活（影响缓存策略选择）— 懒加载缓存版本。
+     * 与 {@link #isApotheosisActive()} 机制一致：Iron's Spells 物品的稀有度
+     * 基于 spell_container 组件数据，不能用类型级 ID 缓存，必须走组件缓存路径。
+     * @return Iron's Spells 兼容是否处于激活状态
+     */
+    private static boolean isIronSpellsActive() {
+        if (ironSpellsActiveChecked) {
+            return cachedIronSpellsActive;
+        }
+        try {
+            cachedIronSpellsActive = IronSpellsAdapter.isLoaded();
+        } catch (Exception e) {
+            cachedIronSpellsActive = false;
+        }
+        ironSpellsActiveChecked = true;
+        return cachedIronSpellsActive;
     }
 
     /**
