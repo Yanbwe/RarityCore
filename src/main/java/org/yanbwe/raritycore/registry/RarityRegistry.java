@@ -348,8 +348,8 @@ public class RarityRegistry {
         if (tag != null) {
             // NBT 稀有度控制（最高优先级）—— 直接使用已读取的 tag，跳过 NbtRarityControlHandler 内部的重复 hasTag/getTag
             if (org.yanbwe.raritycore.config.ServerConfigManager.isEnableNbtRarityControl()
-                    && tag.contains("raritycore:data", CompoundTag.TAG_COMPOUND)) {
-                CompoundTag data = tag.getCompound("raritycore:data");
+                    && tag.contains("raritycore", CompoundTag.TAG_COMPOUND)) {
+                CompoundTag data = tag.getCompound("raritycore");
                 if (data.contains("Level", CompoundTag.TAG_INT)) {
                     result = data.getInt("Level");
                     source = "nbt_control";

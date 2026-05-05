@@ -130,6 +130,11 @@ public class DualCacheManager {
             return null;
         }
 
+        // Iron's Spellbooks 法术卷轴/法术书(有 irons_spellbooks:spell_container 键)也不使用常规缓存，强制实时计算
+        if (tag != null && tag.contains("irons_spellbooks:spell_container")) {
+            return null;
+        }
+
         // 优先检查NBT缓存
         if (config.isNbtCacheEnabled() && tag != null) {
             String nbtKey = generateNbtKey(itemStack);
@@ -175,15 +180,16 @@ public class DualCacheManager {
         // 一次获取 tag 引用，使用 O(1) 键查找代替全量 toString() 序列化
         net.minecraft.nbt.CompoundTag tag = itemStack.hasTag() ? itemStack.getTag() : null;
         boolean hasApotheosisData = tag != null && tag.contains("affix_data");
+        boolean hasIronsData = tag != null && tag.contains("irons_spellbooks:spell_container");
         
-        if (hasApotheosisData) {
-            // 神化物品:仅缓存到NBT缓存,避免污染ID缓存
+        if (hasApotheosisData || hasIronsData) {
+            // 神化/Iron's Spellbooks 物品:仅缓存到NBT缓存,避免污染ID缓存
             if (config.isNbtCacheEnabled()) {
                 String nbtKey = generateNbtKey(itemStack);
                 nbtCache.put(nbtKey, rarity);
             }
         } else {
-            // 非神化物品:正常写入ID缓存
+            // 非神化非Iron's Spellbooks物品:正常写入ID缓存
             ResourceLocation idKey = generateIdKey(itemStack);
             idCache.put(idKey, rarity);
             

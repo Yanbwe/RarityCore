@@ -8,12 +8,12 @@ import javax.annotation.Nullable;
 
 /**
  * NBT 稀有度控制处理器
- * 检测物品 NBT 中的 raritycore:data 标签，提供最高优先级的稀有度覆盖
+ * 检测物品 NBT 中的 raritycore 标签，提供最高优先级的稀有度覆盖
  * 由 server.json 中的 enableNbtRarityControl 开关控制（默认关闭）
  */
 public class NbtRarityControlHandler {
 
-    private static final String DATA_KEY = "raritycore:data";
+    private static final String DATA_KEY = "raritycore";
     private static final String LEVEL_KEY = "Level";
     private static final String COLOR_KEY = "Color";
     private static final String TOOLTIPS_KEY = "Tooltips";
