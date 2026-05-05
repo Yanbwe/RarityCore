@@ -188,25 +188,48 @@ public class ComponentCacheManager {
     }
 
     /**
-     * 原版总是存在的基础组件，这些组件不会使物品被判定为"有非平凡数据"。
-     * 任何不在此集合中的组件（包括模组组件）将被视为非平凡数据。
+     * 仅在物品类型级别定义、不在实例间变化的原版组件。
+     * 这些组件对于同一物品类型的所有实例始终相同，不会导致实例间稀有度差异。
+     *
+     * <p>安全设计：任何不在此集合中的组件（包括所有实例级组件如 enchantments、
+     * damage、custom_name 等，以及所有模组组件）均视为非平凡数据，
+     * 强制使用组件感知缓存。这保证了即使集合不完整，也只会导致性能回退
+     * （多余组件缓存）而非数据错误（误用 ID 缓存）。</p>
      */
-    private static final Set<String> VANILLA_TRIVIAL_COMPONENTS = Set.of(
-        "minecraft:damage",
-        "minecraft:max_damage",
+    private static final Set<String> TYPE_LEVEL_COMPONENTS = Set.of(
         "minecraft:max_stack_size",
+        "minecraft:max_damage",
         "minecraft:rarity",
+        "minecraft:tool",
+        "minecraft:food",
+        "minecraft:equippable",
+        "minecraft:enchantable",
+        "minecraft:repairable",
+        "minecraft:fire_resistant",
+        "minecraft:glider",
+        "minecraft:use_cooldown",
+        "minecraft:use_remainder",
         "minecraft:enchantment_glint_override",
-        "minecraft:item_name",
-        "minecraft:lore",
-        "minecraft:custom_name"
+        "minecraft:item_model",
+        "minecraft:tooltip_style",
+        "minecraft:weapon",
+        "minecraft:block_state"
     );
 
     /**
-     * 检查物品堆是否有特殊数据（超出原版基础组件）
-     * 直接遍历 DataComponentMap，避免 itemStack.save() 的全量 NBT 序列化开销。
+     * 检查物品堆是否有实例级特殊数据。
+     * <p>直接遍历 DataComponentMap，避免 itemStack.save() 的全量 NBT 序列化开销。</p>
+     *
+     * <p>判定逻辑：</p>
+     * <ol>
+     *   <li>任何非 {@code minecraft:} 前缀的组件（模组数据）→ 非平凡</li>
+     *   <li>任何不在 {@link #TYPE_LEVEL_COMPONENTS} 中的原版组件 → 非平凡
+     *       （包括 enchantments、damage、custom_name 等所有实例级数据）</li>
+     *   <li>仅在 TYPE_LEVEL_COMPONENTS 中的组件 → 平凡（类型级，所有实例相同）</li>
+     * </ol>
+     *
      * @param itemStack 物品堆
-     * @return 如果有非平凡数据返回true
+     * @return 如果有实例级（非平凡）数据返回 true
      */
     public static boolean hasNonTrivialData(ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) {
@@ -225,8 +248,8 @@ public class ComponentCacheManager {
                 if (!key.startsWith("minecraft:")) {
                     return true;
                 }
-                // 检查是否不在原版基础组件白名单中
-                if (!VANILLA_TRIVIAL_COMPONENTS.contains(key)) {
+                // 原版组件：仅当不在类型级组件集合中时 → 非平凡
+                if (!TYPE_LEVEL_COMPONENTS.contains(key)) {
                     return true;
                 }
             }
