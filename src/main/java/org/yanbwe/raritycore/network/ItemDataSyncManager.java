@@ -17,9 +17,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public class ItemDataSyncManager {
+
+    /** 专用线程池，避免与 ForkJoinPool.commonPool() 竞争 */
+    private static final ExecutorService SYNC_EXECUTOR = Executors.newFixedThreadPool(2, r -> {
+        Thread t = new Thread(r, "RarityCore-ItemData-Sync");
+        t.setDaemon(true);
+        return t;
+    });
 
     public static void syncItemDataRulesToPlayer(ServerPlayer player) {
         CompletableFuture.runAsync(() -> {
@@ -36,7 +45,7 @@ public class ItemDataSyncManager {
                 RarityCore.LOGGER.error("Error syncing item data rules to player {}: {}",
                     player.getName().getString(), e.getMessage());
             }
-        });
+        }, SYNC_EXECUTOR);
     }
 
     public static void syncItemDataRulesToAllPlayers() {
@@ -47,21 +56,23 @@ public class ItemDataSyncManager {
                     RarityCore.LOGGER.warn("Cannot get server instance, skipping item data rules sync");
                     return;
                 }
-
+                
                 List<ItemDataSyncPayload.ItemDataRuleDataPayload> ruleDataList = getAllRulesAsData();
                 ItemDataSyncPayload payload = new ItemDataSyncPayload(ruleDataList, true);
-
-                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                
+                // 使用快照避免遍历玩家列表时的并发修改异常
+                List<ServerPlayer> players = List.copyOf(server.getPlayerList().getPlayers());
+                for (ServerPlayer player : players) {
                     PacketDistributor.sendToPlayer(player, payload);
                 }
-
+                
                 RarityCore.LOGGER.info("Sent item data rules sync payload to all players, rule count: {}",
                     ruleDataList.size());
-
+                    
             } catch (Exception e) {
                 RarityCore.LOGGER.error("Error syncing item data rules to all players: {}", e.getMessage());
             }
-        });
+        }, SYNC_EXECUTOR);
     }
 
     private static List<ItemDataSyncPayload.ItemDataRuleDataPayload> getAllRulesAsData() {
@@ -143,11 +154,12 @@ public class ItemDataSyncManager {
                     lastException = e;
                     if (attempt < maxRetries) {
                         long delay = 1000L * attempt;
-                        RarityCore.LOGGER.warn("Item data rules sync failed (attempt {}/{}}, retrying in {}ms: {}",
+                        RarityCore.LOGGER.warn("Item data rules sync failed (attempt {}/{}), retrying in {}ms: {}",
                             attempt, maxRetries, delay, e.getMessage());
 
+                        final ServerPlayer targetPlayer = player;
                         CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS).execute(() -> {
-                            syncItemDataRulesToAllPlayers();
+                            syncItemDataRulesToPlayer(targetPlayer);
                         });
                         return;
                     }
@@ -156,7 +168,7 @@ public class ItemDataSyncManager {
 
             RarityCore.LOGGER.error("Item data rules sync finally failed after {} retries. Last error: {}",
                 maxRetries, lastException != null ? lastException.getMessage() : "Unknown error");
-        });
+        }, SYNC_EXECUTOR);
     }
 
     public static void syncChangedRules(List<ItemDataMatchRule> changedRules) {
@@ -171,7 +183,9 @@ public class ItemDataSyncManager {
 
                 MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
                 if (server != null) {
-                    for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    // 使用快照避免遍历玩家列表时的并发修改异常
+                    List<ServerPlayer> players = List.copyOf(server.getPlayerList().getPlayers());
+                    for (ServerPlayer player : players) {
                         PacketDistributor.sendToPlayer(player, payload);
                     }
                 }
@@ -182,7 +196,23 @@ public class ItemDataSyncManager {
             } catch (Exception e) {
                 RarityCore.LOGGER.error("Error in incremental item data rules sync: {}", e.getMessage());
             }
-        });
+        }, SYNC_EXECUTOR);
+    }
+
+    /**
+     * 关闭专用同步线程池。
+     * 应在模组卸载或服务器停止时调用。
+     */
+    public static void shutdown() {
+        SYNC_EXECUTOR.shutdown();
+        try {
+            if (!SYNC_EXECUTOR.awaitTermination(3, TimeUnit.SECONDS)) {
+                SYNC_EXECUTOR.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            SYNC_EXECUTOR.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     public static SyncStatus getSyncStatus() {

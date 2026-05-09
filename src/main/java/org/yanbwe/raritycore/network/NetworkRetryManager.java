@@ -7,6 +7,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.yanbwe.raritycore.RarityCore;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -42,49 +43,26 @@ public class NetworkRetryManager {
         });
     }
 
+    /**
+     * 向所有玩家发送载荷，并为每个玩家独立追踪重试状态。
+     * 避免原逻辑中"任一玩家失败则全部重发"的重复包问题。
+     */
     private static void sendPayloadWithRetry(CustomPacketPayload payload, int maxRetries, long baseDelay) {
         if (maxRetries <= 0) {
             RarityCore.LOGGER.error("Payload retry exhausted before start: {}", payload);
             return;
         }
 
-        int attempts = 0;
-        Exception lastException = null;
-
-        while (attempts < maxRetries) {
-            try {
-                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-                if (server != null) {
-                    for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                        PacketDistributor.sendToPlayer(player, payload);
-                    }
-                }
-
-                if (attempts > 0) {
-                    RarityCore.LOGGER.info("Payload sent successfully after {} retry attempts", attempts);
-                }
-                return;
-
-            } catch (Exception e) {
-                lastException = e;
-                attempts++;
-
-                if (attempts < maxRetries) {
-                    long delay = (long) (baseDelay * Math.pow(EXPONENTIAL_BACKOFF_MULTIPLIER, attempts - 1));
-                    RarityCore.LOGGER.warn("Payload sending failed (attempt {}/{}), retrying in {}ms: {}",
-                        attempts, maxRetries, delay, e.getMessage());
-
-                    final int remainingRetries = maxRetries - attempts;
-                    scheduleRetry(() -> {
-                        sendPayloadWithRetry(payload, remainingRetries, baseDelay);
-                    }, delay);
-                    return;
-                }
-            }
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) {
+            RarityCore.LOGGER.warn("Cannot retry payload: no server instance");
+            return;
         }
 
-        RarityCore.LOGGER.error("Failed to send payload after {} attempts. Last error: {}",
-            maxRetries, lastException != null ? lastException.getMessage() : "Unknown error");
+        List<ServerPlayer> players = List.copyOf(server.getPlayerList().getPlayers());
+        for (ServerPlayer player : players) {
+            sendToPlayerWithRetryInternal(player, payload, maxRetries, baseDelay);
+        }
     }
 
     public static void sendToPlayerWithRetry(ServerPlayer player, CustomPacketPayload payload) {

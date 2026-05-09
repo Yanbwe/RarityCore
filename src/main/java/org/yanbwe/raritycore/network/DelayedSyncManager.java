@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class DelayedSyncManager {
 
@@ -18,42 +19,21 @@ public class DelayedSyncManager {
     private static final long MAX_BATCH_WAIT_MS = 5000;
 
     private static ScheduledExecutorService syncExecutor;
-    private static volatile boolean syncScheduled = false;
+    private static final AtomicBoolean syncScheduled = new AtomicBoolean(false);
     private static volatile long lastScheduleTime = 0;
 
-    static {
-        syncExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "RarityCore-Delayed-Sync");
-            t.setDaemon(true);
-            return t;
-        });
-    }
-
-    public static void scheduleDelayedSync() {
-        long currentTime = System.currentTimeMillis();
-
-        if (syncScheduled && (currentTime - lastScheduleTime) < (MAX_BATCH_WAIT_MS / 2)) {
-            return;
-        }
-
-        syncScheduled = true;
-        lastScheduleTime = currentTime;
-
-        syncExecutor.schedule(() -> {
-            performDelayedSync();
-            syncScheduled = false;
-        }, SYNC_DELAY_MS, TimeUnit.MILLISECONDS);
-
-        RarityCore.LOGGER.debug("Scheduled delayed sync in {}ms", SYNC_DELAY_MS);
-    }
-
-    public static void forceImmediateSync() {
-        if (syncScheduled) {
-            syncExecutor.execute(() -> {
-                performDelayedSync();
-                syncScheduled = false;
+    /**
+     * 懒初始化同步执行器，避免类加载时就创建线程
+     */
+    private static synchronized ScheduledExecutorService getSyncExecutor() {
+        if (syncExecutor == null || syncExecutor.isShutdown()) {
+            syncExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "RarityCore-Delayed-Sync");
+                t.setDaemon(true);
+                return t;
             });
         }
+        return syncExecutor;
     }
 
     private static void performDelayedSync() {
@@ -69,12 +49,7 @@ public class DelayedSyncManager {
 
                     List<IncrementalSyncPayload.ChangeOperationData> operations = new ArrayList<>();
                     for (ChangeOperation op : optimizedOps) {
-                        IncrementalSyncPayload.OperationType type = switch (op.getType()) {
-                            case ADD -> IncrementalSyncPayload.OperationType.ADD;
-                            case UPDATE -> IncrementalSyncPayload.OperationType.UPDATE;
-                            case DELETE -> IncrementalSyncPayload.OperationType.DELETE;
-                        };
-                        operations.add(new IncrementalSyncPayload.ChangeOperationData(type, op.getItemId(), op.getRarity()));
+                        operations.add(IncrementalSyncPayload.ChangeOperationData.from(op));
                     }
 
                     IncrementalSyncPayload payload = new IncrementalSyncPayload(operations);
@@ -83,14 +58,16 @@ public class DelayedSyncManager {
             }
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error during delayed sync", e);
-            syncScheduled = false;
+            syncScheduled.set(false);
         }
     }
 
     private static void sendPayloadToAllPlayers(IncrementalSyncPayload payload) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
-            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            // 使用快照避免遍历玩家列表时的并发修改异常
+            List<ServerPlayer> players = List.copyOf(server.getPlayerList().getPlayers());
+            for (ServerPlayer player : players) {
                 try {
                     PacketDistributor.sendToPlayer(player, payload);
                 } catch (Exception e) {
@@ -121,7 +98,7 @@ public class DelayedSyncManager {
                 Thread.currentThread().interrupt();
             }
         }
-        syncScheduled = false;
+        syncScheduled.set(false);
         RarityCore.LOGGER.debug("DelayedSyncManager shutdown completed");
     }
 

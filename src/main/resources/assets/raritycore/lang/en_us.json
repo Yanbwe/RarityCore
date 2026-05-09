@@ -10,6 +10,7 @@
   "rarity.core.items_count": "Items with rarity config: %s",
   "rarity.core.no_item_in_hand": "You are not holding any item!",
   "rarity.core.unrecognized_item": "Unrecognized item!",
+  "rarity.core.invalid_rarity": "Invalid rarity value: %d (must be >= 1)",
   "rarity.core.item_set_rarity": "Set held item %s to rarity level %d",
   "rarity.core.command_failed": "Command execution failed!",
   "rarity.core.item_set_rarity_by_id": "Set item %s to rarity level %d",

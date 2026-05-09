@@ -5,11 +5,9 @@ package org.yanbwe.raritycore.client;
   名字下面显示稀有度等级
  */
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
@@ -25,7 +23,6 @@ import org.yanbwe.raritycore.event.RarityTooltipEvent;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.ComponentBuilder;
 import org.yanbwe.raritycore.util.RarityConstants;
-import org.yanbwe.raritycore.util.RarityValidator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +62,7 @@ public class RarityTooltipHandler {
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度,则不插入工具提示
         // 注意:需要检查物品是否真的没有配置,而不是检查rarity是否为null
-        if (ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
+        if (ClientConfigManager.isSkipUnconfiguredItems() && !RarityRegistry.hasConfiguredRarity(item)) {
             return;
         }
         
@@ -74,9 +71,8 @@ public class RarityTooltipHandler {
         boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;
         int displayRarity = rarity; // 保存用于显示的原始稀有度值
         
-        // 标准化稀有度值用于颜色获取等内部处理
-        rarity = RarityValidator.normalizeRarity(rarity);
-        
+        // 直接使用原始稀有度值查询 RarityClientConfig，其 getConfig() 内部处理：
+        // level < 1 → 回退1 | level > 7 未配置 → 回退7 | level 已配置 → 直接命中
         // 从 RarityClientConfig 获取该等级的客户端配置
         RarityClientConfig clientConfig = RarityClientConfig.getInstance();
         
@@ -93,8 +89,8 @@ public class RarityTooltipHandler {
         
         if (isSpecialRarity) {
             // 如果稀有度大于7,显示为 [x级稀有度] <星星>
-            // 特殊稀有度颜色沿用等级 7（UNIQUE）的配置
-            int uniqueRgbColor = clientConfig.getColor(RarityConstants.RARITY_UNIQUE);
+            // 特殊稀有度颜色：优先查找自身等级配置，不存在则回退到等级 7
+            int uniqueRgbColor = clientConfig.getColor(displayRarity);
             MutableComponent rarityComponent = ComponentBuilder.buildSpecialRarityComponent(displayRarity, uniqueRgbColor);
             
             // 触发 RarityTooltipEvent，允许监听器修改 tooltip 组件
@@ -165,35 +161,6 @@ public class RarityTooltipHandler {
         } finally {
             RarityExclusionManager.setRenderingTooltipItem(false);
         }
-    }
-    
-    /**
-     * 检查物品是否有配置的稀有度
-     * @param item 要检查的物品
-     * @return 如果物品有配置稀有度返回true,否则返回false
-     */
-    private static boolean hasConfiguredRarity(Item item) {
-        if (item == null) {
-            return false;
-        }
-
-        // 获取物品ID
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
-        if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
-            return false;
-        }
-
-        // 检查是否在手动配置中有稀有度
-        if (RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId)) {
-            return true;
-        }
-
-        // 检查是否在自动计算稀有度中有配置
-        if (RarityRegistry.hasAutoRarity(itemId)) {
-            return true;
-        }
-
-        return false;
     }
     
     /**

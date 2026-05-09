@@ -1,7 +1,7 @@
 package org.yanbwe.raritycore.compat.ironsspells;
 
 import net.minecraft.core.component.DataComponentMap;
-import net.minecraft.core.component.TypedDataComponent;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -28,6 +28,9 @@ public class IronSpellsAdapter {
     /** 组件键名匹配用的 ResourceLocation，初始化后缓存在此 */
     private static volatile ResourceLocation spellContainerKey;
 
+    /** 缓存的 DataComponentType 引用，避免热路径上的注册表反向查找 */
+    private static volatile DataComponentType<?> cachedSpellContainerType;
+
     /** 缓存的反射方法引用，避免热路径上重复调用 getMethod() */
     private static volatile Method cachedGetSpellAtIndex;
     private static volatile Method cachedGetLevel;
@@ -38,7 +41,7 @@ public class IronSpellsAdapter {
      * 成功后将组件键名 (irons_spellbooks:spell_container) 缓存在字段中，
      * 供 {@link #getMappedRarity(ItemStack)} 在遍历组件时做比对。</p>
      */
-    public static void init() {
+    public static synchronized void init() {
         if (isInitialized) {
             return;
         }
@@ -60,6 +63,9 @@ public class IronSpellsAdapter {
         }
 
         spellContainerKey = ResourceLocation.fromNamespaceAndPath("irons_spellbooks", "spell_container");
+
+        // 缓存 DataComponentType 引用，替代热路径上的注册表反向查找 (O(1) 标识比较)
+        cachedSpellContainerType = BuiltInRegistries.DATA_COMPONENT_TYPE.get(spellContainerKey);
 
         // 缓存反射方法引用，避免热路径上每次调用都执行 getMethod() 查找
         try {
@@ -115,24 +121,21 @@ public class IronSpellsAdapter {
         try {
             DataComponentMap components = itemStack.getComponents();
 
-            for (TypedDataComponent<?> tc : components) {
-                ResourceLocation keyLoc = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(tc.type());
-                if (!spellContainerKey.equals(keyLoc)) {
-                    continue;
-                }
+            // 使用缓存的 DataComponentType 引用进行标识比较，替代注册表反向查找
+            for (var tc : components) {
+                if (tc.type() == cachedSpellContainerType) {
+                    Object spellContainer = tc.value();
+                    if (spellContainer == null) {
+                        return null;
+                    }
 
-                Object spellContainer = tc.value();
-                if (spellContainer == null) {
-                    return null;
-                }
+                    int level = invokeSpellLevel(spellContainer);
+                    if (level < 1) {
+                        return null;
+                    }
 
-                // 反射获取法术等级：调用 spellContainer.getSpellAtIndex(0).getLevel()
-                int level = invokeSpellLevel(spellContainer);
-                if (level < 1) {
-                    return null;
+                    return level;
                 }
-
-                return level;
             }
 
             return null;
@@ -167,6 +170,7 @@ public class IronSpellsAdapter {
         isInitialized = false;
         isIronSpellsLoaded = false;
         spellContainerKey = null;
+        cachedSpellContainerType = null;
         cachedGetSpellAtIndex = null;
         cachedGetLevel = null;
     }

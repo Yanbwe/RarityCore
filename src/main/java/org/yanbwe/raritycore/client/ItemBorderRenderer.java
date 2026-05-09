@@ -12,7 +12,6 @@ import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.RarityClientConfig;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityConstants;
-import org.yanbwe.raritycore.util.RarityValidator;
 
 public class ItemBorderRenderer {
     
@@ -55,12 +54,12 @@ public class ItemBorderRenderer {
         }
         
         Item item = itemStack.getItem();
-        if (ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
+        if (ClientConfigManager.isSkipUnconfiguredItems() && !RarityRegistry.hasConfiguredRarity(item)) {
             return;
         }
         
-        rarity = RarityValidator.normalizeRarity(rarity);
-        
+        // 直接使用原始稀有度值查询 RarityClientConfig，其 getConfig() 内部处理：
+        // level < 1 → 回退1 | level > 7 未配置 → 回退7 | level 已配置 → 直接命中
         // 从 RarityClientConfig 获取该等级的客户端配置
         RarityClientConfig clientConfig = RarityClientConfig.getInstance();
         
@@ -73,7 +72,7 @@ public class ItemBorderRenderer {
         if (ClientConfigManager.isUseTextureBorder()) {
             // 从 RarityClientConfig 获取纹理路径，回退到默认路径
             String texturePath = clientConfig.getTexture(rarity);
-            renderTextureBorder(guiGraphics, texturePath, x, y);
+            renderTextureBorder(guiGraphics, texturePath, x, y, rarity);
         } else {
             // 使用 RarityClientConfig 的 RGB 颜色渲染边框
             int rgbColor = clientConfig.getColor(rarity);
@@ -87,8 +86,9 @@ public class ItemBorderRenderer {
      * @param texturePath 纹理资源路径
      * @param x X坐标
      * @param y Y坐标
+     * @param fallbackRarity 纹理加载失败时回退使用的稀有度等级
      */
-    private static void renderTextureBorder(GuiGraphics guiGraphics, String texturePath, int x, int y) {
+    private static void renderTextureBorder(GuiGraphics guiGraphics, String texturePath, int x, int y, int fallbackRarity) {
         ResourceLocation textureLocation = null;
         
         try {
@@ -96,8 +96,7 @@ public class ItemBorderRenderer {
         } catch (Exception e) {
             RarityCore.LOGGER.warn("Failed to parse texture path '{}', falling back to color border: {}", texturePath, e.getMessage());
             RarityClientConfig clientConfig = RarityClientConfig.getInstance();
-            int rarity = 1; // fallback
-            renderColorBorder(guiGraphics, clientConfig.getColor(rarity), x, y);
+            renderColorBorder(guiGraphics, clientConfig.getColor(fallbackRarity), x, y);
             return;
         }
         
@@ -108,8 +107,7 @@ public class ItemBorderRenderer {
         } catch (Exception e) {
             RarityCore.LOGGER.warn("Failed to load texture '{}', falling back to color border: {}", texturePath, e.getMessage());
             RarityClientConfig clientConfig = RarityClientConfig.getInstance();
-            int rarity = 1;
-            renderColorBorder(guiGraphics, clientConfig.getColor(rarity), x, y);
+            renderColorBorder(guiGraphics, clientConfig.getColor(fallbackRarity), x, y);
         }
     }
     
@@ -139,35 +137,6 @@ public class ItemBorderRenderer {
             guiGraphics.fill(x, y, x + 1, y + 16, argbColor);
             guiGraphics.fill(x + 15, y, x + 16, y + 16, argbColor);
         }
-    }
-    
-    /**
-     * 检查物品是否有配置的稀有度
-     * @param item 要检查的物品
-     * @return 如果物品有配置稀有度返回true,否则返回false
-     */
-    private static boolean hasConfiguredRarity(Item item) {
-        if (item == null) {
-            return false;
-        }
-
-        // 获取物品ID
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
-        if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
-            return false;
-        }
-
-        // 检查是否在手动配置中有稀有度
-        if (RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId)) {
-            return true;
-        }
-
-        // 检查是否在自动计算稀有度中有配置
-        if (RarityRegistry.hasAutoRarity(itemId)) {
-            return true;
-        }
-
-        return false;
     }
     
     /**

@@ -71,6 +71,24 @@ public class RarityRegistry {
     }
 
     /**
+     * 检查物品是否有配置的稀有度。
+     * 查找范围：手动配置 (ITEM_RARITY_MAP) 和自动计算配置 (AUTO_RARITY_MAP)。
+     *
+     * @param item 要检查的物品
+     * @return 如果物品有配置稀有度返回 true，否则返回 false
+     */
+    public static boolean hasConfiguredRarity(@Nullable Item item) {
+        if (item == null) {
+            return false;
+        }
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
+        if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
+            return false;
+        }
+        return ITEM_RARITY_MAP.containsKey(itemId) || AUTO_RARITY_MAP.containsKey(itemId);
+    }
+
+    /**
      * 注册物品的稀有度等级
      * 1普通,2稀有,3罕见,4史诗,5传说,6神话,7唯一
      * 不注册视为普通品质
@@ -82,6 +100,11 @@ public class RarityRegistry {
     }
     
     /**
+     * 注册操作的锁对象，保证 register/unregister 与缓存更新、事件发布的原子性
+     */
+    private static final Object REGISTRY_LOCK = new Object();
+
+    /**
      * 注册物品的稀有度等级
      * 1普通,2稀有,3罕见,4史诗,5传说,6神话,7唯一
      * 不注册视为普通品质
@@ -90,70 +113,64 @@ public class RarityRegistry {
      * @param syncToClients 是否同步到客户端
      */
     public static void register(@Nullable Item item, int rarity, boolean syncToClients) {
-        if (item != null) {
+        if (item == null) return;
+        synchronized (REGISTRY_LOCK) {
             ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
-            if (itemId != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
-                Integer oldRarity = ITEM_RARITY_MAP.put(itemId, rarity);
-                
-                // 监控 ITEM_RARITY_MAP 无界增长：当条目数超过阈值时记录警告
-                checkMapGrowthWarning(ITEM_RARITY_MAP.size());
-                
-                // 发布稀有度变更事件
-                RarityChangeEvent.ChangeType changeType = (oldRarity == null) ? 
-                    RarityChangeEvent.ChangeType.REGISTER : RarityChangeEvent.ChangeType.UPDATE;
-                NeoForge.EVENT_BUS.post(new RarityChangeEvent(item, oldRarity, rarity, changeType));
-                
-                // 实时更新ID缓存（编辑模式支持）
-                DualCacheManager.updateIdCache(new ItemStack(item), rarity);
-                
-                // 如果需要同步到客户端且当前在服务端环境中,记录变更操作
-                if (syncToClients) {
-                    // 记录变更操作
-                    if (oldRarity == null) {
-                        // 新增操作
-                        SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.ADD, itemId, rarity));
-                    } else {
-                        // 更新操作
-                        SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.UPDATE, itemId, rarity));
-                    }
-                    
-                    // 同步到客户端
-                    SyncManager.syncRarityToClients(ITEM_RARITY_MAP);
+            if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) return;
+
+            Integer oldRarity = ITEM_RARITY_MAP.put(itemId, rarity);
+
+            // 监控 ITEM_RARITY_MAP 无界增长：当条目数超过阈值时记录警告
+            checkMapGrowthWarning(ITEM_RARITY_MAP.size());
+
+            // 发布稀有度变更事件
+            RarityChangeEvent.ChangeType changeType = (oldRarity == null) ?
+                RarityChangeEvent.ChangeType.REGISTER : RarityChangeEvent.ChangeType.UPDATE;
+            NeoForge.EVENT_BUS.post(new RarityChangeEvent(item, oldRarity, rarity, changeType));
+
+            // 实时更新ID缓存（编辑模式支持）
+            DualCacheManager.updateIdCache(new ItemStack(item), rarity);
+
+            // 如果需要同步到客户端且当前在服务端环境中,记录变更操作并使用增量同步
+            if (syncToClients) {
+                if (oldRarity == null) {
+                    SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.ADD, itemId, rarity));
+                } else {
+                    SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.UPDATE, itemId, rarity));
                 }
+                SyncManager.syncIncrementalChangesToClients();
             }
         }
     }
-    
+
     /**
      * 删除物品的稀有度注册
      * @param item 要删除稀有度注册的物品
      * @param syncToClients 是否同步到客户端
      */
     public static void unregister(@Nullable Item item, boolean syncToClients) {
-        if (item != null) {
+        if (item == null) return;
+        synchronized (REGISTRY_LOCK) {
             ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
-            if (itemId != null && !itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
-                Integer removedRarity = ITEM_RARITY_MAP.remove(itemId);
-                
-                // 发布稀有度变更事件
+            if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) return;
+
+            Integer removedRarity = ITEM_RARITY_MAP.remove(itemId);
+
+            // 发布稀有度变更事件
+            if (removedRarity != null) {
+                NeoForge.EVENT_BUS.post(new RarityChangeEvent(
+                    item, removedRarity, null, RarityChangeEvent.ChangeType.REMOVE));
+            }
+
+            // 实时更新ID缓存（编辑模式支持）- 删除时使缓存失效
+            DualCacheManager.updateIdCache(new ItemStack(item), null);
+
+            // 如果需要同步到客户端且当前在服务端环境中,记录删除操作并使用增量同步
+            if (syncToClients) {
                 if (removedRarity != null) {
-                    NeoForge.EVENT_BUS.post(new RarityChangeEvent(
-                        item, removedRarity, null, RarityChangeEvent.ChangeType.REMOVE));
+                    SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.DELETE, itemId, null));
                 }
-                
-                // 实时更新ID缓存（编辑模式支持）- 删除时使缓存失效
-                DualCacheManager.updateIdCache(new ItemStack(item), null);
-                
-                // 如果需要同步到客户端且当前在服务端环境中,记录删除操作
-                if (syncToClients) {
-                    // 记录删除操作
-                    if (removedRarity != null) {
-                        SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.DELETE, itemId, null));
-                    }
-                    
-                    // 同步到客户端
-                    SyncManager.syncRarityToClients(ITEM_RARITY_MAP);
-                }
+                SyncManager.syncIncrementalChangesToClients();
             }
         }
     }
@@ -316,6 +333,14 @@ public class RarityRegistry {
      * @return 物品的稀有度等级(1-7),如果没有找到匹配的稀有度,返回1(普通)
      */
     private static @NotNull Integer getRarityInternal(ResourceLocation itemId, @Nullable ItemStack itemStack, Item item) {
+        // 早期缓存返回：减少热路径上的完整优先级链遍历
+        if (itemStack != null) {
+            Integer cached = DualCacheManager.getCachedRarity(itemStack);
+            if (cached != null) {
+                return cached;
+            }
+        }
+
         Integer rarity;
         
         // 最高优先级：检查组件稀有度控制（Component 驱动，凌驾一切）

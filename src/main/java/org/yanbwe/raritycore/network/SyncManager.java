@@ -8,7 +8,6 @@ import org.yanbwe.raritycore.RarityCore;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 同步管理器
@@ -16,12 +15,15 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class SyncManager {
 
-    private static final List<ChangeOperation> CHANGE_OPERATIONS_BUFFER = new CopyOnWriteArrayList<>();
+    private static final List<ChangeOperation> CHANGE_OPERATIONS_BUFFER = new ArrayList<>();
 
+    /**
+     * 向所有在线玩家发送完整的稀有度映射表（全量同步）
+     * 仅在配置重载、服务器启动等需要完整状态同步的场景使用
+     */
     public static void syncRarityToClients(java.util.Map<net.minecraft.resources.ResourceLocation, Integer> itemRarityMap) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null && itemRarityMap != null) {
-            // 发送前检查 Map 大小，防止因配置错误导致的无界增长发送超大包
             int mapSize = itemRarityMap.size();
             if (mapSize > NetworkConstants.MAX_RARITY_SYNC_ENTRIES) {
                 RarityCore.LOGGER.warn("SyncManager.syncRarityToClients: ITEM_RARITY_MAP has {} entries, "
@@ -33,14 +35,35 @@ public class SyncManager {
         }
     }
 
+    /**
+     * 向单个玩家发送完整的稀有度映射表
+     * 适用于玩家登录等仅需同步给单个玩家的场景，避免不必要的全服广播
+     */
+    public static void syncRarityToPlayer(ServerPlayer player,
+                                           java.util.Map<net.minecraft.resources.ResourceLocation, Integer> itemRarityMap) {
+        if (player == null || itemRarityMap == null) return;
+        int mapSize = itemRarityMap.size();
+        if (mapSize > NetworkConstants.MAX_RARITY_SYNC_ENTRIES) {
+            RarityCore.LOGGER.warn("SyncManager.syncRarityToPlayer: Map has {} entries, exceeding recommended limit of {}.",
+                mapSize, NetworkConstants.MAX_RARITY_SYNC_ENTRIES);
+        }
+        RaritySyncPayload payload = new RaritySyncPayload(itemRarityMap);
+        try {
+            PacketDistributor.sendToPlayer(player, payload);
+        } catch (Exception e) {
+            RarityCore.LOGGER.warn("Failed to send rarity sync to player {}: {}",
+                player.getName().getString(), e.getMessage());
+        }
+    }
+
+    /**
+     * 发送增量变更给所有在线玩家
+     * 消费 CHANGE_OPERATIONS_BUFFER 中积累的变更操作，按 MAX_INCREMENTAL_OPERATIONS 分批发送
+     */
     public static void syncIncrementalChangesToClients() {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return;
 
-        // Atomically snapshot and clear the buffer to prevent data loss:
-        // operations added between iteration and clear() in the old code
-        // would be permanently lost. The synchronized block ensures
-        // snapshot + clear is a single atomic operation.
         final List<ChangeOperation> snapshot;
         synchronized (CHANGE_OPERATIONS_BUFFER) {
             if (CHANGE_OPERATIONS_BUFFER.isEmpty()) return;
@@ -48,25 +71,31 @@ public class SyncManager {
             CHANGE_OPERATIONS_BUFFER.clear();
         }
 
-        // Build payload from the snapshot outside the critical section
-        List<IncrementalSyncPayload.ChangeOperationData> operations = new ArrayList<>();
-        for (ChangeOperation op : snapshot) {
-            IncrementalSyncPayload.OperationType type = switch (op.getType()) {
-                case ADD -> IncrementalSyncPayload.OperationType.ADD;
-                case UPDATE -> IncrementalSyncPayload.OperationType.UPDATE;
-                case DELETE -> IncrementalSyncPayload.OperationType.DELETE;
-            };
-            operations.add(new IncrementalSyncPayload.ChangeOperationData(type, op.getItemId(), op.getRarity()));
-        }
+        // 按 MAX_INCREMENTAL_OPERATIONS 分批发送，防止超大增量载荷导致客户端缓冲区溢出
+        for (int offset = 0; offset < snapshot.size(); offset += NetworkConstants.MAX_INCREMENTAL_OPERATIONS) {
+            int end = Math.min(offset + NetworkConstants.MAX_INCREMENTAL_OPERATIONS, snapshot.size());
+            List<ChangeOperation> batch = snapshot.subList(offset, end);
 
-        IncrementalSyncPayload payload = new IncrementalSyncPayload(operations);
-        sendToAllPlayers(payload);
+            List<IncrementalSyncPayload.ChangeOperationData> operations = new ArrayList<>();
+            for (ChangeOperation op : batch) {
+                operations.add(IncrementalSyncPayload.ChangeOperationData.from(op));
+            }
+
+            IncrementalSyncPayload payload = new IncrementalSyncPayload(operations);
+            sendToAllPlayers(payload);
+        }
     }
 
+    /**
+     * 向所有在线玩家发送载荷
+     * 使用快照避免遍历玩家列表时的并发修改异常
+     */
     private static void sendToAllPlayers(net.minecraft.network.protocol.common.custom.CustomPacketPayload payload) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
-            for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            // List.copyOf 创建不可变快照，防止并发修改
+            List<ServerPlayer> players = List.copyOf(server.getPlayerList().getPlayers());
+            for (ServerPlayer player : players) {
                 PacketDistributor.sendToPlayer(player, payload);
             }
         }
@@ -88,11 +117,45 @@ public class SyncManager {
         }
     }
 
+    /**
+     * 全量同步到所有客户端（带重试机制）
+     * 委托给 NetworkRetryManager 实现指数退避重试
+     */
     public static void syncRarityToClientsWithRetry(java.util.Map<net.minecraft.resources.ResourceLocation, Integer> itemRarityMap) {
-        syncRarityToClients(itemRarityMap);
+        if (itemRarityMap == null) return;
+        int mapSize = itemRarityMap.size();
+        if (mapSize > NetworkConstants.MAX_RARITY_SYNC_ENTRIES) {
+            RarityCore.LOGGER.warn("SyncManager.syncRarityToClientsWithRetry: Map has {} entries, "
+                + "exceeding recommended limit of {}.", mapSize, NetworkConstants.MAX_RARITY_SYNC_ENTRIES);
+        }
+        RaritySyncPayload payload = new RaritySyncPayload(itemRarityMap);
+        NetworkRetryManager.sendFullSyncWithRetry(payload);
     }
 
+    /**
+     * 增量同步到所有客户端（带重试机制）
+     * 先原子快照并清空缓冲区，再委托给 NetworkRetryManager 分批发送
+     */
     public static void syncIncrementalChangesToClientsWithRetry() {
-        syncIncrementalChangesToClients();
+        final List<ChangeOperation> snapshot;
+        synchronized (CHANGE_OPERATIONS_BUFFER) {
+            if (CHANGE_OPERATIONS_BUFFER.isEmpty()) return;
+            snapshot = new ArrayList<>(CHANGE_OPERATIONS_BUFFER);
+            CHANGE_OPERATIONS_BUFFER.clear();
+        }
+
+        // 按 MAX_INCREMENTAL_OPERATIONS 分批发送
+        for (int offset = 0; offset < snapshot.size(); offset += NetworkConstants.MAX_INCREMENTAL_OPERATIONS) {
+            int end = Math.min(offset + NetworkConstants.MAX_INCREMENTAL_OPERATIONS, snapshot.size());
+            List<ChangeOperation> batch = snapshot.subList(offset, end);
+
+            List<IncrementalSyncPayload.ChangeOperationData> operations = new ArrayList<>();
+            for (ChangeOperation op : batch) {
+                operations.add(IncrementalSyncPayload.ChangeOperationData.from(op));
+            }
+
+            IncrementalSyncPayload payload = new IncrementalSyncPayload(operations);
+            NetworkRetryManager.sendIncrementalSyncWithRetry(payload);
+        }
     }
 }

@@ -16,11 +16,15 @@ import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.calc.AutoRarityCalculator;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
+import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -74,6 +78,10 @@ public class RarityManagementCommands {
      * 设置手上物品的稀有度
      */
     private static int setHandRarity(CommandSourceStack source, int rarity) {
+        if (rarity < 1) {
+            source.sendSuccess(() -> Component.translatable("rarity.core.invalid_rarity", rarity).withStyle(ChatFormatting.RED), false);
+            return 0;
+        }
         try {
             Player player = source.getPlayerOrException();
             ItemStack itemStack = player.getMainHandItem();
@@ -91,14 +99,18 @@ public class RarityManagementCommands {
                 return 0;
             }
             
-            // 注册稀有度(不自动同步,因为后面会手动同步)
+            // 判断是新增还是更新（检查当前映射表是否已有该物品）
+            boolean wasRegistered = RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId);
             RarityRegistry.register(item, rarity, false);
             
             // 保存到配置文件
             saveRarityToConfig(itemId.toString(), rarity);
             
-            // 手动同步到所有客户端
-            SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
+            // 使用增量同步代替全量同步
+            SyncManager.addChangeOperation(new ChangeOperation(
+                wasRegistered ? ChangeOperation.OperationType.UPDATE : ChangeOperation.OperationType.ADD,
+                itemId, rarity));
+            SyncManager.syncIncrementalChangesToClients();
             
             source.sendSuccess(() -> Component.translatable("rarity.core.item_set_rarity", itemId.toString(), rarity).withStyle(ChatFormatting.GREEN), false);
             return 1;
@@ -113,6 +125,10 @@ public class RarityManagementCommands {
      * 设置指定物品的稀有度
      */
     private static int setItemRarity(CommandSourceStack source, ResourceLocation itemId, int rarity) {
+        if (rarity < 1) {
+            source.sendSuccess(() -> Component.translatable("rarity.core.invalid_rarity", rarity).withStyle(ChatFormatting.RED), false);
+            return 0;
+        }
         Item item = BuiltInRegistries.ITEM.get(itemId);
         
         if (item == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
@@ -120,14 +136,18 @@ public class RarityManagementCommands {
             return 0;
         }
         
-        // 注册稀有度(不自动同步,因为后面会手动同步)
+        // 判断是新增还是更新
+        boolean wasRegistered = RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId);
         RarityRegistry.register(item, rarity, false);
         
         // 保存到配置文件
         saveRarityToConfig(itemId.toString(), rarity);
         
-        // 手动同步到所有客户端
-        SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
+        // 使用增量同步代替全量同步
+        SyncManager.addChangeOperation(new ChangeOperation(
+            wasRegistered ? ChangeOperation.OperationType.UPDATE : ChangeOperation.OperationType.ADD,
+            itemId, rarity));
+        SyncManager.syncIncrementalChangesToClients();
         
         source.sendSuccess(() -> Component.translatable("rarity.core.item_set_rarity_by_id", itemId.toString(), rarity).withStyle(ChatFormatting.GREEN), false);
         return 1;
@@ -160,8 +180,10 @@ public class RarityManagementCommands {
             // 保存到配置文件(稀有度为0表示删除)
             saveRarityToConfig(itemId.toString(), 0);
             
-            // 手动同步到所有客户端
-            SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
+            // 使用增量同步代替全量同步
+            SyncManager.addChangeOperation(new ChangeOperation(
+                ChangeOperation.OperationType.DELETE, itemId, null));
+            SyncManager.syncIncrementalChangesToClients();
             
             source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity", itemId.toString()).withStyle(ChatFormatting.GREEN), false);
             return 1;
@@ -189,8 +211,10 @@ public class RarityManagementCommands {
         // 保存到配置文件(稀有度为0表示删除)
         saveRarityToConfig(itemId.toString(), 0);
         
-        // 手动同步到所有客户端
-        SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
+        // 使用增量同步代替全量同步
+        SyncManager.addChangeOperation(new ChangeOperation(
+            ChangeOperation.OperationType.DELETE, itemId, null));
+        SyncManager.syncIncrementalChangesToClients();
         
         source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity_by_id", itemId.toString()).withStyle(ChatFormatting.GREEN), false);
         return 1;
@@ -229,9 +253,9 @@ public class RarityManagementCommands {
             // 更新配置 - 添加或修改指定的物品 ID 和稀有度
             jsonObject.addProperty(itemId, rarity);
             
-            // 写入配置文件
+            // 写入配置文件（显式指定 UTF-8 避免平台编码差异）
             com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
-            try (FileWriter writer = new FileWriter(configFile.toFile())) {
+            try (Writer writer = new OutputStreamWriter(new FileOutputStream(configFile.toFile()), StandardCharsets.UTF_8)) {
                 gson.toJson(jsonObject, writer);
             }
 

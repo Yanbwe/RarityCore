@@ -76,6 +76,9 @@ public class RarityCoreEventHandler {
 
         // 关闭网络重试管理器
         NetworkRetryManager.shutdown();
+        
+        // 关闭物品数据同步管理器
+        ItemDataSyncManager.shutdown();
     }
     
     /**
@@ -93,11 +96,10 @@ public class RarityCoreEventHandler {
      */
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        // 登录时向玩家发送完整稀有度数据
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-            // 发送完整稀有度数据
-            SyncManager.syncRarityToClients(RarityRegistry.getItemRarityMap());
-            
+            // 只向登录的玩家同步稀有度数据，避免全服广播
+            SyncManager.syncRarityToPlayer(serverPlayer, RarityRegistry.getItemRarityMap());
+
             // 发送物品数据匹配规则
             ItemDataSyncManager.syncItemDataRulesToPlayer(serverPlayer);
         }

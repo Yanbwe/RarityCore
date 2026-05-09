@@ -10,6 +10,7 @@
   "rarity.core.items_count": "有稀有度配置的物品:%s",
   "rarity.core.no_item_in_hand": "你手上没有物品!",
   "rarity.core.unrecognized_item": "无法识别的物品!",
+  "rarity.core.invalid_rarity": "无效的稀有度值: %d (必须 >= 1)",
   "rarity.core.item_set_rarity": "已将手上物品 %s 设置为稀有度 %d",
   "rarity.core.command_failed": "命令执行失败!",
   "rarity.core.item_set_rarity_by_id": "已将物品 %s 设置为稀有度 %d",

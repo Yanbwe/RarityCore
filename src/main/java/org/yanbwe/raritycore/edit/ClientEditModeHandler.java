@@ -20,6 +20,8 @@ import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
 
 import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.network.ChangeOperation;
+import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader;
 import org.yanbwe.raritycore.network.EditModeRequestPayload;
 import org.yanbwe.raritycore.registry.RarityRegistry;
@@ -95,14 +97,22 @@ public class ClientEditModeHandler {
             PacketDistributor.sendToServer(payload);
         } else {
             // 单人游戏: 本地处理并保存配置
+            // 使用增量同步代替全量同步，避免本地连接因大包堆积导致 "extra bytes" 崩溃
             if (deleteModeEnabled) {
                 RarityRegistry.unregister(item, false);
                 RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), 0);
+                SyncManager.addChangeOperation(new ChangeOperation(
+                    ChangeOperation.OperationType.DELETE, itemId, null));
             } else {
+                // 判断是新增还是更新操作（ITEM_RARITY_MAP 不含该条目则为新增）
+                boolean isNewEntry = !RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId);
                 RarityRegistry.register(item, currentRarity, false);
                 RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), currentRarity);
+                SyncManager.addChangeOperation(new ChangeOperation(
+                    isNewEntry ? ChangeOperation.OperationType.ADD : ChangeOperation.OperationType.UPDATE,
+                    itemId, currentRarity));
             }
-            RarityRegistry.syncRarityToClientsWithRetry();
+            RarityRegistry.syncIncrementalChangesToClients();
         }
 
         // 立即刷新本地缓存
@@ -322,7 +332,8 @@ public class ClientEditModeHandler {
             ItemStack itemStack = new ItemStack(item);
             DualCacheManager.updateIdCache(itemStack, rarity > 0 ? rarity : null);
         } catch (Exception e) {
-            // 静默失败, 等待网络同步后自动更新
+            RarityCore.LOGGER.debug("Client cache update failed for item {}, waiting for network sync: {}",
+                item, e.getMessage());
         }
     }
 }

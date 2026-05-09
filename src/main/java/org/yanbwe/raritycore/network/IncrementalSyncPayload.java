@@ -136,5 +136,18 @@ public record IncrementalSyncPayload(List<ChangeOperationData> changeOperations)
         public Integer rarity() {
             return rarity;
         }
+
+        /**
+         * 从 {@link ChangeOperation} 创建对应的 {@link ChangeOperationData}。
+         * 消除 SyncManager、DelayedSyncManager 等类中的重复转换逻辑。
+         */
+        public static ChangeOperationData from(ChangeOperation op) {
+            OperationType type = switch (op.getType()) {
+                case ADD -> OperationType.ADD;
+                case UPDATE -> OperationType.UPDATE;
+                case DELETE -> OperationType.DELETE;
+            };
+            return new ChangeOperationData(type, op.getItemId(), op.getRarity());
+        }
     }
 }

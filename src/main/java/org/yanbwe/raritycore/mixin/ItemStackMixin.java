@@ -1,10 +1,8 @@
 package org.yanbwe.raritycore.mixin;
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,7 +14,6 @@ import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.RarityClientConfig;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityConstants;
-import org.yanbwe.raritycore.util.RarityValidator;
 
 @Mixin(ItemStack.class)
 public class ItemStackMixin {
@@ -48,13 +45,12 @@ public class ItemStackMixin {
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度,则不修改名称颜色
         Item item = stack.getItem();
-        if (ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
+        if (ClientConfigManager.isSkipUnconfiguredItems() && !RarityRegistry.hasConfiguredRarity(item)) {
             return;
         }
 
-        // 标准化稀有度值,遵循模组的包容性原则
-        rarity = RarityValidator.normalizeRarity(rarity);
-        
+        // 直接使用原始稀有度值查询 RarityClientConfig，其 getConfig() 内部处理：
+        // level < 1 → 回退1 | level > 7 未配置 → 回退7 | level 已配置 → 直接命中
         // 如果是普通稀有度(1),则使用白色,但不添加格式化代码(默认颜色)
         if (rarity == RarityConstants.RARITY_COMMON) {
             return;
@@ -75,26 +71,6 @@ public class ItemStackMixin {
         // 使用 RGB 颜色设置物品名称
         Style coloredStyle = Style.EMPTY.withColor(TextColor.fromRgb(rgbColor));
         cir.setReturnValue(originalName.copy().withStyle(coloredStyle));
-    }
-    
-    /**
-     * 检查物品是否有配置的稀有度
-     * @param item 要检查的物品
-     * @return 如果物品有配置稀有度返回true,否则返回false
-     */
-    private boolean hasConfiguredRarity(Item item) {
-        if (item == null) {
-            return false;
-        }
-        
-        // 获取物品ID
-        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
-        if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
-            return false;
-        }
-        
-        // 检查是否在注册表中有配置
-        return RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId);
     }
     
 

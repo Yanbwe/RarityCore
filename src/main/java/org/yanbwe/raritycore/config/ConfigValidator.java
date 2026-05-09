@@ -133,7 +133,6 @@ public class ConfigValidator {
         configObject.addProperty("enableTooltipColor", true);
         configObject.addProperty("enableTooltipInsert", true);
         configObject.addProperty("skipUnconfiguredItems", false);
-        configObject.addProperty("enableBatchProcessing", true);
         configObject.addProperty("enableCacheSystem", true);
         
         // 星星显示配置

@@ -1,7 +1,7 @@
 package org.yanbwe.raritycore.compat.apotheosis;
 
 import net.minecraft.core.component.DataComponentMap;
-import net.minecraft.core.component.TypedDataComponent;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -18,9 +18,13 @@ public class ApotheosisAdapter {
     private static ResourceLocation rarityComponentLoc;
     private static ResourceLocation purityComponentLoc;
 
+    /** 缓存的 DataComponentType 引用，避免热路径上的注册表查找 */
+    private static DataComponentType<?> cachedRarityType;
+    private static DataComponentType<?> cachedPurityType;
+
     private static final Pattern DYNAMIC_HOLDER_PATTERN = Pattern.compile("DynamicHolder\\{[^/]*/ ([^}]+)\\}");
 
-    public static void init() {
+    public static synchronized void init() {
         if (isInitialized) {
             return;
         }
@@ -36,6 +40,10 @@ public class ApotheosisAdapter {
         try {
             rarityComponentLoc = ResourceLocation.fromNamespaceAndPath("apotheosis", "rarity");
             purityComponentLoc = ResourceLocation.fromNamespaceAndPath("apotheosis", "purity");
+
+            // 缓存 DataComponentType 引用，避免热路径上的注册表反向查找 (O(1) 替代 O(n))
+            cachedRarityType = BuiltInRegistries.DATA_COMPONENT_TYPE.get(rarityComponentLoc);
+            cachedPurityType = BuiltInRegistries.DATA_COMPONENT_TYPE.get(purityComponentLoc);
 
             isInitialized = true;
             RarityCore.LOGGER.info("Apotheosis compatibility adapter initialized, rarity={}, purity={}",
@@ -60,11 +68,13 @@ public class ApotheosisAdapter {
         }
 
         try {
+            // 使用缓存的 DataComponentType 引用进行 O(1) 查找，替代原 O(n) 遍历
             DataComponentMap components = itemStack.getComponents();
-
-            for (TypedDataComponent<?> component : components) {
-                ResourceLocation keyLoc = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(component.type());
-                if (keyLoc.equals(rarityComponentLoc) || keyLoc.equals(purityComponentLoc)) {
+            
+            // 类型标识比较（比 registry 反向查找快得多）
+            for (var tc : components) {
+                DataComponentType<?> type = tc.type();
+                if (type == cachedRarityType || type == cachedPurityType) {
                     return true;
                 }
             }
@@ -90,13 +100,14 @@ public class ApotheosisAdapter {
         }
 
         try {
+            // 使用缓存的 DataComponentType 引用遍历组件 (标识比较替代注册表反向查找)
             DataComponentMap components = itemStack.getComponents();
 
-            for (TypedDataComponent<?> component : components) {
-                ResourceLocation keyLoc = BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(component.type());
+            for (var tc : components) {
+                DataComponentType<?> type = tc.type();
 
-                if (keyLoc.equals(rarityComponentLoc)) {
-                    Object value = component.value();
+                if (type == cachedRarityType) {
+                    Object value = tc.value();
                     String rarityName = getRarityNameFromHolder(value);
                     if (rarityName != null) {
                         Integer mapped = mapApotheosisRarityString(rarityName);
@@ -104,8 +115,8 @@ public class ApotheosisAdapter {
                             return mapped;
                         }
                     }
-                } else if (keyLoc.equals(purityComponentLoc)) {
-                    Object value = component.value();
+                } else if (type == cachedPurityType) {
+                    Object value = tc.value();
                     String purityName = getPurityName(value);
                     if (purityName != null) {
                         Integer mapped = mapApotheosisPurityString(purityName);
@@ -229,6 +240,8 @@ public class ApotheosisAdapter {
         isApotheosisLoaded = false;
         rarityComponentLoc = null;
         purityComponentLoc = null;
+        cachedRarityType = null;
+        cachedPurityType = null;
     }
 
     /**

@@ -12,6 +12,7 @@ import org.yanbwe.raritycore.cache.RarityCacheCoordinator;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.RarityClientConfig;
 import org.yanbwe.raritycore.config.RarityClientConfigLoader;
+import org.yanbwe.raritycore.util.StarDisplayManager;
 
 /**
  * 客户端命令管理器
@@ -22,9 +23,14 @@ public class ClientCommands {
     
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("raritycore-client")
-            // 重载 RarityClientConfig 配置（客户端专用，不在服务端 reload 中触发）
+            // 重载全部客户端配置（客户端专用，不在服务端 reload 中触发）
             .then(Commands.literal("reload")
                 .executes(context -> {
+                    // 1. 重载 client.json（含星星显示配置）
+                    ClientConfigManager.loadClientConfig();
+                    // 2. 重载星星显示策略
+                    StarDisplayManager.getInstance().reloadConfiguration();
+                    // 3. 重载 RarityClientConfig.json（per-rarity 视觉配置）
                     RarityClientConfigLoader.load();
                     int levelCount = RarityClientConfig.getInstance().size();
                     context.getSource().sendSuccess(() -> Component.translatable(
