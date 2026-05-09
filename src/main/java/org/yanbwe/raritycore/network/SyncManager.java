@@ -10,12 +10,12 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 同步管理器
  * 处理稀有度数据的同步功能
+ * 变更操作缓冲区统一由 SyncBatchManager 管理，避免重复缓冲
  */
 public class SyncManager {
     
@@ -38,11 +38,6 @@ public class SyncManager {
     public static void bumpConfigVersion() {
         CONFIG_VERSION.incrementAndGet();
     }
-    
-    /**
-     * 变更操作缓冲区
-     */
-    private static final List<ChangeOperation> CHANGE_OPERATIONS_BUFFER = new CopyOnWriteArrayList<>();
     
     /**
      * 将所有稀有度数据同步到客户端(全量同步,含当前版本号)
@@ -72,19 +67,22 @@ public class SyncManager {
     
     /**
      * 将增量变更同步到客户端
+     * 变更操作统一由 SyncBatchManager 管理，避免重复缓冲。
+     * 本方法从 SyncBatchManager 获取待处理操作并立即发送
      */
     public static void syncIncrementalChangesToClients() {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server != null && !CHANGE_OPERATIONS_BUFFER.isEmpty()) {
-            // 创建包含变更操作的增量同步包
-            IncrementalSyncPacket packet = new IncrementalSyncPacket(new ArrayList<>(CHANGE_OPERATIONS_BUFFER));
-            
-            // 清空缓冲区
-            CHANGE_OPERATIONS_BUFFER.clear();
-            
-            // 发送到所有在线玩家
-            sendPacketToAllPlayers(packet, IncrementalSyncPacket.INSTANCE);
-        }
+        if (server == null) return;
+        
+        // 从统一的 SyncBatchManager 获取待处理操作
+        List<ChangeOperation> pendingOps = SyncBatchManager.getAndClearPendingOperations();
+        if (pendingOps.isEmpty()) return;
+        
+        // 创建包含变更操作的增量同步包
+        IncrementalSyncPacket packet = new IncrementalSyncPacket(new ArrayList<>(pendingOps));
+        
+        // 发送到所有在线玩家
+        sendPacketToAllPlayers(packet, IncrementalSyncPacket.INSTANCE);
     }
     
     /**
@@ -104,25 +102,28 @@ public class SyncManager {
     
     /**
      * 获取当前变更缓冲区中的操作数量
+     * 委托给 SyncBatchManager 统一管理
      * @return 变更操作数量
      */
     public static int getPendingChangeCount() {
-        return CHANGE_OPERATIONS_BUFFER.size();
+        return SyncBatchManager.getPendingOperationCount();
     }
     
     /**
      * 清空变更缓冲区
+     * 委托给 SyncBatchManager 统一管理
      */
     public static void clearChangeBuffer() {
-        CHANGE_OPERATIONS_BUFFER.clear();
+        SyncBatchManager.clearAllOperations();
     }
     
     /**
      * 添加变更操作到缓冲区
+     * 委托给 SyncBatchManager 统一管理
      * @param operation 变更操作
      */
     public static void addChangeOperation(ChangeOperation operation) {
-        CHANGE_OPERATIONS_BUFFER.add(operation);
+        SyncBatchManager.addOperation(operation);
     }
     
     /**
@@ -139,18 +140,20 @@ public class SyncManager {
     
     /**
      * 使用重试机制将增量变更同步到客户端
+     * 变更操作统一由 SyncBatchManager 管理
      */
     public static void syncIncrementalChangesToClientsWithRetry() {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server != null && !CHANGE_OPERATIONS_BUFFER.isEmpty()) {
-            // 创建包含变更操作的增量同步包
-            IncrementalSyncPacket packet = new IncrementalSyncPacket(new ArrayList<>(CHANGE_OPERATIONS_BUFFER));
-            
-            // 清空缓冲区
-            CHANGE_OPERATIONS_BUFFER.clear();
-            
-            // 使用重试管理器发送
-            NetworkRetryManager.sendIncrementalSyncWithRetry(packet);
-        }
+        if (server == null) return;
+        
+        // 从统一的 SyncBatchManager 获取待处理操作
+        List<ChangeOperation> pendingOps = SyncBatchManager.getAndClearPendingOperations();
+        if (pendingOps.isEmpty()) return;
+        
+        // 创建包含变更操作的增量同步包
+        IncrementalSyncPacket packet = new IncrementalSyncPacket(new ArrayList<>(pendingOps));
+        
+        // 使用重试管理器发送
+        NetworkRetryManager.sendIncrementalSyncWithRetry(packet);
     }
 }

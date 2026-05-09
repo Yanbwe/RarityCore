@@ -206,10 +206,10 @@ public class RarityRegistry {
      * 被 getLocalizedRarityTooltip(Item) 和 getLocalizedRarityTooltip(ItemStack) 共用
      */
     @OnlyIn(Dist.CLIENT)
-    private static @NotNull String buildLocalizedRarityTooltip(int rarity) {
-        boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;
-        int displayRarity = rarity;
-        rarity = org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rarity);
+    private static @NotNull String buildLocalizedRarityTooltip(int rawRarity) {
+        boolean isSpecialRarity = rawRarity > RarityConstants.RARITY_UNIQUE;
+        int displayRarity = rawRarity;
+        int normalizedRarity = org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rawRarity);
         
         if (isSpecialRarity) {
             String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(displayRarity);
@@ -221,7 +221,7 @@ public class RarityRegistry {
             }
         } else {
             String rarityKey;
-            switch (rarity) {
+            switch (normalizedRarity) {
                 case RarityConstants.RARITY_COMMON:
                     rarityKey = "rarity.core.common";
                     break;
@@ -248,7 +248,7 @@ public class RarityRegistry {
                     break;
             }
             String localizedLabel = net.minecraft.client.resources.language.I18n.get(rarityKey);
-            String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(rarity);
+            String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(normalizedRarity);
             return localizedLabel + " " + stars;
         }
     }

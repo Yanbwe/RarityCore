@@ -307,6 +307,33 @@ public class DualCacheManager {
     // ========================
     
     /**
+     * 通过 Item 直接查询 ID 缓存（无需构造 ItemStack）
+     * 供 RenderCacheManager 等渲染热路径使用，避免不必要的对象分配
+     * @param item 物品实例
+     * @return 缓存的稀有度，未命中返回 null
+     */
+    public static Integer getCachedRarityByItem(Item item) {
+        if (item == null) return null;
+        ResourceLocation idKey = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(item);
+        if (idKey == null || idKey.equals(net.minecraftforge.registries.ForgeRegistries.ITEMS.getDefaultKey())) return null;
+        
+        // 检查物品是否有NBT匹配规则，如果有则跳过ID缓存
+        if (NbtRarityMatcher.hasRulesForItem(idKey)) {
+            CacheMetrics.recordMiss();
+            return null;
+        }
+        
+        Integer idResult = idCache != null ? idCache.getIfPresent(idKey) : null;
+        if (idResult != null) {
+            CacheMetrics.recordHit(CacheMetrics.CacheType.ID);
+            return idResult;
+        }
+        
+        CacheMetrics.recordMiss();
+        return null;
+    }
+    
+    /**
      * 直接查询NBT缓存（供SimpleNbtCache委托使用）
      * 仅查询共享的NBT缓存，不进行ID缓存回退或神化物品检查
      * @param nbtKey NBT缓存键（由SimpleNbtCache.generateNbtCacheKey生成）

@@ -2,6 +2,7 @@ package org.yanbwe.raritycore.network;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
@@ -9,11 +10,15 @@ import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
 public class IncrementalSyncPacket {
     public static SimpleChannel INSTANCE;
+    
+    /** 单次增量同步包允许的最大操作数，防止恶意数据包导致 OOM */
+    private static final int MAX_OPERATIONS = 10000;
     
     public static void initialize() {
         INSTANCE = NetworkRegistry.newSimpleChannel(
@@ -38,9 +43,31 @@ public class IncrementalSyncPacket {
 
     public IncrementalSyncPacket(FriendlyByteBuf buf) {
         int size = buf.readInt();
-        changeOperations = new ArrayList<>();
+        
+        // 安全上限检查：防止恶意/损坏的数据包导致 OOM
+        if (size < 0 || size > MAX_OPERATIONS) {
+            RarityCore.LOGGER.warn("IncrementalSyncPacket received with invalid size: {}, discarding packet", size);
+            this.changeOperations = Collections.emptyList();
+            return;
+        }
+        
+        changeOperations = new ArrayList<>(size);
+        ChangeOperation.OperationType[] allTypes = ChangeOperation.OperationType.values();
+        
         for (int i = 0; i < size; i++) {
             int opType = buf.readInt();
+            
+            // 边界检查：防止 ArrayIndexOutOfBoundsException
+            if (opType < 0 || opType >= allTypes.length) {
+                RarityCore.LOGGER.warn("IncrementalSyncPacket received invalid operation type: {}, skipping entry", opType);
+                // 跳过无效条目的剩余数据，保持缓冲区读取位置正确
+                buf.readUtf();               // itemId
+                if (buf.readBoolean()) {     // hasRarity
+                    buf.readInt();           // rarity
+                }
+                continue;
+            }
+            
             String itemIdStr = buf.readUtf();
             ResourceLocation itemId = ResourceLocation.parse(itemIdStr);
             
@@ -50,7 +77,7 @@ public class IncrementalSyncPacket {
                 rarity = buf.readInt();
             }
             
-            ChangeOperation.OperationType type = ChangeOperation.OperationType.values()[opType];
+            ChangeOperation.OperationType type = allTypes[opType];
             changeOperations.add(new ChangeOperation(type, itemId, rarity));
         }
     }
@@ -70,7 +97,7 @@ public class IncrementalSyncPacket {
     public boolean handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             // 安全校验：确保仅在客户端处理
-            if (ctx.get().getDirection() != NetworkEvent.Context.NetworkDirection.PLAY_TO_CLIENT) {
+            if (ctx.get().getDirection() != NetworkDirection.PLAY_TO_CLIENT) {
                 RarityCore.LOGGER.warn("IncrementalSyncPacket received on wrong side, ignoring");
                 ctx.get().setPacketHandled(true);
                 return;

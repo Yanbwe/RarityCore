@@ -11,11 +11,13 @@ import org.yanbwe.raritycore.registry.RarityRegistry;
 public class RenderCacheManager {
 
     /**
-     * 获取物品的缓存稀有度
+     * 获取物品的缓存稀有度（通过 Item）
+     * 直接查询 ID 缓存，避免创建临时 ItemStack 对象
      */
     public static Integer getCachedRarity(Item item) {
         if (item == null) return null;
-        return getCachedRarity(new ItemStack(item));
+        // 直接通过 DualCacheManager 查询 ID 缓存，避免热路径中不必要的 ItemStack 分配
+        return DualCacheManager.getCachedRarityByItem(item);
     }
 
     /**

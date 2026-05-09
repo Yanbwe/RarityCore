@@ -68,12 +68,14 @@ public class DelayedSyncManager {
     /**
      * 强制刷新所有待处理操作
      * 供 SchedulerService 定时器等外部调用者使用。
-     * 与 forceImmediateSync 不同，此方法不检查 syncScheduled 状态，
-     * 始终尝试刷新缓冲区内积累的操作，并将 syncScheduled 重置为 false。
+     * 在 syncExecutor 中异步执行，避免阻塞调用者线程，
+     * 同时防止与定时器线程并发执行 performDelayedSync。
      */
     public static void flushPendingOperations() {
-        performDelayedSync();
-        syncScheduled = false;
+        syncExecutor.execute(() -> {
+            performDelayedSync();
+            syncScheduled = false;
+        });
     }
     
     /**

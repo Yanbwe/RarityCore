@@ -1,6 +1,7 @@
 package org.yanbwe.raritycore.network;
 
 import net.minecraft.resources.ResourceLocation;
+import org.yanbwe.raritycore.RarityCore;
 
 import java.util.*;
 
@@ -184,7 +185,10 @@ public class SyncBatchManager {
                     break;
 
                 default:
-                    // 未知操作类型，保留原样传递
+                    // 未知操作类型，保留原样传递并记录警告
+                    RarityCore.LOGGER.warn("SyncBatchManager encountered unknown operation type: {} for item: {}, passing through", 
+                        op.getType(), itemId);
+                    latestOperations.put(itemId, op);
                     break;
             }
         }

@@ -3,6 +3,7 @@ package org.yanbwe.raritycore.network;
 import com.google.gson.JsonObject;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
@@ -13,6 +14,7 @@ import org.yanbwe.raritycore.nbtmatching.SimpleNbtCache;
 import org.yanbwe.raritycore.cache.DualCacheManager;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -22,6 +24,9 @@ import java.util.function.Supplier;
  */
 public class NbtSyncPacket {
     public static SimpleChannel INSTANCE;
+    
+    /** 单次NBT规则同步包允许的最大规则数，防止恶意数据包导致 OOM */
+    private static final int MAX_RULES = 10000;
     
     public static void initialize() {
         INSTANCE = NetworkRegistry.newSimpleChannel(
@@ -49,7 +54,15 @@ public class NbtSyncPacket {
     public NbtSyncPacket(FriendlyByteBuf buf) {
         this.isFullSync = buf.readBoolean();
         int size = buf.readInt();
-        this.rules = new ArrayList<>();
+        
+        // 安全上限检查：防止恶意数据包导致 OOM
+        if (size < 0 || size > MAX_RULES) {
+            RarityCore.LOGGER.warn("NbtSyncPacket received with invalid rule count: {}, discarding rules", size);
+            this.rules = Collections.emptyList();
+            return;
+        }
+        
+        this.rules = new ArrayList<>(size);
         
         for (int i = 0; i < size; i++) {
             rules.add(new NbtRuleData(buf));
@@ -67,7 +80,7 @@ public class NbtSyncPacket {
     public boolean handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             // 安全校验：确保仅在客户端处理
-            if (ctx.get().getDirection() != NetworkEvent.Context.NetworkDirection.PLAY_TO_CLIENT) {
+            if (ctx.get().getDirection() != NetworkDirection.PLAY_TO_CLIENT) {
                 RarityCore.LOGGER.warn("NbtSyncPacket received on wrong side, ignoring");
                 ctx.get().setPacketHandled(true);
                 return;

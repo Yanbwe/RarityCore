@@ -8,6 +8,7 @@ import org.yanbwe.raritycore.RarityCore;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -21,9 +22,8 @@ public class NetworkRetryManager {
     private static final long BASE_RETRY_DELAY_MS = 500;
     private static final double EXPONENTIAL_BACKOFF_MULTIPLIER = 2.0;
     
-    // 用于延迟重试的调度器
-    private static final ScheduledExecutorService retryScheduler = Executors.newScheduledThreadPool(
-        Runtime.getRuntime().availableProcessors() / 2 + 1, r -> {
+    // 单线程调度器即可满足延迟重试需求，避免多线程资源浪费
+    private static final ScheduledExecutorService retryScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "RarityCore-Network-Retry");
             t.setDaemon(true);
             return t;
@@ -48,9 +48,14 @@ public class NetworkRetryManager {
     
     /**
      * 调度延迟重试任务
+     * 捕获 RejectedExecutionException 防止调度器已关闭时静默失败
      */
     private static void scheduleRetry(Runnable task, long delayMs) {
-        retryScheduler.schedule(task, delayMs, TimeUnit.MILLISECONDS);
+        try {
+            retryScheduler.schedule(task, delayMs, TimeUnit.MILLISECONDS);
+        } catch (RejectedExecutionException e) {
+            RarityCore.LOGGER.debug("Retry scheduler is shutting down, retry task rejected");
+        }
     }
     
     /**

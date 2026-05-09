@@ -5,6 +5,7 @@ import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
@@ -96,7 +97,7 @@ public class RaritySyncPacket {
     public boolean handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             // 安全校验：确保仅在客户端处理服务端发来的同步包
-            if (ctx.get().getDirection() != NetworkEvent.Context.NetworkDirection.PLAY_TO_CLIENT) {
+            if (ctx.get().getDirection() != NetworkDirection.PLAY_TO_CLIENT) {
                 RarityCore.LOGGER.warn("RaritySyncPacket received on wrong side, ignoring");
                 ctx.get().setPacketHandled(true);
                 return;
@@ -112,7 +113,7 @@ public class RaritySyncPacket {
             // 更新客户端版本号
             clientConfigVersion = this.configVersion;
             
-            // 构建经过滤的新映射,然后用 putAll 一次性替换以缩小数据竞争窗口
+            // 构建经过滤的新映射，使用原子替换避免 clear()+putAll() 之间的数据竞争窗口
             Map<ResourceLocation, Integer> filtered = new HashMap<>();
             for (Map.Entry<ResourceLocation, Integer> entry : rarityData.entrySet()) {
                 net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(entry.getKey());
@@ -120,7 +121,9 @@ public class RaritySyncPacket {
                     filtered.put(entry.getKey(), entry.getValue());
                 }
             }
-            RarityRegistry.ITEM_RARITY_MAP.clear();
+            // 使用 retainAll + putAll 避免 clear() 后短暂出现空映射
+            // retainAll 仅在 putAll 之前缩小 keySet，与 putAll 搭配使用更安全
+            RarityRegistry.ITEM_RARITY_MAP.keySet().retainAll(filtered.keySet());
             RarityRegistry.ITEM_RARITY_MAP.putAll(filtered);
             
             // 通知缓存系统网络同步已完成
