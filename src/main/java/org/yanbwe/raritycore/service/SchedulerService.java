@@ -1,7 +1,7 @@
 package org.yanbwe.raritycore.service;
 
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.network.SyncManager;
+import org.yanbwe.raritycore.network.DelayedSyncManager;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -50,15 +50,15 @@ public class SchedulerService {
         }, 5, TimeUnit.SECONDS);
         
         // 增量同步检查任务：此处保持 scheduleAtFixedRate 是安全的，
-        // 因为实际同步工作由 syncIncrementalChangesToClients() 内部管理，
+        // 因为实际同步工作由 DelayedSyncManager.flushPendingOperations() 内部管理，
         // 且本调度器为单线程，即使单次执行超时也不会并发执行。
         // 若未来改为多线程调度器，应同步改为 scheduleWithFixedDelay。
         syncScheduler.scheduleAtFixedRate(() -> {
             try {
-                // 使用批处理管理器检查是否需要同步
+                // 检查 SyncBatchManager 中是否有待处理操作，有则通过 DelayedSyncManager 刷新
                 int pendingCount = serviceFactory.getSyncBatchManager().getPendingOperationCount();
                 if (pendingCount > 0) {
-                    SyncManager.syncIncrementalChangesToClients();
+                    DelayedSyncManager.flushPendingOperations();
                 }
             } catch (Exception e) {
                 RarityCore.LOGGER.error("增量同步过程中发生错误", e);

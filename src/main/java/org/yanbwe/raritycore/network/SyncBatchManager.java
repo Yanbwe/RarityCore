@@ -18,7 +18,7 @@ public class SyncBatchManager {
     private static final int HIGH_PRIORITY_THRESHOLD = 10; // 高优先级阈值
     
     // 待处理的变更操作缓冲区
-    private static final List<ChangeOperation> pendingOperations = new ArrayList<>();
+    private static final List<ChangeOperation> pendingOperations = new ArrayList<>(64);
     
     // 优先级队列
     private static final Map<SyncPriority, List<ChangeOperation>> priorityQueues = 
@@ -181,6 +181,10 @@ public class SyncBatchManager {
                     latestOperations.remove(itemId);
                     // 但仍然保留DELETE操作本身
                     latestOperations.put(itemId, op);
+                    break;
+
+                default:
+                    // 未知操作类型，保留原样传递
                     break;
             }
         }

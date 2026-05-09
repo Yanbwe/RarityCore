@@ -16,7 +16,8 @@ public class AbstractContainerScreenMixin {
 
     @Inject(
         method = "renderSlot(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/world/inventory/Slot;)V",
-        at = @At("HEAD")
+        at = @At("HEAD"),
+        require = 1
     )
     private void renderSlot(GuiGraphics guiGraphics, Slot slot, CallbackInfo ci) {
         if (RarityExclusionManager.isRenderingTooltipItem()) {

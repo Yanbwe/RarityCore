@@ -17,7 +17,7 @@ import org.yanbwe.raritycore.util.RarityValidator;
 @Mixin(ItemStack.class)
 public class ItemStackMixin {
 
-    @Inject(method = "getHoverName", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "getHoverName", at = @At("RETURN"), cancellable = true, require = 1)
     private void modifyHoverName(CallbackInfoReturnable<Component> cir) {
         ItemStack stack = (ItemStack) (Object) this;
         

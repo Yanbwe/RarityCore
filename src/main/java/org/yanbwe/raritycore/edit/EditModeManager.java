@@ -10,7 +10,10 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
+import org.yanbwe.raritycore.network.ChangeOperation;
+import org.yanbwe.raritycore.network.DelayedSyncManager;
 import org.yanbwe.raritycore.network.EditModeRequestPacket;
+import org.yanbwe.raritycore.network.SyncBatchManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.util.*;
@@ -237,27 +240,31 @@ public class EditModeManager {
             java.nio.file.Files.createDirectories(nbtDir);
             java.nio.file.Path file = nbtDir.resolve(fileName + ".json");
             com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
-            java.io.OutputStreamWriter writer = new java.io.OutputStreamWriter(
-                java.nio.file.Files.newOutputStream(file), java.nio.charset.StandardCharsets.UTF_8);
-            gson.toJson(root, writer);
-            writer.close();
+            try (java.io.OutputStreamWriter writer = new java.io.OutputStreamWriter(
+                java.nio.file.Files.newOutputStream(file), java.nio.charset.StandardCharsets.UTF_8)) {
+                gson.toJson(root, writer);
+            }
             RarityCore.LOGGER.info("Created TacZ NBT config: {}", file);
         } catch (Exception e) {
             RarityCore.LOGGER.error("Failed to create TacZ NBT config", e);
         }
 
-        RarityRegistry.syncRarityToClientsWithRetry();
+        // 使用增量同步，避免每次编辑都发送全量稀有度映射
+        addEditChangeOperation(itemId, ChangeOperation.OperationType.UPDATE, currentRarity);
+        scheduleIncrementalSync();
     }
 
     /** 服务端 Normal 模式处理（供网络包和单人游戏共用） */
     public static void handleNormalEditServer(ResourceLocation itemId, Item item) {
         if (currentRarity == 0) {
             RarityRegistry.unregister(item, false);
+            addEditChangeOperation(itemId, ChangeOperation.OperationType.DELETE, null);
         } else {
             RarityRegistry.register(item, currentRarity, false);
+            addEditChangeOperation(itemId, ChangeOperation.OperationType.UPDATE, currentRarity);
         }
         RarityCoreCommands.saveRarityToConfigPublic(itemId.toString(), currentRarity);
-        RarityRegistry.syncRarityToClientsWithRetry();
+        scheduleIncrementalSync();
     }
 
     private static boolean handleFullMatchEdit(ResourceLocation itemId, ItemStack itemStack, Item item) {
@@ -295,7 +302,9 @@ public class EditModeManager {
 
         // 构建 NBT 匹配 JSON
         createFullMatchConfig(itemId, tag, ignoredSet);
-        RarityRegistry.syncRarityToClientsWithRetry();
+        // 使用增量同步，避免每次编辑都发送全量稀有度映射
+        addEditChangeOperation(itemId, ChangeOperation.OperationType.UPDATE, currentRarity);
+        scheduleIncrementalSync();
 
         if (autoReload) {
             org.yanbwe.raritycore.nbtmatching.NbtConfigLoader.loadAllConfigs();
@@ -327,10 +336,10 @@ public class EditModeManager {
             java.nio.file.Files.createDirectories(nbtDir);
             java.nio.file.Path file = findNextAvailableFile(nbtDir, baseName);
             com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
-            java.io.OutputStreamWriter writer = new java.io.OutputStreamWriter(
-                java.nio.file.Files.newOutputStream(file), java.nio.charset.StandardCharsets.UTF_8);
-            gson.toJson(root, writer);
-            writer.close();
+            try (java.io.OutputStreamWriter writer = new java.io.OutputStreamWriter(
+                java.nio.file.Files.newOutputStream(file), java.nio.charset.StandardCharsets.UTF_8)) {
+                gson.toJson(root, writer);
+            }
             RarityCore.LOGGER.info("Created FullMatch NBT config: {}", file);
         } catch (Exception e) {
             RarityCore.LOGGER.error("Failed to create FullMatch NBT config", e);
@@ -376,6 +385,31 @@ public class EditModeManager {
             ItemStack stacking = new ItemStack(item);
             org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(stacking, rarity);
         } catch (Exception ignored) {}
+    }
+
+    /**
+     * 添加编辑模式的变更操作到批量同步队列
+     * 替代原先的每次全量同步，改为累积后通过 DelayedSyncManager 延迟批量发送
+     * @param itemId 物品资源位置
+     * @param type 操作类型（ADD/UPDATE/DELETE）
+     * @param rarity 稀有度等级（DELETE 操作时可为 null）
+     */
+    private static void addEditChangeOperation(ResourceLocation itemId, ChangeOperation.OperationType type, Integer rarity) {
+        SyncBatchManager.addOperation(new ChangeOperation(type, itemId, rarity), SyncBatchManager.SyncPriority.NORMAL);
+    }
+
+    /**
+     * 调度增量同步
+     * 利用 DelayedSyncManager 将短时间内的多次编辑合并为单个 IncrementalSyncPacket，
+     * 避免每次编辑都向所有玩家发送全量稀有度映射
+     */
+    private static void scheduleIncrementalSync() {
+        // 达到批量阈值时立即发送，否则延迟合并（默认1秒延迟）
+        if (SyncBatchManager.getPendingOperationCount() >= 50) {
+            DelayedSyncManager.flushPendingOperations();
+        } else {
+            DelayedSyncManager.scheduleDelayedSync();
+        }
     }
 
     public static void reset() {

@@ -102,49 +102,48 @@ public class NetworkRetryManager {
     }
     
     /**
-     * 通用的带重试包发送方法
+     * 通用的带重试包发送方法（入口）
+     * 内部委托给 sendWithRetryAttempt，避免递归调用时重置重试计数器
      */
     private static <T> void sendPacketWithRetry(Object channelInstance, T packet, int maxRetries, long baseDelay) {
-        int attempts = 0;
-        Exception lastException = null;
-        
-        while (attempts < maxRetries) {
-            try {
-                // 发送包到所有在线玩家
-                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-                if (server != null) {
-                    for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-                        sendPacketToPlayer(channelInstance, packet, player);
-                    }
-                }
-                
-                // 发送成功，记录日志并退出
-                if (attempts > 0) {
-                    RarityCore.LOGGER.info("Packet sent successfully after {} retry attempts", attempts);
-                }
-                return;
-                
-            } catch (Exception e) {
-                lastException = e;
-                attempts++;
-                
-                if (attempts < maxRetries) {
-                    long delay = (long) (baseDelay * Math.pow(EXPONENTIAL_BACKOFF_MULTIPLIER, attempts - 1));
-                    RarityCore.LOGGER.warn("Packet sending failed (attempt {}/{}), retrying in {}ms: {}", 
-                        attempts, maxRetries, delay, e.getMessage());
-                    
-                    // 使用ScheduledExecutorService进行延迟重试
-                    scheduleRetry(() -> {
-                        sendPacketWithRetry(channelInstance, packet, maxRetries, baseDelay);
-                    }, delay);
-                    return;
+        sendWithRetryAttempt(channelInstance, packet, maxRetries, baseDelay, 0);
+    }
+    
+    /**
+     * 带重试计数的实际发送方法
+     * @param attempt 当前尝试次数（0-based），递归调用时递增以避免无限重试
+     */
+    private static <T> void sendWithRetryAttempt(Object channelInstance, T packet, int maxRetries, long baseDelay, int attempt) {
+        try {
+            // 发送包到所有在线玩家
+            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+            if (server != null) {
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    sendPacketToPlayer(channelInstance, packet, player);
                 }
             }
+            
+            // 发送成功，记录日志并退出
+            if (attempt > 0) {
+                RarityCore.LOGGER.info("Packet sent successfully after {} retry attempts", attempt);
+            }
+            
+        } catch (Exception e) {
+            if (attempt + 1 < maxRetries) {
+                long delay = (long) (baseDelay * Math.pow(EXPONENTIAL_BACKOFF_MULTIPLIER, attempt));
+                RarityCore.LOGGER.warn("Packet sending failed (attempt {}/{}), retrying in {}ms: {}", 
+                    attempt + 1, maxRetries, delay, e.getMessage());
+                
+                // 使用ScheduledExecutorService进行延迟重试，attempt + 1 确保最终会停止
+                scheduleRetry(() -> {
+                    sendWithRetryAttempt(channelInstance, packet, maxRetries, baseDelay, attempt + 1);
+                }, delay);
+            } else {
+                // 所有重试都失败了
+                RarityCore.LOGGER.error("Failed to send packet after {} attempts. Last error: {}", 
+                    maxRetries, e.getMessage());
+            }
         }
-        
-        // 所有重试都失败了
-        RarityCore.LOGGER.error("Failed to send packet after {} attempts. Last error: {}", 
-            maxRetries, lastException != null ? lastException.getMessage() : "Unknown error");
     }
     
     /**
@@ -158,38 +157,37 @@ public class NetworkRetryManager {
     
     private static <T> void sendToPlayerWithRetryInternal(Object channel, T packet, ServerPlayer player, 
                                                          int maxRetries, long baseDelay) {
-        int attempts = 0;
-        Exception lastException = null;
-        
-        while (attempts < maxRetries) {
-            try {
-                sendPacketToPlayer(channel, packet, player);
+        sendToPlayerWithRetryAttempt(channel, packet, player, maxRetries, baseDelay, 0);
+    }
+    
+    /**
+     * 带重试计数的向单玩家发送方法
+     * @param attempt 当前尝试次数（0-based），递归调用时递增以避免无限重试
+     */
+    private static <T> void sendToPlayerWithRetryAttempt(Object channel, T packet, ServerPlayer player,
+                                                        int maxRetries, long baseDelay, int attempt) {
+        try {
+            sendPacketToPlayer(channel, packet, player);
+            
+            if (attempt > 0) {
+                RarityCore.LOGGER.info("Packet sent to player {} successfully after {} retry attempts", 
+                    player.getName().getString(), attempt);
+            }
+            
+        } catch (Exception e) {
+            if (attempt + 1 < maxRetries) {
+                long delay = (long) (baseDelay * Math.pow(EXPONENTIAL_BACKOFF_MULTIPLIER, attempt));
+                RarityCore.LOGGER.warn("Packet sending to player {} failed (attempt {}/{}), retrying in {}ms: {}", 
+                    player.getName().getString(), attempt + 1, maxRetries, delay, e.getMessage());
                 
-                if (attempts > 0) {
-                    RarityCore.LOGGER.info("Packet sent to player {} successfully after {} retry attempts", 
-                        player.getName().getString(), attempts);
-                }
-                return;
-                
-            } catch (Exception e) {
-                lastException = e;
-                attempts++;
-                
-                if (attempts < maxRetries) {
-                    long delay = (long) (baseDelay * Math.pow(EXPONENTIAL_BACKOFF_MULTIPLIER, attempts - 1));
-                    RarityCore.LOGGER.warn("Packet sending to player {} failed (attempt {}/{}), retrying in {}ms: {}", 
-                        player.getName().getString(), attempts, maxRetries, delay, e.getMessage());
-                    
-                    // 使用ScheduledExecutorService进行延迟重试
-                    scheduleRetry(() -> {
-                        sendToPlayerWithRetryInternal(channel, packet, player, maxRetries, baseDelay);
-                    }, delay);
-                    return;
-                }
+                // 使用ScheduledExecutorService进行延迟重试，attempt + 1 确保最终会停止
+                scheduleRetry(() -> {
+                    sendToPlayerWithRetryAttempt(channel, packet, player, maxRetries, baseDelay, attempt + 1);
+                }, delay);
+            } else {
+                RarityCore.LOGGER.error("Failed to send packet to player {} after {} attempts. Last error: {}", 
+                    player.getName().getString(), maxRetries, e.getMessage());
             }
         }
-        
-        RarityCore.LOGGER.error("Failed to send packet to player {} after {} attempts. Last error: {}", 
-            player.getName().getString(), maxRetries, lastException != null ? lastException.getMessage() : "Unknown error");
     }
 }

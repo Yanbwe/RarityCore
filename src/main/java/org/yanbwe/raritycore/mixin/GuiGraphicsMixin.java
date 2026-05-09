@@ -19,7 +19,7 @@ public abstract class GuiGraphicsMixin {
      * 同时也涵盖了大部分物品边框显示的需求
      */
     @Inject(method = "renderItemDecorations(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;II)V",
-            at = @At(value = "TAIL"))
+            at = @At(value = "TAIL"), require = 1)
     private void renderItemDecorationsWithRarityBorder(Font font, ItemStack itemStack, int x, int y, CallbackInfo ci) {
         if (!itemStack.isEmpty() && !RarityExclusionManager.isRenderingTooltipItem()) {
             GuiGraphics guiGraphics = (GuiGraphics)(Object)this;
@@ -32,7 +32,7 @@ public abstract class GuiGraphicsMixin {
      * 虚拟物品通常用于JEI等MOD的物品展示，也需要边框
      */
     @Inject(method = "renderFakeItem(Lnet/minecraft/world/item/ItemStack;II)V",
-            at = @At(value = "TAIL"))
+            at = @At(value = "TAIL"), require = 1)
     private void renderFakeItemWithRarityBorder(ItemStack itemStack, int x, int y, CallbackInfo ci) {
         if (!itemStack.isEmpty() && !RarityExclusionManager.isRenderingTooltipItem()) {
             GuiGraphics guiGraphics = (GuiGraphics)(Object)this;

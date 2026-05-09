@@ -100,7 +100,7 @@ public class ConfigReloadService {
                 SyncManager.syncRarityToClientsWithRetry(RarityRegistry.ITEM_RARITY_MAP);
             }
             
-            // 9. 发送完成消息(仅在命令调用时)
+            // 10. 发送完成消息(仅在命令调用时)
             if (source != null) {
                 sendCompletionMessage(source);
             }
@@ -176,6 +176,9 @@ public class ConfigReloadService {
         try {
             // 重新加载客户端配置
             ClientConfigManager.loadClientConfig();
+            
+            // 重新加载逐级视觉表现配置（RarityClientConfig.json）
+            RarityClientConfigManager.loadConfig();
             
             // 通知星星显示管理器重新加载配置
             StarDisplayManager.getInstance().reloadConfiguration();

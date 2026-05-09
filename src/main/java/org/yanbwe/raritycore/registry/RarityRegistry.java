@@ -5,6 +5,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
@@ -82,18 +84,13 @@ public class RarityRegistry {
                 MinecraftForge.EVENT_BUS.post(new RarityChangeEvent(item, oldRarity, rarity, changeType));
                 
                 // 如果需要同步到客户端且当前在服务端环境中,记录变更操作
+                // 变更操作统一由增量同步机制处理,避免重复全量同步
                 if (syncToClients) {
-                    // 记录变更操作
                     if (oldRarity == null) {
-                        // 新增操作
                         SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.ADD, itemId, rarity));
                     } else {
-                        // 更新操作
                         SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.UPDATE, itemId, rarity));
                     }
-                    
-                    // 同步到客户端
-                    SyncManager.syncRarityToClients(ITEM_RARITY_MAP);
                 }
             }
         }
@@ -117,14 +114,11 @@ public class RarityRegistry {
                 }
                 
                 // 如果需要同步到客户端且当前在服务端环境中,记录删除操作
+                // 变更操作统一由增量同步机制处理,避免重复全量同步
                 if (syncToClients) {
-                    // 记录删除操作
                     if (removedRarity != null) {
                         SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.DELETE, itemId, null));
                     }
-                    
-                    // 同步到客户端
-                    SyncManager.syncRarityToClients(ITEM_RARITY_MAP);
                 }
             }
         }
@@ -155,10 +149,11 @@ public class RarityRegistry {
     }
     
     /**
-     * 获取本地化文本
+     * 获取本地化文本（仅客户端可用）
      * @param key 本地化键
      * @return 本地化文本
      */
+    @OnlyIn(Dist.CLIENT)
     private static String getLocalizedText(String key) {
         try {
             // 直接使用和原版工具提示系统一样的方式
@@ -171,7 +166,7 @@ public class RarityRegistry {
     }
     
     /**
-     * 获取物品的完整稀有度工具提示字符串(支持本地化,基于Item)
+     * 获取物品的完整稀有度工具提示字符串(支持本地化,基于Item) - 仅客户端
      * 注意:此方法基于Item,无法检测神化NBT稀有度.如需支持神化检测请使用 getLocalizedRarityTooltip(ItemStack)
      * 返回格式示例:
      * - 普通物品:"[普通] ⭐" (中文) 或 "[Common] ⭐" (英文)
@@ -179,6 +174,7 @@ public class RarityRegistry {
      * @param item 要获取工具提示的物品
      * @return 本地化的稀有度工具提示字符串
      */
+    @OnlyIn(Dist.CLIENT)
     public static @NotNull String getLocalizedRarityTooltip(@Nullable Item item) {
         if (item == null) {
             return "[普通]";
@@ -189,12 +185,13 @@ public class RarityRegistry {
     }
     
     /**
-     * 获取物品栈的完整稀有度工具提示字符串(支持神化NBT稀有度检测)
+     * 获取物品栈的完整稀有度工具提示字符串(支持神化NBT稀有度检测) - 仅客户端
      * 与 getLocalizedRarityTooltip(Item) 不同,此方法接受 ItemStack 并支持神化NBT数据,
      * 能正确反映神化稀有度
      * @param itemStack 要获取工具提示的物品栈
      * @return 本地化的稀有度工具提示字符串
      */
+    @OnlyIn(Dist.CLIENT)
     public static @NotNull String getLocalizedRarityTooltip(@Nullable ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) {
             return "[普通]";
@@ -205,9 +202,10 @@ public class RarityRegistry {
     }
     
     /**
-     * 根据稀有度值构建本地化工具提示字符串(内部公用方法)
+     * 根据稀有度值构建本地化工具提示字符串(内部公用方法) - 仅客户端
      * 被 getLocalizedRarityTooltip(Item) 和 getLocalizedRarityTooltip(ItemStack) 共用
      */
+    @OnlyIn(Dist.CLIENT)
     private static @NotNull String buildLocalizedRarityTooltip(int rarity) {
         boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;
         int displayRarity = rarity;

@@ -69,6 +69,13 @@ public class IncrementalSyncPacket {
 
     public boolean handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
+            // 安全校验：确保仅在客户端处理
+            if (ctx.get().getDirection() != NetworkEvent.Context.NetworkDirection.PLAY_TO_CLIENT) {
+                RarityCore.LOGGER.warn("IncrementalSyncPacket received on wrong side, ignoring");
+                ctx.get().setPacketHandled(true);
+                return;
+            }
+            
             // 批量应用变更操作到客户端的注册表
             RarityCore.LOGGER.debug("Applying incremental sync packet with {} operations", changeOperations.size());
             

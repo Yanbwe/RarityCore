@@ -1,6 +1,7 @@
 package org.yanbwe.raritycore.client;
 
 import net.minecraft.world.item.Item;
+import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.yanbwe.raritycore.RarityCore;
@@ -11,7 +12,7 @@ import org.yanbwe.raritycore.util.CacheRefreshCoordinator;
  * 缓存失效监听器
  * 监听多种事件并及时使缓存失效
  */
-@Mod.EventBusSubscriber(modid = RarityCore.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@Mod.EventBusSubscriber(modid = RarityCore.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class CacheInvalidationListener {
     
     /**

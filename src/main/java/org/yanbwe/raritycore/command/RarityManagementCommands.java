@@ -14,7 +14,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
-import org.yanbwe.raritycore.network.SyncManager;
+import org.yanbwe.raritycore.network.ChangeOperation;
+import org.yanbwe.raritycore.network.DelayedSyncManager;
+import org.yanbwe.raritycore.network.SyncBatchManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.io.IOException;
@@ -96,8 +98,10 @@ public class RarityManagementCommands {
             // 保存到配置文件
             saveRarityToConfig(itemId.toString(), rarity);
             
-            // 手动同步到所有客户端
-            SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
+            // 增量同步: 将单个操作加入批处理队列，由 DelayedSyncManager 延迟合并发送
+            SyncBatchManager.addOperation(new ChangeOperation(
+                ChangeOperation.OperationType.ADD, itemId, rarity), SyncBatchManager.SyncPriority.NORMAL);
+            DelayedSyncManager.scheduleDelayedSync();
             
             source.sendSuccess(() -> Component.translatable("rarity.core.item_set_rarity", itemId, rarity).withStyle(ChatFormatting.GREEN), false);
             return 1;
@@ -125,8 +129,10 @@ public class RarityManagementCommands {
         // 保存到配置文件
         saveRarityToConfig(itemId.toString(), rarity);
         
-        // 手动同步到所有客户端
-        SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
+        // 增量同步: 将单个操作加入批处理队列，由 DelayedSyncManager 延迟合并发送
+        SyncBatchManager.addOperation(new ChangeOperation(
+            ChangeOperation.OperationType.ADD, itemId, rarity), SyncBatchManager.SyncPriority.NORMAL);
+        DelayedSyncManager.scheduleDelayedSync();
         
         source.sendSuccess(() -> Component.translatable("rarity.core.item_set_rarity_by_id", itemId, rarity).withStyle(ChatFormatting.GREEN), false);
         return 1;
@@ -159,8 +165,10 @@ public class RarityManagementCommands {
             // 保存到配置文件(稀有度为0表示删除)
             saveRarityToConfig(itemId.toString(), 0);
             
-            // 手动同步到所有客户端
-            SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
+            // 增量同步: 将删除操作加入批处理队列
+            SyncBatchManager.addOperation(new ChangeOperation(
+                ChangeOperation.OperationType.DELETE, itemId, null), SyncBatchManager.SyncPriority.NORMAL);
+            DelayedSyncManager.scheduleDelayedSync();
             
             source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity", itemId).withStyle(ChatFormatting.GREEN), false);
             return 1;
@@ -188,8 +196,10 @@ public class RarityManagementCommands {
         // 保存到配置文件(稀有度为0表示删除)
         saveRarityToConfig(itemId.toString(), 0);
         
-        // 手动同步到所有客户端
-        SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
+        // 增量同步: 将删除操作加入批处理队列
+        SyncBatchManager.addOperation(new ChangeOperation(
+            ChangeOperation.OperationType.DELETE, itemId, null), SyncBatchManager.SyncPriority.NORMAL);
+        DelayedSyncManager.scheduleDelayedSync();
         
         source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity_by_id", itemId).withStyle(ChatFormatting.GREEN), false);
         return 1;
@@ -228,11 +238,13 @@ public class RarityManagementCommands {
             // 更新配置 - 添加或修改指定的物品 ID 和稀有度
             jsonObject.addProperty(itemId, rarity);
             
-            // 写入配置文件
+            // 写入配置文件（先写临时文件，再原子重命名，防止写入中断导致配置损坏）
             com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
-            try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(configFile), StandardCharsets.UTF_8)) {
+            Path tmpFile = configFile.resolveSibling(configFile.getFileName() + ".tmp");
+            try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(tmpFile), StandardCharsets.UTF_8)) {
                 gson.toJson(jsonObject, writer);
             }
+            Files.move(tmpFile, configFile, java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             RarityCore.LOGGER.error("Failed to save rarity config", e);
         }

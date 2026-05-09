@@ -21,6 +21,7 @@ public class BaseScreenMixin {
     /**
      * 在物品渲染后添加稀有度边框
      * 精致存储直接调用graphics.renderItem，绕过了原版的renderItemDecorations
+     * 同时hook两个renderItem重载（4参数简化版和7参数完整版），require=0保证RS未加载时不崩溃
      */
     @Inject(method = {"renderItem(Lnet/minecraft/client/gui/GuiGraphics;IILnet/minecraft/world/item/ItemStack;)V", 
                       "renderItem(Lnet/minecraft/client/gui/GuiGraphics;IILnet/minecraft/world/item/ItemStack;ZLjava/lang/String;I)V"},
@@ -28,38 +29,8 @@ public class BaseScreenMixin {
             remap = false,
             require = 0)
     private void onRenderItem(GuiGraphics graphics, int x, int y, ItemStack stack, CallbackInfo ci) {
-        // 处理简单版本的renderItem调用
-        handleRenderItem(graphics, x, y, stack);
-    }
-    
-
-    
-    /**
-     * 统一处理物品渲染后的稀有度边框渲染
-     */
-    private void handleRenderItem(GuiGraphics graphics, int x, int y, ItemStack stack) {
         if (stack != null && !stack.isEmpty()) {
             try {
-                // 调用我们的稀有度边框渲染逻辑
-                ItemBorderRenderer.renderRarityBorder(graphics, stack, x, y);
-            } catch (Exception e) {
-                // 静默失败，不影响原版渲染
-                // 根据调试日志管理规范，注释掉高频触发的调试信息
-                // org.yanbwe.raritycore.RarityCore.LOGGER.debug("Failed to render rarity border for Refined Storage item: {}", e.getMessage());
-            }
-        }
-    }
-    
-    /**
-     * Hook带完整参数的renderItem方法
-     */
-    @Inject(method = "renderItem(Lnet/minecraft/client/gui/GuiGraphics;IILnet/minecraft/world/item/ItemStack;ZLjava/lang/String;I)V",
-            at = @At("TAIL"),
-            remap = false)
-    private void onRenderItemFull(GuiGraphics graphics, int x, int y, ItemStack stack, boolean overlay, String text, int textColor, CallbackInfo ci) {
-        if (stack != null && !stack.isEmpty()) {
-            try {
-                // 调用我们的稀有度边框渲染逻辑
                 ItemBorderRenderer.renderRarityBorder(graphics, stack, x, y);
             } catch (Exception e) {
                 // 静默失败，不影响原版渲染

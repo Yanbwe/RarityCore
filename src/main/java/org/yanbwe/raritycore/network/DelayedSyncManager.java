@@ -59,12 +59,21 @@ public class DelayedSyncManager {
      * 立即执行延迟同步（强制执行）
      */
     public static void forceImmediateSync() {
-        if (syncScheduled) {
-            syncExecutor.execute(() -> {
-                performDelayedSync();
-                syncScheduled = false;
-            });
-        }
+        syncExecutor.execute(() -> {
+            performDelayedSync();
+            syncScheduled = false;
+        });
+    }
+    
+    /**
+     * 强制刷新所有待处理操作
+     * 供 SchedulerService 定时器等外部调用者使用。
+     * 与 forceImmediateSync 不同，此方法不检查 syncScheduled 状态，
+     * 始终尝试刷新缓冲区内积累的操作，并将 syncScheduled 重置为 false。
+     */
+    public static void flushPendingOperations() {
+        performDelayedSync();
+        syncScheduled = false;
     }
     
     /**

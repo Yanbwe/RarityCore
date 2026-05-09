@@ -94,16 +94,20 @@ public class ApotheosisAdapter {
 
     /**
      * O(1) 稀有度名称映射表，替代线性 contains() 链
-     * 键按长度降序排列以优先匹配长名称，避免子串误匹配（如 "rare" 误匹配 "artifacts:rare"）
+     * 匹配前按长度降序动态排序，确保长名称优先匹配避免子串误匹配
+     * （如 "superrare" 不会先被 "rare" 误匹配）
      */
     private static final String[] RARITY_NAMES = {
         "esoteric", "heirloom", "artifact", "ancient", "mythic", "epic", "rare", "uncommon", "common"
     };
     private static final int[] RARITY_VALUES = {9, 8, 7, 6, 5, 4, 3, 2, 1};
 
+    // 按长度降序排序的索引，首次使用时初始化
+    private static volatile int[] sortedIndices = null;
+
     /**
      * 根据神化稀有字符串映射到本模组稀有度
-     * 使用预排序数组做 O(n) 快速匹配（n=9，常数级），比 contains() 链更高效且易维护
+     * 使用长度降序动态排序做 O(n) 快速匹配（n=9，常数级），确保长名称优先
      * @param rarityString 神化稀有度字符串，格式如 "apotheosis:mythic", "apotheosis:ancient" 等
      * @return 对应的本模组稀有度等级 (1-9)
      */
@@ -114,10 +118,24 @@ public class ApotheosisAdapter {
 
         String lowerRarity = rarityString.toLowerCase();
 
-        // 遍历预排序的名称数组，第一个匹配即为结果
-        for (int i = 0; i < RARITY_NAMES.length; i++) {
-            if (lowerRarity.contains(RARITY_NAMES[i])) {
-                return RARITY_VALUES[i];
+        // 延迟初始化：按长度降序构建索引（免去手动维护顺序）
+        if (sortedIndices == null) {
+            synchronized (ApotheosisAdapter.class) {
+                if (sortedIndices == null) {
+                    sortedIndices = java.util.stream.IntStream.range(0, RARITY_NAMES.length)
+                        .boxed()
+                        .sorted((a, b) -> Integer.compare(RARITY_NAMES[b].length(), RARITY_NAMES[a].length()))
+                        .mapToInt(i -> i)
+                        .toArray();
+                }
+            }
+        }
+
+        // 按长度降序遍历，第一个匹配即为结果
+        for (int i = 0; i < sortedIndices.length; i++) {
+            int idx = sortedIndices[i];
+            if (lowerRarity.contains(RARITY_NAMES[idx])) {
+                return RARITY_VALUES[idx];
             }
         }
 

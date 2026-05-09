@@ -66,6 +66,13 @@ public class NbtSyncPacket {
 
     public boolean handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
+            // 安全校验：确保仅在客户端处理
+            if (ctx.get().getDirection() != NetworkEvent.Context.NetworkDirection.PLAY_TO_CLIENT) {
+                RarityCore.LOGGER.warn("NbtSyncPacket received on wrong side, ignoring");
+                ctx.get().setPacketHandled(true);
+                return;
+            }
+            
             RarityCore.LOGGER.debug("接收NBT匹配规则同步包,规则数量: {}, 全量同步: {}", 
                 rules.size(), isFullSync);
             

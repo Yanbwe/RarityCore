@@ -28,6 +28,10 @@ public class EditModeEventHandler {
 
     private static boolean panelCollapsed = false;
 
+    // 编辑点击防抖：避免快速连点产生大量网络请求
+    private static long lastEditClickTime = 0;
+    private static final long EDIT_CLICK_COOLDOWN_MS = 200;
+
     // ---- Key Input ----
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -71,6 +75,11 @@ public class EditModeEventHandler {
 
         ItemStack itemStack = clickedSlot.getItem();
         if (itemStack.isEmpty()) return;
+
+        // 防抖：200ms 内的重复点击忽略，避免快速连点产生大量网络请求
+        long now = System.currentTimeMillis();
+        if (now - lastEditClickTime < EDIT_CLICK_COOLDOWN_MS) return;
+        lastEditClickTime = now;
 
         if (EditModeManager.modifyItemRarity(itemStack)) {
             LocalPlayer player = Minecraft.getInstance().player;

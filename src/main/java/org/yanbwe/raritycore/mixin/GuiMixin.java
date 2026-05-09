@@ -15,7 +15,8 @@ import org.yanbwe.raritycore.client.ItemBorderRenderer;
 public class GuiMixin
 {
 	@Inject(method = "renderSlot",
-			at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;renderItemDecorations(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;II)V", shift = Shift.AFTER))
+			at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;renderItemDecorations(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;II)V", shift = Shift.AFTER),
+			require = 1)
 	private void renderSlot(GuiGraphics graphics, int x, int y, float time, Player player, ItemStack item, int something, CallbackInfo info)
 	{
 		// 渲染热键栏物品边框 - 使用根据稀有度变化的颜色

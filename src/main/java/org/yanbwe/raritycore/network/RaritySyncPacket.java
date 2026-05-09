@@ -95,6 +95,13 @@ public class RaritySyncPacket {
 
     public boolean handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
+            // 安全校验：确保仅在客户端处理服务端发来的同步包
+            if (ctx.get().getDirection() != NetworkEvent.Context.NetworkDirection.PLAY_TO_CLIENT) {
+                RarityCore.LOGGER.warn("RaritySyncPacket received on wrong side, ignoring");
+                ctx.get().setPacketHandled(true);
+                return;
+            }
+            
             // 版本匹配——客户端数据已是最新，跳过全量覆盖
             if (rarityData == null) {
                 RarityCore.LOGGER.debug("Rarity sync skipped: client version {} matches server", clientConfigVersion);
@@ -105,14 +112,16 @@ public class RaritySyncPacket {
             // 更新客户端版本号
             clientConfigVersion = this.configVersion;
             
-            // 替换客户端稀有度数据
-            RarityRegistry.ITEM_RARITY_MAP.clear();
+            // 构建经过滤的新映射,然后用 putAll 一次性替换以缩小数据竞争窗口
+            Map<ResourceLocation, Integer> filtered = new HashMap<>();
             for (Map.Entry<ResourceLocation, Integer> entry : rarityData.entrySet()) {
                 net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(entry.getKey());
                 if (item != null && !entry.getKey().equals(net.minecraftforge.registries.ForgeRegistries.ITEMS.getDefaultKey())) {
-                    RarityRegistry.ITEM_RARITY_MAP.put(entry.getKey(), entry.getValue());
+                    filtered.put(entry.getKey(), entry.getValue());
                 }
             }
+            RarityRegistry.ITEM_RARITY_MAP.clear();
+            RarityRegistry.ITEM_RARITY_MAP.putAll(filtered);
             
             // 通知缓存系统网络同步已完成
             org.yanbwe.raritycore.client.CacheInvalidationListener.onNetworkSync();
