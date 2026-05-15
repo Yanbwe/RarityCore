@@ -151,8 +151,8 @@ public class NbtRarityMatcher {
             return false;
         }
         
-        if (rule.getRarity() < 1 || rule.getRarity() > 7) {
-            RarityCore.LOGGER.warn("规则 {} 的稀有度值 {} 超出有效范围[1-7]", 
+        if (rule.getRarity() < 1) {
+            RarityCore.LOGGER.warn("规则 {} 的稀有度值 {} 无效（必须 >= 1）", 
                 rule.getItemId(), rule.getRarity());
             return false;
         }

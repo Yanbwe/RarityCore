@@ -253,12 +253,16 @@ public class EditModeManager {
         com.google.gson.JsonArray conditions = new com.google.gson.JsonArray();
         com.google.gson.JsonObject cond = new com.google.gson.JsonObject();
         cond.addProperty("path", nbtKey);
-        cond.addProperty("type", "equals");
-        cond.addProperty("value", nbtValue);
+        // 使用 contains 包含匹配（因为 GunId/AttachmentId/AmmoId 通常是较长的注册名，包含匹配更可靠）
+        cond.addProperty("type", "contains");
+        cond.addProperty("substring", nbtValue);
         conditions.add(cond);
         root.add("conditions", conditions);
 
-        String fileName = "editTacZ_" + itemId.getNamespace() + "_" + itemId.getPath();
+        // 文件名包含 tag 值以区分同 item ID 下不同的 TacZ 子物品，不互相覆盖
+        // 格式：editTacZ_<namespace>_<path>_<sanitized_tag_value>.json
+        String safeValue = nbtValue.replaceAll("[^a-zA-Z0-9_\\-]", "_");
+        String fileName = "editTacZ_" + itemId.getNamespace() + "_" + itemId.getPath() + "_" + safeValue;
         java.nio.file.Path nbtDir = org.yanbwe.raritycore.config.ConfigManager.getConfigDirPath().resolve("nbt_matches");
         try {
             java.nio.file.Files.createDirectories(nbtDir);
@@ -273,9 +277,8 @@ public class EditModeManager {
             RarityCore.LOGGER.error("Failed to create TacZ NBT config", e);
         }
 
-        // 使用增量同步，避免每次编辑都发送全量稀有度映射
-        addEditChangeOperation(itemId, ChangeOperation.OperationType.UPDATE, currentRarity);
-        scheduleIncrementalSync();
+        // TacZ 物品只写 NBT 匹配配置，不修改常规 ID → 稀有度映射
+        // 不同步增量包，避免污染 ITEM_RARITY_MAP
 
         // 立即加载 NBT 配置使新规则生效
         org.yanbwe.raritycore.nbtmatching.NbtConfigLoader.loadAllConfigs();
