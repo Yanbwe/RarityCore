@@ -84,18 +84,17 @@ public class RarityTooltipHandler {
             return;
         }
         
-        // 先检查是否为特殊稀有度(大于7),保存原始值用于显示
+        // 先检查是否为特殊稀有度(大于7),保存原始值用于显示和配置查询
         boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;
         int displayRarity = rarity; // 保存用于显示的原始稀有度值
-        
-        // 标准化稀有度值用于颜色获取等内部处理
-        rarity = RarityValidator.normalizeRarity(rarity);
         
         // 检查是否启用工具提示变色
         boolean enableColor = ClientConfigManager.isEnableTooltipColor();
         
         // 从 RarityClientConfig 获取该等级的 RGB 颜色
-        int rgbColor = RarityClientConfigManager.getRarityColor(rarity);
+        // 特殊稀有度（>7）使用原始稀有度值查询，RarityClientConfigManager 内部会处理回退
+        int colorRarity = isSpecialRarity ? displayRarity : RarityValidator.normalizeRarity(rarity);
+        int rgbColor = RarityClientConfigManager.getRarityColor(colorRarity);
         Style colorStyle = enableColor ? Style.EMPTY.withColor(TextColor.fromRgb(rgbColor)) : Style.EMPTY;
         MutableComponent prefixComponent;
         
@@ -111,6 +110,8 @@ public class RarityTooltipHandler {
             }
             return;
         } else {
+            // 标准化稀有度值用于后续 switch 判断
+            rarity = RarityValidator.normalizeRarity(rarity);
             
             // 设置前缀和颜色
             switch (rarity) {

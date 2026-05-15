@@ -124,25 +124,28 @@ public class DualCacheManager {
         // 一次获取 tag 引用，避免后续重复调用 getTag() 导致的重复序列化
         // 使用 CompoundTag.contains(key) 做 O(1) 键查找，而非 toString().contains() 做全量序列化
         net.minecraft.nbt.CompoundTag tag = itemStack.hasTag() ? itemStack.getTag() : null;
+        boolean hasNbtData = tag != null;
 
-        // 神化物品(有 affix_data 键)不使用常规缓存，强制实时计算
-        if (tag != null && tag.contains("affix_data")) {
-            return null;
-        }
-
-        // Iron's Spellbooks 法术卷轴/法术书(有 irons_spellbooks:spell_container 键)也不使用常规缓存，强制实时计算
-        if (tag != null && tag.contains("irons_spellbooks:spell_container")) {
-            return null;
-        }
-
-        // 优先检查NBT缓存
-        if (config.isNbtCacheEnabled() && tag != null) {
+        // 优先检查NBT缓存（放在神化/铁魔法绕过之前，确保这两类物品也能命中NBT缓存）
+        if (config.isNbtCacheEnabled() && hasNbtData) {
             String nbtKey = generateNbtKey(itemStack);
             Integer nbtResult = nbtCache.getIfPresent(nbtKey);
             if (nbtResult != null) {
                 CacheMetrics.recordHit(CacheType.NBT);
                 return nbtResult;
             }
+        }
+
+        // 神化物品(有 affix_data 键)不使用 ID 缓存，强制实时计算
+        if (hasNbtData && tag.contains("affix_data")) {
+            CacheMetrics.recordMiss();
+            return null;
+        }
+
+        // Iron's Spellbooks 法术卷轴/法术书(有 irons_spellbooks:spell_container 键)也不使用 ID 缓存，强制实时计算
+        if (hasNbtData && tag.contains("irons_spellbooks:spell_container")) {
+            CacheMetrics.recordMiss();
+            return null;
         }
 
         // 检查物品是否有NBT匹配规则，如果有则跳过ID缓存
@@ -256,8 +259,9 @@ public class DualCacheManager {
     }
 
     /**
-     * 检查是否应该跳过NBT缓存键生成
-     * 当物品没有NBT匹配规则时使用
+     * 检查是否应该跳过NBT缓存键中附加NBT哈希
+     * 当物品的稀有度不依赖NBT内容时返回true（仅用ID即可唯一确定）
+     * 返回false的场景：有NBT匹配规则、神化物品、铁魔法物品（这些的稀有度依赖于NBT内容）
      */
     private static boolean shouldSkipNbtKeyGeneration(ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) {
@@ -271,7 +275,22 @@ public class DualCacheManager {
         if (itemId == null) {
             return true;
         }
-        return !org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher.hasRulesForItem(itemId);
+
+        // 如果有NBT匹配规则 → 需要NBT哈希来区分不同NBT的物品
+        if (org.yanbwe.raritycore.nbtmatching.NbtRarityMatcher.hasRulesForItem(itemId)) {
+            return false;
+        }
+
+        // 神化物品(affix_data)或铁魔法物品(spell_container)通过NBT数据决定稀有度
+        // 即使没有NBT匹配规则，也需要在缓存键中包含NBT哈希来区分不同变体
+        if (itemStack.hasTag()) {
+            net.minecraft.nbt.CompoundTag tag = itemStack.getTag();
+            if (tag != null && (tag.contains("affix_data") || tag.contains("irons_spellbooks:spell_container"))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

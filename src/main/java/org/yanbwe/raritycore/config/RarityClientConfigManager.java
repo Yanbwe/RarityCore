@@ -93,9 +93,20 @@ public class RarityClientConfigManager {
 
     /**
      * 获取或惰性创建指定稀有度等级的配置
-     * 已配置的等级直接返回缓存配置；未配置的 >7 等级自动创建默认配置
+     * 已配置的等级直接返回缓存配置；未配置的 >7 等级沿用等级 7 的配置
      */
     private static RarityLevelConfig getOrCreateConfig(int rarity) {
+        RarityLevelConfig config = LEVEL_CONFIGS.get(rarity);
+        if (config != null) {
+            return config;
+        }
+        // 未配置的 >7 等级沿用等级 7 的配置（而非创建默认配置）
+        if (rarity > RarityConstants.MAX_RARITY) {
+            RarityLevelConfig fallback = LEVEL_CONFIGS.get(RarityConstants.MAX_RARITY);
+            if (fallback != null) {
+                return fallback;
+            }
+        }
         return LEVEL_CONFIGS.computeIfAbsent(rarity, level -> createDefaultConfig(level));
     }
 

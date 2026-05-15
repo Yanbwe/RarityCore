@@ -12,7 +12,6 @@ import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.RarityClientConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityConstants;
-import org.yanbwe.raritycore.util.RarityValidator;
 
 public class ItemBorderRenderer {
     
@@ -59,10 +58,8 @@ public class ItemBorderRenderer {
             return;
         }
         
-        // 遵循模组包容性原则:小于1视为1,大于7视为7
-        rarity = RarityValidator.normalizeRarity(rarity);
-
         // 检查 RarityClientConfig 中该等级的渲染开关（client.json 总开关已通过）
+        // 注意：使用原始稀有度值，RarityClientConfigManager 内部会处理 >7 等级的回退
         if (!RarityClientConfigManager.isRendererEnabled(rarity)) {
             return;
         }

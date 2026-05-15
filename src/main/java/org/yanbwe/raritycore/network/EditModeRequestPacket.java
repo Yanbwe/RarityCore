@@ -42,14 +42,28 @@ public class EditModeRequestPacket {
     private boolean autoReload;
     private String ignoreTags;
 
+    // TacZ NBT 编辑支持（扩展字段）
+    private boolean taczEdit;      // 是否为 TacZ 编辑
+    private String taczNbtKey;     // GunId / AttachmentId / AmmoId
+    private String taczNbtValue;   // 对应的 NBT 值
+
     public EditModeRequestPacket(ResourceLocation itemId, int rarity, boolean deleteMode,
                                   int modeOrdinal, boolean autoReload, String ignoreTags) {
+        this(itemId, rarity, deleteMode, modeOrdinal, autoReload, ignoreTags, false, "", "");
+    }
+
+    public EditModeRequestPacket(ResourceLocation itemId, int rarity, boolean deleteMode,
+                                  int modeOrdinal, boolean autoReload, String ignoreTags,
+                                  boolean taczEdit, String taczNbtKey, String taczNbtValue) {
         this.itemId = itemId;
         this.rarity = rarity;
         this.deleteMode = deleteMode;
         this.modeOrdinal = modeOrdinal;
         this.autoReload = autoReload;
         this.ignoreTags = ignoreTags != null ? ignoreTags : "";
+        this.taczEdit = taczEdit;
+        this.taczNbtKey = taczNbtKey != null ? taczNbtKey : "";
+        this.taczNbtValue = taczNbtValue != null ? taczNbtValue : "";
     }
 
     public EditModeRequestPacket(FriendlyByteBuf buf) {
@@ -59,6 +73,9 @@ public class EditModeRequestPacket {
         this.modeOrdinal = buf.readInt();
         this.autoReload = buf.readBoolean();
         this.ignoreTags = buf.readUtf();
+        this.taczEdit = buf.readBoolean();
+        this.taczNbtKey = buf.readUtf();
+        this.taczNbtValue = buf.readUtf();
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -68,6 +85,9 @@ public class EditModeRequestPacket {
         buf.writeInt(modeOrdinal);
         buf.writeBoolean(autoReload);
         buf.writeUtf(ignoreTags);
+        buf.writeBoolean(taczEdit);
+        buf.writeUtf(taczNbtKey);
+        buf.writeUtf(taczNbtValue);
     }
 
     public boolean handle(Supplier<NetworkEvent.Context> ctx) {
@@ -102,7 +122,10 @@ public class EditModeRequestPacket {
                 EditModeManager.EditMode mode = EditModeManager.EditMode.values()[Math.min(modeOrdinal, 1)];
                 EditModeManager.setMode(mode);
 
-                if (mode == EditModeManager.EditMode.FULLMATCH) {
+                if (taczEdit) {
+                    // TacZ 编辑：使用客户端传来的 NBT key/value 重建编辑环境
+                    EditModeManager.handleTacZEditServer(itemId, taczNbtKey, taczNbtValue, item);
+                } else if (mode == EditModeManager.EditMode.FULLMATCH) {
                     // 需要在服务端重建 ItemStack 以获取 NBT
                     net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(item);
                     if (player.getMainHandItem().getItem() == item) {

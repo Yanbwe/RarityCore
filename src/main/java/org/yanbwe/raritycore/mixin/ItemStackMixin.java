@@ -12,7 +12,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.yanbwe.raritycore.config.RarityClientConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityConstants;
-import org.yanbwe.raritycore.util.RarityValidator;
 
 @Mixin(ItemStack.class)
 public class ItemStackMixin {
@@ -43,21 +42,19 @@ public class ItemStackMixin {
             return;
         }
         
-        // 标准化稀有度值,遵循模组的包容性原则
-        rarity = RarityValidator.normalizeRarity(rarity);
-        
-        // 如果是普通稀有度(1),则使用白色,但不添加格式化代码(默认颜色)
-        if (rarity == RarityConstants.RARITY_COMMON) {
-            return;
-        }
-
         // 检查 RarityClientConfig 中该等级的 nameColor 开关（client.json 总开关已通过）
+        // 注意：使用原始稀有度值，RarityClientConfigManager 内部会处理 >7 等级的回退
         if (!RarityClientConfigManager.isNameColorEnabled(rarity)) {
             return;
         }
         
         // 从 RarityClientConfig 获取该等级的 RGB 颜色
         int rgbColor = RarityClientConfigManager.getRarityColor(rarity);
+        
+        // 如果是普通稀有度(1),则使用白色,但不添加格式化代码(默认颜色)
+        if (rarity == RarityConstants.RARITY_COMMON) {
+            return;
+        }
         Component originalName = cir.getReturnValue();
         
         // 使用 RGB 颜色设置名称颜色

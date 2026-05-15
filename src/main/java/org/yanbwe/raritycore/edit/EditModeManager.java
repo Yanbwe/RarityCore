@@ -122,7 +122,17 @@ public class EditModeManager {
     }
 
     public static void setIgnoreTags(String tags) {
-        ignoreTags = tags != null ? tags : "";
+        if (tags == null) {
+            ignoreTags = "";
+            return;
+        }
+        // 清理输入：去除首尾空白，去除可能由 greedyString 捕获的包裹引号
+        String cleaned = tags.trim();
+        if ((cleaned.startsWith("\"") && cleaned.endsWith("\"")) ||
+            (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+            cleaned = cleaned.substring(1, cleaned.length() - 1).trim();
+        }
+        ignoreTags = cleaned;
     }
 
     public static String getIgnoreTags() {
@@ -204,24 +214,38 @@ public class EditModeManager {
     /** TacZ 物品编辑：写入 editTacZ_<itemId>.json */
     private static boolean handleTacZEdit(ResourceLocation itemId, ItemStack itemStack, Item item) {
         if (currentRarity == 0) return false;
+
+        String nbtKey = org.yanbwe.raritycore.compat.tacz.TacZAdapter.getTacZNbtPath(itemStack);
+        String nbtValue = org.yanbwe.raritycore.compat.tacz.TacZAdapter.getTacZNbtValue(itemStack);
+        if (nbtKey == null || nbtValue == null) return false;
+
         boolean isSingleplayer = Minecraft.getInstance().getSingleplayerServer() != null;
         if (!isSingleplayer) {
-            // TODO: 多人 TacZ 支持（通过扩展包传送 NBT 信息）
+            // 多人模式：通过扩展包传送 NBT key/value
             EditModeRequestPacket packet = new EditModeRequestPacket(itemId, currentRarity, false,
-                EditMode.NORMAL.ordinal(), autoReload, ignoreTags);
+                EditMode.NORMAL.ordinal(), autoReload, ignoreTags,
+                true, nbtKey, nbtValue);
             EditModeRequestPacket.INSTANCE.sendToServer(packet);
         } else {
-            handleTacZEditServer(itemId, itemStack, item);
+            handleTacZEditServer(itemId, nbtKey, nbtValue, item);
         }
-        forceClientCacheUpdate(item, currentRarity);
+
+        // 清除 ID 缓存中的旧值，让下次查询重新计算
+        org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
         return true;
     }
 
-    /** 服务端 TacZ 编辑处理 */
+    /** 服务端 TacZ 编辑处理（从 ItemStack 提取 NBT 数据） */
     public static void handleTacZEditServer(ResourceLocation itemId, ItemStack itemStack, Item item) {
         String nbtKey = org.yanbwe.raritycore.compat.tacz.TacZAdapter.getTacZNbtPath(itemStack);
         String nbtValue = org.yanbwe.raritycore.compat.tacz.TacZAdapter.getTacZNbtValue(itemStack);
         if (nbtKey == null || nbtValue == null) return;
+        handleTacZEditServer(itemId, nbtKey, nbtValue, item);
+    }
+
+    /** 服务端 TacZ 编辑处理（直接传入 NBT key/value，适用于多人模式） */
+    public static void handleTacZEditServer(ResourceLocation itemId, String nbtKey, String nbtValue, Item item) {
+        if (nbtKey == null || nbtKey.isEmpty() || nbtValue == null || nbtValue.isEmpty()) return;
 
         com.google.gson.JsonObject root = new com.google.gson.JsonObject();
         root.addProperty("item_id", itemId.toString());
@@ -244,7 +268,7 @@ public class EditModeManager {
                 java.nio.file.Files.newOutputStream(file), java.nio.charset.StandardCharsets.UTF_8)) {
                 gson.toJson(root, writer);
             }
-            RarityCore.LOGGER.info("Created TacZ NBT config: {}", file);
+            RarityCore.LOGGER.info("Created/Updated TacZ NBT config: {} ({}={})", file, nbtKey, nbtValue);
         } catch (Exception e) {
             RarityCore.LOGGER.error("Failed to create TacZ NBT config", e);
         }
@@ -252,6 +276,9 @@ public class EditModeManager {
         // 使用增量同步，避免每次编辑都发送全量稀有度映射
         addEditChangeOperation(itemId, ChangeOperation.OperationType.UPDATE, currentRarity);
         scheduleIncrementalSync();
+
+        // 立即加载 NBT 配置使新规则生效
+        org.yanbwe.raritycore.nbtmatching.NbtConfigLoader.loadAllConfigs();
     }
 
     /** 服务端 Normal 模式处理（供网络包和单人游戏共用） */
@@ -291,12 +318,17 @@ public class EditModeManager {
         CompoundTag tag = itemStack.getTag();
         if (tag == null) return;
 
-        // 解析忽略列表
+        // 解析忽略列表：分割后去除首尾空白和包裹引号
         Set<String> ignoredSet = new HashSet<>();
         if (!ignoreTags.isEmpty()) {
             for (String part : ignoreTags.split("\\|")) {
-                String trimmed = part.trim();
-                if (!trimmed.isEmpty()) ignoredSet.add(trimmed);
+                String cleaned = part.trim();
+                // 去除可能的包裹引号
+                if ((cleaned.startsWith("\"") && cleaned.endsWith("\"")) ||
+                    (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+                    cleaned = cleaned.substring(1, cleaned.length() - 1).trim();
+                }
+                if (!cleaned.isEmpty()) ignoredSet.add(cleaned);
             }
         }
 
