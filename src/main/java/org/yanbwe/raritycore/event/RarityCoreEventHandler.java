@@ -13,6 +13,7 @@ import org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader;
 import org.yanbwe.raritycore.network.DelayedSyncManager;
 import org.yanbwe.raritycore.network.ItemDataSyncManager;
 import org.yanbwe.raritycore.network.NetworkRetryManager;
+import org.yanbwe.raritycore.network.SyncBatchManager;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.service.ServiceFactory;
@@ -70,6 +71,9 @@ public class RarityCoreEventHandler {
         
         // 清空变更缓冲区
         SyncManager.clearChangeBuffer();
+        
+        // 清空批处理队列中的待处理操作（防止脏数据跨会话）
+        SyncBatchManager.clearAllOperations();
         
         // 关闭延迟同步管理器
         DelayedSyncManager.shutdown();

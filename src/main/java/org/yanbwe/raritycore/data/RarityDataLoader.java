@@ -65,7 +65,9 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener {
                             continue;
                         }
                         
-                        RarityRegistry.register(item, rarity);
+                        // 使用 syncToClients=false 禁止逐条增量同步，避免在启动/重载时发送大量小包
+                        // 数据一致性由后续 ConfigReloadService.reloadOnStartup() 的批处理 + 玩家登录全量同步保证
+                        RarityRegistry.register(item, rarity, false);
                     } else {
                         RarityCore.LOGGER.warn("Invalid rarity data format for item '{}' in rarity data file '{}'", itemEntry.getKey(), location);
                     }

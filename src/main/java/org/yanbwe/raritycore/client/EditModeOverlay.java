@@ -11,6 +11,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.lwjgl.glfw.GLFW;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.config.RarityClientConfig;
 import org.yanbwe.raritycore.edit.EditModeManager;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 
@@ -114,7 +115,7 @@ public class EditModeOverlay {
 
         // 行2：稀有度 +/- 按钮
         int rarity = EditModeManager.getCurrentRarity();
-        int rarityColor = RarityColorUtil.getRarityArgbColor(rarity > 7 ? 7 : Math.max(1, rarity));
+        int rarityColor = getRarityColorForDisplay(rarity);
         String rarityText = "Rarity: " + rarity;
         gui.drawString(font, rarityText, PANEL_X + PADDING, y, rarityColor);
 
@@ -151,7 +152,7 @@ public class EditModeOverlay {
 
         // 行2：稀有度
         int rarity = EditModeManager.getCurrentRarity();
-        int rarityColor = RarityColorUtil.getRarityArgbColor(rarity > 7 ? 7 : Math.max(1, rarity));
+        int rarityColor = getRarityColorForDisplay(rarity);
         String rarityText = "Rarity: " + rarity;
         gui.drawString(font, rarityText, PANEL_X + PADDING, y, rarityColor);
 
@@ -349,6 +350,34 @@ public class EditModeOverlay {
     private static String truncate(String s, int maxLen) {
         if (s.length() <= maxLen) return s;
         return s.substring(0, maxLen - 3) + "...";
+    }
+
+    /**
+     * 获取编辑模式叠加层中稀有度显示所用的 ARGB 颜色。
+     *
+     * <p>v14 修复：不再将 >7 的稀有度截断到 7 再取色，
+     * 而是优先从 {@link RarityClientConfig} 获取该等级的自定义颜色。
+     * 如果配置中未定义该等级，则回退到 {@link RarityColorUtil} 的默认色。</p>
+     *
+     * @param rarity 当前稀有度等级（可能 >7）
+     * @return ARGB 颜色值
+     */
+    private static int getRarityColorForDisplay(int rarity) {
+        if (rarity < 1) {
+            return RarityColorUtil.getRarityArgbColor(1);
+        }
+        // 1-7: 使用 RarityColorUtil 的标准颜色
+        if (rarity <= 7) {
+            return RarityColorUtil.getRarityArgbColor(rarity);
+        }
+        // >7: 优先使用 RarityClientConfig 的自定义颜色
+        RarityClientConfig clientConfig = RarityClientConfig.getInstance();
+        if (!clientConfig.isEmpty()) {
+            // getConfig 对于已配置的等级直接返回，未配置时回退到 7
+            return clientConfig.getColor(rarity);
+        }
+        // 无 RarityClientConfig 时，使用 7 的颜色作为合理回退
+        return RarityColorUtil.getRarityArgbColor(7);
     }
 
     /**

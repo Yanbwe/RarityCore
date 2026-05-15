@@ -131,15 +131,20 @@ public class RarityRegistry {
             // 实时更新ID缓存（编辑模式支持）
             DualCacheManager.updateIdCache(new ItemStack(item), rarity);
 
-            // 如果需要同步到客户端且当前在服务端环境中,记录变更操作并使用增量同步
+            // 记录变更操作到缓冲区（锁内完成，轻量操作）
             if (syncToClients) {
                 if (oldRarity == null) {
                     SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.ADD, itemId, rarity));
                 } else {
                     SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.UPDATE, itemId, rarity));
                 }
-                SyncManager.syncIncrementalChangesToClients();
             }
+        }
+        // 锁外发送网络包，避免持有 REGISTRY_LOCK 时进行 I/O 操作
+        // 这防止了因网络包拥塞/分包导致的锁竞争，同时也降低了 GenericPacketSplitter
+        // 在连接关闭时处理分包造成 NPE 的概率（减少在临界区中的时间窗口）
+        if (syncToClients) {
+            SyncManager.syncIncrementalChangesToClients();
         }
     }
 
@@ -165,13 +170,14 @@ public class RarityRegistry {
             // 实时更新ID缓存（编辑模式支持）- 删除时使缓存失效
             DualCacheManager.updateIdCache(new ItemStack(item), null);
 
-            // 如果需要同步到客户端且当前在服务端环境中,记录删除操作并使用增量同步
-            if (syncToClients) {
-                if (removedRarity != null) {
-                    SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.DELETE, itemId, null));
-                }
-                SyncManager.syncIncrementalChangesToClients();
+            // 记录变更操作到缓冲区（锁内完成，轻量操作）
+            if (syncToClients && removedRarity != null) {
+                SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.DELETE, itemId, null));
             }
+        }
+        // 锁外发送网络包（理由同 register()）
+        if (syncToClients) {
+            SyncManager.syncIncrementalChangesToClients();
         }
     }
     
