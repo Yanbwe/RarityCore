@@ -1,8 +1,9 @@
 package org.yanbwe.raritycore.mixin;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -10,6 +11,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.yanbwe.raritycore.config.RarityClientConfig;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -55,17 +57,22 @@ public class ItemStackMixin {
         // 标准化稀有度值,遵循模组的包容性原则
         rarity = RarityValidator.normalizeRarity(rarity);
         
+        // Check per-level nameColor config — skip if disabled for this rarity level
+        if (!RarityClientConfig.getLevelConfig(rarity).nameColor()) {
+            return;
+        }
+        
         // 如果是普通稀有度(1),则使用白色,但不添加格式化代码(默认颜色)
         if (rarity == RarityConstants.RARITY_COMMON) {
             return;
         }
         
         // 获取对应颜色
-        ChatFormatting color = RarityColorUtil.getRarityChatColor(rarity);
+        TextColor color = RarityColorUtil.getRarityTextColor(rarity);
         Component originalName = cir.getReturnValue();
         
         // 设置带有颜色格式的名称并取消默认返回值
-        cir.setReturnValue(originalName.copy().withStyle(color));
+        cir.setReturnValue(originalName.copy().withStyle(Style.EMPTY.withColor(color)));
     }
     
     /**

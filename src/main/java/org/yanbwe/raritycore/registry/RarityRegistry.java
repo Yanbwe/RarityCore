@@ -2,6 +2,7 @@ package org.yanbwe.raritycore.registry;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
@@ -9,7 +10,9 @@ import net.neoforged.neoforge.common.NeoForge;
 import org.jetbrains.annotations.NotNull;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.compat.CompatibilityChecker;
+import org.yanbwe.raritycore.config.TagRarityLoader;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
+import org.yanbwe.raritycore.event.RarityQueryEvent;
 import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -289,7 +292,27 @@ public class RarityRegistry {
     }
     
     private static @NotNull Integer getRarityInternal(Identifier itemId, @Nullable ItemStack itemStack, Item item) {
+        // Component 稀有度检查 — 最高优先级，凌驾一切其他来源
+        // 仅 ItemStack 触发（纯 Item 查询无 Component 数据）
+        if (itemStack != null) {
+            ComponentRarityResolver.ComponentRarityData componentData = ComponentRarityResolver.resolveComponentRarity(itemStack);
+            if (componentData != null) {
+                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, componentData.level());
+                return componentData.level();
+            }
+        }
+
         Integer rarity;
+
+        // Post RarityQueryEvent as pre-override — allows other mods to override rarity before any lookup
+        RarityQueryEvent queryEvent = new RarityQueryEvent(itemStack, item, 0, "getRarityInternal");
+        NeoForge.EVENT_BUS.post(queryEvent);
+        if (queryEvent.getRarity() > 0) {
+            if (itemStack != null) {
+                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, queryEvent.getRarity());
+            }
+            return queryEvent.getRarity();
+        }
 
         rarity = checkItemDataRarity(itemStack);
         if (rarity != null) {
@@ -305,6 +328,16 @@ public class RarityRegistry {
                 org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
             }
             return rarity;
+        }
+
+        // Tag-based rarity check — between ITEM_RARITY_MAP and AUTO_RARITY_MAP
+        // Only applies to ItemStack; rules sorted by rarity descending → first match = highest rarity
+        if (itemStack != null) {
+            rarity = checkTagRarity(itemStack);
+            if (rarity != null) {
+                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+                return rarity;
+            }
         }
 
         rarity = AUTO_RARITY_MAP.get(itemId);
@@ -340,6 +373,28 @@ public class RarityRegistry {
             return null;
         }
         return org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher.getItemDataMatchedRarity(itemStack);
+    }
+
+    /**
+     * Checks tag-based rarity assignment rules from TagRarity.json.
+     * Rules are sorted by rarity descending, so the first matching tag provides
+     * the highest applicable rarity for this item.
+     *
+     * @param itemStack the item stack to check (must be non-null)
+     * @return the assigned rarity level if any tag rule matches, null otherwise
+     */
+    private static Integer checkTagRarity(@NotNull ItemStack itemStack) {
+        for (TagRarityLoader.TagRarityEntry entry : TagRarityLoader.getTagRules()) {
+            TagKey<Item> tagKey = entry.toTagKey();
+            try {
+                if (itemStack.typeHolder().is(tagKey)) {
+                    return entry.rarity();
+                }
+            } catch (Exception e) {
+                RarityCore.LOGGER.debug("Error checking tag rarity for {}: {}", entry.toTagString(), e.getMessage());
+            }
+        }
+        return null;
     }
     
     /**

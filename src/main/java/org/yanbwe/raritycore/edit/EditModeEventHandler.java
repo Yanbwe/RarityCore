@@ -3,6 +3,8 @@ package org.yanbwe.raritycore.edit;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
@@ -19,156 +21,213 @@ import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.mixin.AbstractContainerScreenAccessor;
 
 /**
- * 客户端编辑模式事件处理器
- * 处理键盘输入和鼠标点击事件来控制编辑模式
+ * 客户端编辑模式事件处理器。
+ * <p>负责：</p>
+ * <ul>
+ *   <li>在所有 GUI 左上角渲染浮动编辑面板（ScreenEvent.Render.Post）</li>
+ *   <li>Ctrl+H 切换面板可见性</li>
+ *   <li>Ctrl+数字键通过参数系统设置当前稀有度等级</li>
+ *   <li>Ctrl+0 切换删除模式</li>
+ *   <li>在容器界面中点击物品槽修改稀有度（Normal/FullMatch）</li>
+ * </ul>
  */
 @EventBusSubscriber(value = Dist.CLIENT, modid = RarityCore.MODID)
 public class EditModeEventHandler {
-    
+
+    /** 浮动面板可见性，默认可见，Ctrl+H 切换 */
+    private static boolean overlayVisible = true;
+
+    // ============================================================
+    //  GUI 渲染：浮动编辑面板
+    // ============================================================
+
+    /**
+     * 在所有 GUI 渲染完成后，于左上角叠加半透明浮动编辑面板。
+     * <p>仅在编辑模式开启且面板可见时绘制。</p>
+     */
+    @SubscribeEvent
+    public static void onRenderPost(ScreenEvent.Render.Post event) {
+        if (!EditModeManager.isEditModeEnabled() || !overlayVisible) {
+            return;
+        }
+
+        GuiGraphicsExtractor guiGraphics = event.getGuiGraphics();
+        Minecraft mc = Minecraft.getInstance();
+        Font font = mc.font;
+
+        // 构建面板文本行
+        String modeLabel = EditModeManager.getEditMode() == EditModeManager.EditMode.FULLMATCH
+                ? "FULLMATCH" : "NORMAL";
+        String rarityStars = getRarityStars(EditModeManager.getCurrentRarity());
+        String line = "Edit Mode: ON | Mode: " + modeLabel + " | Rarity: " + rarityStars + " | Ctrl+H to hide";
+
+        // 面板布局
+        int panelX = 4;
+        int panelY = 4;
+        int textWidth = font.width(line);
+        int panelWidth = textWidth + 12;
+        int panelHeight = 16;
+
+        // 半透明深色背景 (0x80 alpha = ~50%)
+        guiGraphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, 0x80000000);
+
+        // 白色文字
+        guiGraphics.text(font, line, panelX + 6, panelY + 4, 0xFFFFFFFF);
+    }
+
+    // ============================================================
+    //  键盘事件：Ctrl+H 折叠 / Ctrl+数字 稀有度 / Ctrl+0 删除
+    // ============================================================
+
+    /**
+     * 处理键盘快捷键：
+     * <ul>
+     *   <li>Ctrl+H — 切换浮动面板可见性（无论编辑模式是否开启）</li>
+     *   <li>Ctrl+1~7 — 通过参数系统设置当前稀有度（仅编辑模式）</li>
+     *   <li>Ctrl+0 — 切换删除模式（仅编辑模式）</li>
+     * </ul>
+     */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onKeyInput(ScreenEvent.KeyPressed.Pre event) {
-        // 检查是否按下 Ctrl + 数字键组合
-        if (isCtrlPressed()) {
-            if (isNumberKey(event.getKeyCode())) {
-                handleNumberKeyPress(event.getKeyCode());
-                event.setCanceled(true); // 阻止默认按键行为
-            } else if (event.getKeyCode() == GLFW.GLFW_KEY_0) {
-                handleZeroKeyPress();
-                event.setCanceled(true); // 阻止默认按键行为
+        // Ctrl+H：切换面板可见性（无需编辑模式）
+        if (isCtrlPressed() && event.getKeyCode() == GLFW.GLFW_KEY_H) {
+            overlayVisible = !overlayVisible;
+            event.setCanceled(true);
+            LocalPlayer player = Minecraft.getInstance().player;
+            if (player != null) {
+                player.sendOverlayMessage(Component.translatable(
+                        overlayVisible ? "rarity.core.edit_overlay_shown"
+                                : "rarity.core.edit_overlay_hidden"));
+            }
+            return;
+        }
+
+        // 以下快捷键仅在编辑模式下生效
+        if (!EditModeManager.isEditModeEnabled() || !isCtrlPressed()) {
+            return;
+        }
+
+        // Ctrl+1~7：设置稀有度（通过参数系统）
+        if (isNumberKey(event.getKeyCode())) {
+            int rarity = event.getKeyCode() - GLFW.GLFW_KEY_1 + 1;
+            EditModeManager.setParameter("rarity", String.valueOf(rarity));
+            EditModeManager.setCurrentRarity(rarity);
+            EditModeManager.setDeleteMode(false);
+            event.setCanceled(true);
+
+            LocalPlayer player = Minecraft.getInstance().player;
+            if (player != null) {
+                player.sendOverlayMessage(
+                        Component.translatable("rarity.core.edit_mode_rarity_selected", rarity));
+            }
+            return;
+        }
+
+        // Ctrl+0：切换删除模式
+        if (event.getKeyCode() == GLFW.GLFW_KEY_0) {
+            boolean newDeleteMode = EditModeManager.toggleDeleteMode();
+            event.setCanceled(true);
+
+            LocalPlayer player = Minecraft.getInstance().player;
+            if (player != null) {
+                player.sendOverlayMessage(Component.translatable(
+                        newDeleteMode ? "rarity.core.edit_mode_delete_mode_enabled"
+                                : "rarity.core.edit_mode_delete_mode_disabled"));
             }
         }
     }
-    
+
+    // ============================================================
+    //  鼠标点击：Normal / FullMatch 物品稀有度修改
+    // ============================================================
+
+    /**
+     * 在容器界面中点击物品槽以修改其稀有度。
+     * <p>根据 {@link EditModeManager#getEditMode()} 自动分发到 Normal 或 FullMatch 处理器。</p>
+     */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     @SuppressWarnings("null")
     public static void onMouseClick(ScreenEvent.MouseButtonPressed.Pre event) {
-        // 只在编辑模式下处理鼠标点击
         if (!EditModeManager.isEditModeEnabled()) {
             return;
         }
-        
+
         Screen screen = event.getScreen();
         if (!(screen instanceof AbstractContainerScreen<?> containerScreen)) {
             return;
         }
-        
-        // 获取鼠标位置
+
         double mouseX = event.getMouseX();
         double mouseY = event.getMouseY();
-        
-        // 获取被点击的槽位
+
         Slot clickedSlot = getSlotUnderMouse(containerScreen, mouseX, mouseY);
         if (clickedSlot == null || !clickedSlot.hasItem()) {
             return;
         }
-        
+
         ItemStack itemStack = clickedSlot.getItem();
         if (itemStack.isEmpty()) {
             return;
         }
-        
-        // 修改物品稀有度
+
+        // modifyItemRarity 内部根据 EditModeManager.getEditMode() 自动分派
         if (EditModeManager.modifyItemRarity(itemStack)) {
-            // 显示反馈消息
             LocalPlayer player = Minecraft.getInstance().player;
             if (player != null) {
                 int currentRarity = EditModeManager.getCurrentRarity();
                 player.sendOverlayMessage(
-                    Component.translatable("rarity.core.edit_mode_applied", currentRarity)
-                );
+                        Component.translatable("rarity.core.edit_mode_applied", currentRarity));
             }
         }
-        
-        // 阻止默认的鼠标点击行为
+
         event.setCanceled(true);
     }
-    
-    /**
-     * 检查Ctrl键是否被按下
-     */
+
+    // ============================================================
+    //  辅助方法
+    // ============================================================
+
+    /** 检查左/右 Ctrl 是否按下 */
     private static boolean isCtrlPressed() {
         Window window = Minecraft.getInstance().getWindow();
-        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL) ||
-               InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
+        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL)
+                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
     }
-    
-    /**
-     * 检查是否为数字键
-     */
+
+    /** 检查键码是否为数字键 1~7 */
     private static boolean isNumberKey(int keyCode) {
         return keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_7;
     }
-    
+
     /**
-     * 处理数字键按下事件
+     * 将稀有度等级转换为实心/空心星号字符串。
+     * @param rarity 稀有度等级 (1-7)
+     * @return 如 "★★★☆☆☆☆" 表示等级 3
      */
-    @SuppressWarnings("null")
-    private static void handleNumberKeyPress(int keyCode) {
-        if (!EditModeManager.isEditModeEnabled()) {
-            return;
+    private static String getRarityStars(int rarity) {
+        StringBuilder sb = new StringBuilder(7);
+        for (int i = 1; i <= 7; i++) {
+            sb.append(i <= rarity ? '\u2605' : '\u2606'); // ★ : ☆
         }
-        
-        // 将键码转换为稀有度等级 (1-7)
-        int rarity = keyCode - GLFW.GLFW_KEY_1 + 1;
-        EditModeManager.setRarity(rarity);
-        
-        // 退出删除模式
-        EditModeManager.setDeleteMode(false);
-        
-        // 显示反馈消息
-        LocalPlayer player = Minecraft.getInstance().player;
-        if (player != null) {
-            player.sendOverlayMessage(
-                Component.translatable("rarity.core.edit_mode_rarity_selected", rarity)
-            );
-        }
+        return sb.toString();
     }
-    
+
     /**
-     * 处理0键按下事件(切换删除模式)
-     */
-    @SuppressWarnings("null")
-    private static void handleZeroKeyPress() {
-        if (!EditModeManager.isEditModeEnabled()) {
-            return;
-        }
-        
-        boolean newDeleteMode = EditModeManager.toggleDeleteMode();
-        
-        // 显示反馈消息
-        LocalPlayer player = Minecraft.getInstance().player;
-        if (player != null) {
-            if (newDeleteMode) {
-                player.sendOverlayMessage(
-                    Component.translatable("rarity.core.edit_mode_delete_mode_enabled")
-                );
-            } else {
-                player.sendOverlayMessage(
-                    Component.translatable("rarity.core.edit_mode_delete_mode_disabled")
-                );
-            }
-        }
-    }
-    
-    /**
-     * 获取鼠标位置下的槽位
+     * 获取鼠标指针下方的物品槽位。
+     * <p>优先使用 Mixin Accessor，失败时回退到手动坐标计算。</p>
      */
     private static Slot getSlotUnderMouse(AbstractContainerScreen<?> screen, double mouseX, double mouseY) {
         if (screen instanceof AbstractContainerScreenAccessor accessor) {
             return accessor.getHoveredSlot();
         }
-        
-        // 备用方法:手动计算槽位
+
+        // 回退：手动遍历所有槽位
         try {
-            // 获取屏幕左上角坐标
-            int leftPos = ((AbstractContainerScreen<?>) screen).getGuiLeft();
-            int topPos = ((AbstractContainerScreen<?>) screen).getGuiTop();
-            
-            // 计算相对坐标
+            int leftPos = screen.getGuiLeft();
+            int topPos = screen.getGuiTop();
             int relX = (int) (mouseX - leftPos);
             int relY = (int) (mouseY - topPos);
-            
-            // 遍历所有槽位寻找匹配的
+
             for (Slot slot : screen.getMenu().slots) {
                 if (isMouseOverSlot(slot, relX, relY)) {
                     return slot;
@@ -177,15 +236,13 @@ public class EditModeEventHandler {
         } catch (Exception e) {
             RarityCore.LOGGER.debug("Failed to get slot under mouse", e);
         }
-        
+
         return null;
     }
-    
-    /**
-     * 检查鼠标是否在槽位上方
-     */
+
+    /** 判断鼠标坐标是否落在槽位矩形内 */
     private static boolean isMouseOverSlot(Slot slot, int mouseX, int mouseY) {
-        return mouseX >= slot.x && mouseX < slot.x + 16 && 
-               mouseY >= slot.y && mouseY < slot.y + 16;
+        return mouseX >= slot.x && mouseX < slot.x + 16
+                && mouseY >= slot.y && mouseY < slot.y + 16;
     }
 }

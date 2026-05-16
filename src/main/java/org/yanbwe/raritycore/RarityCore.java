@@ -23,6 +23,7 @@ public class RarityCore {
         NeoForge.EVENT_BUS.register(new RarityCoreEventHandler());
 
         initializeServices();
+        LOGGER.info("RarityCore API ready — RarityCoreAPI is available for external mod integration");
     }
 
     private void initializeServices() {

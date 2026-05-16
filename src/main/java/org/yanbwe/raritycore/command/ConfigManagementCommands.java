@@ -8,6 +8,7 @@ import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.ConfigValidator;
+import org.yanbwe.raritycore.config.RarityClientConfig;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 
 import java.nio.file.Files;
@@ -57,6 +58,9 @@ public class ConfigManagementCommands {
      */
     private static int reloadClientConfig(CommandSourceStack source) {
         ClientConfigManager.loadClientConfig();
+
+        // 热重载稀有度逐级客户端配置
+        RarityClientConfig.reloadRarityClientConfig();
         
         // 通知星星显示管理器重新加载配置
         org.yanbwe.raritycore.util.StarDisplayManager.getInstance().reloadConfiguration();

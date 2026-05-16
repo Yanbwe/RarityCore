@@ -71,4 +71,5 @@ public class RarityConstants {
     
     // 服务端配置默认值
     public static final boolean DEFAULT_ENABLE_GET_RARITY_WARNING = true; // 默认启用 getRarity() 可用性警告
+    public static final boolean DEFAULT_ENABLE_COMPONENT_RARITY_CONTROL = false; // 默认禁用基于 Data Component 的稀有度控制
 }

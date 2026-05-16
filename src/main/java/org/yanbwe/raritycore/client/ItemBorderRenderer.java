@@ -9,6 +9,7 @@ import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.config.ClientConfigManager;
+import org.yanbwe.raritycore.config.RarityClientConfig;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -52,6 +53,11 @@ public class ItemBorderRenderer {
 
         rarity = RarityValidator.normalizeRarity(rarity);
 
+        // Check per-level renderer config — skip if disabled for this rarity level
+        if (!RarityClientConfig.getLevelConfig(rarity).renderer()) {
+            return;
+        }
+
         if (ClientConfigManager.isUseTextureBorder()) {
             renderTextureBorder(guiGraphics, rarity, x, y);
         } else {
@@ -60,10 +66,16 @@ public class ItemBorderRenderer {
     }
 
     private static void renderTextureBorder(GuiGraphicsExtractor guiGraphics, int rarity, int x, int y) {
-        String textureName = "rarity_" + rarity;
+        // Use custom texture from RarityClientConfig if configured, else default path
+        String customTexture = RarityClientConfig.getLevelConfig(rarity).texture();
+        Identifier textureLocation;
+        if (customTexture != null && !customTexture.isEmpty()) {
+            textureLocation = Identifier.parse(customTexture);
+        } else {
+            textureLocation = Identifier.parse(RarityConstants.BORDER_TEXTURE_PATH + "rarity_" + rarity + RarityConstants.TEXTURE_SUFFIX);
+        }
 
         try {
-            Identifier textureLocation = Identifier.parse(RarityConstants.BORDER_TEXTURE_PATH + textureName + RarityConstants.TEXTURE_SUFFIX);
             guiGraphics.blit(RenderPipelines.GUI_TEXTURED, textureLocation, x, y, 0.0F, 0.0F, 16, 16, 16, 16);
         } catch (Exception e) {
             RarityCore.LOGGER.warn("Failed to render texture border for rarity {}, falling back to color border: {}", rarity, e.getMessage());
@@ -72,7 +84,7 @@ public class ItemBorderRenderer {
     }
 
     private static void renderColorBorder(GuiGraphicsExtractor guiGraphics, int rarity, int x, int y) {
-        int borderColor = RarityColorUtil.getRarityArgbColor(rarity);
+        int borderColor = 0xFF000000 | RarityColorUtil.getRarityRgbColor(rarity);
 
         if (ClientConfigManager.getItemBorderStyle() == 1) {
             int alphaMask = 0x80000000;

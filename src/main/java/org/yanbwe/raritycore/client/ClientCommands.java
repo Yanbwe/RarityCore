@@ -12,6 +12,7 @@ import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.cache.IdCacheManager;
 import org.yanbwe.raritycore.cache.RarityCacheCoordinator;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
+import org.yanbwe.raritycore.config.RarityClientConfig;
 
 /**
  * 客户端命令管理器
@@ -112,6 +113,15 @@ public class ClientCommands {
                         return 1;
                     })
                 )
+            )
+            .then(Commands.literal("reload")
+                .executes(context -> {
+                    RarityClientConfig.reloadRarityClientConfig();
+                    RenderCacheManager.clearAllCache();
+                    context.getSource().sendSuccess(() -> Component.translatable("rarity.core.client_config_reloaded")
+                        .withStyle(ChatFormatting.GREEN), false);
+                    return 1;
+                })
             )
         );
     }

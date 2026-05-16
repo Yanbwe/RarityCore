@@ -1,6 +1,7 @@
 package org.yanbwe.raritycore.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -41,6 +42,11 @@ public class ExportManagementCommands {
                 .then(Commands.literal("mod")
                     .then(Commands.argument("modid", IdentifierArgument.id())
                         .executes(context -> exportModRarityData(context.getSource(), IdentifierArgument.getId(context, "modid")))
+                    )
+                )
+                .then(Commands.literal("rarity")
+                    .then(Commands.argument("rarity", IntegerArgumentType.integer(1, 7))
+                        .executes(context -> exportRarityFiltered(context.getSource(), IntegerArgumentType.getInteger(context, "rarity")))
                     )
                 )
             )
@@ -257,6 +263,52 @@ public class ExportManagementCommands {
         com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
         try (FileWriter writer = new FileWriter(exportFile.toFile())) {
             gson.toJson(exportData, writer);
+        }
+    }
+
+    /**
+     * 导出指定稀有度等级的所有物品数据
+     * 从 ITEM_RARITY_MAP 中过滤指定稀有度的条目,输出与 FinalRarity.json 一致的格式
+     */
+    private static int exportRarityFiltered(CommandSourceStack source, int rarity) {
+        try {
+            // 使用ConfigManager提供的路径
+            Path configDir = ConfigManager.getConfigDirPath();
+            Files.createDirectories(configDir);
+
+            // 生成带时间戳的文件名
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String fileName = "export_rarity_" + rarity + "_" + timestamp + ".json";
+            Path exportFile = configDir.resolve(fileName);
+
+            // 过滤指定稀有度的物品
+            java.util.LinkedHashMap<String, Integer> exportData = new java.util.LinkedHashMap<>();
+            for (Map.Entry<Identifier, Integer> entry : RarityRegistry.ITEM_RARITY_MAP.entrySet()) {
+                if (entry.getValue() == rarity) {
+                    exportData.put(entry.getKey().toString(), entry.getValue());
+                }
+            }
+
+            // 写入导出文件
+            com.google.gson.Gson gson = new com.google.gson.GsonBuilder().setPrettyPrinting().create();
+            try (FileWriter writer = new FileWriter(exportFile.toFile())) {
+                gson.toJson(exportData, writer);
+            }
+
+            int itemCount = exportData.size();
+            if (itemCount > 0) {
+                source.sendSuccess(() -> Component.translatable("rarity.core.export_rarity_success",
+                    rarity, itemCount, exportFile.toString()).withStyle(ChatFormatting.GREEN), false);
+            } else {
+                source.sendSuccess(() -> Component.translatable("rarity.core.export_rarity_empty",
+                    rarity).withStyle(ChatFormatting.YELLOW), false);
+            }
+            return 1;
+        } catch (IOException e) {
+            RarityCore.LOGGER.error("Failed to export rarity filtered data", e);
+            source.sendSuccess(() -> Component.translatable("rarity.core.export_failed",
+                e.getMessage()).withStyle(ChatFormatting.RED), false);
+            return 0;
         }
     }
 }

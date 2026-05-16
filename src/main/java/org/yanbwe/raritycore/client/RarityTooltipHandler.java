@@ -5,20 +5,24 @@ package org.yanbwe.raritycore.client;
   名字下面显示稀有度等级
  */
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.event.RarityTooltipEvent;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.config.ClientConfigManager;
+import org.yanbwe.raritycore.config.RarityClientConfig;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.ComponentBuilder;
 import org.yanbwe.raritycore.util.RarityColorUtil;
@@ -72,13 +76,21 @@ public class RarityTooltipHandler {
         // 标准化稀有度值用于颜色获取等内部处理
         rarity = RarityValidator.normalizeRarity(rarity);
         
+        // Post RarityTooltipEvent to allow other mods to modify the tooltip list before insertion
+        NeoForge.EVENT_BUS.post(new RarityTooltipEvent(itemStack, displayRarity, event.getToolTip(), isSpecialRarity));
+        
+        // Check per-level tooltips config — skip if disabled for this rarity level
+        if (!RarityClientConfig.getLevelConfig(rarity).tooltips()) {
+            return;
+        }
+        
         // 处理超出范围的稀有度值
-        ChatFormatting color = RarityColorUtil.getRarityChatColor(rarity);
+        TextColor color = RarityColorUtil.getRarityTextColor(rarity);
         MutableComponent prefixComponent;
         
         if (isSpecialRarity) {
             // 如果稀有度大于7,显示为 [x级稀有度] <星星>
-            ChatFormatting uniqueColor = RarityColorUtil.getRarityChatColor(RarityConstants.RARITY_UNIQUE);
+            TextColor uniqueColor = RarityColorUtil.getRarityTextColor(RarityConstants.RARITY_UNIQUE);
             MutableComponent rarityComponent = ComponentBuilder.buildSpecialRarityComponent(displayRarity, uniqueColor);
             
             // 高效插入到工具提示
@@ -115,7 +127,7 @@ public class RarityTooltipHandler {
             
             // 根据配置决定是否应用颜色
             if (ClientConfigManager.isEnableTooltipColor()) {
-                prefixComponent = prefixComponent.withStyle(color);
+                prefixComponent = prefixComponent.withStyle(Style.EMPTY.withColor(color));
             }
         
             // 构建文本(使用组件构建器)

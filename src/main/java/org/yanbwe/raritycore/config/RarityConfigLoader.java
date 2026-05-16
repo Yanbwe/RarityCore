@@ -37,6 +37,9 @@ public class RarityConfigLoader {
 
         // 读取并加载配置文件内容
         loadRarityDataFromFile(configFile);
+
+        // 加载 Tag 稀有度配置
+        TagRarityLoader.loadTagRarityConfig();
     }
 
     /**

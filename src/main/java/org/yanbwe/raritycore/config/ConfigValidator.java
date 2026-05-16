@@ -174,6 +174,7 @@ public class ConfigValidator {
         
         configObject.addProperty("checkVanillaRarity", true);
         configObject.addProperty("enableGetRarityWarning", true);
+        configObject.addProperty("enableComponentRarityControl", false);
         
         return configObject;
     }
