@@ -1,7 +1,5 @@
 package org.yanbwe.raritycore.edit;
 
-import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -17,6 +15,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.lwjgl.glfw.GLFW;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.mixin.AbstractContainerScreenAccessor;
+import org.yanbwe.raritycore.util.InputHelper;
 
 /**
  * 客户端编辑模式事件处理器。
@@ -46,7 +45,7 @@ public class EditModeEventHandler {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onKeyInput(ScreenEvent.KeyPressed.Pre event) {
         // 以下快捷键仅在编辑模式下生效
-        if (!EditModeManager.isEditModeEnabled() || !isCtrlPressed()) {
+        if (!EditModeManager.isEditModeEnabled() || !InputHelper.isCtrlPressed()) {
             return;
         }
 
@@ -88,9 +87,16 @@ public class EditModeEventHandler {
      * <p>根据 {@link EditModeManager#getEditMode()} 自动分发到 Normal 或 FullMatch 处理器。</p>
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    @SuppressWarnings("null")
     public static void onMouseClick(ScreenEvent.MouseButtonPressed.Pre event) {
         if (!EditModeManager.isEditModeEnabled()) {
+            return;
+        }
+
+        double mouseX = event.getMouseX();
+        double mouseY = event.getMouseY();
+
+        // 避免与 EditModeOverlay 面板区域冲突：面板内点击由 Overlay 独占处理
+        if (isInOverlayPanel(mouseX, mouseY)) {
             return;
         }
 
@@ -98,9 +104,6 @@ public class EditModeEventHandler {
         if (!(screen instanceof AbstractContainerScreen<?> containerScreen)) {
             return;
         }
-
-        double mouseX = event.getMouseX();
-        double mouseY = event.getMouseY();
 
         Slot clickedSlot = getSlotUnderMouse(containerScreen, mouseX, mouseY);
         if (clickedSlot == null || !clickedSlot.hasItem()) {
@@ -120,21 +123,13 @@ public class EditModeEventHandler {
                 player.sendOverlayMessage(
                         Component.translatable("rarity.core.edit_mode_applied", currentRarity));
             }
+            event.setCanceled(true);
         }
-
-        event.setCanceled(true);
     }
 
     // ============================================================
     //  辅助方法
     // ============================================================
-
-    /** 检查左/右 Ctrl 是否按下 */
-    private static boolean isCtrlPressed() {
-        Window window = Minecraft.getInstance().getWindow();
-        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL)
-                || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
-    }
 
     /** 检查键码是否为数字键 1~7 */
     private static boolean isNumberKey(int keyCode) {
@@ -147,7 +142,7 @@ public class EditModeEventHandler {
      */
     private static Slot getSlotUnderMouse(AbstractContainerScreen<?> screen, double mouseX, double mouseY) {
         if (screen instanceof AbstractContainerScreenAccessor accessor) {
-            return accessor.getHoveredSlot();
+            return accessor.raritycore$getHoveredSlot();
         }
 
         // 回退：手动遍历所有槽位
@@ -169,9 +164,19 @@ public class EditModeEventHandler {
         return null;
     }
 
-    /** 判断鼠标坐标是否落在槽位矩形内 */
+    /** 判断鼠标坐标是否落在槽位矩形内（槽位渲染大小为 18x18，含边框） */
     private static boolean isMouseOverSlot(Slot slot, int mouseX, int mouseY) {
-        return mouseX >= slot.x && mouseX < slot.x + 16
-                && mouseY >= slot.y && mouseY < slot.y + 16;
+        return mouseX >= slot.x && mouseX < slot.x + 18
+                && mouseY >= slot.y && mouseY < slot.y + 18;
+    }
+
+    /**
+     * 检查鼠标是否落在 EditModeOverlay 面板区域内。
+     * <p>面板位于屏幕左上角 (4,4)，最大尺寸 175×94（FullMatch 展开模式）。
+     * 面板内点击由 {@link org.yanbwe.raritycore.client.EditModeOverlay} 独占处理。</p>
+     */
+    private static boolean isInOverlayPanel(double mouseX, double mouseY) {
+        return mouseX >= 4 && mouseX < 4 + 175
+                && mouseY >= 4 && mouseY < 4 + 94;
     }
 }

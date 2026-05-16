@@ -3,10 +3,13 @@ package org.yanbwe.raritycore.edit;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.component.TypedDataComponent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
 import org.yanbwe.raritycore.network.EditModeRequestPayload;
 import org.yanbwe.raritycore.registry.RarityRegistry;
@@ -54,17 +57,15 @@ public class EditModeManager {
     private static String ignoreComponents = "";
     private static boolean stringContains = true;
 
+    // 忽略组件集合缓存：仅当 ignoreComponents 字符串变化时重新解析
+    private static volatile java.util.Set<String> cachedIgnoredSet = java.util.Set.of();
+    private static volatile String lastIgnoreComponents = "";
+
     // 编辑参数存储：key=参数名(如 rarity, autoReload, ignore, stringContains), value=参数值
     private static final Map<String, String> editParameters = new LinkedHashMap<>();
 
-    // 可用的稀有度等级列表
-    private static final List<Integer> AVAILABLE_RARITIES = new ArrayList<>();
-
-    static {
-        for (int i = 1; i <= 7; i++) {
-            AVAILABLE_RARITIES.add(i);
-        }
-    }
+    // 可用的稀有度等级列表（不可变）
+    private static final List<Integer> AVAILABLE_RARITIES = List.of(1, 2, 3, 4, 5, 6, 7);
 
     // ============ 编辑模式开关（保留原有方法） ============
 
@@ -120,33 +121,44 @@ public class EditModeManager {
     // ============ 稀有度等级导航 ============
 
     /**
-     * 切换到下一个稀有度等级
+     * 切换到下一个稀有度等级（在 AVAILABLE_RARITIES 中循环）。
+     * 如果当前等级超出列表范围，重置为 1。
      */
     public static void nextRarity() {
         if (!editModeEnabled) return;
 
         int currentIndex = AVAILABLE_RARITIES.indexOf(currentRarity);
+        if (currentIndex < 0) {
+            currentRarity = 1;
+            return;
+        }
         int nextIndex = (currentIndex + 1) % AVAILABLE_RARITIES.size();
         currentRarity = AVAILABLE_RARITIES.get(nextIndex);
     }
 
     /**
-     * 切换到上一个稀有度等级
+     * 切换到上一个稀有度等级（在 AVAILABLE_RARITIES 中循环）。
+     * 如果当前等级超出列表范围，重置为 1。
      */
     public static void previousRarity() {
         if (!editModeEnabled) return;
 
         int currentIndex = AVAILABLE_RARITIES.indexOf(currentRarity);
+        if (currentIndex < 0) {
+            currentRarity = 1;
+            return;
+        }
         int previousIndex = (currentIndex - 1 + AVAILABLE_RARITIES.size()) % AVAILABLE_RARITIES.size();
         currentRarity = AVAILABLE_RARITIES.get(previousIndex);
     }
 
     /**
-     * 设置指定的稀有度等级
-     * @param rarity 稀有度等级 (1-7)
+     * 设置指定的稀有度等级（≥0，无上限）。
+     * rarity=0 表示无稀有度（用于删除模式）。
+     * @param rarity 稀有度等级（≥0）
      */
     public static void setRarity(int rarity) {
-        if (rarity >= 1 && rarity <= 7) {
+        if (rarity >= 0) {
             currentRarity = rarity;
         }
     }
@@ -287,25 +299,58 @@ public class EditModeManager {
     }
 
     /**
-     * 将 ignoreComponents 字符串解析为忽略组件名集合
+     * 将 ignoreComponents 字符串解析为忽略组件名集合（带缓存）。
+     * <p>仅当 ignoreComponents 字符串变化时重新解析，避免在 FullMatch 配置生成
+     * 的组件遍历循环中反复创建临时集合。</p>
      * @return 忽略的组件名集合（不可变）
      */
     public static java.util.Set<String> getIgnoredComponentsSet() {
-        if (ignoreComponents == null || ignoreComponents.isEmpty()) {
-            return java.util.Set.of();
+        String current = ignoreComponents;
+        if (current == null) current = "";
+        if (current.equals(lastIgnoreComponents)) {
+            return cachedIgnoredSet;
         }
-        java.util.Set<String> result = new java.util.HashSet<>();
-        for (String part : ignoreComponents.split("\\|")) {
-            String trimmed = part.trim();
-            if (!trimmed.isEmpty()) {
-                result.add(trimmed);
+        if (current.isEmpty()) {
+            cachedIgnoredSet = java.util.Set.of();
+        } else {
+            java.util.Set<String> result = new java.util.HashSet<>();
+            for (String part : current.split("\\|")) {
+                String trimmed = part.trim();
+                if (!trimmed.isEmpty()) {
+                    result.add(trimmed);
+                }
             }
+            cachedIgnoredSet = java.util.Set.copyOf(result);
         }
-        return java.util.Set.copyOf(result);
+        lastIgnoreComponents = current;
+        return cachedIgnoredSet;
     }
 
     public static boolean isComponentIgnored(String componentName) {
-        return getIgnoredComponentsSet().contains(componentName);
+        if (componentName == null || componentName.isEmpty()) return false;
+        java.util.Set<String> ignored = getIgnoredComponentsSet();
+        if (ignored.isEmpty()) return false;
+
+        // 短名（冒号后部分），如 "repair_cost"
+        String shortName = componentName;
+        int colonIdx = componentName.indexOf(':');
+        if (colonIdx >= 0) {
+            shortName = componentName.substring(colonIdx + 1);
+        }
+
+        for (String entry : ignored) {
+            String e = entry.trim();
+            if (e.isEmpty()) continue;
+            // 去掉可能的 "components." 前缀（用户可能按配置 path 格式输入）
+            if (e.startsWith("components.")) {
+                e = e.substring("components.".length());
+            }
+            // 匹配完整名 "minecraft:repair_cost" 或短名 "repair_cost"
+            if (componentName.equals(e) || shortName.equals(e)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ============ 辅助方法 ============
@@ -373,8 +418,7 @@ public class EditModeManager {
      * 多人游戏时通过网络包发送到服务端处理。</p>
      */
     private static boolean handleNormalMode(Item item, Identifier itemId, int rarity) {
-        Minecraft mc = Minecraft.getInstance();
-        boolean isMultiplayer = mc.getConnection() != null;
+        boolean isMultiplayer = !isSingleplayer();
 
         if (isMultiplayer) {
             // 多人游戏：发送请求包到服务端
@@ -401,79 +445,118 @@ public class EditModeManager {
     }
 
     /**
-     * FullMatch 模式处理器：生成 Item Data 匹配配置对象
-     * <p>当前为 stub 实现：仅构建内存中的配置 JSON 对象，
-     * 文件写入将在 subtask 19 中通过 ItemDataConfigLoader 完成。</p>
+     * FullMatch 模式处理器：遍历物品 Data Component 生成完整匹配配置 JSON，
+     * 并发送到服务端写入文件。
      */
     private static boolean handleFullMatchMode(ItemStack itemStack, Identifier itemId, int rarity) {
+        // 客户端生成完整匹配配置（遍历所有 Data Component 构建条件）
         JsonObject config = generateFullMatchConfig(itemStack, rarity);
-        // 暂不写文件（subtask 19 实现）：ItemDataConfigLoader.saveFullMatchConfig(config, itemId);
-        forceClientCacheUpdate(itemStack.getItem(), rarity);
-        return config != null;
+        if (config == null) {
+            RarityCore.LOGGER.warn("FullMatch: Failed to generate config for {}", itemId);
+            return false;
+        }
+
+        String configJson = config.toString();
+        boolean isMultiplayer = !isSingleplayer();
+
+        if (isMultiplayer) {
+            // 多人游戏：发送完整 JSON 到服务端
+            EditModeRequestPayload payload = new EditModeRequestPayload(
+                itemId, rarity, false, "FULLMATCH",
+                configJson
+            );
+            net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(payload);
+        } else {
+            // 单人游戏：直接写入本地
+            FullMatchConfigGenerator.generateOnServer(itemId, rarity, configJson);
+        }
+
+        return true;
     }
 
     /**
-     * 生成 FullMatch 模式的 Item Data 匹配配置 JSON
-     * <p>根据当前存储的编辑参数构建 JSON 配置对象，格式符合
-     * {@link org.yanbwe.raritycore.itemdatamatching.SimpleConfigValidator} 的要求：</p>
-     * <pre>
-     * {
-     *   "item_id": "namespace:path",
-     *   "rarity": 5,
-     *   "conditions": [
-     *     { "path": "...", "type": "contains", "substring": "..." },
-     *     ...
-     *   ]
-     * }
-     * </pre>
-     *
-     * <p>参数映射：
+     * 生成 FullMatch 模式的 Item Data 匹配配置 JSON。
+     * <p>遍历物品的所有 Data Component，根据类型生成条件：</p>
      * <ul>
-     *   <li><b>ignore</b> — | 分隔的多值，每个值生成一个 equals 条件</li>
-     *   <li><b>stringContains</b> — 单个值，生成一个 contains 条件，值写入 substring 字段</li>
+     *   <li>文本类型 (String) — if stringContains → contains，else → equals</li>
+     *   <li>复合/列表类型 — if stringContains → contains，else → equals</li>
+     *   <li>数值/布尔类型 — 始终 equals</li>
      * </ul>
+     * <p>ignoreComponents 中指定的组件名（如 "minecraft:damage"）会被跳过。</p>
      *
-     * @param itemStack 目标物品堆（用于获取完整的 Component 上下文）
+     * @param itemStack 目标物品堆
      * @param rarity    稀有度等级
-     * @return 生成的配置 JSON 对象，参数缺失时 conditions 可能为空数组
+     * @return 生成的配置 JSON 对象，失败返回 null
      */
     public static JsonObject generateFullMatchConfig(ItemStack itemStack, int rarity) {
         Identifier itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
         if (itemId == null) return null;
 
-        JsonObject config = new JsonObject();
-        config.addProperty("item_id", itemId.toString());
-        config.addProperty("rarity", rarity);
+        net.minecraft.core.component.DataComponentMap components = itemStack.getComponents();
+        if (components == null || components.isEmpty()) {
+            return null;
+        }
 
-        // 构建条件列表
+        boolean strContains = isStringContains();
         JsonArray conditions = new JsonArray();
 
-        // ignore 参数：| 分隔的多值，每个值生成一个 equals 条件
-        String ignore = editParameters.get("ignore");
-        if (ignore != null && !ignore.isEmpty()) {
-            for (String part : ignore.split("\\|")) {
-                String trimmed = part.trim();
-                if (!trimmed.isEmpty()) {
-                    JsonObject cond = new JsonObject();
-                    cond.addProperty("path", "custom_data.ignore");
-                    cond.addProperty("type", "equals");
-                    cond.addProperty("value", trimmed);
-                    conditions.add(cond);
+        for (net.minecraft.core.component.TypedDataComponent<?> typed : components) {
+            String componentName = typed.type().toString(); // e.g. "minecraft:damage"
+            if (componentName == null || componentName.isEmpty()) continue;
+
+            // 跳过忽略列表中的组件
+            if (isComponentIgnored(componentName)) continue;
+
+            Object value = typed.value();
+            if (value == null) continue;
+
+            String path = "components." + componentName;
+            JsonObject condition = new JsonObject();
+            condition.addProperty("path", path);
+            condition.addProperty("description", componentName);
+
+            if (value instanceof Number num) {
+                condition.addProperty("type", "equals");
+                condition.addProperty("value", num);
+            } else if (value instanceof Boolean bool) {
+                condition.addProperty("type", "equals");
+                condition.addProperty("value", bool);
+            } else if (value instanceof String str) {
+                if (strContains) {
+                    condition.addProperty("type", "contains");
+                    condition.addProperty("substring", str);
+                } else {
+                    condition.addProperty("type", "equals");
+                    condition.addProperty("value", str);
+                }
+            } else {
+                // 复合类型、列表等
+                String strVal = value.toString();
+                if (strContains && !strVal.isEmpty()) {
+                    condition.addProperty("type", "contains");
+                    condition.addProperty("substring", strVal);
+                } else {
+                    condition.addProperty("type", "equals");
+                    condition.addProperty("value", strVal);
                 }
             }
+
+            conditions.add(condition);
         }
 
-        // stringContains 参数：生成 contains 条件，值字段为 substring
-        String stringContains = editParameters.get("stringContains");
-        if (stringContains != null && !stringContains.isEmpty()) {
-            JsonObject cond = new JsonObject();
-            cond.addProperty("path", "custom_data.contains");
-            cond.addProperty("type", "contains");
-            cond.addProperty("substring", stringContains);
-            conditions.add(cond);
+        if (conditions.isEmpty()) {
+            return null;
         }
 
+        JsonObject config = new JsonObject();
+        config.addProperty("item_id", itemId.toString());
         config.add("conditions", conditions);
+        config.addProperty("rarity", rarity);
+        config.addProperty("fuzzy_match", true);
+        config.addProperty("priority", 0);
+        config.addProperty("enabled", true);
+        config.addProperty("description", "Auto-generated by FullMatch edit mode");
+
         return config;
     }
 
@@ -486,12 +569,9 @@ public class EditModeManager {
      */
     private static void forceClientCacheUpdate(Item item, int rarity) {
         try {
-            org.yanbwe.raritycore.cache.DualCacheManager.handleConfigReload();
-
-            ItemStack itemStack = new ItemStack(item);
-            org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
+            org.yanbwe.raritycore.cache.RarityCacheCoordinator.updateIdCache(item, rarity);
         } catch (Exception e) {
-            // 静默失败，等待网络同步后自动更新
+            RarityCore.LOGGER.debug("Cache update deferred for item (will sync via network): {}", e.getMessage());
         }
     }
 

@@ -37,13 +37,15 @@ import java.util.Map;
  * @param deleteMode 是否为删除模式
  * @param mode       编辑模式："NORMAL" 或 "FULLMATCH"（null/空字符串视为 NORMAL）
  * @param parameters 编辑参数映射（如 rarity, autoReload, ignore, stringContains）
+ * @param fullMatchConfigJson FullMatch 模式下客户端预生成的完整配置 JSON 字符串
  */
 public record EditModeRequestPayload(
     Identifier itemId,
     int rarity,
     boolean deleteMode,
     String mode,
-    Map<String, String> parameters
+    Map<String, String> parameters,
+    String fullMatchConfigJson
 ) implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<EditModeRequestPayload> TYPE =
@@ -56,15 +58,24 @@ public record EditModeRequestPayload(
         ByteBufCodecs.map(HashMap::new, ByteBufCodecs.STRING_UTF8, ByteBufCodecs.STRING_UTF8);
 
     /**
+     * 协议版本标记字节。写在 3 个必填字段之后、可选字段之前。
+     * <p>旧版客户端不写此字节（仅 3 字段），解码时通过 mark/reset 检测：
+     * 若下一个字节 == PROTOCOL_VERSION(1) 则是新版格式，否则回退为旧版。
+     * 该值 1 不会与 mode 字符串的 VarInt 首字节冲突
+     * （"NORMAL" = 6, "FULLMATCH" = 9, 均 ≠ 1）。</p>
+     */
+    private static final byte PROTOCOL_VERSION = 1;
+
+    /**
      * 自定义 StreamCodec，实现与旧版（3 字段）客户端的向后兼容。
      *
-     * <p>编码时始终写入全部 5 个字段（新格式）。
-     * 解码时先读取 3 个基本字段，再通过 {@link FriendlyByteBuf#readableBytes()}
-     * 检查缓冲区是否有剩余字节：
-     * <ul>
-     *   <li>有剩余字节 → 读取 mode 和 parameters（新版格式）</li>
-     *   <li>无剩余字节 → 默认 mode="NORMAL"、parameters 为空 Map（旧版格式）</li>
-     * </ul></p>
+     * <p><b>新版编码顺序：</b>
+     * {@code itemId | rarity | deleteMode | VERSION(1) | mode | parameters | [hasJson, json]}</p>
+     * <p><b>旧版编码顺序（仅解码支持）：</b>
+     * {@code itemId | rarity | deleteMode | mode}</p>
+     * <p>解码时通过 mark/reset 检测版本字节：
+     * 若第一个额外字节 == PROTOCOL_VERSION → 新版完整解码；
+     * 否则回退到旧版，mode 从该字节开始读取，parameters 默认空 Map。</p>
      */
     public static final StreamCodec<FriendlyByteBuf, EditModeRequestPayload> STREAM_CODEC = new StreamCodec<>() {
         @Override
@@ -72,8 +83,15 @@ public record EditModeRequestPayload(
             Identifier.STREAM_CODEC.encode(buf, payload.itemId);
             buf.writeVarInt(payload.rarity);
             buf.writeBoolean(payload.deleteMode);
+            buf.writeByte(PROTOCOL_VERSION); // ← 版本标记
             ByteBufCodecs.STRING_UTF8.encode(buf, payload.mode != null ? payload.mode : "NORMAL");
             PARAMETERS_CODEC.encode(buf, payload.parameters != null ? payload.parameters : Map.of());
+            // FullMatch config JSON — nullable
+            String json = payload.fullMatchConfigJson;
+            buf.writeBoolean(json != null);
+            if (json != null) {
+                ByteBufCodecs.STRING_UTF8.encode(buf, json);
+            }
         }
 
         @Override
@@ -82,28 +100,54 @@ public record EditModeRequestPayload(
             int rarity = buf.readVarInt();
             boolean deleteMode = buf.readBoolean();
 
-            // Backward compatibility: old clients only sent 3 fields
             String mode;
             Map<String, String> parameters;
+            String fullMatchConfigJson = null;
+
             if (buf.readableBytes() > 0) {
-                mode = ByteBufCodecs.STRING_UTF8.decode(buf);
-                parameters = PARAMETERS_CODEC.decode(buf);
+                buf.markReaderIndex();
+                byte versionCandidate = buf.readByte();
+
+                if (versionCandidate == PROTOCOL_VERSION) {
+                    // 新版格式：版本匹配，继续读取剩余字段
+                    mode = ByteBufCodecs.STRING_UTF8.decode(buf);
+                    if (buf.readableBytes() > 0) {
+                        parameters = PARAMETERS_CODEC.decode(buf);
+                    } else {
+                        parameters = Map.of();
+                    }
+                    if (buf.readableBytes() > 0 && buf.readBoolean()) {
+                        fullMatchConfigJson = ByteBufCodecs.STRING_UTF8.decode(buf);
+                    }
+                } else {
+                    // 旧版格式：versionCandidate 实际上是 mode 字符串 VarInt 的首字节
+                    buf.resetReaderIndex();
+                    mode = ByteBufCodecs.STRING_UTF8.decode(buf);
+                    parameters = Map.of();
+                }
             } else {
                 mode = "NORMAL";
                 parameters = Map.of();
             }
 
-            return new EditModeRequestPayload(itemId, rarity, deleteMode, mode, parameters);
+            return new EditModeRequestPayload(itemId, rarity, deleteMode, mode, parameters, fullMatchConfigJson);
         }
     };
 
     /**
-     * 向后兼容的构造函数：默认 mode="NORMAL"、parameters 为空 Map。
-     * <p>旧版代码（如 {@link org.yanbwe.raritycore.edit.EditModeManager}）
+     * 向后兼容的构造函数：默认 mode="NORMAL"、parameters 为空 Map、fullMatchConfigJson 为 null。
+     * <p>旧版代码（如 {@link org.yanbwe.raritycore.edit.EditModeManager} NORMAL 模式）
      * 使用 3 参数构造此载荷时无需任何修改。</p>
      */
     public EditModeRequestPayload(Identifier itemId, int rarity, boolean deleteMode) {
-        this(itemId, rarity, deleteMode, "NORMAL", Map.of());
+        this(itemId, rarity, deleteMode, "NORMAL", Map.of(), null);
+    }
+
+    /**
+     * FullMatch 模式构造函数：传入客户端预生成的配置 JSON。
+     */
+    public EditModeRequestPayload(Identifier itemId, int rarity, boolean deleteMode, String mode, String fullMatchConfigJson) {
+        this(itemId, rarity, deleteMode, mode != null ? mode : "FULLMATCH", Map.of(), fullMatchConfigJson);
     }
 
     @Override
@@ -141,9 +185,9 @@ public record EditModeRequestPayload(
                 serverPlayer.getName().getString(), itemId, rarity, deleteMode, effectiveMode);
 
             try {
-                if ("FULLMATCH".equals(effectiveMode)) {
-                    handleFullMatch(serverPlayer);
-                } else {
+                    if ("FULLMATCH".equals(effectiveMode)) {
+                        handleFullMatch(serverPlayer);
+                    } else {
                     handleNormal(serverPlayer);
                 }
             } catch (Exception e) {
@@ -177,12 +221,15 @@ public record EditModeRequestPayload(
     }
 
     /**
-     * FULLMATCH 模式处理：委托给 {@link FullMatchConfigGenerator} 生成 Item Data 匹配配置。
-     * <p>当前为 stub 调用，完整实现见后续 subtask。</p>
+     * FULLMATCH 模式处理：使用客户端预生成的配置 JSON 写入文件。
      */
     private void handleFullMatch(ServerPlayer serverPlayer) {
-        RarityCore.LOGGER.info("FULLMATCH mode: delegating to FullMatchConfigGenerator for item={}, rarity={}, player={}",
+        if (fullMatchConfigJson == null || fullMatchConfigJson.isEmpty()) {
+            RarityCore.LOGGER.warn("FULLMATCH mode: no config JSON provided, skipping");
+            return;
+        }
+        RarityCore.LOGGER.info("FULLMATCH mode: writing config for item={}, rarity={}, player={}",
             itemId, rarity, serverPlayer.getName().getString());
-        FullMatchConfigGenerator.generateOnServer(itemId, rarity, parameters);
+        FullMatchConfigGenerator.generateOnServer(itemId, rarity, fullMatchConfigJson);
     }
 }

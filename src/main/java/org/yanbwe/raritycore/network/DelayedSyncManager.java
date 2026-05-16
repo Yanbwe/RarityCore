@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class DelayedSyncManager {
 
@@ -18,8 +20,8 @@ public class DelayedSyncManager {
     private static final long MAX_BATCH_WAIT_MS = 5000;
 
     private static ScheduledExecutorService syncExecutor;
-    private static volatile boolean syncScheduled = false;
-    private static volatile long lastScheduleTime = 0;
+    private static final AtomicBoolean syncScheduled = new AtomicBoolean(false);
+    private static final AtomicLong lastScheduleTime = new AtomicLong(0);
 
     static {
         syncExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -31,27 +33,38 @@ public class DelayedSyncManager {
 
     public static void scheduleDelayedSync() {
         long currentTime = System.currentTimeMillis();
+        long lastTime = lastScheduleTime.get();
 
-        if (syncScheduled && (currentTime - lastScheduleTime) < (MAX_BATCH_WAIT_MS / 2)) {
+        // 防抖：如果距离上次调度不到 (MAX_BATCH_WAIT_MS/2)，跳过
+        if (syncScheduled.get() && (currentTime - lastTime) < (MAX_BATCH_WAIT_MS / 2)) {
             return;
         }
 
-        syncScheduled = true;
-        lastScheduleTime = currentTime;
+        // 原子 CAS 设置 syncScheduled = true，避免竞争调度
+        if (!syncScheduled.compareAndSet(false, true)) {
+            return;
+        }
+        lastScheduleTime.set(currentTime);
 
         syncExecutor.schedule(() -> {
-            performDelayedSync();
-            syncScheduled = false;
+            try {
+                performDelayedSync();
+            } finally {
+                syncScheduled.set(false);
+            }
         }, SYNC_DELAY_MS, TimeUnit.MILLISECONDS);
 
         RarityCore.LOGGER.debug("Scheduled delayed sync in {}ms", SYNC_DELAY_MS);
     }
 
     public static void forceImmediateSync() {
-        if (syncScheduled) {
+        if (syncScheduled.get()) {
             syncExecutor.execute(() -> {
-                performDelayedSync();
-                syncScheduled = false;
+                try {
+                    performDelayedSync();
+                } finally {
+                    syncScheduled.set(false);
+                }
             });
         }
     }
@@ -83,7 +96,6 @@ public class DelayedSyncManager {
             }
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error during delayed sync", e);
-            syncScheduled = false;
         }
     }
 
@@ -121,8 +133,24 @@ public class DelayedSyncManager {
                 Thread.currentThread().interrupt();
             }
         }
-        syncScheduled = false;
+        syncScheduled.set(false);
         RarityCore.LOGGER.debug("DelayedSyncManager shutdown completed");
+    }
+
+    /**
+     * 重置调度状态。在服务器重载/停止时调用，确保静态字段不会残留过期状态。
+     * 内部会重新创建 executor（如果已被 shutdown）。
+     */
+    public static void reset() {
+        syncScheduled.set(false);
+        lastScheduleTime.set(0);
+        if (syncExecutor == null || syncExecutor.isShutdown()) {
+            syncExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "RarityCore-Delayed-Sync");
+                t.setDaemon(true);
+                return t;
+            });
+        }
     }
 
     public static boolean hasPendingOperations() {

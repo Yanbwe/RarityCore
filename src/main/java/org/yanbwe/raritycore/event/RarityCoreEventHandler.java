@@ -39,6 +39,9 @@ public class RarityCoreEventHandler {
         factory.getSchedulerService().startScheduledTasks();
 
         NeoForge.EVENT_BUS.register(new org.yanbwe.raritycore.tick.ServerTickListener());
+
+        // 服务器启动/重载后重置网络调度器状态，避免旧残留
+        org.yanbwe.raritycore.network.DelayedSyncManager.reset();
     }
 
     @SubscribeEvent

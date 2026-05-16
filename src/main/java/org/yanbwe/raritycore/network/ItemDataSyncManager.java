@@ -13,13 +13,22 @@ import org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ItemDataSyncManager {
 
+    /**
+     * 专有单线程执行器，避免使用 ForkJoinPool.commonPool() 与 Minecraft 服务端 Tick 线程竞争。
+     */
+    private static final ExecutorService ITEM_DATA_SYNC_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "RarityCore-ItemDataSync");
+        t.setDaemon(true);
+        return t;
+    });
+
     public static void syncItemDataRulesToPlayer(ServerPlayer player) {
-        CompletableFuture.runAsync(() -> {
+        ITEM_DATA_SYNC_EXECUTOR.execute(() -> {
             try {
                 List<ItemDataSyncPayload.ItemDataRuleDataPayload> ruleDataList = getAllRulesAsData();
                 ItemDataSyncPayload payload = new ItemDataSyncPayload(ruleDataList, true);
@@ -37,7 +46,7 @@ public class ItemDataSyncManager {
     }
 
     public static void syncItemDataRulesToAllPlayers() {
-        CompletableFuture.runAsync(() -> {
+        ITEM_DATA_SYNC_EXECUTOR.execute(() -> {
             try {
                 MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
                 if (server == null) {
@@ -124,13 +133,16 @@ public class ItemDataSyncManager {
         return data.toString();
     }
 
+    /**
+     * 带重试的单玩家同步。重试时使用递增延迟，且确保只发给目标玩家。
+     */
     public static void syncItemDataRulesToPlayerWithRetry(ServerPlayer player, int maxRetries) {
-        CompletableFuture.runAsync(() -> {
+        ITEM_DATA_SYNC_EXECUTOR.execute(() -> {
             Exception lastException = null;
 
             for (int attempt = 1; attempt <= maxRetries; attempt++) {
                 try {
-                    syncItemDataRulesToPlayer(player);
+                    syncItemDataRulesToPlayerInternal(player);
                     if (attempt > 1) {
                         RarityCore.LOGGER.info("Item data rules sync retry successful, attempt {}", attempt);
                     }
@@ -140,13 +152,15 @@ public class ItemDataSyncManager {
                     lastException = e;
                     if (attempt < maxRetries) {
                         long delay = 1000L * attempt;
-                        RarityCore.LOGGER.warn("Item data rules sync failed (attempt {}/{}}, retrying in {}ms: {}",
+                        RarityCore.LOGGER.warn("Item data rules sync failed (attempt {}/{}), retrying in {}ms: {}",
                             attempt, maxRetries, delay, e.getMessage());
 
-                        CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS).execute(() -> {
-                            syncItemDataRulesToAllPlayers();
-                        });
-                        return;
+                        try {
+                            Thread.sleep(delay);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            return;
+                        }
                     }
                 }
             }
@@ -156,8 +170,19 @@ public class ItemDataSyncManager {
         });
     }
 
+    /**
+     * 同步逻辑的内部实现（不包含异步包装），供重试方法复用。
+     */
+    private static void syncItemDataRulesToPlayerInternal(ServerPlayer player) {
+        List<ItemDataSyncPayload.ItemDataRuleDataPayload> ruleDataList = getAllRulesAsData();
+        ItemDataSyncPayload payload = new ItemDataSyncPayload(ruleDataList, true);
+        PacketDistributor.sendToPlayer(player, payload);
+        RarityCore.LOGGER.debug("Sent item data rules sync payload to player {}, rule count: {}",
+            player.getName().getString(), ruleDataList.size());
+    }
+
     public static void syncChangedRules(List<ItemDataMatchRule> changedRules) {
-        CompletableFuture.runAsync(() -> {
+        ITEM_DATA_SYNC_EXECUTOR.execute(() -> {
             try {
                 List<ItemDataSyncPayload.ItemDataRuleDataPayload> ruleDataList = new ArrayList<>();
                 for (ItemDataMatchRule rule : changedRules) {

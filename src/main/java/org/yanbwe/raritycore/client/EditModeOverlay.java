@@ -1,7 +1,5 @@
 package org.yanbwe.raritycore.client;
 
-import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -13,6 +11,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.lwjgl.glfw.GLFW;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.edit.EditModeManager;
+import org.yanbwe.raritycore.util.InputHelper;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 
 /**
@@ -255,7 +254,7 @@ public class EditModeOverlay {
     public static void onKeyPress(ScreenEvent.KeyPressed.Pre event) {
         if (!EditModeManager.isEditModeEnabled()) return;
 
-        if (event.getKeyCode() == GLFW.GLFW_KEY_H && isCtrlPressed()) {
+        if (event.getKeyCode() == GLFW.GLFW_KEY_H && InputHelper.isCtrlPressed()) {
             collapsed = !collapsed;
             event.setCanceled(true);
         }
@@ -289,9 +288,4 @@ public class EditModeOverlay {
         return RarityColorUtil.getRarityArgbColor(7);
     }
 
-    private static boolean isCtrlPressed() {
-        Window window = Minecraft.getInstance().getWindow();
-        return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_CONTROL) ||
-               InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_CONTROL);
-    }
 }
