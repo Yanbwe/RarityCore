@@ -3,8 +3,6 @@ package org.yanbwe.raritycore.edit;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
@@ -24,94 +22,38 @@ import org.yanbwe.raritycore.mixin.AbstractContainerScreenAccessor;
  * 客户端编辑模式事件处理器。
  * <p>负责：</p>
  * <ul>
- *   <li>在所有 GUI 左上角渲染浮动编辑面板（ScreenEvent.Render.Post）</li>
- *   <li>Ctrl+H 切换面板可见性</li>
- *   <li>Ctrl+数字键通过参数系统设置当前稀有度等级</li>
+ *   <li>Ctrl+数字键设置当前稀有度等级</li>
  *   <li>Ctrl+0 切换删除模式</li>
  *   <li>在容器界面中点击物品槽修改稀有度（Normal/FullMatch）</li>
  * </ul>
+ * <p>GUI 覆盖层渲染由 {@link org.yanbwe.raritycore.client.EditModeOverlay} 处理。</p>
  */
 @EventBusSubscriber(value = Dist.CLIENT, modid = RarityCore.MODID)
 public class EditModeEventHandler {
 
-    /** 浮动面板可见性，默认可见，Ctrl+H 切换 */
-    private static boolean overlayVisible = true;
-
     // ============================================================
-    //  GUI 渲染：浮动编辑面板
-    // ============================================================
-
-    /**
-     * 在所有 GUI 渲染完成后，于左上角叠加半透明浮动编辑面板。
-     * <p>仅在编辑模式开启且面板可见时绘制。</p>
-     */
-    @SubscribeEvent
-    public static void onRenderPost(ScreenEvent.Render.Post event) {
-        if (!EditModeManager.isEditModeEnabled() || !overlayVisible) {
-            return;
-        }
-
-        GuiGraphicsExtractor guiGraphics = event.getGuiGraphics();
-        Minecraft mc = Minecraft.getInstance();
-        Font font = mc.font;
-
-        // 构建面板文本行
-        String modeLabel = EditModeManager.getEditMode() == EditModeManager.EditMode.FULLMATCH
-                ? "FULLMATCH" : "NORMAL";
-        String rarityStars = getRarityStars(EditModeManager.getCurrentRarity());
-        String line = "Edit Mode: ON | Mode: " + modeLabel + " | Rarity: " + rarityStars + " | Ctrl+H to hide";
-
-        // 面板布局
-        int panelX = 4;
-        int panelY = 4;
-        int textWidth = font.width(line);
-        int panelWidth = textWidth + 12;
-        int panelHeight = 16;
-
-        // 半透明深色背景 (0x80 alpha = ~50%)
-        guiGraphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, 0x80000000);
-
-        // 白色文字
-        guiGraphics.text(font, line, panelX + 6, panelY + 4, 0xFFFFFFFF);
-    }
-
-    // ============================================================
-    //  键盘事件：Ctrl+H 折叠 / Ctrl+数字 稀有度 / Ctrl+0 删除
+    //  键盘事件：Ctrl+数字 稀有度 / Ctrl+0 删除
     // ============================================================
 
     /**
      * 处理键盘快捷键：
      * <ul>
-     *   <li>Ctrl+H — 切换浮动面板可见性（无论编辑模式是否开启）</li>
-     *   <li>Ctrl+1~7 — 通过参数系统设置当前稀有度（仅编辑模式）</li>
+     *   <li>Ctrl+1~7 — 设置当前稀有度（仅编辑模式）</li>
      *   <li>Ctrl+0 — 切换删除模式（仅编辑模式）</li>
      * </ul>
+     * <p>Ctrl+H 折叠由 {@link org.yanbwe.raritycore.client.EditModeOverlay} 处理。</p>
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onKeyInput(ScreenEvent.KeyPressed.Pre event) {
-        // Ctrl+H：切换面板可见性（无需编辑模式）
-        if (isCtrlPressed() && event.getKeyCode() == GLFW.GLFW_KEY_H) {
-            overlayVisible = !overlayVisible;
-            event.setCanceled(true);
-            LocalPlayer player = Minecraft.getInstance().player;
-            if (player != null) {
-                player.sendOverlayMessage(Component.translatable(
-                        overlayVisible ? "rarity.core.edit_overlay_shown"
-                                : "rarity.core.edit_overlay_hidden"));
-            }
-            return;
-        }
-
         // 以下快捷键仅在编辑模式下生效
         if (!EditModeManager.isEditModeEnabled() || !isCtrlPressed()) {
             return;
         }
 
-        // Ctrl+1~7：设置稀有度（通过参数系统）
+        // Ctrl+1~7：设置稀有度
         if (isNumberKey(event.getKeyCode())) {
             int rarity = event.getKeyCode() - GLFW.GLFW_KEY_1 + 1;
-            EditModeManager.setParameter("rarity", String.valueOf(rarity));
-            EditModeManager.setCurrentRarity(rarity);
+            EditModeManager.setRarity(rarity);
             EditModeManager.setDeleteMode(false);
             event.setCanceled(true);
 
@@ -197,19 +139,6 @@ public class EditModeEventHandler {
     /** 检查键码是否为数字键 1~7 */
     private static boolean isNumberKey(int keyCode) {
         return keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_7;
-    }
-
-    /**
-     * 将稀有度等级转换为实心/空心星号字符串。
-     * @param rarity 稀有度等级 (1-7)
-     * @return 如 "★★★☆☆☆☆" 表示等级 3
-     */
-    private static String getRarityStars(int rarity) {
-        StringBuilder sb = new StringBuilder(7);
-        for (int i = 1; i <= 7; i++) {
-            sb.append(i <= rarity ? '\u2605' : '\u2606'); // ★ : ☆
-        }
-        return sb.toString();
     }
 
     /**

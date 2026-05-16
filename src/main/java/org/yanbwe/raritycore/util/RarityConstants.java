@@ -22,6 +22,7 @@ public class RarityConstants {
     public static final String SERVER_CONFIG_FILE_NAME = "server.json";
     public static final String FINAL_RARITY_FILE_NAME = "FinalRarity.json";
     public static final String FINAL_RARITY_CONFIG_FOLDER_NAME = "FinalRarityConfig";
+    public static final String RARITY_CLIENT_CONFIG_FILE_NAME = "RarityClientConfig.json";
     
     // 验证范围
     public static final int MIN_RARITY = 1;

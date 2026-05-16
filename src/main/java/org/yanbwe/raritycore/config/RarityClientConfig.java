@@ -234,16 +234,17 @@ public class RarityClientConfig {
     /**
      * 默认 1~7 级配置。
      * 颜色取自 {@link RarityColorUtil#getRarityArgbColor(int)} 的现有映射，
-     * 纹理默认为空字符串（用户自行配置），其余开关默认全部启用。
+     * 纹理默认使用 BORDER_TEXTURE_PATH + "rarity_N" + TEXTURE_SUFFIX，
+     * 其余开关默认全部启用。
      */
     private static final Map<Integer, RarityLevelConfig> DEFAULT_CONFIGS = Map.of(
-            1, new RarityLevelConfig(toHex(RarityColorUtil.getRarityArgbColor(1)), "", true, true, true),
-            2, new RarityLevelConfig(toHex(RarityColorUtil.getRarityArgbColor(2)), "", true, true, true),
-            3, new RarityLevelConfig(toHex(RarityColorUtil.getRarityArgbColor(3)), "", true, true, true),
-            4, new RarityLevelConfig(toHex(RarityColorUtil.getRarityArgbColor(4)), "", true, true, true),
-            5, new RarityLevelConfig(toHex(RarityColorUtil.getRarityArgbColor(5)), "", true, true, true),
-            6, new RarityLevelConfig(toHex(RarityColorUtil.getRarityArgbColor(6)), "", true, true, true),
-            7, new RarityLevelConfig(toHex(RarityColorUtil.getRarityArgbColor(7)), "", true, true, true)
+            1, new RarityLevelConfig(toHex(RarityColorUtil.getRarityArgbColor(1)), RarityConstants.BORDER_TEXTURE_PATH + "rarity_1" + RarityConstants.TEXTURE_SUFFIX, true, true, true),
+            2, new RarityLevelConfig(toHex(RarityColorUtil.getRarityArgbColor(2)), RarityConstants.BORDER_TEXTURE_PATH + "rarity_2" + RarityConstants.TEXTURE_SUFFIX, true, true, true),
+            3, new RarityLevelConfig(toHex(RarityColorUtil.getRarityArgbColor(3)), RarityConstants.BORDER_TEXTURE_PATH + "rarity_3" + RarityConstants.TEXTURE_SUFFIX, true, true, true),
+            4, new RarityLevelConfig(toHex(RarityColorUtil.getRarityArgbColor(4)), RarityConstants.BORDER_TEXTURE_PATH + "rarity_4" + RarityConstants.TEXTURE_SUFFIX, true, true, true),
+            5, new RarityLevelConfig(toHex(RarityColorUtil.getRarityArgbColor(5)), RarityConstants.BORDER_TEXTURE_PATH + "rarity_5" + RarityConstants.TEXTURE_SUFFIX, true, true, true),
+            6, new RarityLevelConfig(toHex(RarityColorUtil.getRarityArgbColor(6)), RarityConstants.BORDER_TEXTURE_PATH + "rarity_6" + RarityConstants.TEXTURE_SUFFIX, true, true, true),
+            7, new RarityLevelConfig(toHex(RarityColorUtil.getRarityArgbColor(7)), RarityConstants.BORDER_TEXTURE_PATH + "rarity_7" + RarityConstants.TEXTURE_SUFFIX, true, true, true)
     );
 
     private static void loadDefaults() {

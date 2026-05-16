@@ -74,12 +74,12 @@ public class RarityColorUtil {
 
     /**
      * 根据稀有度等级获取对应的 RGB 颜色值 (0xRRGGBB packed int, 无 alpha 通道)。
-     * RGB 值对应原 ChatFormatting 颜色：
+     * 颜色值与现有 {@link #getRarityArgbColor(int)} 一致（去掉 alpha 通道）：
      * <ul>
-     *   <li>1 (普通) — 白色 {@code #FFFFFF}</li>
-     *   <li>2 (稀有) — 绿色 {@code #55FF55}</li>
-     *   <li>3 (罕见) — 深青色 {@code #00AAAA}</li>
-     *   <li>4 (史诗) — 浅紫色 {@code #FF55FF}</li>
+     *   <li>1 (普通) — 灰色 {@code #A0A0A0}</li>
+     *   <li>2 (稀有) — 绿色 {@code #00AA00}</li>
+     *   <li>3 (罕见) — 青蓝色 {@code #00AAAA}</li>
+     *   <li>4 (史诗) — 浅紫色 {@code #C870FF}</li>
      *   <li>5 (传说) — 金色 {@code #FFAA00}</li>
      *   <li>6 (神话) — 红色 {@code #FF5555}</li>
      *   <li>7 (唯一) — 深红色 {@code #AA0000}</li>
@@ -89,14 +89,15 @@ public class RarityColorUtil {
      * @return RGB 颜色值 (0xRRGGBB), 默认返回 0xFFFFFF (白色)
      */
     public static int getRarityRgbColor(int rarity) {
+        // RGB values correspond to existing getRarityArgbColor() with alpha stripped
         return switch (rarity) {
-            case 1 -> 0xFFFFFF;  // WHITE
-            case 2 -> 0x55FF55;  // GREEN
-            case 3 -> 0x00AAAA;  // DARK_AQUA
-            case 4 -> 0xFF55FF;  // LIGHT_PURPLE
-            case 5 -> 0xFFAA00;  // GOLD
-            case 6 -> 0xFF5555;  // RED
-            case 7 -> 0xAA0000;  // DARK_RED
+            case 1 -> 0xA0A0A0;  // 普通 - 灰色
+            case 2 -> 0x00AA00;  // 稀有 - 绿色
+            case 3 -> 0x00AAAA;  // 罕见 - 青蓝色
+            case 4 -> 0xC870FF;  // 史诗 - 浅紫色
+            case 5 -> 0xFFAA00;  // 传说 - 金色
+            case 6 -> 0xFF5555;  // 神话 - 红色
+            case 7 -> 0xAA0000;  // 唯一 - 深红色
             default -> DEFAULT_RGB;
         };
     }

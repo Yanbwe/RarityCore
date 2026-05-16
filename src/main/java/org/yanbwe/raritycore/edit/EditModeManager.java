@@ -49,6 +49,11 @@ public class EditModeManager {
     // 删除模式开关
     private static boolean deleteModeEnabled = false;
 
+    // FULLMATCH 模式专用参数（与 1.21.1 签名兼容）
+    private static boolean autoReload = false;
+    private static String ignoreComponents = "";
+    private static boolean stringContains = true;
+
     // 编辑参数存储：key=参数名(如 rarity, autoReload, ignore, stringContains), value=参数值
     private static final Map<String, String> editParameters = new LinkedHashMap<>();
 
@@ -195,12 +200,18 @@ public class EditModeManager {
     // ============ 参数存储 ============
 
     /**
-     * 设置编辑参数
+     * 设置编辑参数（同时同步到专用字段以保持 1.21.1 兼容性）
      * @param key   参数名（如 rarity, autoReload, ignore, stringContains）
      * @param value 参数值
      */
     public static void setParameter(String key, String value) {
         editParameters.put(key, value);
+        // 同步专用字段
+        switch (key) {
+            case "autoReload" -> autoReload = Boolean.parseBoolean(value);
+            case "ignore" -> ignoreComponents = value;
+            case "stringContains" -> stringContains = Boolean.parseBoolean(value);
+        }
     }
 
     /**
@@ -218,6 +229,83 @@ public class EditModeManager {
      */
     public static Map<String, String> getAllParameters() {
         return Collections.unmodifiableMap(editParameters);
+    }
+
+    // ============ FULLMATCH 参数便捷方法（1.21.1 API 兼容） ============
+
+    public static boolean isAutoReload() {
+        return autoReload;
+    }
+
+    public static void setAutoReload(boolean value) {
+        autoReload = value;
+        editParameters.put("autoReload", String.valueOf(value));
+    }
+
+    public static String getIgnoreComponents() {
+        return ignoreComponents;
+    }
+
+    public static void setIgnoreComponents(String ignore) {
+        ignoreComponents = ignore;
+        editParameters.put("ignore", ignore);
+    }
+
+    public static boolean isStringContains() {
+        return stringContains;
+    }
+
+    public static void setStringContains(boolean value) {
+        stringContains = value;
+        editParameters.put("stringContains", String.valueOf(value));
+    }
+
+    public static boolean isFullMatchMode() {
+        return currentMode == EditMode.FULLMATCH;
+    }
+
+    /** getEditMode() 的别名，兼容 1.21.1 API */
+    public static EditMode getCurrentMode() {
+        return currentMode;
+    }
+
+    /** setEditMode(EditMode) 的别名，兼容 1.21.1 API */
+    public static void setCurrentMode(EditMode mode) {
+        setEditMode(mode);
+    }
+
+    public static String getModeName() {
+        return currentMode == EditMode.FULLMATCH ? "fullmatch" : "normal";
+    }
+
+    public static void setModeByName(String modeName) {
+        if ("fullmatch".equalsIgnoreCase(modeName)) {
+            currentMode = EditMode.FULLMATCH;
+        } else {
+            currentMode = EditMode.NORMAL;
+        }
+    }
+
+    /**
+     * 将 ignoreComponents 字符串解析为忽略组件名集合
+     * @return 忽略的组件名集合（不可变）
+     */
+    public static java.util.Set<String> getIgnoredComponentsSet() {
+        if (ignoreComponents == null || ignoreComponents.isEmpty()) {
+            return java.util.Set.of();
+        }
+        java.util.Set<String> result = new java.util.HashSet<>();
+        for (String part : ignoreComponents.split("\\|")) {
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()) {
+                result.add(trimmed);
+            }
+        }
+        return java.util.Set.copyOf(result);
+    }
+
+    public static boolean isComponentIgnored(String componentName) {
+        return getIgnoredComponentsSet().contains(componentName);
     }
 
     // ============ 辅助方法 ============
@@ -417,6 +505,9 @@ public class EditModeManager {
         currentRarity = 1;
         deleteModeEnabled = false;
         currentMode = EditMode.NORMAL;
+        autoReload = false;
+        ignoreComponents = "";
+        stringContains = true;
         editParameters.clear();
     }
 }
