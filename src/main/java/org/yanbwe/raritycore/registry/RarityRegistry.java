@@ -299,14 +299,6 @@ public class RarityRegistry {
             return rarity;
         }
 
-        rarity = checkApotheosisRarity(itemStack);
-        if (rarity != null) {
-            if (itemStack != null) {
-                org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
-            }
-            return rarity;
-        }
-
         rarity = ITEM_RARITY_MAP.get(itemId);
         if (rarity != null) {
             if (itemStack != null) {
@@ -348,18 +340,6 @@ public class RarityRegistry {
             return null;
         }
         return org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher.getItemDataMatchedRarity(itemStack);
-    }
-    
-    /**
-     * 检查神化模组稀有度
-     * @param itemStack 物品栈
-     * @return 稀有度等级,如果没有匹配则返回null
-     */
-    private static Integer checkApotheosisRarity(@Nullable ItemStack itemStack) {
-        if (org.yanbwe.raritycore.config.ServerConfigManager.isCheckApotheosisRarity() && itemStack != null) {
-            return org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.getMappedRarity(itemStack);
-        }
-        return null;
     }
     
     /**

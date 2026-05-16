@@ -173,7 +173,6 @@ public class ConfigValidator {
         JsonObject configObject = new JsonObject();
         
         configObject.addProperty("checkVanillaRarity", true);
-        configObject.addProperty("checkApotheosisRarity", true);
         configObject.addProperty("enableGetRarityWarning", true);
         
         return configObject;

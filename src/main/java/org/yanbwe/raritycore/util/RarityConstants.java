@@ -70,6 +70,5 @@ public class RarityConstants {
     public static final boolean DEFAULT_ENABLE_SOPHISTICATED_CORE_ADAPTER = true; // 默认启用精妙核心适配器
     
     // 服务端配置默认值
-    public static final boolean DEFAULT_CHECK_APOTHEOSIS_RARITY = true; // 默认启用神化模组稀有度检查
     public static final boolean DEFAULT_ENABLE_GET_RARITY_WARNING = true; // 默认启用 getRarity() 可用性警告
 }

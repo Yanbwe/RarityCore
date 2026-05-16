@@ -36,18 +36,6 @@ public class CompatibilityManager {
             RarityCore.LOGGER.error("Failed to initialize SophisticatedCore compatibility adapter", e);
         }
         
-        /*
-        // 初始化神化模组适配器
-        try {
-            Class.forName("dev.shadowsoffire.apotheosis.adventure.loot.LootRarity");
-            org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter.init();
-            RarityCore.LOGGER.info("Apotheosis compatibility adapter initialized");
-        } catch (ClassNotFoundException e) {
-            RarityCore.LOGGER.debug("Apotheosis not found, skipping compatibility adapter");
-        } catch (Exception e) {
-            RarityCore.LOGGER.error("Failed to initialize Apotheosis compatibility adapter", e);
-        }
-
         // 初始化精致存储适配器
         try {
             Class.forName("com.refinedmods.refinedstorage.screen.BaseScreen");
@@ -58,9 +46,9 @@ public class CompatibilityManager {
         } catch (Exception e) {
             RarityCore.LOGGER.error("Failed to initialize Refined Storage compatibility adapter", e);
         }
-        */
+    
         
-        // TODO: 在此处添加其他模组的兼容性检测和初始化
+        // 在此处添加其他模组的兼容性检测和初始化
         /*
         // 示例:JEI兼容性
         try {

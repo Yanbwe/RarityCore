@@ -23,7 +23,6 @@ public class ServerConfigManager {
     
     // 服务端配置
     private static boolean checkVanillaRarity = RarityConstants.DEFAULT_CHECK_VANILLA_RARITY; // 是否检查原版稀有度
-    private static boolean checkApotheosisRarity = RarityConstants.DEFAULT_CHECK_APOTHEOSIS_RARITY; // 是否检查神化模组稀有度
     private static boolean enableGetRarityWarning = RarityConstants.DEFAULT_ENABLE_GET_RARITY_WARNING; // 是否启用 getRarity() 可用性警告
     
     // 配置文件路径
@@ -85,13 +84,6 @@ public class ServerConfigManager {
                     checkVanillaRarity = RarityConstants.DEFAULT_CHECK_VANILLA_RARITY;
                 }
                 
-                // 读取神化稀有度检查设置
-                if (jsonObject.has("checkApotheosisRarity")) {
-                    checkApotheosisRarity = jsonObject.get("checkApotheosisRarity").getAsBoolean();
-                } else {
-                    checkApotheosisRarity = RarityConstants.DEFAULT_CHECK_APOTHEOSIS_RARITY; // 使用常量
-                }
-                
                 // 读取 getRarity 警告开关设置
                 if (jsonObject.has("enableGetRarityWarning")) {
                     enableGetRarityWarning = jsonObject.get("enableGetRarityWarning").getAsBoolean();
@@ -99,14 +91,13 @@ public class ServerConfigManager {
                     enableGetRarityWarning = RarityConstants.DEFAULT_ENABLE_GET_RARITY_WARNING;
                 }
                 
-                RarityCore.LOGGER.info("Server config loaded successfully: checkVanillaRarity={}, checkApotheosisRarity={}, enableGetRarityWarning={}", 
-                    checkVanillaRarity, checkApotheosisRarity, enableGetRarityWarning);
+                RarityCore.LOGGER.info("Server config loaded successfully: checkVanillaRarity={}, enableGetRarityWarning={}", 
+                    checkVanillaRarity, enableGetRarityWarning);
             }
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error loading server config file, using default config: {}", SERVER_CONFIG_FILE, e);
             // 出错时使用默认值
             checkVanillaRarity = RarityConstants.DEFAULT_CHECK_VANILLA_RARITY;
-            checkApotheosisRarity = RarityConstants.DEFAULT_CHECK_APOTHEOSIS_RARITY;
             enableGetRarityWarning = RarityConstants.DEFAULT_ENABLE_GET_RARITY_WARNING;
             // 重新创建配置文件以恢复默认设置
             createDefaultServerConfig();
@@ -138,15 +129,14 @@ public class ServerConfigManager {
         // 创建配置对象
         JsonObject configObject = new JsonObject();
         configObject.addProperty("checkVanillaRarity", checkVanillaRarity);
-        configObject.addProperty("checkApotheosisRarity", checkApotheosisRarity);
         configObject.addProperty("enableGetRarityWarning", enableGetRarityWarning);
         
         // 写入配置文件
         try {
             try (FileWriter writer = new FileWriter(SERVER_CONFIG_FILE.toString())) {
                 GSON.toJson(configObject, writer);
-                RarityCore.LOGGER.info("Server config saved: checkVanillaRarity={}, checkApotheosisRarity={}, enableGetRarityWarning={}", 
-                    checkVanillaRarity, checkApotheosisRarity, enableGetRarityWarning);
+                RarityCore.LOGGER.info("Server config saved: checkVanillaRarity={}, enableGetRarityWarning={}", 
+                    checkVanillaRarity, enableGetRarityWarning);
             }
         } catch (IOException e) {
             RarityCore.LOGGER.error("Cannot save server config file: {}", SERVER_CONFIG_FILE, e);
@@ -166,24 +156,6 @@ public class ServerConfigManager {
     public static void setCheckVanillaRarity(boolean check) {
         if (checkVanillaRarity != check) {
             checkVanillaRarity = check;
-            // 通知相关系统配置已变更
-            notifyConfigChange();
-        }
-    }
-    
-    /**
-     * 获取是否检查神化模组稀有度
-     */
-    public static boolean isCheckApotheosisRarity() {
-        return checkApotheosisRarity;
-    }
-    
-    /**
-     * 设置是否检查神化模组稀有度
-     */
-    public static void setCheckApotheosisRarity(boolean check) {
-        if (checkApotheosisRarity != check) {
-            checkApotheosisRarity = check;
             // 通知相关系统配置已变更
             notifyConfigChange();
         }
