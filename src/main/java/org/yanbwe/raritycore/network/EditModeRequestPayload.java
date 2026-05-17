@@ -12,7 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.cache.DualCacheManager;
+
 import org.yanbwe.raritycore.command.RarityCoreCommands;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader;
@@ -181,7 +181,7 @@ public record EditModeRequestPayload(
 
                 if (shouldAutoReload) {
                     ItemDataConfigLoader.loadAllConfigs();
-                    DualCacheManager.handleConfigReload();
+                    // DualCacheManager.handleConfigReload() 已在 loadAllConfigs() 内部调用，此处不再重复
                     RarityCore.LOGGER.info("FullMatch: Auto-reloaded configs after save");
                 }
 

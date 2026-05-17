@@ -14,7 +14,7 @@ import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader;
-import org.yanbwe.raritycore.itemdatamatching.SimpleItemDataCache;
+
 import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.ItemDataSyncManager;
 import org.yanbwe.raritycore.network.SyncBatchManager;
@@ -57,8 +57,7 @@ public class ConfigReloadService {
             }
             ItemDataConfigLoader.loadAllConfigs();
                         
-            // 重新初始化物品数据缓存
-            SimpleItemDataCache.reinitializeCache();
+            // 缓存刷新由下方的 handleCacheSystems() 统一处理，避免在此处重复调用
                         
             // 同步物品数据规则到所有客户端
             if (!isStartup) { // 启动时不需要同步,会在玩家登录时处理

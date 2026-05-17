@@ -19,16 +19,23 @@ public class NetworkRetryManager {
     private static final long BASE_RETRY_DELAY_MS = 500;
     private static final double EXPONENTIAL_BACKOFF_MULTIPLIER = 2.0;
 
-    private static final ScheduledExecutorService retryScheduler = Executors.newScheduledThreadPool(
-        Runtime.getRuntime().availableProcessors() / 2 + 1, r -> {
-            Thread t = new Thread(r, "RarityCore-Network-Retry");
-            t.setDaemon(true);
-            return t;
+    private static volatile ScheduledExecutorService retryScheduler;
+
+    private static synchronized ScheduledExecutorService getRetryScheduler() {
+        if (retryScheduler == null || retryScheduler.isShutdown()) {
+            retryScheduler = Executors.newScheduledThreadPool(
+                Runtime.getRuntime().availableProcessors() / 2 + 1, r -> {
+                    Thread t = new Thread(r, "RarityCore-Network-Retry");
+                    t.setDaemon(true);
+                    return t;
+                }
+            );
         }
-    );
+        return retryScheduler;
+    }
 
     private static void scheduleRetry(Runnable task, long delayMs) {
-        retryScheduler.schedule(task, delayMs, TimeUnit.MILLISECONDS);
+        getRetryScheduler().schedule(task, delayMs, TimeUnit.MILLISECONDS);
     }
 
     public static void sendIncrementalSyncWithRetry(IncrementalSyncPayload payload) {

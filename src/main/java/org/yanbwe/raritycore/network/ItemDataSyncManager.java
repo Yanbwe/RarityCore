@@ -23,12 +23,19 @@ import java.util.concurrent.TimeUnit;
 
 public class ItemDataSyncManager {
 
-    /** 专用线程池，避免与 ForkJoinPool.commonPool() 竞争 */
-    private static final ExecutorService SYNC_EXECUTOR = Executors.newFixedThreadPool(2, r -> {
-        Thread t = new Thread(r, "RarityCore-ItemData-Sync");
-        t.setDaemon(true);
-        return t;
-    });
+    /** 专用线程池，避免与 ForkJoinPool.commonPool() 竞争。懒加载，支持 shutdown 后重建 */
+    private static volatile ExecutorService syncExecutor;
+
+    private static synchronized ExecutorService getSyncExecutor() {
+        if (syncExecutor == null || syncExecutor.isShutdown()) {
+            syncExecutor = Executors.newFixedThreadPool(2, r -> {
+                Thread t = new Thread(r, "RarityCore-ItemData-Sync");
+                t.setDaemon(true);
+                return t;
+            });
+        }
+        return syncExecutor;
+    }
 
     public static void syncItemDataRulesToPlayer(ServerPlayer player) {
         CompletableFuture.runAsync(() -> {
@@ -45,7 +52,7 @@ public class ItemDataSyncManager {
                 RarityCore.LOGGER.error("Error syncing item data rules to player {}: {}",
                     player.getName().getString(), e.getMessage());
             }
-        }, SYNC_EXECUTOR);
+        }, getSyncExecutor());
     }
 
     public static void syncItemDataRulesToAllPlayers() {
@@ -72,7 +79,7 @@ public class ItemDataSyncManager {
             } catch (Exception e) {
                 RarityCore.LOGGER.error("Error syncing item data rules to all players: {}", e.getMessage());
             }
-        }, SYNC_EXECUTOR);
+        }, getSyncExecutor());
     }
 
     private static List<ItemDataSyncPayload.ItemDataRuleDataPayload> getAllRulesAsData() {
@@ -168,7 +175,7 @@ public class ItemDataSyncManager {
 
             RarityCore.LOGGER.error("Item data rules sync finally failed after {} retries. Last error: {}",
                 maxRetries, lastException != null ? lastException.getMessage() : "Unknown error");
-        }, SYNC_EXECUTOR);
+        }, getSyncExecutor());
     }
 
     public static void syncChangedRules(List<ItemDataMatchRule> changedRules) {
@@ -196,7 +203,7 @@ public class ItemDataSyncManager {
             } catch (Exception e) {
                 RarityCore.LOGGER.error("Error in incremental item data rules sync: {}", e.getMessage());
             }
-        }, SYNC_EXECUTOR);
+        }, getSyncExecutor());
     }
 
     /**
@@ -204,14 +211,16 @@ public class ItemDataSyncManager {
      * 应在模组卸载或服务器停止时调用。
      */
     public static void shutdown() {
-        SYNC_EXECUTOR.shutdown();
-        try {
-            if (!SYNC_EXECUTOR.awaitTermination(3, TimeUnit.SECONDS)) {
-                SYNC_EXECUTOR.shutdownNow();
+        if (syncExecutor != null && !syncExecutor.isShutdown()) {
+            syncExecutor.shutdown();
+            try {
+                if (!syncExecutor.awaitTermination(3, TimeUnit.SECONDS)) {
+                    syncExecutor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                syncExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
             }
-        } catch (InterruptedException e) {
-            SYNC_EXECUTOR.shutdownNow();
-            Thread.currentThread().interrupt();
         }
     }
 

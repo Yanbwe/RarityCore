@@ -10,7 +10,6 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
 import org.yanbwe.raritycore.registry.RarityRegistry;
-import org.yanbwe.raritycore.service.ConfigReloadService;
 import org.yanbwe.raritycore.util.RarityConstants;
 
 import javax.annotation.Nonnull;
@@ -77,7 +76,8 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener {
             }
         }
         
-        // 使用统一的配置重载服务进行完整加载
-        ConfigReloadService.reloadOnStartup();
+        // 配置重载已移至 ServiceFactory.initializeAllServices() 统一管理
+        // 避免在每次数据包重载时重复触发完整的配置重载流程（防止事件风暴）
+        // 此处的注册操作（RarityRegistry.register）已足够完成数据包稀有度的加载
     }
 }

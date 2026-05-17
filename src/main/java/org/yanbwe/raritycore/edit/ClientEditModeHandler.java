@@ -291,11 +291,8 @@ public class ClientEditModeHandler {
 
             RarityCore.LOGGER.info("FullMatch: Saved config to {}", configFile.getFileName());
 
-            // 重新加载配置使规则立即生效
+            // 重新加载配置使规则立即生效（loadAllConfigs 内部已触发缓存刷新）
             ItemDataConfigLoader.loadAllConfigs();
-
-            // 触发缓存失效，确保客户端显示立即更新
-            DualCacheManager.handleConfigReload();
         } catch (IOException e) {
             RarityCore.LOGGER.error("FullMatch: Failed to save config for {}", itemIdStr, e);
         }
