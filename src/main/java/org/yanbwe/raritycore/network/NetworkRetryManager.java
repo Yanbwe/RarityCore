@@ -19,27 +19,35 @@ public class NetworkRetryManager {
 
     /**
      * 专有调度线程池，避免使用 ForkJoinPool.commonPool() 与 Minecraft Tick 线程竞争。
+     * 懒加载，支持 shutdown 后重建。
      */
-    private static final ScheduledExecutorService RETRY_SCHEDULER = Executors.newSingleThreadScheduledExecutor(r -> {
-        Thread t = new Thread(r, "RarityCore-Network-Retry");
-        t.setDaemon(true);
-        return t;
-    });
+    private static volatile ScheduledExecutorService retryScheduler;
+
+    private static synchronized ScheduledExecutorService getRetryScheduler() {
+        if (retryScheduler == null || retryScheduler.isShutdown()) {
+            retryScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "RarityCore-Network-Retry");
+                t.setDaemon(true);
+                return t;
+            });
+        }
+        return retryScheduler;
+    }
 
     private static void scheduleRetry(Runnable task, long delayMs) {
-        RETRY_SCHEDULER.schedule(task, delayMs, TimeUnit.MILLISECONDS);
+        getRetryScheduler().schedule(task, delayMs, TimeUnit.MILLISECONDS);
     }
 
     // ───── 广播级重试 ─────
 
     public static void sendIncrementalSyncWithRetry(IncrementalSyncPayload payload) {
-        RETRY_SCHEDULER.execute(() -> {
+        getRetryScheduler().execute(() -> {
             sendPayloadWithRetry(payload, 0);
         });
     }
 
     public static void sendFullSyncWithRetry(RaritySyncPayload payload) {
-        RETRY_SCHEDULER.execute(() -> {
+        getRetryScheduler().execute(() -> {
             sendPayloadWithRetry(payload, 0);
         });
     }
@@ -78,7 +86,7 @@ public class NetworkRetryManager {
     // ───── 单人重试 ─────
 
     public static void sendToPlayerWithRetry(ServerPlayer player, CustomPacketPayload payload) {
-        RETRY_SCHEDULER.execute(() -> {
+        getRetryScheduler().execute(() -> {
             sendToPlayerWithRetry(player, payload, 0);
         });
     }
@@ -103,5 +111,32 @@ public class NetworkRetryManager {
                     player.getName().getString(), MAX_RETRY_ATTEMPTS, e.getMessage());
             }
         }
+    }
+
+    /**
+     * 关闭专用重试调度器。
+     * 应在服务器停止时调用，下次使用时 getRetryScheduler() 会自动重建。
+     */
+    public static void shutdown() {
+        if (retryScheduler != null && !retryScheduler.isShutdown()) {
+            RarityCore.LOGGER.debug("Shutting down NetworkRetryManager executor");
+            retryScheduler.shutdown();
+            try {
+                if (!retryScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    RarityCore.LOGGER.warn("NetworkRetryManager executor did not terminate gracefully, forcing shutdown");
+                    retryScheduler.shutdownNow();
+                    if (!retryScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                        RarityCore.LOGGER.error("NetworkRetryManager executor could not be terminated");
+                    }
+                } else {
+                    RarityCore.LOGGER.debug("NetworkRetryManager executor terminated gracefully");
+                }
+            } catch (InterruptedException e) {
+                RarityCore.LOGGER.warn("Interrupted while waiting for NetworkRetryManager executor to terminate");
+                retryScheduler.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+        RarityCore.LOGGER.debug("NetworkRetryManager shutdown completed");
     }
 }

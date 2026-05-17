@@ -128,6 +128,9 @@ public class ServiceFactory {
         
         // 执行兼容性检查
         CompatibilityChecker.performCompatibilityCheck();
+
+        // 执行一次完整的配置重载（仅在工作流开始时调用一次，确保所有本地配置和数据包配置一致加载）
+        org.yanbwe.raritycore.service.ConfigReloadService.reloadOnStartup();
         
         RarityCore.LOGGER.info("All services initialized successfully");
     }

@@ -15,20 +15,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class ItemDataSyncManager {
 
     /**
      * 专有单线程执行器，避免使用 ForkJoinPool.commonPool() 与 Minecraft 服务端 Tick 线程竞争。
+     * 懒加载，支持 shutdown 后重建。
      */
-    private static final ExecutorService ITEM_DATA_SYNC_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "RarityCore-ItemDataSync");
-        t.setDaemon(true);
-        return t;
-    });
+    private static volatile ExecutorService syncExecutor;
+
+    private static synchronized ExecutorService getSyncExecutor() {
+        if (syncExecutor == null || syncExecutor.isShutdown()) {
+            syncExecutor = Executors.newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "RarityCore-ItemDataSync");
+                t.setDaemon(true);
+                return t;
+            });
+        }
+        return syncExecutor;
+    }
 
     public static void syncItemDataRulesToPlayer(ServerPlayer player) {
-        ITEM_DATA_SYNC_EXECUTOR.execute(() -> {
+        getSyncExecutor().execute(() -> {
             try {
                 List<ItemDataSyncPayload.ItemDataRuleDataPayload> ruleDataList = getAllRulesAsData();
                 ItemDataSyncPayload payload = new ItemDataSyncPayload(ruleDataList, true);
@@ -46,7 +55,7 @@ public class ItemDataSyncManager {
     }
 
     public static void syncItemDataRulesToAllPlayers() {
-        ITEM_DATA_SYNC_EXECUTOR.execute(() -> {
+        getSyncExecutor().execute(() -> {
             try {
                 MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
                 if (server == null) {
@@ -137,7 +146,7 @@ public class ItemDataSyncManager {
      * 带重试的单玩家同步。重试时使用递增延迟，且确保只发给目标玩家。
      */
     public static void syncItemDataRulesToPlayerWithRetry(ServerPlayer player, int maxRetries) {
-        ITEM_DATA_SYNC_EXECUTOR.execute(() -> {
+        getSyncExecutor().execute(() -> {
             Exception lastException = null;
 
             for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -182,7 +191,7 @@ public class ItemDataSyncManager {
     }
 
     public static void syncChangedRules(List<ItemDataMatchRule> changedRules) {
-        ITEM_DATA_SYNC_EXECUTOR.execute(() -> {
+        getSyncExecutor().execute(() -> {
             try {
                 List<ItemDataSyncPayload.ItemDataRuleDataPayload> ruleDataList = new ArrayList<>();
                 for (ItemDataMatchRule rule : changedRules) {
@@ -205,6 +214,24 @@ public class ItemDataSyncManager {
                 RarityCore.LOGGER.error("Error in incremental item data rules sync: {}", e.getMessage());
             }
         });
+    }
+
+    /**
+     * 关闭专用同步线程池。
+     * 应在服务器停止时调用，下次使用时 getSyncExecutor() 会自动重建。
+     */
+    public static void shutdown() {
+        if (syncExecutor != null && !syncExecutor.isShutdown()) {
+            syncExecutor.shutdown();
+            try {
+                if (!syncExecutor.awaitTermination(3, TimeUnit.SECONDS)) {
+                    syncExecutor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                syncExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     public static SyncStatus getSyncStatus() {

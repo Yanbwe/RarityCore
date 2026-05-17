@@ -17,6 +17,11 @@ public class RarityCacheCoordinator {
 
     private static volatile boolean initialized = false;
 
+    /** 配置重载的防重复刷新保护 */
+    private static volatile boolean isReloading = false;
+    private static volatile long lastReloadTime = 0;
+    private static final long MIN_RELOAD_INTERVAL_MS = 1000;
+
     /**
      * 初始化缓存系统
      */
@@ -188,9 +193,28 @@ public class RarityCacheCoordinator {
      * 重载所有缓存
      */
     public static void handleConfigReload() {
-        IdCacheManager.handleConfigReload();
-        ComponentCacheManager.handleConfigReload();
-        RarityCore.LOGGER.info("稀有度缓存系统重载完成");
+        long currentTime = System.currentTimeMillis();
+
+        // 防止短时间内重复调用（与 IdCacheManager 一致的防重复刷新机制）
+        if (isReloading || (currentTime - lastReloadTime) < MIN_RELOAD_INTERVAL_MS) {
+            return;
+        }
+
+        synchronized (RarityCacheCoordinator.class) {
+            if (isReloading || (currentTime - lastReloadTime) < MIN_RELOAD_INTERVAL_MS) {
+                return;
+            }
+            isReloading = true;
+            lastReloadTime = currentTime;
+        }
+
+        try {
+            IdCacheManager.handleConfigReload();
+            ComponentCacheManager.handleConfigReload();
+            RarityCore.LOGGER.info("稀有度缓存系统重载完成");
+        } finally {
+            isReloading = false;
+        }
     }
 
     /**

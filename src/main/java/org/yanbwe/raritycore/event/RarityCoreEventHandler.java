@@ -23,14 +23,9 @@ public class RarityCoreEventHandler {
 
         event.addListener(ITEM_DATA_CONFIG_LOADER_KEY, factory.createItemDataConfigLoader());
 
-        try {
-            Class<?> listenerClass = Class.forName("org.yanbwe.raritycore.client.CacheInvalidationListener");
-            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.register(listenerClass);
-        } catch (ClassNotFoundException e) {
-            org.yanbwe.raritycore.RarityCore.LOGGER.warn("CacheInvalidationListener class not found, skipping registration");
-        }
-
-        org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader.loadAllConfigs();
+        // CacheInvalidationListener 已通过 @EventBusSubscriber 注解自动注册
+        // 此处不再手动注册，避免重复订阅导致每个事件触发多次
+        // ItemDataConfigLoader.loadAllConfigs() 已移至 ConfigReloadService.reloadOnStartup() 统一管理
     }
 
     @SubscribeEvent
@@ -52,6 +47,8 @@ public class RarityCoreEventHandler {
         org.yanbwe.raritycore.network.SyncManager.clearChangeBuffer();
 
         org.yanbwe.raritycore.network.DelayedSyncManager.shutdown();
+        org.yanbwe.raritycore.network.ItemDataSyncManager.shutdown();
+        org.yanbwe.raritycore.network.NetworkRetryManager.shutdown();
     }
 
     @SubscribeEvent
