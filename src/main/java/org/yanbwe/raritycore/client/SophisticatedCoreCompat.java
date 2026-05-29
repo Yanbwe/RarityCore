@@ -1,14 +1,14 @@
-package org.yanbwe.raritycore.compat.sophisticatedcore;
+package org.yanbwe.raritycore.client;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.inventory.Slot;
 import net.minecraftforge.fml.ModList;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.client.ItemBorderRenderer;
 
 /**
  * 精妙核心兼容性实现类
  * 提供更直接的兼容性方法调用
+ * （客户端专用：引用了 net.minecraft.client.gui.GuiGraphics）
  */
 public class SophisticatedCoreCompat {
     

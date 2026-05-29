@@ -1,6 +1,5 @@
 package org.yanbwe.raritycore.edit;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -173,7 +172,7 @@ public class EditModeManager {
      */
     @OnlyIn(Dist.CLIENT)
     @SuppressWarnings("null")
-    public static boolean modifyItemRarity(ItemStack itemStack) {
+    public static boolean modifyItemRarity(ItemStack itemStack, boolean isSingleplayer) {
         if (!editModeEnabled || itemStack.isEmpty()) return false;
 
         Item item = itemStack.getItem();
@@ -187,19 +186,18 @@ public class EditModeManager {
             org.yanbwe.raritycore.compat.tacz.TacZAdapter.TacZItemType tacZType =
                 org.yanbwe.raritycore.compat.tacz.TacZAdapter.getTacZItemType(itemStack);
             if (tacZType != org.yanbwe.raritycore.compat.tacz.TacZAdapter.TacZItemType.NONE) {
-                return handleTacZEdit(itemId, itemStack, item);
+                return handleTacZEdit(itemId, itemStack, item, isSingleplayer);
             }
         }
 
         if (currentMode == EditMode.FULLMATCH) {
-            return handleFullMatchEdit(itemId, itemStack, item);
+            return handleFullMatchEdit(itemId, itemStack, item, isSingleplayer);
         } else {
-            return handleNormalEdit(itemId, item);
+            return handleNormalEdit(itemId, item, isSingleplayer);
         }
     }
 
-    private static boolean handleNormalEdit(ResourceLocation itemId, Item item) {
-        boolean isSingleplayer = Minecraft.getInstance().getSingleplayerServer() != null;
+    private static boolean handleNormalEdit(ResourceLocation itemId, Item item, boolean isSingleplayer) {
         if (!isSingleplayer) {
             EditModeRequestPacket packet = new EditModeRequestPacket(itemId, currentRarity, false,
                 EditMode.NORMAL.ordinal(), autoReload, ignoreTags);
@@ -212,14 +210,13 @@ public class EditModeManager {
     }
 
     /** TacZ 物品编辑：写入 editTacZ_<itemId>.json */
-    private static boolean handleTacZEdit(ResourceLocation itemId, ItemStack itemStack, Item item) {
+    private static boolean handleTacZEdit(ResourceLocation itemId, ItemStack itemStack, Item item, boolean isSingleplayer) {
         if (currentRarity == 0) return false;
 
         String nbtKey = org.yanbwe.raritycore.compat.tacz.TacZAdapter.getTacZNbtPath(itemStack);
         String nbtValue = org.yanbwe.raritycore.compat.tacz.TacZAdapter.getTacZNbtValue(itemStack);
         if (nbtKey == null || nbtValue == null) return false;
 
-        boolean isSingleplayer = Minecraft.getInstance().getSingleplayerServer() != null;
         if (!isSingleplayer) {
             // 多人模式：通过扩展包传送 NBT key/value
             EditModeRequestPacket packet = new EditModeRequestPacket(itemId, currentRarity, false,
@@ -297,10 +294,8 @@ public class EditModeManager {
         scheduleIncrementalSync();
     }
 
-    private static boolean handleFullMatchEdit(ResourceLocation itemId, ItemStack itemStack, Item item) {
+    private static boolean handleFullMatchEdit(ResourceLocation itemId, ItemStack itemStack, Item item, boolean isSingleplayer) {
         if (currentRarity == 0) return false; // FullMatch 模式不支持 rarity=0
-
-        boolean isSingleplayer = Minecraft.getInstance().getSingleplayerServer() != null;
 
         if (!isSingleplayer) {
             EditModeRequestPacket packet = new EditModeRequestPacket(itemId, currentRarity, false,
