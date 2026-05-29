@@ -19,7 +19,7 @@ public class SophisticatedCoreAdapter {
      */
     public static void init() {
         // 仅客户端执行：GUI 渲染逻辑在服务器端无意义且会加载客户端类导致崩溃
-        if (FMLEnvironment.dist != Dist.CLIENT) {
+        if (FMLEnvironment.getDist() != Dist.CLIENT) {
             RarityCore.LOGGER.debug("SophisticatedCore adapter is client-only, skipping on server");
             return;
         }
