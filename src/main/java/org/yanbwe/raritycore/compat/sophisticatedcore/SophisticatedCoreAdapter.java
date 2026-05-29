@@ -2,7 +2,9 @@ package org.yanbwe.raritycore.compat.sophisticatedcore;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.inventory.Slot;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.FMLEnvironment;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.client.ItemBorderRenderer;
 
@@ -16,6 +18,12 @@ public class SophisticatedCoreAdapter {
      * 初始化精妙核心兼容性适配器
      */
     public static void init() {
+        // 仅客户端执行：GUI 渲染逻辑在服务器端无意义且会加载客户端类导致崩溃
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            RarityCore.LOGGER.debug("SophisticatedCore adapter is client-only, skipping on server");
+            return;
+        }
+        
         // 检查精妙核心是否加载
         if (!ModList.get().isLoaded("sophisticatedcore")) {
             RarityCore.LOGGER.debug("SophisticatedCore mod not detected, skipping initialization");
