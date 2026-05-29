@@ -25,26 +25,28 @@ public class CompatibilityManager {
     public static void initializeCompatibilityAdapters() {
         RarityCore.LOGGER.info("Initializing compatibility adapters...");
         
-        // 初始化精妙核心适配器
-        try {
-            Class.forName("net.p3pp3rf1y.sophisticatedcore.client.gui.StorageScreenBase");
-            org.yanbwe.raritycore.compat.sophisticatedcore.SophisticatedCoreAdapter.init();
-            RarityCore.LOGGER.info("SophisticatedCore compatibility adapter initialized");
-        } catch (ClassNotFoundException e) {
+        // 初始化精妙核心适配器（仅客户端，通过 DistExecutor 保护）
+        if (isModLoaded("sophisticatedcore")) {
+            try {
+                org.yanbwe.raritycore.compat.sophisticatedcore.SophisticatedCoreAdapter.init();
+                RarityCore.LOGGER.info("SophisticatedCore compatibility adapter initialized");
+            } catch (Exception e) {
+                RarityCore.LOGGER.error("Failed to initialize SophisticatedCore compatibility adapter", e);
+            }
+        } else {
             RarityCore.LOGGER.debug("SophisticatedCore not found, skipping compatibility adapter");
-        } catch (Exception e) {
-            RarityCore.LOGGER.error("Failed to initialize SophisticatedCore compatibility adapter", e);
         }
         
         // 初始化精致存储适配器
-        try {
-            Class.forName("com.refinedmods.refinedstorage.screen.BaseScreen");
-            org.yanbwe.raritycore.compat.refinedstorage.RefinedStorageCompat.initialize();
-            RarityCore.LOGGER.info("Refined Storage compatibility adapter initialized");
-        } catch (ClassNotFoundException e) {
+        if (isModLoaded("refinedstorage")) {
+            try {
+                org.yanbwe.raritycore.compat.refinedstorage.RefinedStorageCompat.initialize();
+                RarityCore.LOGGER.info("Refined Storage compatibility adapter initialized");
+            } catch (Exception e) {
+                RarityCore.LOGGER.error("Failed to initialize Refined Storage compatibility adapter", e);
+            }
+        } else {
             RarityCore.LOGGER.debug("Refined Storage not found, skipping compatibility adapter");
-        } catch (Exception e) {
-            RarityCore.LOGGER.error("Failed to initialize Refined Storage compatibility adapter", e);
         }
     
         
