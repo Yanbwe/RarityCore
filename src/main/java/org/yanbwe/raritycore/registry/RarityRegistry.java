@@ -155,8 +155,8 @@ public class RarityRegistry {
      */
     private static String getLocalizedText(String key) {
         try {
-            // 直接使用和原版工具提示系统一样的方式
-            return net.minecraft.client.resources.language.I18n.get(key);
+            // 使用 Component.translatable() 替代 I18n.get()，避免服务端加载客户端类导致 NoClassDefFoundError
+            return net.minecraft.network.chat.Component.translatable(key).getString();
         } catch (Exception e) {
             // 本地化失败时返回原始键
             RarityCore.LOGGER.debug("Error getting localized text for key: {}", key, e);
@@ -203,7 +203,7 @@ public class RarityRegistry {
                 return "[" + customText + "] " + stars;
             } else {
                 // 使用默认格式,使用本地化文本:[xx级稀有度] <星星>
-                String localizedSuffix = net.minecraft.client.resources.language.I18n.get("rarity.core.unusual.tips");
+                String localizedSuffix = net.minecraft.network.chat.Component.translatable("rarity.core.unusual.tips").getString();
                 return "[" + displayRarity + localizedSuffix + "]" + stars;
             }
         } else {
@@ -237,7 +237,7 @@ public class RarityRegistry {
             }
             
             // 获取本地化文本
-            String localizedLabel = net.minecraft.client.resources.language.I18n.get(rarityKey);
+            String localizedLabel = net.minecraft.network.chat.Component.translatable(rarityKey).getString();
             String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(rarity);
             return localizedLabel + " " + stars;
         }

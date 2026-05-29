@@ -2,7 +2,6 @@ package org.yanbwe.raritycore.edit;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.TypedDataComponent;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -363,17 +362,6 @@ public class EditModeManager {
         return new ArrayList<>(AVAILABLE_RARITIES);
     }
 
-    /**
-     * 判断当前是否为单人游戏（集成服务器模式）
-     * <p>注意：使用 getSingleplayerServer() 而非 getConnection()，
-     * 因为在单人游戏中打开世界时 getConnection() 也可能非 null。</p>
-     * @return 是否为单人游戏
-     */
-    public static boolean isSingleplayer() {
-        Minecraft mc = Minecraft.getInstance();
-        return mc.getSingleplayerServer() != null;
-    }
-
     // ============ 核心：修改物品稀有度 ============
 
     /**
@@ -387,7 +375,7 @@ public class EditModeManager {
      * @return 是否成功修改
      */
     @SuppressWarnings("null")
-    public static boolean modifyItemRarity(ItemStack itemStack) {
+    public static boolean modifyItemRarity(ItemStack itemStack, boolean isSingleplayer) {
         if (!editModeEnabled || itemStack.isEmpty()) {
             return false;
         }
@@ -406,9 +394,9 @@ public class EditModeManager {
 
         // 根据编辑模式分派处理
         if (currentMode == EditMode.FULLMATCH) {
-            return handleFullMatchMode(itemStack, itemId, targetRarity);
+            return handleFullMatchMode(itemStack, itemId, targetRarity, isSingleplayer);
         } else {
-            return handleNormalMode(item, itemId, targetRarity);
+            return handleNormalMode(item, itemId, targetRarity, isSingleplayer);
         }
     }
 
@@ -417,8 +405,8 @@ public class EditModeManager {
      * <p>rarity=0 表示取消注册（删除稀有度分配）。
      * 多人游戏时通过网络包发送到服务端处理。</p>
      */
-    private static boolean handleNormalMode(Item item, Identifier itemId, int rarity) {
-        boolean isMultiplayer = !isSingleplayer();
+    private static boolean handleNormalMode(Item item, Identifier itemId, int rarity, boolean isSingleplayer) {
+        boolean isMultiplayer = !isSingleplayer;
 
         if (isMultiplayer) {
             // 多人游戏：发送请求包到服务端
@@ -448,7 +436,7 @@ public class EditModeManager {
      * FullMatch 模式处理器：遍历物品 Data Component 生成完整匹配配置 JSON，
      * 并发送到服务端写入文件。
      */
-    private static boolean handleFullMatchMode(ItemStack itemStack, Identifier itemId, int rarity) {
+    private static boolean handleFullMatchMode(ItemStack itemStack, Identifier itemId, int rarity, boolean isSingleplayer) {
         // 客户端生成完整匹配配置（遍历所有 Data Component 构建条件）
         JsonObject config = generateFullMatchConfig(itemStack, rarity);
         if (config == null) {
@@ -457,7 +445,7 @@ public class EditModeManager {
         }
 
         String configJson = config.toString();
-        boolean isMultiplayer = !isSingleplayer();
+        boolean isMultiplayer = !isSingleplayer;
 
         if (isMultiplayer) {
             // 多人游戏：发送完整 JSON 到服务端

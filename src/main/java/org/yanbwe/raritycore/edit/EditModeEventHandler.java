@@ -116,7 +116,9 @@ public class EditModeEventHandler {
         }
 
         // modifyItemRarity 内部根据 EditModeManager.getEditMode() 自动分派
-        if (EditModeManager.modifyItemRarity(itemStack)) {
+        // 判断是否单人游戏：单人游戏中编辑操作直接在本机执行，多人则通过数据包发送到服务端
+        boolean isSingleplayer = Minecraft.getInstance().getSingleplayerServer() != null;
+        if (EditModeManager.modifyItemRarity(itemStack, isSingleplayer)) {
             LocalPlayer player = Minecraft.getInstance().player;
             if (player != null) {
                 int currentRarity = EditModeManager.getCurrentRarity();

@@ -1,4 +1,4 @@
-package org.yanbwe.raritycore.compat.sophisticatedcore;
+package org.yanbwe.raritycore.client;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.inventory.Slot;
@@ -6,11 +6,11 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLEnvironment;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.client.ItemBorderRenderer;
 
 /**
  * 精妙核心兼容性适配器
  * 通过精妙核心提供的装饰渲染器接口实现物品边框渲染
+ * （客户端专用：引用了 net.minecraft.client.gui.GuiGraphicsExtractor）
  */
 public class SophisticatedCoreAdapter {
     

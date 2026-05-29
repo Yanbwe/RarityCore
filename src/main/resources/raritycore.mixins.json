@@ -5,7 +5,6 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "raritycore.refmap.json",
   "mixins": [
-    "AbstractContainerScreenAccessor",
     "ItemStackMixin",
     "ShapedRecipeAccessor",
     "ShapelessRecipeAccessor",
@@ -13,6 +12,7 @@
     "SmithingTransformRecipeAccessor"
   ],
   "client": [
+    "AbstractContainerScreenAccessor",
     "AbstractContainerScreenMixin",
     "GuiGraphicsMixin",
     "GuiMixin",

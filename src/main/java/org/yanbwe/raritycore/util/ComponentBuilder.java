@@ -121,7 +121,7 @@ public class ComponentBuilder {
             String stars = getStars(rarity);
             return customText + stars;
         } else {
-            String localizedSuffix = net.minecraft.client.resources.language.I18n.get("rarity.core.unusual.tips");
+            String localizedSuffix = net.minecraft.network.chat.Component.translatable("rarity.core.unusual.tips").getString();
             String stars = getStars(rarity);
             return "[" + rarity + localizedSuffix + "] " + stars;
         }
