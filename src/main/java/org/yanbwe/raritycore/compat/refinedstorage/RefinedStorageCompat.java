@@ -24,14 +24,7 @@ public class RefinedStorageCompat {
     public static void initialize() {
         if (isAvailable()) {
             RarityCore.LOGGER.info("Refined Storage detected, Mixin-based compatibility will be applied");
-            try {
-                Class.forName("com.refinedmods.refinedstorage.screen.BaseScreen");
-                // 成功加载类即可，无需额外日志
-            } catch (ClassNotFoundException e) {
-                RarityCore.LOGGER.debug("Refined Storage BaseScreen class not found");
-            } catch (Exception e) {
-                RarityCore.LOGGER.trace("Error checking BaseScreen class", e);
-            }
+            // 兼容性通过 Mixin 实现，无需在服务端进行运行时类加载验证
         } else {
             RarityCore.LOGGER.debug("Refined Storage not found, skipping compatibility adapter");
         }

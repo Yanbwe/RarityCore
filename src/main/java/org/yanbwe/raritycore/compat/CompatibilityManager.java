@@ -40,14 +40,15 @@ public class CompatibilityManager {
         }
         
         // 初始化精致存储适配器
-        try {
-            Class.forName("com.refinedmods.refinedstorage.screen.BaseScreen");
-            RefinedStorageCompat.initialize();
-            RarityCore.LOGGER.info("Refined Storage compatibility adapter initialized");
-        } catch (ClassNotFoundException e) {
+        if (isModLoaded("refinedstorage")) {
+            try {
+                RefinedStorageCompat.initialize();
+                RarityCore.LOGGER.info("Refined Storage compatibility adapter initialized");
+            } catch (Exception e) {
+                RarityCore.LOGGER.error("Failed to initialize Refined Storage compatibility adapter", e);
+            }
+        } else {
             RarityCore.LOGGER.debug("Refined Storage not found, skipping compatibility adapter");
-        } catch (Exception e) {
-            RarityCore.LOGGER.error("Failed to initialize Refined Storage compatibility adapter", e);
         }
         
         // 初始化 Iron's Spells 适配器
