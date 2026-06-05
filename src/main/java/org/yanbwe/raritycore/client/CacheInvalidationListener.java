@@ -54,6 +54,8 @@ public class CacheInvalidationListener {
         try {
             // 协调并执行缓存刷新
             CacheRefreshCoordinator.coordinateRefresh();
+            // 同时清除 RarityTooltipHandler 中的 tooltip 组件缓存
+            RarityTooltipHandler.invalidateCaches();
             // RarityCore.LOGGER.debug("Handled client config change for cache");
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling client config change", e);
