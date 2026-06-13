@@ -2,6 +2,7 @@ package org.yanbwe.raritycore.client;
 
 import net.minecraft.world.item.Item;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.yanbwe.raritycore.RarityCore;
@@ -57,5 +58,15 @@ public class CacheInvalidationListener {
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling network sync", e);
         }
+    }
+
+    /**
+     * 监听客户端断开连接事件，重置同步版本号
+     * 确保连接到新服务器时必定重新同步稀有度数据
+     */
+    @SubscribeEvent
+    public static void onClientDisconnect(ClientPlayerNetworkEvent.LoggingOut event) {
+        org.yanbwe.raritycore.network.RaritySyncPacket.resetClientVersion();
+        RarityCore.LOGGER.debug("Client rarity sync version reset on disconnect");
     }
 }

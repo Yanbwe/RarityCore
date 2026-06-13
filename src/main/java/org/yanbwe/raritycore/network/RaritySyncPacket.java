@@ -110,21 +110,17 @@ public class RaritySyncPacket {
                 return;
             }
             
+            RarityCore.LOGGER.debug("Rarity sync received: {} items, version {} -> {}", 
+                rarityData.size(), clientConfigVersion, this.configVersion);
+            
             // 更新客户端版本号
             clientConfigVersion = this.configVersion;
             
-            // 构建经过滤的新映射，使用原子替换避免 clear()+putAll() 之间的数据竞争窗口
-            Map<ResourceLocation, Integer> filtered = new HashMap<>();
-            for (Map.Entry<ResourceLocation, Integer> entry : rarityData.entrySet()) {
-                net.minecraft.world.item.Item item = net.minecraftforge.registries.ForgeRegistries.ITEMS.getValue(entry.getKey());
-                if (item != null && !entry.getKey().equals(net.minecraftforge.registries.ForgeRegistries.ITEMS.getDefaultKey())) {
-                    filtered.put(entry.getKey(), entry.getValue());
-                }
-            }
-            // 使用 retainAll + putAll 避免 clear() 后短暂出现空映射
-            // retainAll 仅在 putAll 之前缩小 keySet，与 putAll 搭配使用更安全
-            RarityRegistry.ITEM_RARITY_MAP.keySet().retainAll(filtered.keySet());
-            RarityRegistry.ITEM_RARITY_MAP.putAll(filtered);
+            // 信任服务端数据，直接覆盖客户端注册表
+            // 不再用 ForgeRegistries.ITEMS.getValue() 过滤——服务端是权威方，
+            // 避免在 JEI 等大型模组环境下因客户端注册表查询失败导致模组物品被静默丢弃
+            RarityRegistry.ITEM_RARITY_MAP.clear();
+            RarityRegistry.ITEM_RARITY_MAP.putAll(rarityData);
             
             // 通知缓存系统网络同步已完成
             org.yanbwe.raritycore.client.CacheInvalidationListener.onNetworkSync();
@@ -133,5 +129,14 @@ public class RaritySyncPacket {
         return true;
     }
 
+    /**
+     * 重置客户端版本号（断开连接时调用）
+     * 确保下次连接新服务器时必定重新同步稀有度数据，
+     * 避免因版本号碰撞导致同步被跳过
+     */
+    public static void resetClientVersion() {
+        clientConfigVersion = 0;
+        RarityCore.LOGGER.debug("Client rarity sync version reset");
+    }
 
 }
