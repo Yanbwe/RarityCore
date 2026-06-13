@@ -1,6 +1,5 @@
 package org.yanbwe.raritycore.network;
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
@@ -27,13 +26,11 @@ public record RaritySyncPayload(Map<Identifier, Integer> rarityData) implements 
 
     public void handle(IPayloadContext context) {
         context.enqueueWork(() -> {
+            // 信任服务端数据，直接覆盖客户端注册表
+            // 不再用 BuiltInRegistries.ITEM.get() 过滤——服务端是权威方，
+            // 避免在 JEI 等大型模组环境下因客户端注册表查询失败导致模组物品被静默丢弃
             RarityRegistry.ITEM_RARITY_MAP.clear();
-            for (Map.Entry<Identifier, Integer> entry : rarityData.entrySet()) {
-                var item = BuiltInRegistries.ITEM.get(entry.getKey());
-                if (item != null && !entry.getKey().equals(BuiltInRegistries.ITEM.getDefaultKey())) {
-                    RarityRegistry.ITEM_RARITY_MAP.put(entry.getKey(), entry.getValue());
-                }
-            }
+            RarityRegistry.ITEM_RARITY_MAP.putAll(rarityData);
             org.yanbwe.raritycore.client.CacheInvalidationListener.onNetworkSync();
         });
     }
