@@ -93,19 +93,12 @@ public class RarityClientConfigManager {
 
     /**
      * 获取或惰性创建指定稀有度等级的配置
-     * 已配置的等级直接返回缓存配置；未配置的 >7 等级沿用等级 7 的配置
+     * 未配置的等级自动生成默认配置
      */
     private static RarityLevelConfig getOrCreateConfig(int rarity) {
         RarityLevelConfig config = LEVEL_CONFIGS.get(rarity);
         if (config != null) {
             return config;
-        }
-        // 未配置的 >7 等级沿用等级 7 的配置（而非创建默认配置）
-        if (rarity > RarityConstants.MAX_RARITY) {
-            RarityLevelConfig fallback = LEVEL_CONFIGS.get(RarityConstants.MAX_RARITY);
-            if (fallback != null) {
-                return fallback;
-            }
         }
         return LEVEL_CONFIGS.computeIfAbsent(rarity, level -> createDefaultConfig(level));
     }
@@ -159,6 +152,12 @@ public class RarityClientConfigManager {
             for (int i = 1; i <= RarityConstants.MAX_RARITY; i++) {
                 LEVEL_CONFIGS.putIfAbsent(i, createDefaultConfig(i));
             }
+            // 注入颜色到 RarityColorUtil
+            Map<Integer, Integer> colors = new java.util.HashMap<>();
+            for (Map.Entry<Integer, RarityLevelConfig> entry : LEVEL_CONFIGS.entrySet()) {
+                colors.put(entry.getKey(), entry.getValue().rgbColor);
+            }
+            RarityColorUtil.setCustomColors(colors);
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error loading RarityClientConfig, using defaults", e);
             // 出错时重建默认配置
