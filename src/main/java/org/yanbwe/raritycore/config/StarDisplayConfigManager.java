@@ -104,8 +104,15 @@ public class StarDisplayConfigManager {
                     }
                 }
                 
-                RarityCore.LOGGER.info("Loaded star display config: enabled={}, mode={}, repeatChar='{}', customStrings={}, specialRarityTexts={}", 
+                RarityCore.LOGGER.info("Loaded star display config: enabled={}, mode={}, repeatChar='{}', customStrings={}, specialRarityTexts={}",
                     enableStarDisplay, starMode, repeatCharacter, customStarStrings.size(), customSpecialRarityTexts.size());
+
+                // 通知 StarDisplayManager 更新策略
+                try {
+                    org.yanbwe.raritycore.util.StarDisplayManager.getInstance().reloadConfiguration();
+                } catch (Exception ignored) {
+                    // 单例可能尚未初始化，忽略
+                }
             } else {
                 // 如果没有starDisplay配置,使用默认值
                 resetToDefaults();
