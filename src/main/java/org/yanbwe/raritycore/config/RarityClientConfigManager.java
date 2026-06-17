@@ -93,14 +93,15 @@ public class RarityClientConfigManager {
 
     /**
      * 获取或惰性创建指定稀有度等级的配置
-     * 未配置的等级自动生成默认配置
+     * 未配置的等级自动生成默认配置，等级会被约束在 MIN_RARITY..MAX_RARITY 范围内
      */
     private static RarityLevelConfig getOrCreateConfig(int rarity) {
-        RarityLevelConfig config = LEVEL_CONFIGS.get(rarity);
+        int normalized = RarityValidator.normalizeRarity(rarity);
+        RarityLevelConfig config = LEVEL_CONFIGS.get(normalized);
         if (config != null) {
             return config;
         }
-        return LEVEL_CONFIGS.computeIfAbsent(rarity, level -> createDefaultConfig(level));
+        return LEVEL_CONFIGS.computeIfAbsent(normalized, level -> createDefaultConfig(level));
     }
 
     // ---- 初始化与加载 ----
@@ -160,11 +161,12 @@ public class RarityClientConfigManager {
             RarityColorUtil.setCustomColors(colors);
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error loading RarityClientConfig, using defaults", e);
-            // 出错时重建默认配置
+            // 出错时重建默认配置，并清空自定义颜色避免状态不一致
             LEVEL_CONFIGS.clear();
             for (int i = 1; i <= RarityConstants.MAX_RARITY; i++) {
                 LEVEL_CONFIGS.put(i, createDefaultConfig(i));
             }
+            RarityColorUtil.setCustomColors(Collections.emptyMap());
         }
     }
 
