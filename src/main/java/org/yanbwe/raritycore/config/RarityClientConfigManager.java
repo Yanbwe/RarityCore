@@ -92,14 +92,22 @@ public class RarityClientConfigManager {
 
     /**
      * 获取或惰性创建指定稀有度等级的配置
-     * 未配置的等级自动生成默认配置（支持 >7 稀有度等级）
+     * 未配置时向下回退到最近已配置等级（支持 >7 稀有度等级）
      */
     private static RarityLevelConfig getOrCreateConfig(int rarity) {
         RarityLevelConfig config = LEVEL_CONFIGS.get(rarity);
         if (config != null) {
             return config;
         }
-        return LEVEL_CONFIGS.computeIfAbsent(rarity, level -> createDefaultConfig(level));
+        // 回退：向下查找最近已配置的等级
+        for (int l = rarity - 1; l >= 1; l--) {
+            config = LEVEL_CONFIGS.get(l);
+            if (config != null) {
+                return config;
+            }
+        }
+        // 实在找不到可用配置，创建默认（兜底摆烂）
+        return LEVEL_CONFIGS.computeIfAbsent(Math.max(rarity, 1), level -> createDefaultConfig(level));
     }
 
     // ---- 初始化与加载 ----
