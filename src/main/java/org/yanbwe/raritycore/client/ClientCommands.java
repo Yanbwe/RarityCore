@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.cache.CacheConfig;
 import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.cache.RarityCacheCoordinator;
+import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.RarityClientConfig;
 import org.yanbwe.raritycore.config.RarityClientConfigLoader;
@@ -32,6 +33,11 @@ public class ClientCommands {
                     StarDisplayManager.getInstance().reloadConfiguration();
                     // 3. 重载 RarityClientConfig.json（per-rarity 视觉配置）
                     RarityClientConfigLoader.load();
+                    // 4. 处理 skipUnconfiguredItems 配置变更
+                    ItemBorderRenderer.handleSkipConfigChange();
+                    RarityTooltipHandler.handleSkipConfigChange();
+                    // 5. 刷新渲染缓存
+                    RenderCacheManager.clearAllCache();
                     int levelCount = RarityClientConfig.getInstance().size();
                     context.getSource().sendSuccess(() -> Component.translatable(
                         "rarity.core.rarity_client_config_reloaded", levelCount)
