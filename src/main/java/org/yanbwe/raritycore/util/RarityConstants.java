@@ -27,7 +27,7 @@ public class RarityConstants {
     
     // 验证范围
     public static final int MIN_RARITY = 1;
-    public static final int MAX_RARITY = 16;
+    public static final int MAX_RARITY = 7;
     
     // 默认值
     public static final boolean DEFAULT_ENABLE_ITEM_BORDER_RENDERING = true;
