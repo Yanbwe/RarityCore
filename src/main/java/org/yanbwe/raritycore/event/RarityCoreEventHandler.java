@@ -1,4 +1,4 @@
-﻿package org.yanbwe.raritycore.event;
+package org.yanbwe.raritycore.event;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -9,6 +9,7 @@ import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.command.RarityCoreCommands;
+import org.yanbwe.raritycore.config.TagRarityConfigLoader;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader;
 import org.yanbwe.raritycore.network.DelayedSyncManager;
 import org.yanbwe.raritycore.network.ItemDataSyncManager;

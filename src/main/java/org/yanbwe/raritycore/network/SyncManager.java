@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.List;
-import java.util.List;
 
 /**
  * 同步管理器
@@ -53,7 +52,11 @@ public class SyncManager {
             autoRarityMap != null ? autoRarityMap : Collections.emptyMap(),
             tagRules != null ? tagRules : Collections.emptyList());
         try {
-
+            PacketDistributor.sendToPlayer(player, payload);
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Failed to sync rarity to player {}", player.getName().getString(), e);
+        }
+    }
 
     /**
      * 发送增量变更给所有在线玩家
@@ -128,13 +131,11 @@ public class SyncManager {
             itemRarityMap,
             autoRarityMap != null ? autoRarityMap : Collections.emptyMap(),
             tagRules != null ? tagRules : Collections.emptyList());
-        if (itemRarityMap == null) return;
         int mapSize = itemRarityMap.size();
         if (mapSize > NetworkConstants.MAX_RARITY_SYNC_ENTRIES) {
             RarityCore.LOGGER.warn("SyncManager.syncRarityToClientsWithRetry: Map has {} entries, "
                 + "exceeding recommended limit of {}.", mapSize, NetworkConstants.MAX_RARITY_SYNC_ENTRIES);
         }
-        RaritySyncPayload payload = new RaritySyncPayload(itemRarityMap);
         NetworkRetryManager.sendFullSyncWithRetry(payload);
     }
 

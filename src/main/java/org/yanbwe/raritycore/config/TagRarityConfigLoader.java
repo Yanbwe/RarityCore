@@ -10,8 +10,8 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.network.RaritySyncPayload;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
 import org.yanbwe.raritycore.util.RarityConstants;
 
@@ -156,6 +156,37 @@ public class TagRarityConfigLoader {
             RarityCore.LOGGER.error("Failed to create TagKey for '{}': {}", tagString, e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * 将当前加载的 TagRarity 规则转换为网络同步用的 TagRuleTransfer 列表（服务端用）
+     */
+    public static List<RaritySyncPayload.TagRuleTransfer> getSyncedRules() {
+        List<TagRarityConfig.TagRarityEntry> rules = TagRarityConfig.getRules();
+        if (rules.isEmpty()) return Collections.emptyList();
+        List<RaritySyncPayload.TagRuleTransfer> list = new ArrayList<>(rules.size());
+        for (TagRarityConfig.TagRarityEntry e : rules) {
+            list.add(new RaritySyncPayload.TagRuleTransfer(e.tagKey().location(), e.rarity()));
+        }
+        return list;
+    }
+
+    /**
+     * 应用来自服务端同步的 TagRarity 规则（仅客户端）
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void applySyncedRules(List<RaritySyncPayload.TagRuleTransfer> transfers) {
+        List<TagRarityConfig.TagRarityEntry> entries = new ArrayList<>();
+        if (transfers != null && !transfers.isEmpty()) {
+            for (RaritySyncPayload.TagRuleTransfer t : transfers) {
+                TagKey<Item> tagKey = TagKey.create(Registries.ITEM, t.tagLocation());
+                entries.add(new TagRarityConfig.TagRarityEntry(tagKey, t.rarity()));
+            }
+            entries.sort(Comparator.comparingInt(TagRarityConfig.TagRarityEntry::rarity).reversed());
+        }
+        TagRarityConfig.setRules(entries);
+        RarityCore.LOGGER.debug("TagRarity: applied {} synced rules",
+            transfers != null ? transfers.size() : 0);
     }
 
     /**

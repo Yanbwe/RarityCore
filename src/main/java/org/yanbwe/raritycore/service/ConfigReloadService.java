@@ -13,6 +13,7 @@ import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
 import org.yanbwe.raritycore.config.ServerConfigManager;
+import org.yanbwe.raritycore.config.TagRarityConfigLoader;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader;
 
 import org.yanbwe.raritycore.network.ChangeOperation;

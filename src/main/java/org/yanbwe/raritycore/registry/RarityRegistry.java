@@ -17,6 +17,7 @@ import org.yanbwe.raritycore.compat.ironsspells.IronSpellsAdapter;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.config.StarDisplayConfigManager;
 import org.yanbwe.raritycore.config.TagRarityConfig;
+import org.yanbwe.raritycore.config.TagRarityConfigLoader;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
 import org.yanbwe.raritycore.event.RarityQueryEvent;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher;
@@ -27,6 +28,7 @@ import org.yanbwe.raritycore.util.RarityConstants;
 import org.yanbwe.raritycore.util.RarityValidator;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RarityRegistry {
@@ -649,14 +651,14 @@ public class RarityRegistry {
     }
 
     public static void syncRarityToClients() {
-        SyncManager.syncRarityToClients(ITEM_RARITY_MAP);
+        SyncManager.syncRarityToClients(ITEM_RARITY_MAP, getAutoRarityMap(), TagRarityConfigLoader.getSyncedRules());
     }
     
     /**
      * 同步稀有度数据到客户端(带重试机制)
      */
     public static void syncRarityToClientsWithRetry() {
-        SyncManager.syncRarityToClientsWithRetry(ITEM_RARITY_MAP);
+        SyncManager.syncRarityToClientsWithRetry(ITEM_RARITY_MAP, getAutoRarityMap(), TagRarityConfigLoader.getSyncedRules());
     }
     
     /**

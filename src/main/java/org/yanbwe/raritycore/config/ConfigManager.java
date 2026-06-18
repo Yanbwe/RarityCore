@@ -1,4 +1,4 @@
-﻿package org.yanbwe.raritycore.config;
+package org.yanbwe.raritycore.config;
 
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.util.RarityConstants;
