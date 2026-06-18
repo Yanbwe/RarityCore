@@ -12,7 +12,9 @@ import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.cache.IdCacheManager;
 import org.yanbwe.raritycore.cache.RarityCacheCoordinator;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
+import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.RarityClientConfig;
+import org.yanbwe.raritycore.util.StarDisplayManager;
 
 /**
  * 客户端命令管理器
@@ -116,7 +118,16 @@ public class ClientCommands {
             )
             .then(Commands.literal("reload")
                 .executes(context -> {
+                    // 重载 client.json
+                    ClientConfigManager.loadClientConfig();
+                    // 重载星星显示
+                    StarDisplayManager.getInstance().reloadConfiguration();
+                    // 重载 RarityClientConfig.json
                     RarityClientConfig.reloadRarityClientConfig();
+                    // 处理 skipUnconfiguredItems 变更
+                    ItemBorderRenderer.handleSkipConfigChange();
+                    RarityTooltipHandler.handleSkipConfigChange();
+                    // 刷新缓存
                     RenderCacheManager.clearAllCache();
                     context.getSource().sendSuccess(() -> Component.translatable("rarity.core.client_config_reloaded")
                         .withStyle(ChatFormatting.GREEN), false);
