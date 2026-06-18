@@ -50,18 +50,15 @@ public class RarityCoreEventHandler {
      */
     @SubscribeEvent
     public void onServerStopped(ServerStoppedEvent event) {
-        ServiceFactory factory = ServiceFactory.getInstance();
-        // 停止调度器服务
-        factory.getSchedulerService().stopScheduledTasks();
-        
-        // 清空变更缓冲区
-        org.yanbwe.raritycore.network.SyncManager.clearChangeBuffer();
-        
-        // 关闭延迟同步管理器
-        org.yanbwe.raritycore.network.DelayedSyncManager.shutdown();
-
-        // 关闭网络重试管理器线程池
-        org.yanbwe.raritycore.network.NetworkRetryManager.shutdown();
+        try {
+            ServiceFactory factory = ServiceFactory.getInstance();
+            factory.getSchedulerService().stopScheduledTasks();
+            org.yanbwe.raritycore.network.SyncManager.clearChangeBuffer();
+            org.yanbwe.raritycore.network.DelayedSyncManager.shutdown();
+            org.yanbwe.raritycore.network.NetworkRetryManager.shutdown();
+        } catch (NoClassDefFoundError | Exception e) {
+            org.yanbwe.raritycore.RarityCore.LOGGER.debug("Error during server stop cleanup: {}", e.getMessage());
+        }
     }
     
     /**

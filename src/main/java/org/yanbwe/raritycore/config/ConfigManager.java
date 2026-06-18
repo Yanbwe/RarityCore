@@ -48,6 +48,9 @@ public class ConfigManager {
             return;
         }
         
+        // 初始化星星显示配置（先设默认值，随后 ClientConfigManager 会加载真实配置覆盖）
+        StarDisplayConfigManager.initialize();
+
         // 初始化客户端配置
         ClientConfigManager.initialize();
 
@@ -56,9 +59,6 @@ public class ConfigManager {
 
         // 初始化 TagRarity 批量分配
         TagRarityConfigManager.initialize();
-        
-        // 初始化星星显示配置
-        StarDisplayConfigManager.initialize();
     }
     
     /**

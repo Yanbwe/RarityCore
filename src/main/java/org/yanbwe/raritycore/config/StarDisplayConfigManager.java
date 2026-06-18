@@ -36,21 +36,21 @@ public class StarDisplayConfigManager {
             // 读取星星显示总开关
             if (jsonObject.has("starDisplay")) {
                 JsonObject starDisplayObj = jsonObject.getAsJsonObject("starDisplay");
-                
+
                 // 读取启用状态
                 if (starDisplayObj.has("enabled")) {
                     enableStarDisplay = starDisplayObj.get("enabled").getAsBoolean();
                 } else {
                     enableStarDisplay = RarityConstants.DEFAULT_ENABLE_STAR_DISPLAY;
                 }
-                
+
                 // 读取显示模式
                 if (starDisplayObj.has("mode")) {
                     starMode = starDisplayObj.get("mode").getAsString();
                 } else {
                     starMode = RarityConstants.DEFAULT_STAR_MODE;
                 }
-                
+
                 // 读取重复模式配置
                 if (starDisplayObj.has("repeat")) {
                     JsonObject repeatObj = starDisplayObj.getAsJsonObject("repeat");
@@ -62,14 +62,14 @@ public class StarDisplayConfigManager {
                 } else {
                     repeatCharacter = RarityConstants.DEFAULT_REPEAT_CHARACTER;
                 }
-                
+
                 // 读取自定义模式配置
                 if (starDisplayObj.has("custom")) {
                     JsonObject customObj = starDisplayObj.getAsJsonObject("custom");
                     if (customObj.has("strings")) {
                         JsonObject stringsObj = customObj.getAsJsonObject("strings");
                         customStarStrings.clear();
-                        
+
                         // 解析自定义字符串映射(用于星星显示)
                         for (String key : stringsObj.keySet()) {
                             try {
@@ -83,12 +83,12 @@ public class StarDisplayConfigManager {
                             }
                         }
                     }
-                    
+
                     // 读取特殊稀有度文本配置(大于 7 级)
                     if (customObj.has("specialRarityTexts")) {
                         JsonObject specialTextsObj = customObj.getAsJsonObject("specialRarityTexts");
                         customSpecialRarityTexts.clear();
-                        
+
                         // 解析特殊稀有度文本映射
                         for (String key : specialTextsObj.keySet()) {
                             try {
@@ -103,8 +103,8 @@ public class StarDisplayConfigManager {
                         }
                     }
                 }
-                
-                RarityCore.LOGGER.info("Loaded star display config: enabled={}, mode={}, repeatChar='{}', customStrings={}, specialRarityTexts={}", 
+
+                RarityCore.LOGGER.info("Loaded star display config: enabled={}, mode={}, repeatChar='{}', customStrings={}, specialRarityTexts={}",
                     enableStarDisplay, starMode, repeatCharacter, customStarStrings.size(), customSpecialRarityTexts.size());
             } else {
                 // 如果没有starDisplay配置,使用默认值
@@ -115,6 +115,13 @@ public class StarDisplayConfigManager {
             RarityCore.LOGGER.error("Error loading star display config, using defaults: {}", e.getMessage());
             // 出错时使用默认值
             resetToDefaults();
+        } finally {
+            // 无论成功、默认回退还是异常回退，都通知 StarDisplayManager 更新策略
+            try {
+                org.yanbwe.raritycore.util.StarDisplayManager.getInstance().reloadConfiguration();
+            } catch (Exception ignored) {
+                // 单例可能尚未初始化，忽略
+            }
         }
     }
     
