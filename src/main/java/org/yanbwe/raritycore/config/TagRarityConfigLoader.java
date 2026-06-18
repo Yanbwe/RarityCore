@@ -152,8 +152,8 @@ public class TagRarityConfigLoader {
         try {
             TagKey<Item> tagKey = TagKey.create(Registries.ITEM, ResourceLocation.parse(tagString));
             return new TagRarityConfig.TagRarityEntry(tagKey, rarity);
-        } catch (Exception e) {
-            RarityCore.LOGGER.error("Failed to create TagKey for '{}': {}", tagString, e.getMessage());
+        } catch (Throwable t) {
+            RarityCore.LOGGER.error("Failed to create TagKey for '{}': {}", tagString, t.getMessage());
             return null;
         }
     }
@@ -179,8 +179,13 @@ public class TagRarityConfigLoader {
         List<TagRarityConfig.TagRarityEntry> entries = new ArrayList<>();
         if (transfers != null && !transfers.isEmpty()) {
             for (RaritySyncPayload.TagRuleTransfer t : transfers) {
-                TagKey<Item> tagKey = TagKey.create(Registries.ITEM, t.tagLocation());
-                entries.add(new TagRarityConfig.TagRarityEntry(tagKey, t.rarity()));
+                try {
+                    TagKey<Item> tagKey = TagKey.create(Registries.ITEM, t.tagLocation());
+                    entries.add(new TagRarityConfig.TagRarityEntry(tagKey, t.rarity()));
+                } catch (Throwable ex) {
+                    RarityCore.LOGGER.warn("Skipping invalid synced tag rule: tag={}, rarity={}, error={}",
+                        t.tagLocation(), t.rarity(), ex.getMessage());
+                }
             }
             entries.sort(Comparator.comparingInt(TagRarityConfig.TagRarityEntry::rarity).reversed());
         }
