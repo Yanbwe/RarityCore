@@ -87,7 +87,9 @@ public class ConfigReloadService {
             
             // 7. 同步数据到所有客户端
             if (!isStartup) { // 启动时不需要同步,会在玩家登录时处理
-                SyncManager.syncRarityToClientsWithRetry(RarityRegistry.ITEM_RARITY_MAP);
+                SyncManager.syncRarityToClientsWithRetry(RarityRegistry.ITEM_RARITY_MAP,
+                    RarityRegistry.getAutoRarityMap(),
+                    TagRarityConfigLoader.getSyncedRules());
             }
             
             // 8. 加载客户端配置(包含自定义等级文本配置)

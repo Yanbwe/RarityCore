@@ -1,4 +1,4 @@
-package org.yanbwe.raritycore.event;
+﻿package org.yanbwe.raritycore.event;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -58,24 +58,28 @@ public class RarityCoreEventHandler {
      */
     @SubscribeEvent
     public void onServerStopped(ServerStoppedEvent event) {
-        ServiceFactory factory = ServiceFactory.getInstance();
-        // 停止调度器服务
-        factory.getSchedulerService().stopScheduledTasks();
-        
-        // 清空变更缓冲区
-        SyncManager.clearChangeBuffer();
-        
-        // 清空批处理队列中的待处理操作（防止脏数据跨会话）
-        SyncBatchManager.clearAllOperations();
-        
-        // 关闭延迟同步管理器
-        DelayedSyncManager.shutdown();
+        try {
+            ServiceFactory factory = ServiceFactory.getInstance();
+            // 停止调度器服务
+            factory.getSchedulerService().stopScheduledTasks();
+            
+            // 清空变更缓冲区
+            SyncManager.clearChangeBuffer();
+            
+            // 清空批处理队列中的待处理操作（防止脏数据跨会话）
+            SyncBatchManager.clearAllOperations();
+            
+            // 关闭延迟同步管理器
+            DelayedSyncManager.shutdown();
 
-        // 关闭网络重试管理器
-        NetworkRetryManager.shutdown();
-        
-        // 关闭物品数据同步管理器
-        ItemDataSyncManager.shutdown();
+            // 关闭网络重试管理器
+            NetworkRetryManager.shutdown();
+            
+            // 关闭物品数据同步管理器
+            ItemDataSyncManager.shutdown();
+        } catch (NoClassDefFoundError | Exception e) {
+            RarityCore.LOGGER.debug("Error during server stop cleanup: {}", e.getMessage());
+        }
     }
     
     /**
@@ -95,7 +99,10 @@ public class RarityCoreEventHandler {
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             // 只向登录的玩家同步稀有度数据，避免全服广播
-            SyncManager.syncRarityToPlayer(serverPlayer, RarityRegistry.getItemRarityMap());
+            SyncManager.syncRarityToPlayer(serverPlayer,
+                RarityRegistry.getItemRarityMap(),
+                RarityRegistry.getAutoRarityMap(),
+                TagRarityConfigLoader.getSyncedRules());
 
             // 发送物品数据匹配规则
             ItemDataSyncManager.syncItemDataRulesToPlayer(serverPlayer);

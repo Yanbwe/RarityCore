@@ -1,12 +1,17 @@
 package org.yanbwe.raritycore.network;
 
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.network.RaritySyncPayload.TagRuleTransfer;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Map;
+import java.util.List;
 import java.util.List;
 
 /**
@@ -21,16 +26,15 @@ public class SyncManager {
      * 向所有在线玩家发送完整的稀有度映射表（全量同步）
      * 仅在配置重载、服务器启动等需要完整状态同步的场景使用
      */
-    public static void syncRarityToClients(java.util.Map<net.minecraft.resources.ResourceLocation, Integer> itemRarityMap) {
+    public static void syncRarityToClients(Map<ResourceLocation, Integer> itemRarityMap,
+                                            Map<ResourceLocation, Integer> autoRarityMap,
+                                            List<TagRuleTransfer> tagRules) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null && itemRarityMap != null) {
-            int mapSize = itemRarityMap.size();
-            if (mapSize > NetworkConstants.MAX_RARITY_SYNC_ENTRIES) {
-                RarityCore.LOGGER.warn("SyncManager.syncRarityToClients: ITEM_RARITY_MAP has {} entries, "
-                    + "exceeding recommended limit of {}. Full sync packet may be oversized and cause "
-                    + "network performance issues.", mapSize, NetworkConstants.MAX_RARITY_SYNC_ENTRIES);
-            }
-            RaritySyncPayload payload = new RaritySyncPayload(itemRarityMap);
+            RaritySyncPayload payload = new RaritySyncPayload(
+                itemRarityMap,
+                autoRarityMap != null ? autoRarityMap : Collections.emptyMap(),
+                tagRules != null ? tagRules : Collections.emptyList());
             sendToAllPlayers(payload);
         }
     }
@@ -40,21 +44,16 @@ public class SyncManager {
      * 适用于玩家登录等仅需同步给单个玩家的场景，避免不必要的全服广播
      */
     public static void syncRarityToPlayer(ServerPlayer player,
-                                           java.util.Map<net.minecraft.resources.ResourceLocation, Integer> itemRarityMap) {
+                                           Map<ResourceLocation, Integer> itemRarityMap,
+                                           Map<ResourceLocation, Integer> autoRarityMap,
+                                           List<TagRuleTransfer> tagRules) {
         if (player == null || itemRarityMap == null) return;
-        int mapSize = itemRarityMap.size();
-        if (mapSize > NetworkConstants.MAX_RARITY_SYNC_ENTRIES) {
-            RarityCore.LOGGER.warn("SyncManager.syncRarityToPlayer: Map has {} entries, exceeding recommended limit of {}.",
-                mapSize, NetworkConstants.MAX_RARITY_SYNC_ENTRIES);
-        }
-        RaritySyncPayload payload = new RaritySyncPayload(itemRarityMap);
+        RaritySyncPayload payload = new RaritySyncPayload(
+            itemRarityMap,
+            autoRarityMap != null ? autoRarityMap : Collections.emptyMap(),
+            tagRules != null ? tagRules : Collections.emptyList());
         try {
-            PacketDistributor.sendToPlayer(player, payload);
-        } catch (Exception e) {
-            RarityCore.LOGGER.warn("Failed to send rarity sync to player {}: {}",
-                player.getName().getString(), e.getMessage());
-        }
-    }
+
 
     /**
      * 发送增量变更给所有在线玩家
@@ -121,7 +120,14 @@ public class SyncManager {
      * 全量同步到所有客户端（带重试机制）
      * 委托给 NetworkRetryManager 实现指数退避重试
      */
-    public static void syncRarityToClientsWithRetry(java.util.Map<net.minecraft.resources.ResourceLocation, Integer> itemRarityMap) {
+    public static void syncRarityToClientsWithRetry(Map<ResourceLocation, Integer> itemRarityMap,
+                                                      Map<ResourceLocation, Integer> autoRarityMap,
+                                                      List<TagRuleTransfer> tagRules) {
+        if (itemRarityMap == null) return;
+        RaritySyncPayload payload = new RaritySyncPayload(
+            itemRarityMap,
+            autoRarityMap != null ? autoRarityMap : Collections.emptyMap(),
+            tagRules != null ? tagRules : Collections.emptyList());
         if (itemRarityMap == null) return;
         int mapSize = itemRarityMap.size();
         if (mapSize > NetworkConstants.MAX_RARITY_SYNC_ENTRIES) {

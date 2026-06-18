@@ -25,7 +25,7 @@ public class CacheInvalidationListener {
             if (item != null) {
                 // 协调并执行缓存刷新
                 CacheRefreshCoordinator.coordinateRefresh();
-                // RarityCore.LOGGER.debug("Cache invalidated for item {} due to rarity change", item);
+                // RarityCore.LOGGER.debug("缓存因物品 {} 稀有度变更而失效", item);
             }
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling rarity change event", e);
@@ -56,7 +56,7 @@ public class CacheInvalidationListener {
             CacheRefreshCoordinator.coordinateRefresh();
             // 同时清除 RarityTooltipHandler 中的 tooltip 组件缓存
             RarityTooltipHandler.invalidateCaches();
-            // RarityCore.LOGGER.debug("Handled client config change for cache");
+            // RarityCore.LOGGER.debug("已处理客户端配置变更导致的缓存刷新");
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling client config change", e);
         }
@@ -69,7 +69,7 @@ public class CacheInvalidationListener {
         try {
             // 协调并执行缓存刷新
             CacheRefreshCoordinator.coordinateRefresh();
-            // RarityCore.LOGGER.debug("Handled network sync for cache");
+            // RarityCore.LOGGER.debug("已处理网络同步导致的缓存刷新");
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error handling network sync", e);
         }

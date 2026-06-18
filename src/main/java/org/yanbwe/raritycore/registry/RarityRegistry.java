@@ -639,8 +639,15 @@ public class RarityRegistry {
     }
     
     /**
-     * 同步稀有度数据到客户端
+     * 应用来自服务端同步的自动稀有度映射（仅客户端）
      */
+    public static void applySyncedAutoRarity(Map<ResourceLocation, Integer> autoRarityMap) {
+        AUTO_RARITY_MAP.clear();
+        if (autoRarityMap != null) {
+            AUTO_RARITY_MAP.putAll(autoRarityMap);
+        }
+    }
+
     public static void syncRarityToClients() {
         SyncManager.syncRarityToClients(ITEM_RARITY_MAP);
     }

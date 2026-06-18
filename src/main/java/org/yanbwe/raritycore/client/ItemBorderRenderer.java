@@ -146,7 +146,7 @@ public class ItemBorderRenderer {
     public static void handleSkipConfigChange() {
         // 使边框渲染缓存失效
         RenderCacheManager.clearAllCache();
-        // ItemBorderRenderer: skipUnconfiguredItems config change handled
+        // ItemBorderRenderer: skipUnconfiguredItems 配置变更已处理
     }
     
 

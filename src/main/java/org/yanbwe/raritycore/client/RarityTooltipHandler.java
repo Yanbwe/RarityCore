@@ -234,6 +234,6 @@ public class RarityTooltipHandler {
         RenderCacheManager.clearAllCache();
         // 使本类中的翻译前缀和 tooltip 缓存失效
         invalidateCaches();
-        // RarityTooltipHandler: skipUnconfiguredItems config change handled
+        // RarityTooltipHandler: skipUnconfiguredItems 配置变更已处理
     }
 }

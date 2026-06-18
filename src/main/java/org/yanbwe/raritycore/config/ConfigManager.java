@@ -1,4 +1,4 @@
-package org.yanbwe.raritycore.config;
+﻿package org.yanbwe.raritycore.config;
 
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -48,11 +48,11 @@ public class ConfigManager {
             return;
         }
         
+        // 初始化星星显示配置（先设默认值，随后 ClientConfigManager 会加载真实配置覆盖）
+        StarDisplayConfigManager.initialize();
+
         // 初始化客户端配置
         ClientConfigManager.initialize();
-        
-        // 初始化星星显示配置
-        StarDisplayConfigManager.initialize();
 
         // 初始化 Tag 稀有度配置
         TagRarityConfigLoader.initialize();

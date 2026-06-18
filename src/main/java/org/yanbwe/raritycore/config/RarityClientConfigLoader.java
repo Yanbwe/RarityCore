@@ -65,6 +65,8 @@ public class RarityClientConfigLoader {
         }
 
         RarityClientConfig.replaceInstance(config);
+        // Inject colors into RarityColorUtil
+        injectColorsToRarityColorUtil(config);
         RarityCore.LOGGER.info("RarityClientConfig loaded: {} rarity levels configured", config.size());
     }
 
@@ -200,6 +202,20 @@ public class RarityClientConfigLoader {
     /**
      * 将 JSON 对象写入文件。
      */
+    /** Inject loaded colors into RarityColorUtil (including >7 configured levels) */
+    private static void injectColorsToRarityColorUtil(RarityClientConfig config) {
+        java.util.Map<Integer, Integer> colors = new java.util.HashMap<>();
+        int maxLevel = Math.max(RarityConstants.MAX_RARITY, config.size());
+        for (int i = 1; i <= maxLevel; i++) {
+            try {
+                int rgb = config.getConfig(i).getColor();
+                colors.put(i, rgb);
+            } catch (Exception ignored) {
+            }
+        }
+        org.yanbwe.raritycore.util.RarityColorUtil.setCustomColors(colors);
+    }
+
     private static void saveToFile(Path file, JsonObject json) {
         try {
             try (Writer writer = new OutputStreamWriter(

@@ -1,4 +1,4 @@
-package org.yanbwe.raritycore.util;
+﻿package org.yanbwe.raritycore.util;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -26,12 +26,12 @@ public class RarityValidator {
      * @return 标准化后的稀有度值 (1-7)
      */
     public static int normalizeRarity(int rarity) {
-        if (rarity < RarityConstants.RARITY_COMMON) {
-            return RarityConstants.RARITY_COMMON; // 小于1视为1（普通）
-        } else if (rarity > RarityConstants.RARITY_UNIQUE) {
-            return RarityConstants.RARITY_UNIQUE; // 大于7视为7（唯一）
+        if (rarity < RarityConstants.MIN_RARITY) {
+            return RarityConstants.MIN_RARITY; 
+        } else if (rarity > RarityConstants.MAX_RARITY) {
+            return RarityConstants.MAX_RARITY; 
         }
-        return rarity; // 1-7范围内保持原值
+        return rarity; 
     }
     
     /**
