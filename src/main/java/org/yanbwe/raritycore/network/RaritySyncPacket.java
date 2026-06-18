@@ -162,8 +162,8 @@ public class RaritySyncPacket {
         @SuppressWarnings("deprecation")
         public net.minecraft.tags.TagKey<net.minecraft.world.item.Item> toTagKey() {
             return net.minecraft.tags.TagKey.create(
-                net.minecraft.core.registries.Registries.ITEM,
-                ResourceLocation.parse(tagLocation));
+                net.minecraftforge.registries.ForgeRegistries.ITEMS.getRegistryKey(),
+                new ResourceLocation(tagLocation));
         }
     }
 

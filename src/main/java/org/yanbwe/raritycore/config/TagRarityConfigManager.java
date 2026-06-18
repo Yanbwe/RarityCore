@@ -5,12 +5,12 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.network.RaritySyncPacket;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -104,11 +104,11 @@ public class TagRarityConfigManager {
                     if (tagStr.isEmpty() || rarity < 1) continue;
 
                     try {
-                        ResourceLocation tagId = ResourceLocation.parse(tagStr);
-                        TagKey<Item> tagKey = TagKey.create(Registries.ITEM, tagId);
+                        ResourceLocation tagId = new ResourceLocation(tagStr);
+                        TagKey<Item> tagKey = TagKey.create(ForgeRegistries.ITEMS.getRegistryKey(), tagId);
                         rules.add(new TagRule(tagKey, RarityValidator.normalizeRarity(rarity)));
-                    } catch (Exception e) {
-                        RarityCore.LOGGER.warn("Invalid tag rule: tag={}, rarity={}, error={}", tagStr, rarity, e.getMessage());
+                    } catch (Throwable t) {
+                        RarityCore.LOGGER.warn("Invalid tag rule: tag={}, rarity={}, error={}", tagStr, rarity, t.getMessage());
                     }
                 }
                 loadedRules = rules;
@@ -171,13 +171,13 @@ public class TagRarityConfigManager {
         List<TagRule> rules = new ArrayList<>(entries.size());
         for (RaritySyncPacket.TagRuleEntry entry : entries) {
             try {
-                TagKey<Item> tagKey = TagKey.create(Registries.ITEM,
-                    ResourceLocation.parse(entry.tagLocation()));
+                TagKey<Item> tagKey = TagKey.create(ForgeRegistries.ITEMS.getRegistryKey(),
+                    new ResourceLocation(entry.tagLocation()));
                 rules.add(new TagRule(tagKey,
                     RarityValidator.normalizeRarity(entry.rarity())));
-            } catch (Exception e) {
+            } catch (Throwable t) {
                 RarityCore.LOGGER.warn("Skipping invalid synced tag rule: tag={}, rarity={}, error={}",
-                    entry.tagLocation(), entry.rarity(), e.getMessage());
+                    entry.tagLocation(), entry.rarity(), t.getMessage());
             }
         }
         loadedRules = rules;
