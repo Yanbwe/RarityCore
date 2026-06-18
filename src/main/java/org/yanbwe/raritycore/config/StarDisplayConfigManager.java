@@ -1,4 +1,4 @@
-﻿package org.yanbwe.raritycore.config;
+package org.yanbwe.raritycore.config;
 
 import com.google.gson.JsonObject;
 import org.yanbwe.raritycore.RarityCore;

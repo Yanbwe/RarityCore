@@ -6,10 +6,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import org.yanbwe.raritycore.RarityCore;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +29,24 @@ public class SyncManager {
             sendToAllPlayers(new RaritySyncPayload(itemRarityMap,
                 autoRarityMap != null ? autoRarityMap : Collections.emptyMap(),
                 tagRules != null ? tagRules : Collections.emptyList()));
+        }
+    }
+
+    /**
+     * 向单个玩家同步稀有度数据
+     */
+    public static void syncRarityToPlayer(ServerPlayer player,
+                                           Map<Identifier, Integer> itemRarityMap,
+                                           Map<Identifier, Integer> autoRarityMap,
+                                           List<TagRuleTransfer> tagRules) {
+        if (player == null || itemRarityMap == null) return;
+        RaritySyncPayload payload = new RaritySyncPayload(itemRarityMap,
+            autoRarityMap != null ? autoRarityMap : Collections.emptyMap(),
+            tagRules != null ? tagRules : Collections.emptyList());
+        try {
+            PacketDistributor.sendToPlayer(player, payload);
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Failed to sync rarity to player {}", player.getName().getString(), e);
         }
     }
 

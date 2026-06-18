@@ -14,6 +14,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ConfigManager;
+import org.yanbwe.raritycore.config.TagRarityLoader;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
@@ -96,7 +97,7 @@ public class RarityManagementCommands {
             saveRarityToConfig(itemId.toString(), rarity);
 
             // 手动同步到所有客户端
-            SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
+            SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP, RarityRegistry.getAutoRarityMap(), TagRarityLoader.getSyncedRules());
 
             source.sendSuccess(() -> Component.translatable("rarity.core.item_set_rarity", itemId.toString(), rarity).withStyle(ChatFormatting.GREEN), false);
             return 1;
@@ -127,7 +128,7 @@ public class RarityManagementCommands {
         saveRarityToConfig(itemId.toString(), rarity);
         
         // 手动同步到所有客户端
-        SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
+        SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP, RarityRegistry.getAutoRarityMap(), TagRarityLoader.getSyncedRules());
         
         source.sendSuccess(() -> Component.translatable("rarity.core.item_set_rarity_by_id", itemId.toString(), rarity).withStyle(ChatFormatting.GREEN), false);
         return 1;
@@ -161,7 +162,7 @@ public class RarityManagementCommands {
             saveRarityToConfig(itemId.toString(), 0);
 
             // 手动同步到所有客户端
-            SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
+            SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP, RarityRegistry.getAutoRarityMap(), TagRarityLoader.getSyncedRules());
 
             source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity", itemId.toString()).withStyle(ChatFormatting.GREEN), false);
             return 1;
@@ -192,7 +193,7 @@ public class RarityManagementCommands {
         saveRarityToConfig(itemId.toString(), 0);
 
         // 手动同步到所有客户端
-        SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP);
+        SyncManager.syncRarityToClients(RarityRegistry.ITEM_RARITY_MAP, RarityRegistry.getAutoRarityMap(), TagRarityLoader.getSyncedRules());
 
         source.sendSuccess(() -> Component.translatable("rarity.core.item_remove_rarity_by_id", itemId.toString()).withStyle(ChatFormatting.GREEN), false);
         return 1;

@@ -18,6 +18,7 @@ import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.util.RarityConstants;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RarityRegistry {
@@ -83,7 +84,7 @@ public class RarityRegistry {
                         SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.UPDATE, itemId, rarity));
                     }
 
-                    SyncManager.syncRarityToClients(ITEM_RARITY_MAP);
+                    SyncManager.syncRarityToClients(ITEM_RARITY_MAP, getAutoRarityMap(), TagRarityLoader.getSyncedRules());
                 }
             }
         }
@@ -118,7 +119,7 @@ public class RarityRegistry {
                         SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.DELETE, itemId, null));
                     }
 
-                    SyncManager.syncRarityToClients(ITEM_RARITY_MAP);
+                    SyncManager.syncRarityToClients(ITEM_RARITY_MAP, getAutoRarityMap(), TagRarityLoader.getSyncedRules());
                 }
             }
         }
@@ -471,7 +472,7 @@ public class RarityRegistry {
      * 同步稀有度数据到客户端(带重试机制)
      */
     public static void syncRarityToClientsWithRetry() {
-        SyncManager.syncRarityToClientsWithRetry(ITEM_RARITY_MAP);
+        SyncManager.syncRarityToClientsWithRetry(ITEM_RARITY_MAP, getAutoRarityMap(), TagRarityLoader.getSyncedRules());
     }
     
     /**

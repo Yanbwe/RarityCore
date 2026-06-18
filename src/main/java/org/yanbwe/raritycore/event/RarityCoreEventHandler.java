@@ -1,4 +1,4 @@
-﻿package org.yanbwe.raritycore.event;
+package org.yanbwe.raritycore.event;
 
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;

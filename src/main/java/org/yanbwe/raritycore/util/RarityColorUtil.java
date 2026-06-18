@@ -61,6 +61,26 @@ public class RarityColorUtil {
                 return ChatFormatting.WHITE; // 默认白色
         }
     }
+
+    private static ChatFormatting rgbToChatFormatting(int rgb) {
+        int r = (rgb >> 16) & 0xFF;
+        int g = (rgb >> 8) & 0xFF;
+        int b = rgb & 0xFF;
+        ChatFormatting best = ChatFormatting.WHITE;
+        int bestDist = Integer.MAX_VALUE;
+        for (ChatFormatting fmt : ChatFormatting.values()) {
+            if (fmt.getColor() == null) continue;
+            int cr = (fmt.getColor() >> 16) & 0xFF;
+            int cg = (fmt.getColor() >> 8) & 0xFF;
+            int cb = fmt.getColor() & 0xFF;
+            int dist = (r - cr) * (r - cr) + (g - cg) * (g - cg) + (b - cb) * (b - cb);
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = fmt;
+            }
+        }
+        return best;
+    }
     
     /**
      * 根据稀有度等级获取对应的ARGB颜色值
