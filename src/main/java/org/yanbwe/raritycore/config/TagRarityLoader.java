@@ -12,8 +12,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.network.RaritySyncPayload;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import java.io.BufferedReader;
 import java.io.FileWriter;
@@ -85,7 +83,6 @@ public class TagRarityLoader {
     /**
      * 应用来自服务端同步的 TagRarity 规则（仅客户端）
      */
-    @OnlyIn(Dist.CLIENT)
     public static void applySyncedRules(List<RaritySyncPayload.TagRuleTransfer> transfers) {
         synchronized (TAG_RULES) {
             TAG_RULES.clear();

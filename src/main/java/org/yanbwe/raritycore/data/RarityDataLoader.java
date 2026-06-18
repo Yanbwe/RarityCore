@@ -56,6 +56,11 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener<JsonEleme
                             continue;
                         }
 
+                        // 不覆盖已存在的注册（用户 FinalRarity.json 中的配置优先级更高）
+                        if (RarityRegistry.ITEM_RARITY_MAP.containsKey(itemId)) {
+                            continue;
+                        }
+
                         RarityRegistry.register(item, rarity);
                     } else {
                         RarityCore.LOGGER.warn("Invalid rarity data format for item '{}' in rarity data file '{}'", itemEntry.getKey(), location);
