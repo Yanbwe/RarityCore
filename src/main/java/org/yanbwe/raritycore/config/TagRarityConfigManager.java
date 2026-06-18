@@ -9,7 +9,10 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.network.RaritySyncPacket;
 import org.yanbwe.raritycore.util.RarityConstants;
 import org.yanbwe.raritycore.util.RarityValidator;
 
@@ -147,6 +150,59 @@ public class TagRarityConfigManager {
         rule.addProperty("tag", tag);
         rule.addProperty("rarity", rarity);
         array.add(rule);
+    }
+
+
+    /**
+     * 应用来自服务端同步的 TagRarity 规则（仅客户端）
+     * <p>
+     * 直接替换当前的 loadedRules / sortedRules。
+     * 客户端原本加载自本地 TagRarity.json，本方法会将它覆盖为服务端的版本。
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void applySyncedRules(List<RaritySyncPacket.TagRuleEntry> entries) {
+        if (entries == null || entries.isEmpty()) {
+            loadedRules = new ArrayList<>();
+            sortedRules = new TagRule[0];
+            RarityCore.LOGGER.debug("TagRarity: applied empty synced rules (cleared)");
+            return;
+        }
+
+        List<TagRule> rules = new ArrayList<>(entries.size());
+        for (RaritySyncPacket.TagRuleEntry entry : entries) {
+            try {
+                TagKey<Item> tagKey = TagKey.create(Registries.ITEM,
+                    ResourceLocation.parse(entry.tagLocation()));
+                rules.add(new TagRule(tagKey,
+                    RarityValidator.normalizeRarity(entry.rarity())));
+            } catch (Exception e) {
+                RarityCore.LOGGER.warn("Skipping invalid synced tag rule: tag={}, rarity={}, error={}",
+                    entry.tagLocation(), entry.rarity(), e.getMessage());
+            }
+        }
+        loadedRules = rules;
+        sortedRules = rules.stream()
+            .sorted(Comparator.comparingInt((TagRule r) -> r.rarity).reversed())
+            .toArray(TagRule[]::new);
+        RarityCore.LOGGER.debug("TagRarity: applied {} synced rules", rules.size());
+    }
+
+
+    /**
+     * 将当前加载的 TagRarity 规则转换为网络同步用的 TagRuleEntry 列表（服务端用）
+     * @return 非 null 的 List；可能为空列表
+     */
+    public static List<RaritySyncPacket.TagRuleEntry> getSyncedRules() {
+        TagRule[] rules = sortedRules;
+        if (rules.length == 0) {
+            return new ArrayList<>();
+        }
+        List<RaritySyncPacket.TagRuleEntry> entries = new ArrayList<>(rules.length);
+        for (TagRule rule : rules) {
+            entries.add(new RaritySyncPacket.TagRuleEntry(
+                rule.tagKey.location().toString(), rule.rarity));
+        }
+        return entries;
     }
 
     public static int getRuleCount() {

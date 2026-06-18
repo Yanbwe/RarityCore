@@ -578,17 +578,29 @@ public class RarityRegistry {
     }
     
     /**
+     * 应用来自服务端同步的自动稀有度映射 (仅客户端)
+     */
+    public static void applySyncedAutoRarity(java.util.Map<net.minecraft.resources.ResourceLocation, Integer> autoRarityMap) {
+        AUTO_RARITY_MAP.clear();
+        if (autoRarityMap != null) {
+            AUTO_RARITY_MAP.putAll(autoRarityMap);
+        }
+    }
+
+    /**
      * 同步稀有度数据到客户端
      */
     public static void syncRarityToClients() {
-        SyncManager.syncRarityToClients(ITEM_RARITY_MAP);
+        SyncManager.syncRarityToClients(ITEM_RARITY_MAP, AUTO_RARITY_MAP,
+            org.yanbwe.raritycore.config.TagRarityConfigManager.getSyncedRules());
     }
     
     /**
      * 同步稀有度数据到客户端(带重试机制)
      */
     public static void syncRarityToClientsWithRetry() {
-        SyncManager.syncRarityToClientsWithRetry(ITEM_RARITY_MAP);
+        SyncManager.syncRarityToClientsWithRetry(ITEM_RARITY_MAP, AUTO_RARITY_MAP,
+            org.yanbwe.raritycore.config.TagRarityConfigManager.getSyncedRules());
     }
     
     /**

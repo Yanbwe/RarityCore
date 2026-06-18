@@ -7,7 +7,7 @@ package org.yanbwe.raritycore.network;
 public class NetworkConstants {
     
     // 协议版本号
-    public static final String PROTOCOL_VERSION = "1.0";
+    public static final String PROTOCOL_VERSION = "1.1.0";
     
     // 网络通道名称
     public static final String RARITY_SYNC_CHANNEL = "rarity_sync";

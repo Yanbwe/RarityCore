@@ -94,51 +94,51 @@ public class ClientConfigManager {
                 if (jsonObject.has("enableItemBorderRendering")) {
                     enableItemBorderRendering = jsonObject.get("enableItemBorderRendering").getAsBoolean();
                 } else {
-                    // If the config option doesn't exist, use default value
+                    // 如果配置项不存在，使用默认值
                     enableItemBorderRendering = RarityConstants.DEFAULT_ENABLE_ITEM_BORDER_RENDERING;
                 }
                 
-                // Read border style
+                // 读取边框样式
                 if (jsonObject.has("itemBorderStyle")) {
                     itemBorderStyle = jsonObject.get("itemBorderStyle").getAsInt();
-                    // Ensure value is within valid range
+                    // 确保值在有效范围内
                     if (itemBorderStyle < 0 || itemBorderStyle > 1) {
-                        itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE; // Default to hollow
+                        itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE; // 默认为空心
                         RarityCore.LOGGER.warn("Invalid border style value in client config, reset to default: {}", itemBorderStyle);
                     }
                 } else {
-                    // If the config option doesn't exist, use default value
-                    itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE; // Default to hollow
+                    // 如果配置项不存在，使用默认值
+                    itemBorderStyle = RarityConstants.DEFAULT_ITEM_BORDER_STYLE; // 默认为空心
                 }
                 
                 if (jsonObject.has("useTextureBorder")) {
                     useTextureBorder = jsonObject.get("useTextureBorder").getAsBoolean();
                 } else {
-                    // If the config option doesn't exist, use default value
+                    // 如果配置项不存在，使用默认值
                     useTextureBorder = RarityConstants.DEFAULT_USE_TEXTURE_BORDER;
                 }
                 
-                // Read item name color setting
+                // 读取物品名称颜色设置
                 if (jsonObject.has("enableItemNameColor")) {
                     enableItemNameColor = jsonObject.get("enableItemNameColor").getAsBoolean();
                 } else {
-                    // If the config option doesn't exist, use default value
+                    // 如果配置项不存在，使用默认值
                     enableItemNameColor = RarityConstants.DEFAULT_ENABLE_ITEM_NAME_COLOR;
                 }
                 
-                // Read tooltip insert setting
+                // 读取工具提示插入设置
                 if (jsonObject.has("enableTooltipInsert")) {
                     enableTooltipInsert = jsonObject.get("enableTooltipInsert").getAsBoolean();
                 } else {
-                    // If the config option doesn't exist, use default value
+                    // 如果配置项不存在，使用默认值
                     enableTooltipInsert = RarityConstants.DEFAULT_ENABLE_TOOLTIP_INSERT;
                 }
                 
-                // Read tooltip color setting
+                // 读取工具提示颜色设置
                 if (jsonObject.has("enableTooltipColor")) {
                     enableTooltipColor = jsonObject.get("enableTooltipColor").getAsBoolean();
                 } else {
-                    // If the config option doesn't exist, use default value
+                    // 如果配置项不存在，使用默认值
                     enableTooltipColor = RarityConstants.DEFAULT_ENABLE_TOOLTIP_COLOR;
                 }
                 
@@ -146,7 +146,7 @@ public class ClientConfigManager {
                 if (jsonObject.has("skipUnconfiguredItems")) {
                     skipUnconfiguredItems = jsonObject.get("skipUnconfiguredItems").getAsBoolean();
                 } else {
-                    // If the config option doesn't exist, use default value
+                    // 如果配置项不存在，使用默认值
                     skipUnconfiguredItems = RarityConstants.DEFAULT_SKIP_UNCONFIGURED_ITEMS;
                 }
                 

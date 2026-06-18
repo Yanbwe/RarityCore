@@ -79,8 +79,10 @@ public class RarityCoreEventHandler {
         // 登录时向玩家发送完整稀有度数据(版本感知: 客户端版本匹配时自动跳过)
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
             // 发送版本感知的稀有度数据——客户端自动检测版本号跳过重复同步
-            org.yanbwe.raritycore.network.SyncManager.syncRarityToPlayer(serverPlayer, 
-                org.yanbwe.raritycore.registry.RarityRegistry.getItemRarityMap());
+            org.yanbwe.raritycore.network.SyncManager.syncRarityToPlayer(serverPlayer,
+                org.yanbwe.raritycore.registry.RarityRegistry.getItemRarityMap(),
+                org.yanbwe.raritycore.registry.RarityRegistry.getAutoRarityMap(),
+                org.yanbwe.raritycore.config.TagRarityConfigManager.getSyncedRules());
             
             // 发送NBT匹配规则
             org.yanbwe.raritycore.network.NbtSyncManager.syncNbtRulesToPlayer(serverPlayer);

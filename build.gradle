@@ -227,16 +227,14 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
 
-tasks.withType(Javadoc).configureEach {
-    options.encoding = 'UTF-8'
-    options.charSet = 'UTF-8'
-    options.docEncoding = 'UTF-8'
+// 禁用 javadoc，加速构建
+tasks.named('javadoc').configure {
+    enabled = false
 }
 apply plugin: 'maven-publish'
 
 java {
     withSourcesJar()
-    withJavadocJar()
 }
 
 publishing {

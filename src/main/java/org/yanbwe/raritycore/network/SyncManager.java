@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.yanbwe.raritycore.network.RaritySyncPacket.TagRuleEntry;
 
 /**
  * 同步管理器
@@ -43,10 +44,14 @@ public class SyncManager {
      * 将所有稀有度数据同步到客户端(全量同步,含当前版本号)
      * @param itemRarityMap 物品稀有度映射
      */
-    public static void syncRarityToClients(Map<ResourceLocation, Integer> itemRarityMap) {
+    public static void syncRarityToClients(Map<ResourceLocation, Integer> itemRarityMap,
+                                            Map<ResourceLocation, Integer> autoRarityMap,
+                                            List<TagRuleEntry> tagRules) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null && itemRarityMap != null) {
-            RaritySyncPacket packet = new RaritySyncPacket(CONFIG_VERSION.get(), itemRarityMap);
+            RaritySyncPacket packet = new RaritySyncPacket(CONFIG_VERSION.get(),
+                itemRarityMap, autoRarityMap != null ? autoRarityMap : java.util.Collections.emptyMap(),
+                tagRules != null ? tagRules : java.util.Collections.emptyList());
             sendPacketToAllPlayers(packet, RaritySyncPacket.INSTANCE);
         }
     }
@@ -57,9 +62,14 @@ public class SyncManager {
      * @param player 目标玩家
      * @param itemRarityMap 物品稀有度映射
      */
-    public static void syncRarityToPlayer(ServerPlayer player, Map<ResourceLocation, Integer> itemRarityMap) {
+    public static void syncRarityToPlayer(ServerPlayer player,
+                                           Map<ResourceLocation, Integer> itemRarityMap,
+                                           Map<ResourceLocation, Integer> autoRarityMap,
+                                           List<TagRuleEntry> tagRules) {
         if (player != null && itemRarityMap != null) {
-            RaritySyncPacket packet = new RaritySyncPacket(CONFIG_VERSION.get(), itemRarityMap);
+            RaritySyncPacket packet = new RaritySyncPacket(CONFIG_VERSION.get(),
+                itemRarityMap, autoRarityMap != null ? autoRarityMap : java.util.Collections.emptyMap(),
+                tagRules != null ? tagRules : java.util.Collections.emptyList());
             RaritySyncPacket.INSTANCE.send(
                 PacketDistributor.PLAYER.with(() -> player), packet);
         }
@@ -130,10 +140,14 @@ public class SyncManager {
      * 使用重试机制将所有稀有度数据同步到客户端(全量同步)
      * @param itemRarityMap 物品稀有度映射
      */
-    public static void syncRarityToClientsWithRetry(Map<ResourceLocation, Integer> itemRarityMap) {
+    public static void syncRarityToClientsWithRetry(Map<ResourceLocation, Integer> itemRarityMap,
+                                                      Map<ResourceLocation, Integer> autoRarityMap,
+                                                      List<TagRuleEntry> tagRules) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null && itemRarityMap != null) {
-            RaritySyncPacket packet = new RaritySyncPacket(CONFIG_VERSION.get(), itemRarityMap);
+            RaritySyncPacket packet = new RaritySyncPacket(CONFIG_VERSION.get(),
+                itemRarityMap, autoRarityMap != null ? autoRarityMap : java.util.Collections.emptyMap(),
+                tagRules != null ? tagRules : java.util.Collections.emptyList());
             NetworkRetryManager.sendFullSyncWithRetry(packet);
         }
     }

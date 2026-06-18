@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
-import org.yanbwe.raritycore.util.RarityValidator;
 
 import java.io.BufferedReader;
 import java.io.OutputStreamWriter;
@@ -93,15 +92,14 @@ public class RarityClientConfigManager {
 
     /**
      * 获取或惰性创建指定稀有度等级的配置
-     * 未配置的等级自动生成默认配置，等级会被约束在 MIN_RARITY..MAX_RARITY 范围内
+     * 未配置的等级自动生成默认配置（支持 >7 稀有度等级）
      */
     private static RarityLevelConfig getOrCreateConfig(int rarity) {
-        int normalized = RarityValidator.normalizeRarity(rarity);
-        RarityLevelConfig config = LEVEL_CONFIGS.get(normalized);
+        RarityLevelConfig config = LEVEL_CONFIGS.get(rarity);
         if (config != null) {
             return config;
         }
-        return LEVEL_CONFIGS.computeIfAbsent(normalized, level -> createDefaultConfig(level));
+        return LEVEL_CONFIGS.computeIfAbsent(rarity, level -> createDefaultConfig(level));
     }
 
     // ---- 初始化与加载 ----

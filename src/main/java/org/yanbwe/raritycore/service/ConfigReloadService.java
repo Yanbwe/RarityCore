@@ -97,7 +97,9 @@ public class ConfigReloadService {
             
             // 9. 同步数据到所有客户端
             if (!isStartup) { // 启动时不需要同步,会在玩家登录时处理
-                SyncManager.syncRarityToClientsWithRetry(RarityRegistry.ITEM_RARITY_MAP);
+                SyncManager.syncRarityToClientsWithRetry(RarityRegistry.ITEM_RARITY_MAP,
+                    RarityRegistry.getAutoRarityMap(),
+                    org.yanbwe.raritycore.config.TagRarityConfigManager.getSyncedRules());
             }
             
             // 10. 发送完成消息(仅在命令调用时)

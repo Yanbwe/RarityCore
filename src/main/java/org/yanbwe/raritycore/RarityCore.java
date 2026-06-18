@@ -15,7 +15,7 @@ import org.yanbwe.raritycore.network.NbtSyncPacket;
 import org.yanbwe.raritycore.network.RaritySyncPacket;
 import org.yanbwe.raritycore.service.ServiceFactory;
 
-// The value here should match an entry in the META-INF/mods.toml file
+// 此处的值应与 META-INF/mods.toml 文件中的条目匹配
 @Mod(RarityCore.MODID)
 public class RarityCore {
 

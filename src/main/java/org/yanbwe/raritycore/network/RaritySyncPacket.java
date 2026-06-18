@@ -1,5 +1,11 @@
 package org.yanbwe.raritycore.network;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.Tag;
@@ -12,19 +18,17 @@ import net.minecraftforge.network.simple.SimpleChannel;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Supplier;
 
 public class RaritySyncPacket {
     public static SimpleChannel INSTANCE;
-    
+
     /**
-     * 客户端记录的最近一次收到的配置版本号
-     * 初始为0，与服务端版本号比对以跳过重复同步
+     * 记录客户端上次接收到的配置版本号。
+     * 当版本号匹配时，跳过数据负载以避免重复处理。
      */
     private static int clientConfigVersion = 0;
-    
+
     public static void initialize() {
         INSTANCE = NetworkRegistry.newSimpleChannel(
                 ResourceLocation.fromNamespaceAndPath(RarityCore.MODID, NetworkConstants.RARITY_SYNC_CHANNEL),
@@ -32,7 +36,7 @@ public class RaritySyncPacket {
                 NetworkConstants.PROTOCOL_VERSION::equals,
                 NetworkConstants.PROTOCOL_VERSION::equals
         );
-        
+
         INSTANCE.messageBuilder(RaritySyncPacket.class, 0)
                 .encoder(RaritySyncPacket::encode)
                 .decoder(RaritySyncPacket::new)
@@ -41,88 +45,160 @@ public class RaritySyncPacket {
     }
 
     private final int configVersion;
-    private Map<ResourceLocation, Integer> rarityData;
+    private final Map<ResourceLocation, Integer> rarityData;
+    private final Map<ResourceLocation, Integer> autoRarityData;
+    private final List<TagRuleEntry> tagRarityRules;
 
     /**
-     * 构造包(服务端发送用)
-     * @param configVersion 当前配置版本号
-     * @param rarityData 物品稀有度映射
+     * 从服务端构建同步包。
+     *
+     * @param configVersion  当前配置版本号
+     * @param rarityData     手动稀有度映射 (FinalRarity.json)
+     * @param autoRarityData 自动计算的稀有度映射 (auto_rarity.json)
+     * @param tagRarityRules TagRarity 规则 (TagRarity.json)
      */
-    public RaritySyncPacket(int configVersion, Map<ResourceLocation, Integer> rarityData) {
+    public RaritySyncPacket(int configVersion,
+                            Map<ResourceLocation, Integer> rarityData,
+                            Map<ResourceLocation, Integer> autoRarityData,
+                            List<TagRuleEntry> tagRarityRules) {
         this.configVersion = configVersion;
-        this.rarityData = rarityData;
+        this.rarityData = new ConcurrentHashMap<>(rarityData);
+        this.autoRarityData = new ConcurrentHashMap<>(autoRarityData != null ? autoRarityData : Collections.emptyMap());
+        this.tagRarityRules = new ArrayList<>(tagRarityRules != null ? tagRarityRules : Collections.emptyList());
     }
 
     /**
-     * 解码包(客户端接收用)
-     * 使用 NBT CompoundTag 编码以减少数据量:
-     *   - 旧格式: writeUtf(key) + writeInt(value) 每条约30-50字节
-     *   - NBT格式: CompoundTag二进制编码，每条约10-15字节
+     * 在客户端解码数据包。
+     * 格式：[varInt version] [NBT itemRarity] [NBT autoRarity] [varInt tagRuleCount] [tagRule...]
      */
     public RaritySyncPacket(FriendlyByteBuf buf) {
         this.configVersion = buf.readVarInt();
-        
-        // 版本匹配: 客户端已是最新，跳过数据解析
-        if (this.configVersion == clientConfigVersion) {
-            this.rarityData = null;
-            return;
-        }
-        
-        CompoundTag nbt = buf.readNbt();
-        rarityData = new HashMap<>();
-        if (nbt != null) {
-            for (String key : nbt.getAllKeys()) {
-                Tag tag = nbt.get(key);
-                if (tag instanceof IntTag intTag) {
-                    rarityData.put(ResourceLocation.parse(key), intTag.getAsInt());
-                }
-            }
+
+        boolean skip = clientConfigVersion > 0 && this.configVersion == clientConfigVersion;
+
+        this.rarityData = skip ? null : decodeRarityMap(buf);
+        this.autoRarityData = skip ? null : decodeRarityMap(buf);
+        this.tagRarityRules = skip ? null : decodeTagRules(buf);
+
+        if (skip) {
+            RarityCore.LOGGER.debug("Rarity sync skipped: client already at version {}", clientConfigVersion);
         }
     }
 
-    /**
-     * 编码包(服务端发送用)
-     * 格式: [varInt version] [NBT CompoundTag]
-     */
     public void encode(FriendlyByteBuf buf) {
         buf.writeVarInt(configVersion);
-        
+        encodeRarityMap(buf, rarityData);
+        encodeRarityMap(buf, autoRarityData);
+        encodeTagRules(buf, tagRarityRules);
+    }
+
+    // -- 序列化辅助方法 -------------------------------------------------
+
+    private static Map<ResourceLocation, Integer> decodeRarityMap(FriendlyByteBuf buf) {
+        CompoundTag nbt = buf.readNbt();
+        if (nbt == null || nbt.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<ResourceLocation, Integer> map = new ConcurrentHashMap<>();
+        for (String key : nbt.getAllKeys()) {
+            Tag tag = nbt.get(key);
+            if (tag instanceof IntTag intTag) {
+                map.put(ResourceLocation.parse(key), intTag.getAsInt());
+            }
+        }
+        return map;
+    }
+
+    private static void encodeRarityMap(FriendlyByteBuf buf, Map<ResourceLocation, Integer> map) {
         CompoundTag nbt = new CompoundTag();
-        for (Map.Entry<ResourceLocation, Integer> entry : rarityData.entrySet()) {
+        for (Map.Entry<ResourceLocation, Integer> entry : map.entrySet()) {
             nbt.putInt(entry.getKey().toString(), entry.getValue());
         }
         buf.writeNbt(nbt);
     }
 
+    private static List<TagRuleEntry> decodeTagRules(FriendlyByteBuf buf) {
+        int count = buf.readVarInt();
+        if (count <= 0) return Collections.emptyList();
+        List<TagRuleEntry> rules = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            rules.add(new TagRuleEntry(buf.readUtf(), buf.readVarInt()));
+        }
+        return rules;
+    }
+
+    private static void encodeTagRules(FriendlyByteBuf buf, List<TagRuleEntry> rules) {
+        buf.writeVarInt(rules.size());
+        for (TagRuleEntry rule : rules) {
+            buf.writeUtf(rule.tagLocation());
+            buf.writeVarInt(rule.rarity());
+        }
+    }
+
+    // -- TagRarity 规则传输条目 -----------------------------------------
+
+    /**
+     * TagRarity 规则数据传输条目。
+     */
+    public static class TagRuleEntry {
+        private final String tagLocation;
+        private final int rarity;
+
+        /**
+         * @param tagLocation Tag 的资源路径字符串
+         * @param rarity      稀有度等级 (1-7)
+         */
+        public TagRuleEntry(String tagLocation, int rarity) {
+            if (tagLocation == null) throw new IllegalArgumentException("tagLocation must not be null");
+            if (rarity < 1) throw new IllegalArgumentException("rarity must be >= 1, got " + rarity);
+            this.tagLocation = tagLocation;
+            this.rarity = rarity;
+        }
+
+        public String tagLocation() { return tagLocation; }
+        public int rarity() { return rarity; }
+
+        /** 在客户端反序列化为 TagKey&lt;Item&gt;。 */
+        @SuppressWarnings("deprecation")
+        public net.minecraft.tags.TagKey<net.minecraft.world.item.Item> toTagKey() {
+            return net.minecraft.tags.TagKey.create(
+                net.minecraft.core.registries.Registries.ITEM,
+                ResourceLocation.parse(tagLocation));
+        }
+    }
+
+    // -- 客户端处理器 ---------------------------------------------------
+
     public boolean handle(Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
-            // 安全校验：确保仅在客户端处理服务端发来的同步包
             if (ctx.get().getDirection() != NetworkDirection.PLAY_TO_CLIENT) {
                 RarityCore.LOGGER.warn("RaritySyncPacket received on wrong side, ignoring");
                 ctx.get().setPacketHandled(true);
                 return;
             }
-            
-            // 版本匹配——客户端数据已是最新，跳过全量覆盖
+
             if (rarityData == null) {
                 RarityCore.LOGGER.debug("Rarity sync skipped: client version {} matches server", clientConfigVersion);
                 ctx.get().setPacketHandled(true);
                 return;
             }
-            
-            RarityCore.LOGGER.debug("Rarity sync received: {} items, version {} -> {}", 
-                rarityData.size(), clientConfigVersion, this.configVersion);
-            
-            // 更新客户端版本号
+
+            RarityCore.LOGGER.debug("Rarity sync received: {} items, {} auto, {} tags, version {} -> {}",
+                rarityData.size(), autoRarityData.size(), tagRarityRules.size(),
+                clientConfigVersion, this.configVersion);
+
             clientConfigVersion = this.configVersion;
-            
-            // 信任服务端数据，直接覆盖客户端注册表
-            // 不再用 ForgeRegistries.ITEMS.getValue() 过滤——服务端是权威方，
-            // 避免在 JEI 等大型模组环境下因客户端注册表查询失败导致模组物品被静默丢弃
+
+            // 1) Manual registry (FinalRarity.json)
             RarityRegistry.ITEM_RARITY_MAP.clear();
             RarityRegistry.ITEM_RARITY_MAP.putAll(rarityData);
-            
-            // 通知缓存系统网络同步已完成
+
+            // 2) Auto-calculated table (auto_rarity.json)
+            RarityRegistry.applySyncedAutoRarity(autoRarityData);
+
+            // 3) TagRarity config
+            org.yanbwe.raritycore.config.TagRarityConfigManager.applySyncedRules(tagRarityRules);
+
             org.yanbwe.raritycore.client.CacheInvalidationListener.onNetworkSync();
         });
         ctx.get().setPacketHandled(true);
@@ -130,9 +206,7 @@ public class RaritySyncPacket {
     }
 
     /**
-     * 重置客户端版本号（断开连接时调用）
-     * 确保下次连接新服务器时必定重新同步稀有度数据，
-     * 避免因版本号碰撞导致同步被跳过
+     * 重置客户端版本追踪器，强制下次登录时进行完整重新同步。
      */
     public static void resetClientVersion() {
         clientConfigVersion = 0;
