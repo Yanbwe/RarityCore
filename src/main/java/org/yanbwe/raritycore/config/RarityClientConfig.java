@@ -158,9 +158,8 @@ public class RarityClientConfig {
         if (config != null) {
             return config;
         }
-        // 回退链：向下查找最近已配置的等级（已配置的 >7 等级优先命中）
-        int fallback = Math.min(rarity, RarityConstants.MAX_RARITY);
-        for (int l = fallback; l >= 1; l--) {
+        // 回退链：向下查找最近已配置的等级（不受 MAX_RARITY 限制）
+        for (int l = rarity - 1; l >= 1; l--) {
             config = levelConfigs.get(l);
             if (config != null) {
                 return config;
