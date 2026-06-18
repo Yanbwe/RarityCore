@@ -56,8 +56,13 @@ public class TagRarityLoader {
 
         /** Creates a TagKey&lt;Item&gt; from this entry's namespace and path. */
         public TagKey<Item> toTagKey() {
-            Identifier id = Identifier.fromNamespaceAndPath(tagNamespace, tagPath);
-            return TagKey.create(Registries.ITEM, id);
+            try {
+                Identifier id = Identifier.fromNamespaceAndPath(tagNamespace, tagPath);
+                return TagKey.create(Registries.ITEM, id);
+            } catch (Throwable t) {
+                RarityCore.LOGGER.warn("Failed to create TagKey for {}:{}: {}", tagNamespace, tagPath, t.getMessage());
+                return null;
+            }
         }
 
         /** Returns "namespace:path" representation of the tag. */
