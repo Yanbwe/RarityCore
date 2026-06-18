@@ -3,10 +3,13 @@ package org.yanbwe.raritycore.network;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.List;
 import java.util.Map;
 
@@ -18,10 +21,14 @@ public class SyncManager {
 
     // ───── 同步入口 ─────
 
-    public static void syncRarityToClients(Map<Identifier, Integer> itemRarityMap) {
+    public static void syncRarityToClients(Map<Identifier, Integer> itemRarityMap,
+                                            Map<Identifier, Integer> autoRarityMap,
+                                            List<TagRuleTransfer> tagRules) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null && itemRarityMap != null) {
-            sendToAllPlayers(new RaritySyncPayload(itemRarityMap));
+            sendToAllPlayers(new RaritySyncPayload(itemRarityMap,
+                autoRarityMap != null ? autoRarityMap : Collections.emptyMap(),
+                tagRules != null ? tagRules : Collections.emptyList()));
         }
     }
 
@@ -48,10 +55,14 @@ public class SyncManager {
 
     // ───── 带重试的同步入口 ─────
 
-    public static void syncRarityToClientsWithRetry(Map<Identifier, Integer> itemRarityMap) {
+    public static void syncRarityToClientsWithRetry(Map<Identifier, Integer> itemRarityMap,
+                                                      Map<Identifier, Integer> autoRarityMap,
+                                                      List<TagRuleTransfer> tagRules) {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server != null && itemRarityMap != null) {
-            NetworkRetryManager.sendFullSyncWithRetry(new RaritySyncPayload(itemRarityMap));
+            NetworkRetryManager.sendFullSyncWithRetry(new RaritySyncPayload(itemRarityMap,
+                autoRarityMap != null ? autoRarityMap : Collections.emptyMap(),
+                tagRules != null ? tagRules : Collections.emptyList()));
         }
     }
 

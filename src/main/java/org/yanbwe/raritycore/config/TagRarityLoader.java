@@ -11,6 +11,9 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.network.RaritySyncPayload;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import java.io.BufferedReader;
 import java.io.FileWriter;
@@ -18,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -65,8 +69,39 @@ public class TagRarityLoader {
     }
 
     /**
-     * Returns an unmodifiable snapshot of the current tag rules (sorted by rarity descending).
+     * 将当前加载的 TagRarity 规则转换为网络同步用的 TagRuleTransfer 列表（服务端用）
      */
+    public static List<RaritySyncPayload.TagRuleTransfer> getSyncedRules() {
+        synchronized (TAG_RULES) {
+            if (TAG_RULES.isEmpty()) return Collections.emptyList();
+            List<RaritySyncPayload.TagRuleTransfer> list = new ArrayList<>(TAG_RULES.size());
+            for (TagRarityEntry e : TAG_RULES) {
+                list.add(new RaritySyncPayload.TagRuleTransfer(e.tagNamespace(), e.tagPath(), e.rarity()));
+            }
+            return list;
+        }
+    }
+
+    /**
+     * 应用来自服务端同步的 TagRarity 规则（仅客户端）
+     */
+    @OnlyIn(Dist.CLIENT)
+    public static void applySyncedRules(List<RaritySyncPayload.TagRuleTransfer> transfers) {
+        synchronized (TAG_RULES) {
+            TAG_RULES.clear();
+            if (transfers != null && !transfers.isEmpty()) {
+                List<TagRarityEntry> entries = new ArrayList<>(transfers.size());
+                for (var t : transfers) {
+                    entries.add(t.toTagRarityEntry());
+                }
+                entries.sort(java.util.Comparator.comparingInt(TagRarityEntry::rarity).reversed());
+                TAG_RULES.addAll(entries);
+            }
+        }
+        RarityCore.LOGGER.debug("TagRarity: applied {} synced rules",
+            transfers != null ? transfers.size() : 0);
+    }
+
     public static List<TagRarityEntry> getTagRules() {
         return List.copyOf(TAG_RULES);
     }

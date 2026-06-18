@@ -1,4 +1,4 @@
-package org.yanbwe.raritycore.config;
+﻿package org.yanbwe.raritycore.config;
 
 import com.google.gson.JsonObject;
 import org.yanbwe.raritycore.RarityCore;
@@ -115,6 +115,13 @@ public class StarDisplayConfigManager {
             RarityCore.LOGGER.error("Error loading star display config, using defaults: {}", e.getMessage());
             // 出错时使用默认值
             resetToDefaults();
+        } finally {
+            // 无论成功、默认回退还是异常回退，都通知 StarDisplayManager 更新策略
+            try {
+                org.yanbwe.raritycore.util.StarDisplayManager.getInstance().reloadConfiguration();
+            } catch (Exception ignored) {
+                // 单例可能尚未初始化，忽略
+            }
         }
     }
     

@@ -13,6 +13,22 @@ import javax.annotation.Nullable;
  */
 public class RarityColorUtil {
     
+    /** 外部注入的自定义颜色（来自 RarityClientConfig.json） */
+    private static final java.util.Map<Integer, Integer> CUSTOM_COLORS = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** 注入自定义颜色 */
+    public static void setCustomColor(int rarity, int rgb) {
+        CUSTOM_COLORS.put(rarity, rgb);
+    }
+
+    /** 批量注入自定义颜色 */
+    public static void setCustomColors(java.util.Map<Integer, Integer> colors) {
+        CUSTOM_COLORS.clear();
+        if (colors != null) {
+            CUSTOM_COLORS.putAll(colors);
+        }
+    }
+
     /**
      * 根据稀有度等级获取对应的颜色格式
      * @param rarity 稀有度等级 (1-7)
@@ -22,6 +38,10 @@ public class RarityColorUtil {
     @Deprecated
     @Nonnull
     public static ChatFormatting getRarityChatColor(int rarity) {
+        Integer custom = CUSTOM_COLORS.get(rarity);
+        if (custom != null) {
+            return rgbToChatFormatting(custom);
+        }
         switch (rarity) {
             case 1: // 普通 - 白色
                 return ChatFormatting.WHITE;
@@ -89,6 +109,10 @@ public class RarityColorUtil {
      * @return RGB 颜色值 (0xRRGGBB), 默认返回 0xFFFFFF (白色)
      */
     public static int getRarityRgbColor(int rarity) {
+        Integer custom = CUSTOM_COLORS.get(rarity);
+        if (custom != null) {
+            return custom;
+        }
         // RGB values correspond to existing getRarityArgbColor() with alpha stripped
         return switch (rarity) {
             case 1 -> 0xA0A0A0;  // 普通 - 灰色

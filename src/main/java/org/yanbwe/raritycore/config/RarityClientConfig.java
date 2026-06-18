@@ -136,6 +136,8 @@ public class RarityClientConfig {
             levelConfigs.clear();
             loadDefaults();
         }
+        // 注入颜色到 RarityColorUtil（无论成功还是 fallback）
+        injectColorsToRarityColorUtil();
     }
 
     // ================================================================
@@ -145,25 +147,20 @@ public class RarityClientConfig {
     /**
      * 查询指定稀有度等级的客户端配置。
      *
-     * <p>回退规则：rarity &gt; {@link RarityConstants#MAX_RARITY} → 返回等级 7 的配置；
-     * rarity &lt; 1 → 返回等级 1 的配置。
+     * <p>回退规则：已配置的等级直接返回（支持 &gt;7）；
+     * 未配置时向下查找最近已配置的等级，最终兜底等级 1。
      *
      * @param rarity 稀有度等级
      * @return 该等级的 {@link RarityLevelConfig}，永不返回 null
      */
     public static RarityLevelConfig getLevelConfig(int rarity) {
-        if (rarity < 1) {
-            rarity = 1;
-        } else if (rarity > RarityConstants.MAX_RARITY) {
-            rarity = RarityConstants.MAX_RARITY;
-        }
-
         RarityLevelConfig config = levelConfigs.get(rarity);
         if (config != null) {
             return config;
         }
-        // 回退链：向上查找最近已配置的等级
-        for (int l = rarity; l >= 1; l--) {
+        // 回退链：向下查找最近已配置的等级（已配置的 >7 等级优先命中）
+        int fallback = Math.min(rarity, RarityConstants.MAX_RARITY);
+        for (int l = fallback; l >= 1; l--) {
             config = levelConfigs.get(l);
             if (config != null) {
                 return config;
@@ -279,6 +276,21 @@ public class RarityClientConfig {
     /** 将 ARGB int 转为 #RRGGBB 字符串。 */
     private static String toHex(int argb) {
         return String.format("#%06X", argb & 0xFFFFFF);
+    }
+
+    // 禁止实例化
+    /** 将已加载的配色注入 RarityColorUtil，使 getRarityRgbColor/getRarityChatColor 也能读取自定义颜色 */
+    private static void injectColorsToRarityColorUtil() {
+        java.util.Map<Integer, Integer> colors = new java.util.HashMap<>();
+        for (java.util.Map.Entry<Integer, RarityLevelConfig> entry : levelConfigs.entrySet()) {
+            String hex = entry.getValue().color();
+            try {
+                int rgb = org.yanbwe.raritycore.util.RarityColorUtil.parseHexColor(hex);
+                colors.put(entry.getKey(), rgb);
+            } catch (Exception ignored) {
+            }
+        }
+        org.yanbwe.raritycore.util.RarityColorUtil.setCustomColors(colors);
     }
 
     // 禁止实例化

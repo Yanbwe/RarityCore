@@ -1,4 +1,4 @@
-package org.yanbwe.raritycore.event;
+﻿package org.yanbwe.raritycore.event;
 
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
@@ -41,14 +41,18 @@ public class RarityCoreEventHandler {
 
     @SubscribeEvent
     public void onServerStopped(ServerStoppedEvent event) {
-        ServiceFactory factory = ServiceFactory.getInstance();
-        factory.getSchedulerService().stopScheduledTasks();
+        try {
+            ServiceFactory factory = ServiceFactory.getInstance();
+            factory.getSchedulerService().stopScheduledTasks();
 
-        org.yanbwe.raritycore.network.SyncManager.clearChangeBuffer();
+            org.yanbwe.raritycore.network.SyncManager.clearChangeBuffer();
 
-        org.yanbwe.raritycore.network.DelayedSyncManager.shutdown();
-        org.yanbwe.raritycore.network.ItemDataSyncManager.shutdown();
-        org.yanbwe.raritycore.network.NetworkRetryManager.shutdown();
+            org.yanbwe.raritycore.network.DelayedSyncManager.shutdown();
+            org.yanbwe.raritycore.network.ItemDataSyncManager.shutdown();
+            org.yanbwe.raritycore.network.NetworkRetryManager.shutdown();
+        } catch (NoClassDefFoundError | Exception e) {
+            org.yanbwe.raritycore.RarityCore.LOGGER.debug("Error during server stop cleanup: {}", e.getMessage());
+        }
     }
 
     @SubscribeEvent
@@ -59,7 +63,10 @@ public class RarityCoreEventHandler {
     @SubscribeEvent
     public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
-            org.yanbwe.raritycore.network.SyncManager.syncRarityToClients(org.yanbwe.raritycore.registry.RarityRegistry.getItemRarityMap());
+            org.yanbwe.raritycore.network.SyncManager.syncRarityToPlayer(serverPlayer,
+                org.yanbwe.raritycore.registry.RarityRegistry.getItemRarityMap(),
+                org.yanbwe.raritycore.registry.RarityRegistry.getAutoRarityMap(),
+                org.yanbwe.raritycore.config.TagRarityLoader.getSyncedRules());
 
             org.yanbwe.raritycore.network.ItemDataSyncManager.syncItemDataRulesToPlayer(serverPlayer);
         }
