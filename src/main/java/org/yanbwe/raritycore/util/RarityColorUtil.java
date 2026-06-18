@@ -54,7 +54,6 @@ public class RarityColorUtil {
             case 5 -> ChatFormatting.GOLD;
             case 6 -> ChatFormatting.RED;
             case 7 -> ChatFormatting.DARK_RED;
-            case 8 -> ChatFormatting.DARK_PURPLE;
             default -> ChatFormatting.WHITE;
         };
     }
@@ -77,7 +76,6 @@ public class RarityColorUtil {
             case 5 -> 0xFFCC00;
             case 6 -> 0xFF6666;
             case 7 -> 0xFF3333;
-            case 8 -> 0xAA00AA;
             default -> DEFAULT_RGB_COLOR;
         };
     }
