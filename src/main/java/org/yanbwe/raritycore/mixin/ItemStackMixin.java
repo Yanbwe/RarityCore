@@ -15,7 +15,6 @@ import org.yanbwe.raritycore.config.RarityClientConfig;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
-import org.yanbwe.raritycore.util.RarityValidator;
 
 @Mixin(ItemStack.class)
 public class ItemStackMixin {
@@ -54,10 +53,8 @@ public class ItemStackMixin {
         
 
 
-        // 标准化稀有度值,遵循模组的包容性原则
-        rarity = RarityValidator.normalizeRarity(rarity);
-        
         // Check per-level nameColor config — skip if disabled for this rarity level
+        // Pass raw rarity value; RarityClientConfig handles >7 fallback internally
         if (!RarityClientConfig.getLevelConfig(rarity).nameColor()) {
             return;
         }

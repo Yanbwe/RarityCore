@@ -465,7 +465,7 @@ public class RarityRegistry {
     }
 
     public static void syncRarityToClients() {
-        SyncManager.syncRarityToClients(ITEM_RARITY_MAP);
+        SyncManager.syncRarityToClients(ITEM_RARITY_MAP, getAutoRarityMap(), TagRarityLoader.getSyncedRules());
     }
     
     /**

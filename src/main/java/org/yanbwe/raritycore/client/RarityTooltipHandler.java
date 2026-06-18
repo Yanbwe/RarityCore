@@ -27,7 +27,6 @@ import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.ComponentBuilder;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
-import org.yanbwe.raritycore.util.RarityValidator;
 
 @EventBusSubscriber(modid = RarityCore.MODID, value = Dist.CLIENT)
 public class RarityTooltipHandler {
@@ -73,13 +72,10 @@ public class RarityTooltipHandler {
         boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;
         int displayRarity = rarity; // 保存用于显示的原始稀有度值
         
-        // 标准化稀有度值用于颜色获取等内部处理
-        rarity = RarityValidator.normalizeRarity(rarity);
-        
         // Post RarityTooltipEvent to allow other mods to modify the tooltip list before insertion
         NeoForge.EVENT_BUS.post(new RarityTooltipEvent(itemStack, displayRarity, event.getToolTip(), isSpecialRarity));
         
-        // Check per-level tooltips config — skip if disabled for this rarity level
+        // Check per-level tooltips config — pass raw rarity; RarityClientConfig handles >7 fallback
         if (!RarityClientConfig.getLevelConfig(rarity).tooltips()) {
             return;
         }
@@ -90,8 +86,8 @@ public class RarityTooltipHandler {
         
         if (isSpecialRarity) {
             // 如果稀有度大于7,显示为 [x级稀有度] <星星>
-            TextColor uniqueColor = RarityColorUtil.getRarityTextColor(RarityConstants.RARITY_UNIQUE);
-            MutableComponent rarityComponent = ComponentBuilder.buildSpecialRarityComponent(displayRarity, uniqueColor);
+            TextColor specialColor = RarityColorUtil.getRarityTextColor(displayRarity);
+            MutableComponent rarityComponent = ComponentBuilder.buildSpecialRarityComponent(displayRarity, specialColor);
             
             // 高效插入到工具提示
             ComponentBuilder.insertIntoTooltip(event.getToolTip(), rarityComponent);

@@ -13,7 +13,6 @@ import org.yanbwe.raritycore.config.RarityClientConfig;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
-import org.yanbwe.raritycore.util.RarityValidator;
 
 public class ItemBorderRenderer {
 
@@ -51,9 +50,8 @@ public class ItemBorderRenderer {
             return;
         }
 
-        rarity = RarityValidator.normalizeRarity(rarity);
-
         // Check per-level renderer config — skip if disabled for this rarity level
+        // Pass raw rarity value; RarityClientConfig handles >7 fallback internally
         if (!RarityClientConfig.getLevelConfig(rarity).renderer()) {
             return;
         }
