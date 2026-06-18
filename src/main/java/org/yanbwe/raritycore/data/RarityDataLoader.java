@@ -52,7 +52,7 @@ public class RarityDataLoader extends SimpleJsonResourceReloadListener<JsonEleme
                             continue;
                         }
 
-                        if (rarity < RarityConstants.MIN_RARITY || rarity > RarityConstants.MAX_RARITY) {
+                        if (rarity < RarityConstants.MIN_RARITY) {
                             RarityCore.LOGGER.warn("Invalid rarity value {} for item '{}' in rarity data file '{}'", rarity, itemIdString, location);
                             continue;
                         }
