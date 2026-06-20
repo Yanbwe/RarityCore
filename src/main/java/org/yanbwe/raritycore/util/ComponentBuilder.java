@@ -103,7 +103,8 @@ public class ComponentBuilder {
         if (customText != null && !customText.isEmpty()) {
             // 使用自定义文本,保持与标准格式一致:[自定义文本] <星星>
             String stars = getStars(rarity);
-            textToShow = "[" + customText + "] " + stars;
+            String displayText = resolveSpecialRarityText(customText);
+            textToShow = "[" + displayText + "] " + stars;
         } else {
             // 使用默认格式,使用本地化文本:[xx级稀有度] <星星>
             String localizedSuffix = Component.translatable("rarity.core.unusual.tips").getString();
@@ -117,6 +118,16 @@ public class ComponentBuilder {
         } else {
             return Component.literal(textToShow);
         }
+    }
+
+    /**
+     * 解析 specialRarityTexts 的值：以 $ 开头视为翻译键，否则为纯文本。
+     */
+    private static String resolveSpecialRarityText(String customText) {
+        if (customText.startsWith("$") && customText.length() > 1) {
+            return Component.translatable(customText.substring(1)).getString();
+        }
+        return customText;
     }
 
     /**
@@ -136,7 +147,8 @@ public class ComponentBuilder {
         String textToShow;
         if (customText != null && !customText.isEmpty()) {
             String stars = getStars(rarity);
-            textToShow = "[" + customText + "] " + stars;
+            String displayText = resolveSpecialRarityText(customText);
+            textToShow = "[" + displayText + "] " + stars;
         } else {
             String localizedSuffix = Component.translatable("rarity.core.unusual.tips").getString();
             String stars = getStars(rarity);
