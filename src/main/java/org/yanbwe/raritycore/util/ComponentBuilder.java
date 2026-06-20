@@ -98,7 +98,11 @@ public class ComponentBuilder {
 
         MutableComponent rarityTextComponent;
         if (customText != null && !customText.isEmpty()) {
-            rarityTextComponent = Component.literal(customText + " ").withStyle(color);
+            if (customText.startsWith("$") && customText.length() > 1) {
+                rarityTextComponent = Component.translatable(customText.substring(1)).withStyle(color);
+            } else {
+                rarityTextComponent = Component.literal(customText + " ").withStyle(color);
+            }
         } else {
             rarityTextComponent = Component.translatable("rarity.core.special.rarity.prefix", rarity).withStyle(color);
         }
@@ -122,7 +126,12 @@ public class ComponentBuilder {
 
         MutableComponent rarityTextComponent;
         if (customText != null && !customText.isEmpty()) {
-            if (enableColor) {
+            if (customText.startsWith("$") && customText.length() > 1) {
+                String key = customText.substring(1);
+                rarityTextComponent = enableColor
+                    ? Component.translatable(key).withStyle(color)
+                    : Component.translatable(key);
+            } else if (enableColor) {
                 rarityTextComponent = Component.literal(customText + " ").withStyle(color);
             } else {
                 rarityTextComponent = Component.literal(customText + " ");
@@ -155,7 +164,12 @@ public class ComponentBuilder {
 
         MutableComponent rarityTextComponent;
         if (customText != null && !customText.isEmpty()) {
-            if (enableColor) {
+            if (customText.startsWith("$") && customText.length() > 1) {
+                String key = customText.substring(1);
+                rarityTextComponent = enableColor
+                    ? Component.translatable(key).withStyle(colorStyle)
+                    : Component.translatable(key);
+            } else if (enableColor) {
                 rarityTextComponent = Component.literal(customText + " ").withStyle(colorStyle);
             } else {
                 rarityTextComponent = Component.literal(customText + " ");

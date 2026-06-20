@@ -215,6 +215,10 @@ public class RarityRegistry {
             String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(displayRarity);
             String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(displayRarity);
             if (customText != null && !customText.isEmpty()) {
+                if (customText.startsWith("$") && customText.length() > 1) {
+                    String translated = net.minecraft.network.chat.Component.translatable(customText.substring(1)).getString();
+                    return "[" + translated + "-" + stars + "]";
+                }
                 return "[" + customText + "-" + stars + "]";
             } else {
                 return "[" + displayRarity + "级稀有度-" + stars + "]";
