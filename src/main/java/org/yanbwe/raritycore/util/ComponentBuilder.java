@@ -119,7 +119,11 @@ public class ComponentBuilder {
         String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(rarity);
         if (customText != null && !customText.isEmpty()) {
             String stars = getStars(rarity);
-            return customText + stars;
+            // $前缀表示翻译键
+            String displayText = customText.startsWith("$") && customText.length() > 1
+                ? net.minecraft.network.chat.Component.translatable(customText.substring(1)).getString()
+                : customText;
+            return displayText + stars;
         } else {
             String localizedSuffix = net.minecraft.network.chat.Component.translatable("rarity.core.unusual.tips").getString();
             String stars = getStars(rarity);

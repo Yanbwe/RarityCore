@@ -201,7 +201,11 @@ public class RarityRegistry {
             
             if (customText != null && !customText.isEmpty()) {
                 // 使用自定义文本,保持与标准格式一致:[自定义文本] <星星>
-                return "[" + customText + "] " + stars;
+                // $前缀表示翻译键
+                String displayText = customText.startsWith("$") && customText.length() > 1
+                    ? net.minecraft.network.chat.Component.translatable(customText.substring(1)).getString()
+                    : customText;
+                return "[" + displayText + "] " + stars;
             } else {
                 // 使用默认格式,使用本地化文本:[xx级稀有度] <星星>
                 String localizedSuffix = net.minecraft.network.chat.Component.translatable("rarity.core.unusual.tips").getString();
