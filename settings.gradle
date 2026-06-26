@@ -8,3 +8,10 @@ pluginManagement {
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
+
+rootProject.name = 'raritycore'
+
+include 'common', 'v26_1', 'v26_2'
+
+project(':v26_1').projectDir = file('26.1')
+project(':v26_2').projectDir = file('26.2')

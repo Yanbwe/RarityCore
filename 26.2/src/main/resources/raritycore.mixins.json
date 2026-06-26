@@ -1,0 +1,27 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "org.yanbwe.raritycore.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "raritycore.refmap.json",
+  "mixins": [
+    "ItemStackMixin",
+    "ShapedRecipeAccessor",
+    "ShapelessRecipeAccessor",
+    "SingleItemRecipeAccessor",
+    "SmithingTransformRecipeAccessor"
+  ],
+  "client": [
+    "AbstractContainerScreenAccessor",
+    "AbstractContainerScreenMixin",
+    "GuiGraphicsMixin",
+    "GuiMixin",
+    "refinedstorage.BaseScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

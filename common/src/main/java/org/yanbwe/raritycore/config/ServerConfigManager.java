@@ -1,0 +1,220 @@
+package org.yanbwe.raritycore.config;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.yanbwe.raritycore.util.RarityConstants;
+
+import java.io.BufferedReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+/**
+ * 服务端配置管理器
+ * 管理影响服务端行为的配置选项
+ */
+public class ServerConfigManager {
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerConfigManager.class);
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    
+    // 服务端配置
+    private static boolean checkVanillaRarity = RarityConstants.DEFAULT_CHECK_VANILLA_RARITY; // 是否检查原版稀有度
+    private static boolean enableGetRarityWarning = RarityConstants.DEFAULT_ENABLE_GET_RARITY_WARNING; // 是否启用 getRarity() 可用性警告
+    private static boolean enableComponentRarityControl = RarityConstants.DEFAULT_ENABLE_COMPONENT_RARITY_CONTROL; // 是否启用基于 Data Component 的稀有度控制
+    
+    // 配置文件路径
+    private static final Path CONFIG_DIR = Paths.get(RarityConstants.CONFIG_DIR_PARENT).resolve(RarityConstants.CONFIG_DIR_NAME);
+    private static final Path SERVER_CONFIG_FILE = CONFIG_DIR.resolve(RarityConstants.SERVER_CONFIG_FILE_NAME);
+    
+    /**
+     * 获取服务端配置路径
+     */
+    public static Path getServerConfigPath() {
+        return SERVER_CONFIG_FILE;
+    }
+    
+    /**
+     * 初始化服务端配置
+     */
+    public static void initializeServerConfigs() {
+        try {
+            // 确保配置目录存在
+            Files.createDirectories(CONFIG_DIR);
+        } catch (Exception e) {
+            LOGGER.error("Cannot create config directory: {}", CONFIG_DIR, e);
+            return;
+        }
+        
+        // 加载服务端配置
+        loadServerConfig();
+    }
+    
+    /**
+     * 加载服务端配置
+     */
+    public static void loadServerConfig() {
+        // 验证并更新配置文件
+        JsonObject defaultConfig = ConfigValidator.createDefaultServerConfig();
+        ConfigValidator.validateConfig(SERVER_CONFIG_FILE, defaultConfig, "server");
+        
+        // 如果配置文件不存在,则创建一个默认的
+        if (!Files.exists(SERVER_CONFIG_FILE)) {
+            createDefaultServerConfig();
+        }
+
+        // 读取并加载配置文件
+        loadServerConfigFromFile();
+    }
+    
+    /**
+     * 从文件加载服务端配置
+     */
+    private static void loadServerConfigFromFile() {
+        try (BufferedReader reader = Files.newBufferedReader(SERVER_CONFIG_FILE)) {
+            JsonObject jsonObject = GSON.fromJson(reader, JsonObject.class);
+            
+            if (jsonObject != null) {
+                // 读取原版稀有度检查设置
+                if (jsonObject.has("checkVanillaRarity")) {
+                    checkVanillaRarity = jsonObject.get("checkVanillaRarity").getAsBoolean();
+                } else {
+                    checkVanillaRarity = RarityConstants.DEFAULT_CHECK_VANILLA_RARITY;
+                }
+                
+                // 读取 getRarity 警告开关设置
+                if (jsonObject.has("enableGetRarityWarning")) {
+                    enableGetRarityWarning = jsonObject.get("enableGetRarityWarning").getAsBoolean();
+                } else {
+                    enableGetRarityWarning = RarityConstants.DEFAULT_ENABLE_GET_RARITY_WARNING;
+                }
+                
+                // 读取 Component 稀有度控制开关设置
+                if (jsonObject.has("enableComponentRarityControl")) {
+                    enableComponentRarityControl = jsonObject.get("enableComponentRarityControl").getAsBoolean();
+                } else {
+                    enableComponentRarityControl = RarityConstants.DEFAULT_ENABLE_COMPONENT_RARITY_CONTROL;
+                }
+                
+                LOGGER.info("Server config loaded successfully: checkVanillaRarity={}, enableGetRarityWarning={}, enableComponentRarityControl={}", 
+                    checkVanillaRarity, enableGetRarityWarning, enableComponentRarityControl);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error loading server config file, using default config: {}", SERVER_CONFIG_FILE, e);
+            // 出错时使用默认值
+            checkVanillaRarity = RarityConstants.DEFAULT_CHECK_VANILLA_RARITY;
+            enableGetRarityWarning = RarityConstants.DEFAULT_ENABLE_GET_RARITY_WARNING;
+            enableComponentRarityControl = RarityConstants.DEFAULT_ENABLE_COMPONENT_RARITY_CONTROL;
+            // 重新创建配置文件以恢复默认设置
+            createDefaultServerConfig();
+        }
+    }
+    
+    /**
+     * 创建默认服务端配置文件
+     */
+    private static void createDefaultServerConfig() {
+        // 创建默认配置对象
+        JsonObject configObject = ConfigValidator.createDefaultServerConfig();
+        
+        // 写入默认配置文件
+        try {
+            try (FileWriter writer = new FileWriter(SERVER_CONFIG_FILE.toString())) {
+                GSON.toJson(configObject, writer);
+                LOGGER.info("Created default server config file: {}", SERVER_CONFIG_FILE);
+            }
+        } catch (IOException e) {
+            LOGGER.error("Cannot create default server config file: {}", SERVER_CONFIG_FILE, e);
+        }
+    }
+    
+    /**
+     * 保存服务端配置到文件
+     */
+    public static void saveServerConfig() {
+        // 创建配置对象
+        JsonObject configObject = new JsonObject();
+        configObject.addProperty("checkVanillaRarity", checkVanillaRarity);
+        configObject.addProperty("enableGetRarityWarning", enableGetRarityWarning);
+        configObject.addProperty("enableComponentRarityControl", enableComponentRarityControl);
+        
+        // 写入配置文件
+        try {
+            try (FileWriter writer = new FileWriter(SERVER_CONFIG_FILE.toString())) {
+                GSON.toJson(configObject, writer);
+                LOGGER.info("Server config saved: checkVanillaRarity={}, enableGetRarityWarning={}, enableComponentRarityControl={}", 
+                    checkVanillaRarity, enableGetRarityWarning, enableComponentRarityControl);
+            }
+        } catch (IOException e) {
+            LOGGER.error("Cannot save server config file: {}", SERVER_CONFIG_FILE, e);
+        }
+    }
+    
+    /**
+     * 获取是否检查原版稀有度
+     */
+    public static boolean isCheckVanillaRarity() {
+        return checkVanillaRarity;
+    }
+    
+    /**
+     * 设置是否检查原版稀有度
+     */
+    public static void setCheckVanillaRarity(boolean check) {
+        if (checkVanillaRarity != check) {
+            checkVanillaRarity = check;
+            // 通知相关系统配置已变更
+            notifyConfigChange();
+        }
+    }
+    
+    /**
+     * 获取是否启用 getRarity() 可用性警告
+     */
+    public static boolean isEnableGetRarityWarning() {
+        return enableGetRarityWarning;
+    }
+    
+    /**
+     * 设置是否启用 getRarity() 可用性警告
+     */
+    public static void setEnableGetRarityWarning(boolean enable) {
+        if (enableGetRarityWarning != enable) {
+            enableGetRarityWarning = enable;
+            // 通知相关系统配置已变更
+            notifyConfigChange();
+        }
+    }
+    
+    /**
+     * 获取是否启用基于 Data Component 的稀有度控制
+     */
+    public static boolean isEnableComponentRarityControl() {
+        return enableComponentRarityControl;
+    }
+    
+    /**
+     * 设置是否启用基于 Data Component 的稀有度控制
+     */
+    public static void setEnableComponentRarityControl(boolean enable) {
+        if (enableComponentRarityControl != enable) {
+            enableComponentRarityControl = enable;
+            // 通知相关系统配置已变更
+            notifyConfigChange();
+        }
+    }
+
+    
+    /**
+     * 通知配置变更
+     */
+    private static void notifyConfigChange() {
+        // 简单的日志记录,实际的重新加载将在下次数据加载时发生
+        LOGGER.info("Server configuration changed, will apply on next data reload");
+    }
+}
