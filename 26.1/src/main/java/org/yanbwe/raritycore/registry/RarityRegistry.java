@@ -166,20 +166,20 @@ public class RarityRegistry {
     }
     
     /**
-     * 获取物品的完整稀有度工具提示字符串(支持本地化)
+     * 获取物品栈的完整稀有度工具提示字符串(支持本地化,支持物品数据匹配)
      * 返回格式示例:
      * - 普通物品:"[普通] ⭐" (中文) 或 "[Common] ⭐" (英文)
      * - 高级物品:"[5级稀有度-⭐⭐⭐⭐⭐]"
-     * @param item 要获取工具提示的物品
+     * @param itemStack 要获取工具提示的物品栈
      * @return 本地化的稀有度工具提示字符串
      */
-    public static @NotNull String getLocalizedRarityTooltip(@Nullable Item item) {
-        if (item == null) {
+    public static @NotNull String getLocalizedRarityTooltip(@Nullable ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty()) {
             return "[普通]"; // 默认返回普通稀有度
         }
         
-        // 获取物品稀有度
-        Integer rarity = getRarity(item);
+        // 获取物品栈稀有度(支持 NBT/组件数据匹配)
+        Integer rarity = getRarity(itemStack);
         if (rarity == null) {
             rarity = RarityConstants.RARITY_COMMON;
         }
@@ -500,8 +500,59 @@ public class RarityRegistry {
     public static int getPendingChangeCount() {
         return SyncManager.getPendingChangeCount();
     }
-    
 
-    
+    // ==================== Tag 稀有度（公开 API） ====================
 
+    /**
+     * 获取物品匹配的 Tag 规则最高稀有度。
+     * 遍历 TagRarity.json 中按稀有度降序排列的规则列表，
+     * 找到第一个匹配的 Tag 即返回对应的稀有度等级。
+     *
+     * @param item 要查询的物品
+     * @return 稀有度等级，无匹配时返回 null
+     */
+    public static Integer getTagRarity(@Nullable Item item) {
+        if (item == null) return null;
+        return checkTagRarity(new ItemStack(item));
+    }
+
+    // ==================== 配置检查 ====================
+
+    /**
+     * 检查物品是否有已配置的稀有度。
+     * 查找范围：手动配置 (ITEM_RARITY_MAP) 和自动计算配置 (AUTO_RARITY_MAP)。
+     *
+     * @param item 要检查的物品
+     * @return 有配置返回 true
+     */
+    public static boolean hasConfiguredRarity(@Nullable Item item) {
+        if (item == null) return false;
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+        if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) return false;
+        return ITEM_RARITY_MAP.containsKey(itemId) || AUTO_RARITY_MAP.containsKey(itemId);
+    }
+
+    // ==================== 健康检查 ====================
+
+    /**
+     * 清理 ITEM_RARITY_MAP 中引用无效物品 ID 的条目。
+     *
+     * @return 被移除的无效条目数量
+     */
+    public static int pruneInvalidEntries() {
+        int removedCount = 0;
+        for (Identifier itemId : ITEM_RARITY_MAP.keySet()) {
+            if (!BuiltInRegistries.ITEM.containsKey(itemId)) {
+                ITEM_RARITY_MAP.remove(itemId);
+                removedCount++;
+            }
+        }
+        if (removedCount > 0) {
+            RarityCore.LOGGER.info(
+                "从 ITEM_RARITY_MAP 中清理了 {} 个无效条目 (剩余 {} 个)",
+                removedCount, ITEM_RARITY_MAP.size()
+            );
+        }
+        return removedCount;
+    }
 }
