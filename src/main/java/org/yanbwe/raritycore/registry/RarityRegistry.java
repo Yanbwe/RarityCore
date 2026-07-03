@@ -208,20 +208,20 @@ public class RarityRegistry {
     }
     
     /**
-     * 获取物品的完整稀有度工具提示字符串(支持本地化)
+     * 获取物品栈的完整稀有度工具提示字符串(支持本地化,支持物品数据匹配)
      * 返回格式示例:
      * - 普通物品:"[普通] ⭐" (中文) 或 "[Common] ⭐" (英文)
      * - 高级物品:"[5级稀有度] ⭐⭐⭐⭐⭐"
-     * @param item 要获取工具提示的物品
+     * @param itemStack 要获取工具提示的物品栈
      * @return 本地化的稀有度工具提示字符串
      */
-    public static @NotNull String getLocalizedRarityTooltip(@Nullable Item item) {
-        if (item == null) {
+    public static @NotNull String getLocalizedRarityTooltip(@Nullable ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty()) {
             return "[普通]"; // 默认返回普通稀有度
         }
         
-        // 获取物品稀有度
-        Integer rarity = getRarity(item);
+        // 获取物品栈稀有度(支持 NBT/组件数据匹配)
+        Integer rarity = getRarity(itemStack);
         if (rarity == null) {
             rarity = RarityConstants.RARITY_COMMON;
         }
@@ -578,6 +578,19 @@ public class RarityRegistry {
         }
 
         return null;
+    }
+
+    /**
+     * 获取物品匹配的 Tag 规则最高稀有度。
+     * 遍历 {@link TagRarityConfig} 中按稀有度降序排列的规则列表，
+     * 找到第一个匹配的 Tag 即返回对应的稀有度等级。
+     *
+     * @param item 要查询的物品
+     * @return 稀有度等级，无匹配时返回 null
+     */
+    public static Integer getTagRarity(@Nullable Item item) {
+        if (item == null) return null;
+        return checkTagRarity(new ItemStack(item));
     }
 
     /**

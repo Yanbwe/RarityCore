@@ -31,8 +31,21 @@ import org.yanbwe.raritycore.api.RarityCoreAPI;
 public class RarityCoreKubeJSPlugin extends KubeJSPlugin {
 
     @Override
+    public void init() {
+        // 初始化 NeoForge → KubeJS 事件桥接
+        RarityCoreKubeJSEvents.init();
+    }
+
+    @Override
+    public void registerEvents() {
+        // 向 KubeJS 注册 RarityCoreEvents 事件组
+        RarityCoreKubeJSEvents.GROUP.register();
+    }
+
+    @Override
     public void registerBindings(BindingsEvent event) {
-        // 将 RarityCoreAPI 的 public static 方法和常量直接暴露为 raritycore 绑定
+        // 双绑定：支持 raritycore（小写 modid，推荐）和 RarityCore（文档兼容）
         event.add("raritycore", RarityCoreAPI.class);
+        event.add("RarityCore", RarityCoreAPI.class);
     }
 }
