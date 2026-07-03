@@ -2,6 +2,7 @@ package org.yanbwe.raritycore.compat;
 
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter;
+import org.yanbwe.raritycore.compat.colortooltips.ColorTooltipsCompat;
 import org.yanbwe.raritycore.compat.refinedstorage.RefinedStorageCompat;
 import org.yanbwe.raritycore.compat.ironsspells.IronSpellsAdapter;
 
@@ -60,6 +61,13 @@ public class CompatibilityManager {
             RarityCore.LOGGER.debug("Iron's Spells not found, skipping compatibility adapter");
         } catch (Exception e) {
             RarityCore.LOGGER.error("Failed to initialize Iron's Spells compatibility adapter", e);
+        }
+
+        // 初始化 colortooltips 适配器
+        try {
+            ColorTooltipsCompat.init();
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Failed to initialize colortooltips compatibility adapter", e);
         }
         
         // TODO: 在此处添加其他模组的兼容性检测和初始化

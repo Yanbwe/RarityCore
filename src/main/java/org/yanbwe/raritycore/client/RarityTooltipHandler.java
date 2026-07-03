@@ -17,6 +17,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
+import org.yanbwe.raritycore.compat.colortooltips.ColorTooltipsCompat;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.RarityClientConfig;
 import org.yanbwe.raritycore.event.RarityTooltipEvent;
@@ -100,6 +101,11 @@ public class RarityTooltipHandler {
         try {
             // 检查是否启用工具提示插入
             if (!ClientConfigManager.isEnableTooltipInsert()) {
+                return;
+            }
+
+            // 检测到 colortooltips 模组时，由其接管工具提示渲染，本模组跳过插入
+            if (ColorTooltipsCompat.isLoaded()) {
                 return;
             }
 
