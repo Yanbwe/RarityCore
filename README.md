@@ -39,7 +39,8 @@ Whether you're a casual player or a modpack author, RarityCore makes your game w
 
 ## 🔌 Developer API
 
-RarityCore provides a simple Java API for other mods to call directly.
+RarityCore provides a simple Java API for other mods to call directly.  
+https://yanbwe.github.io/Yanbwe-Wiki/en/raritycore/
 
 ## 📜 License
 
