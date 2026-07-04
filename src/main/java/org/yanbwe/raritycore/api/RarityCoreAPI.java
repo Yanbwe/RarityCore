@@ -148,6 +148,17 @@ public final class RarityCoreAPI {
     }
 
     /**
+     * 获取物品的本地化稀有度工具提示字符串（使用默认 ItemStack）。
+     * 简便方法，不需要手动创建 ItemStack。
+     *
+     * @param item 要获取工具提示的物品
+     * @return 本地化的稀有度工具提示
+     */
+    public static String getLocalizedTooltip(@NotNull Item item) {
+        return RarityRegistry.getLocalizedRarityTooltip(new ItemStack(item));
+    }
+
+    /**
      * 获取所有已注册的稀有度映射（只读视图）。
      *
      * @return 物品 ID 到稀有度等级的映射
