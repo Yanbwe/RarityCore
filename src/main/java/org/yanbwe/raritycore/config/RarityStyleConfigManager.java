@@ -427,6 +427,75 @@ public class RarityStyleConfigManager {
         return getTooltip(rarity).content;
     }
 
+    /**
+     * 依据 content 模板构建无样式工具提示文本（供 API 与渲染共用）
+     * 按 @{level}/@{star} 占位符替换，并对模板中的 $(key) 嵌入键做翻译解析
+     */
+    public static String buildTooltipText(int rarity) {
+        String content = getTooltip(rarity).content;
+        String levelText = buildLevelText(rarity);
+        String starText = org.yanbwe.raritycore.util.ComponentBuilder.getStars(rarity);
+        final String levelToken = "@{level}";
+        final String starToken = "@{star}";
+        int idxLevel = content.indexOf(levelToken);
+        int idxStar = content.indexOf(starToken);
+        if (idxLevel < 0 && idxStar < 0) {
+            return org.yanbwe.raritycore.util.StringResolver.resolveEmbeddedKeys(content);
+        }
+        StringBuilder sb = new StringBuilder();
+        int cursor = 0;
+        while (cursor < content.length()) {
+            int nextLevel = content.indexOf(levelToken, cursor);
+            int nextStar = content.indexOf(starToken, cursor);
+            int next = content.length();
+            boolean isLevel = false;
+            boolean isStar = false;
+            if (nextLevel >= 0) {
+                next = nextLevel;
+                isLevel = true;
+            }
+            if (nextStar >= 0 && nextStar < next) {
+                next = nextStar;
+                isLevel = false;
+                isStar = true;
+            }
+            if (next == cursor) {
+                if (isLevel) {
+                    sb.append(levelText);
+                    cursor += levelToken.length();
+                } else {
+                    sb.append(starText);
+                    cursor += starToken.length();
+                }
+                continue;
+            }
+            sb.append(org.yanbwe.raritycore.util.StringResolver.resolveEmbeddedKeys(content.substring(cursor, next)));
+            cursor = next;
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 构建 level 段文本（翻译键解析 + 缺失回退），与渲染路径行为一致
+     */
+    private static String buildLevelText(int rarity) {
+        String keyTemplate = getLevelTranslationKey(rarity);
+        String key = keyTemplate.replace("{level}", String.valueOf(rarity));
+        if (org.yanbwe.raritycore.util.StringResolver.isTranslationKey(key)) {
+            String realKey = org.yanbwe.raritycore.util.StringResolver.extractKey(key);
+            if (org.yanbwe.raritycore.util.StringResolver.isKeyMissing(realKey)) {
+                String fb = getLevelFallbackKey(rarity).replace("{level}", String.valueOf(rarity));
+                if (org.yanbwe.raritycore.util.StringResolver.isTranslationKey(fb)) {
+                    return org.yanbwe.raritycore.util.StringResolver.translateAsString(
+                            org.yanbwe.raritycore.util.StringResolver.extractKey(fb));
+                }
+                return org.yanbwe.raritycore.util.StringResolver.resolveEmbeddedKeys(fb);
+            }
+            return org.yanbwe.raritycore.util.StringResolver.translateAsString(realKey);
+        }
+        return org.yanbwe.raritycore.util.StringResolver.resolveEmbeddedKeys(key);
+    }
+
     public static StarSegmentConfig getStarConfig(int rarity) {
         return getTooltip(rarity).star;
     }

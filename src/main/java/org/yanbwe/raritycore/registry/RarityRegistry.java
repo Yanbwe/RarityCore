@@ -114,46 +114,24 @@ public class RarityRegistry {
     @OnlyIn(Dist.CLIENT)
     public static @NotNull String getLocalizedRarityTooltip(@Nullable Item item) {
         if (item == null) {
-            return "[普通]";
+            return org.yanbwe.raritycore.config.RarityStyleConfigManager.buildTooltipText(RarityConstants.MIN_RARITY);
         }
         Integer rarity = getRarity(item);
         if (rarity == null) rarity = RarityConstants.MIN_RARITY;
-        return buildLocalizedRarityTooltip(rarity);
+        return org.yanbwe.raritycore.config.RarityStyleConfigManager.buildTooltipText(
+                org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rarity));
     }
 
     // 获取物品栈的完整稀有度工具提示字符串（支持神化 NBT 稀有度检测，仅客户端）
     @OnlyIn(Dist.CLIENT)
     public static @NotNull String getLocalizedRarityTooltip(@Nullable ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) {
-            return "[普通]";
+            return org.yanbwe.raritycore.config.RarityStyleConfigManager.buildTooltipText(RarityConstants.MIN_RARITY);
         }
         Integer rarity = getRarity(itemStack);
         if (rarity == null) rarity = RarityConstants.MIN_RARITY;
-        return buildLocalizedRarityTooltip(rarity);
-    }
-
-    // 根据稀有度值构建本地化工具提示字符串（内部公用方法，仅客户端）
-    @OnlyIn(Dist.CLIENT)
-    private static @NotNull String buildLocalizedRarityTooltip(int rawRarity) {
-        int normalizedRarity = org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rawRarity);
-        String key = org.yanbwe.raritycore.config.RarityStyleConfigManager.getLevelTranslationKey(normalizedRarity)
-            .replace("{level}", String.valueOf(normalizedRarity));
-        String localizedLabel;
-        if (org.yanbwe.raritycore.util.StringResolver.isTranslationKey(key)) {
-            String realKey = org.yanbwe.raritycore.util.StringResolver.extractKey(key);
-            if (org.yanbwe.raritycore.util.StringResolver.isKeyMissing(realKey)) {
-                localizedLabel = net.minecraft.network.chat.Component.translatable(
-                    org.yanbwe.raritycore.util.StringResolver.extractKey(
-                        org.yanbwe.raritycore.config.RarityStyleConfigManager.getLevelFallbackKey(normalizedRarity)
-                            .replace("{level}", String.valueOf(normalizedRarity)))).getString();
-            } else {
-                localizedLabel = net.minecraft.network.chat.Component.translatable(realKey).getString();
-            }
-        } else {
-            localizedLabel = org.yanbwe.raritycore.util.StringResolver.resolveEmbeddedKeys(key);
-        }
-        String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(normalizedRarity);
-        return localizedLabel + " " + stars;
+        return org.yanbwe.raritycore.config.RarityStyleConfigManager.buildTooltipText(
+                org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rarity));
     }
 
 
