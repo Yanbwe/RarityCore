@@ -58,6 +58,10 @@ public class ConfigReloadService {
             net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
                 new org.yanbwe.raritycore.event.RarityConfigReloadEvent.Client(isStartup, source));
 
+            // 发布视觉表现配置重载事件（文件驱动的内部重载）
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+                new org.yanbwe.raritycore.event.RarityStyleReloadEvent(-1, false));
+
             // 2.5 加载 TagRarity 批量分配配置
             TagRarityConfigManager.loadConfig();
                         

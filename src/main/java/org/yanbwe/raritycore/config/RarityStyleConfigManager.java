@@ -483,38 +483,144 @@ public class RarityStyleConfigManager {
         return getBorder(rarity).style;
     }
 
+    /**
+     * 某等级的完整生效视觉表现快照（border/tooltip/star 合并结果）
+     * 便于运行时诊断，不反映写入未保存的缓冲状态
+     */
+    public static StyleSnapshot getStyleSnapshot(int rarity) {
+        BorderConfig b = getBorder(rarity);
+        TooltipConfig t = getTooltip(rarity);
+        return new StyleSnapshot(rarity, b.useTexture, b.style, t.show, t.content,
+                t.colored, t.star.mode, t.star.repeatChar, t.star.custom, t.star.colored,
+                getSpecialRarityText(rarity));
+    }
+
+    // ── 批量写入（防抖） ──
+
+    /** 批量写入进行中的计数器；大于 0 时跳过逐条 saveToFile 与事件发布 */
+    private static int batchDepth = 0;
+
+    /** 批量写入期间被修改的等级集合（含 0 表示全局） */
+    private static final java.util.Set<Integer> batchTouched =
+            java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+
+    /** 开始批量写入，期间 setter 不逐条写盘与发布事件 */
+    public static void beginStyleBatch() {
+        batchDepth++;
+    }
+
+    /** 结束批量写入，统一写盘并发布一次聚合事件 */
+    public static void endStyleBatch() {
+        if (batchDepth <= 0) {
+            return;
+        }
+        batchDepth--;
+        if (batchDepth == 0) {
+            saveToFile();
+            for (Integer r : batchTouched) {
+                notifyStyleChanged(r, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.BORDER_STYLE);
+            }
+            batchTouched.clear();
+        }
+    }
+
+    /**
+     * 以单个数据对象整体写入某等级的视觉表现配置
+     * 未设置的字段（null/未设置）保留现有值
+     */
+    public static void setStyle(StylePatch patch) {
+        if (patch == null) {
+            return;
+        }
+        if (patch.borderUseTexture != null) {
+            setBorderUseTexture(patch.rarity, patch.borderUseTexture);
+        }
+        if (patch.borderStyle != null) {
+            setBorderStyle(patch.rarity, patch.borderStyle);
+        }
+        if (patch.tooltipContent != null) {
+            setTooltipContent(patch.rarity, patch.tooltipContent);
+        }
+        if (patch.starMode != null) {
+            setStarMode(patch.rarity, patch.starMode);
+        }
+        if (patch.starRepeatChar != null) {
+            setStarRepeatChar(patch.rarity, patch.starRepeatChar);
+        }
+        if (patch.specialRarityText != null) {
+            setSpecialRarityText(patch.rarity, patch.specialRarityText);
+        }
+    }
+
+    /** 某等级生效视觉表现的不可变快照 */
+    public static class StyleSnapshot {
+        public final int rarity;
+        public final boolean borderUseTexture;
+        public final int borderStyle;
+        public final boolean tooltipShow;
+        public final String tooltipContent;
+        public final boolean tooltipColored;
+        public final String starMode;
+        public final String starRepeatChar;
+        public final String starCustom;
+        public final boolean starColored;
+        public final String specialRarityText;
+
+        StyleSnapshot(int rarity, boolean borderUseTexture, int borderStyle, boolean tooltipShow,
+                      String tooltipContent, boolean tooltipColored, String starMode,
+                      String starRepeatChar, String starCustom, boolean starColored, String specialRarityText) {
+            this.rarity = rarity;
+            this.borderUseTexture = borderUseTexture;
+            this.borderStyle = borderStyle;
+            this.tooltipShow = tooltipShow;
+            this.tooltipContent = tooltipContent;
+            this.tooltipColored = tooltipColored;
+            this.starMode = starMode;
+            this.starRepeatChar = starRepeatChar;
+            this.starCustom = starCustom;
+            this.starColored = starColored;
+            this.specialRarityText = specialRarityText;
+        }
+    }
+
+    /** 结构化视觉表现写入补丁；null 字段表示保留现有值 */
+    public static class StylePatch {
+        public int rarity;
+        public Boolean borderUseTexture;
+        public Integer borderStyle;
+        public String tooltipContent;
+        public String starMode;
+        public String starRepeatChar;
+        public String specialRarityText;
+    }
+
     // ── 主开关写入 ──
 
     public static void setBorderEnabled(boolean enable) {
         enableBorder = enable;
-        saveToFile();
-        notifyStyleChanged(0, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.BORDER_ENABLED);
+        persistStyleChange(0, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.BORDER_ENABLED);
     }
 
     public static void setTooltipEnabled(boolean enable) {
         enableTooltip = enable;
-        saveToFile();
-        notifyStyleChanged(0, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.TOOLTIP_ENABLED);
+        persistStyleChange(0, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.TOOLTIP_ENABLED);
     }
 
     public static void setTooltipColorEnabled(boolean enable) {
         tooltipColorEnabled = enable;
-        saveToFile();
-        notifyStyleChanged(0, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.TOOLTIP_COLOR_ENABLED);
+        persistStyleChange(0, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.TOOLTIP_COLOR_ENABLED);
     }
 
     // ── 无稀有度回退写入 ──
 
     public static void setNoRaritySkip(boolean skip) {
         defaults.noRarity.skip = skip;
-        saveToFile();
-        notifyStyleChanged(0, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.NO_RARITY_SKIP);
+        persistStyleChange(0, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.NO_RARITY_SKIP);
     }
 
     public static void setNoRarityDefaultRarity(int rarity) {
         defaults.noRarity.defaultRarity = rarity;
-        saveToFile();
-        notifyStyleChanged(0, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.NO_RARITY_DEFAULT_RARITY);
+        persistStyleChange(0, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.NO_RARITY_DEFAULT_RARITY);
     }
 
     // ── 逐级边框写入 ──
@@ -530,8 +636,7 @@ public class RarityStyleConfigManager {
         b.style = base.style;
         b.show = base.show;
         b.fallback = base.fallback;
-        saveToFile();
-        notifyStyleChanged(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.BORDER_USE_TEXTURE);
+        persistStyleChange(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.BORDER_USE_TEXTURE);
     }
 
     public static void setBorderStyle(int rarity, int style) {
@@ -545,8 +650,7 @@ public class RarityStyleConfigManager {
         b.defaultTexture = base.defaultTexture;
         b.show = base.show;
         b.fallback = base.fallback;
-        saveToFile();
-        notifyStyleChanged(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.BORDER_STYLE);
+        persistStyleChange(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.BORDER_STYLE);
     }
 
     // ── 工具提示内容写入 ──
@@ -559,8 +663,7 @@ public class RarityStyleConfigManager {
         copyTooltip(base, t);
         t.content = content;
         t.contentSpecified = true;
-        saveToFile();
-        notifyStyleChanged(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.TOOLTIP_CONTENT);
+        persistStyleChange(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.TOOLTIP_CONTENT);
     }
 
     // ── 星星写入 ──
@@ -571,8 +674,7 @@ public class RarityStyleConfigManager {
         StarSegmentConfig s = o.tooltip.star;
         s.mode = mode;
         s.modeSpecified = true;
-        saveToFile();
-        notifyStyleChanged(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.STAR_MODE);
+        persistStyleChange(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.STAR_MODE);
     }
 
     public static void setStarRepeatChar(int rarity, String repeatChar) {
@@ -581,8 +683,7 @@ public class RarityStyleConfigManager {
         StarSegmentConfig s = o.tooltip.star;
         s.repeatChar = repeatChar;
         s.repeatCharSpecified = true;
-        saveToFile();
-        notifyStyleChanged(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.STAR_REPEAT_CHAR);
+        persistStyleChange(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.STAR_REPEAT_CHAR);
     }
 
     // ── 特殊文本写入 ──
@@ -598,13 +699,22 @@ public class RarityStyleConfigManager {
         }
         SPECIAL_RARITY_TEXTS.clear();
         SPECIAL_RARITY_TEXTS.putAll(defaults.tooltip.specialRarityTexts);
-        saveToFile();
-        notifyStyleChanged(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.SPECIAL_RARITY_TEXT);
+        persistStyleChange(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.SPECIAL_RARITY_TEXT);
     }
 
     private static void notifyStyleChanged(int rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget target) {
         MinecraftForge.EVENT_BUS.post(
             new org.yanbwe.raritycore.event.RarityStyleChangedEvent(rarity, target));
+    }
+
+    /** setter 写入后调用：批量进行中时仅记录变更，否则立即写盘并发布事件 */
+    private static void persistStyleChange(int rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget target) {
+        if (batchDepth > 0) {
+            batchTouched.add(rarity);
+            return;
+        }
+        saveToFile();
+        notifyStyleChanged(rarity, target);
     }
 
     // ── 逐级覆盖辅助 ──

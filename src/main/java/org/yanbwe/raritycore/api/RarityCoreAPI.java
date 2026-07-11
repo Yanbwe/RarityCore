@@ -205,10 +205,17 @@ public final class RarityCoreAPI {
 
     /** 批量注册物品稀有度映射（不逐条同步，注册结束后统一同步一次） */
     public static void registerRarities(@NotNull java.util.Map<Item, Integer> entries) {
+        java.util.Map<ResourceLocation, org.yanbwe.raritycore.event.RarityRegistryChangedEvent.RarityChange> changes =
+                new java.util.HashMap<>();
         for (java.util.Map.Entry<Item, Integer> e : entries.entrySet()) {
+            ResourceLocation id = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(e.getKey());
+            Integer oldR = id != null ? RarityRegistry.getRarity(e.getKey()) : null;
             RarityRegistry.register(e.getKey(), e.getValue(), false);
+            changes.put(id, new org.yanbwe.raritycore.event.RarityRegistryChangedEvent.RarityChange(oldR, e.getValue()));
         }
         RarityRegistry.syncIncrementalChangesToClients();
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+                new org.yanbwe.raritycore.event.RarityRegistryChangedEvent(changes));
     }
 
     // ══════════════════════════════════════════════════════
@@ -230,6 +237,30 @@ public final class RarityCoreAPI {
         return RarityRegistry.getConfiguredRarities();
     }
 
+    /** 返回所有被解析为指定稀有度等级集合中任一等级的物品 */
+    public static java.util.List<net.minecraft.world.item.Item> getItemsByRarities(java.util.Set<Integer> rarities) {
+        return RarityRegistry.getItemsByRarities(rarities);
+    }
+
+    /** 返回所有被解析为指定稀有度等级集合中任一等级的物品 ID */
+    public static java.util.List<ResourceLocation> getItemIdsByRarities(java.util.Set<Integer> rarities) {
+        java.util.List<ResourceLocation> ids = new java.util.ArrayList<>();
+        for (net.minecraft.world.item.Item item : RarityRegistry.getItemsByRarities(rarities)) {
+            ids.add(net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(item));
+        }
+        return ids;
+    }
+
+    /** 返回被解析为指定稀有度等级的物品数量 */
+    public static int getRarityCount(int rarity) {
+        return RarityRegistry.getRarityCount(rarity);
+    }
+
+    /** 返回当前全部已解析稀有度等级的快照（显式配置与自动计算合并） */
+    public static java.util.Map<ResourceLocation, Integer> getAllRarityEntries() {
+        return RarityRegistry.getAllRarityEntries();
+    }
+
     // ══════════════════════════════════════════════════════
     // 配置重载
     // ══════════════════════════════════════════════════════
@@ -237,6 +268,42 @@ public final class RarityCoreAPI {
     /** 触发完整配置重载（命令源为空，视为程序化触发） */
     public static void reloadConfigs() {
         org.yanbwe.raritycore.service.ConfigReloadService.reloadAllConfigs(null, false);
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 视觉表现批量写入与诊断
+    // ══════════════════════════════════════════════════════
+
+    /** 开始批量写入，期间 setter 不逐条写盘与发布事件 */
+    public static void beginStyleBatch() {
+        org.yanbwe.raritycore.config.RarityStyleConfigManager.beginStyleBatch();
+    }
+
+    /** 结束批量写入，统一写盘并发布一次聚合事件 */
+    public static void endStyleBatch() {
+        org.yanbwe.raritycore.config.RarityStyleConfigManager.endStyleBatch();
+    }
+
+    /** 以结构化补丁整体写入某等级视觉表现配置（null 字段保留现有值） */
+    public static void setStyle(org.yanbwe.raritycore.config.RarityStyleConfigManager.StylePatch patch) {
+        org.yanbwe.raritycore.config.RarityStyleConfigManager.setStyle(patch);
+    }
+
+    /**
+     * 校验并标准化稀有度等级
+     * 等级超出 [MIN_RARITY, MAX_RARITY] 时记录告警日志并返回边界值，合法时返回原值
+     */
+    public static int validateRarity(int rarity) {
+        if (rarity < MIN_RARITY || rarity > MAX_RARITY) {
+            org.yanbwe.raritycore.RarityCore.LOGGER.warn("RarityCoreAPI.validateRarity: 稀有度等级 {} 超出范围 [{}, {}]，已钳制", rarity, MIN_RARITY, MAX_RARITY);
+            return RarityValidator.normalizeRarity(rarity);
+        }
+        return rarity;
+    }
+
+    /** 返回某等级生效视觉表现的不可变快照（border/tooltip/star 合并结果） */
+    public static org.yanbwe.raritycore.config.RarityStyleConfigManager.StyleSnapshot getStyleSnapshot(int rarity) {
+        return org.yanbwe.raritycore.config.RarityStyleConfigManager.getStyleSnapshot(rarity);
     }
 
     // ══════════════════════════════════════════════════════
@@ -388,4 +455,36 @@ public final class RarityCoreAPI {
     public static final int MIN_RARITY = RarityConstants.MIN_RARITY;
     public static final int MAX_RARITY = RarityConstants.MAX_RARITY;
     public static final int DEFAULT_RGB_COLOR = RarityColorUtil.DEFAULT_RGB_COLOR;
+
+    /** 正式 API 版本号（仅供联动模组做特性探测，与模组版本解耦） */
+    public static final int API_VERSION = 1400;
+
+    /**
+     * 模组是否可用（类与基础依赖已加载）
+     */
+    public static boolean isAvailable() {
+        return true;
+    }
+
+    /**
+     * 获取模组的版本号（来自 mods.toml 的 version 字段）
+     * @return 版本字符串，获取失败时返回 unknown
+     */
+    public static String getModVersion() {
+        try {
+            return net.minecraftforge.fml.ModList.get()
+                    .getModContainerById(org.yanbwe.raritycore.RarityCore.MODID)
+                    .map(c -> c.getModInfo().getVersion().toString())
+                    .orElse("unknown");
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
+    /**
+     * 获取当前配置版本号（配置重载时递增，用于客户端同步校验）
+     */
+    public static int getConfigVersion() {
+        return org.yanbwe.raritycore.network.SyncManager.getConfigVersion();
+    }
 }

@@ -253,6 +253,50 @@ public interface RarityCoreWrapper {
         return new java.util.ArrayList<>(RarityCoreAPI.getConfiguredRarities());
     }
 
+    @Info("返回匹配任一指定等级的全部物品 ID")
+    static java.util.List<String> getItemsByRarities(java.util.List<Integer> rarities) {
+        java.util.List<String> ids = new java.util.ArrayList<>();
+        java.util.Set<Integer> set = new java.util.HashSet<>(rarities);
+        for (ResourceLocation id : RarityCoreAPI.getItemIdsByRarities(set)) {
+            ids.add(id.toString());
+        }
+        return ids;
+    }
+
+    @Info("返回被解析为指定等级的物品数量")
+    static int getRarityCount(int rarity) {
+        return RarityCoreAPI.getRarityCount(rarity);
+    }
+
+    @Info("返回全部已解析稀有度等级快照 (物品 ID=等级)")
+    static java.util.Map<String, Integer> getAllRarityEntries() {
+        java.util.Map<String, Integer> map = new java.util.HashMap<>();
+        for (java.util.Map.Entry<ResourceLocation, Integer> e : RarityCoreAPI.getAllRarityEntries().entrySet()) {
+            map.put(e.getKey().toString(), e.getValue());
+        }
+        return map;
+    }
+
+    @Info("返回当前配置版本号")
+    static int getConfigVersion() {
+        return RarityCoreAPI.getConfigVersion();
+    }
+
+    @Info("返回模组版本号")
+    static String getModVersion() {
+        return RarityCoreAPI.getModVersion();
+    }
+
+    @Info("返回正式 API 版本号")
+    static int getApiVersion() {
+        return RarityCoreAPI.API_VERSION;
+    }
+
+    @Info("模组是否可用")
+    static boolean isAvailable() {
+        return RarityCoreAPI.isAvailable();
+    }
+
     @Info("稀有度常量")
     static int COMMON() { return RarityCoreAPI.RARITY_COMMON; }
     static int UNCOMMON() { return RarityCoreAPI.RARITY_UNCOMMON; }
