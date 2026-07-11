@@ -9,7 +9,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.config.ClientConfigManager;
-import org.yanbwe.raritycore.config.RarityClientConfigManager;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityConstants;
 
@@ -46,9 +46,9 @@ public class ItemBorderRenderer {
             rarity = RarityRegistry.getRarity(itemStack);
         }
         
-        // 如果仍然没有获取到稀有度,使用默认值
+        // 如果仍然没有获取到稀有度,使用文件配置的默认值
         if (rarity == null) {
-            rarity = RarityConstants.RARITY_COMMON;
+            rarity = RarityStyleConfigManager.getDefaultsNoRarityDefaultRarity();
         }
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度,则不渲染
@@ -58,9 +58,9 @@ public class ItemBorderRenderer {
             return;
         }
         
-        // 检查 RarityClientConfig 中该等级的渲染开关（client.json 总开关已通过）
-        // 注意：使用原始稀有度值，RarityClientConfigManager 内部会处理 >7 等级的回退
-        if (!RarityClientConfigManager.isRendererEnabled(rarity)) {
+        // 检查该等级的渲染开关（全局主开关已通过）
+        // 注意：使用原始稀有度值，RarityStyleConfigManager 内部会处理 >7 等级的回退
+        if (!RarityStyleConfigManager.isLevelRendererEnabled(rarity)) {
             return;
         }
         
@@ -83,8 +83,8 @@ public class ItemBorderRenderer {
      */
     @SuppressWarnings("null")
     private static void renderTextureBorder(GuiGraphics guiGraphics, int rarity, int x, int y) {
-        // 从 RarityClientConfig 获取该等级的纹理路径
-        String texturePath = RarityClientConfigManager.getRarityTexture(rarity);
+        // 从 RarityStyle 获取该等级的纹理路径
+        String texturePath = RarityStyleConfigManager.getBorderTexture(rarity);
         ResourceLocation textureLocation = null;
         
         try {
@@ -116,8 +116,8 @@ public class ItemBorderRenderer {
     }
     
     private static void renderColorBorder(GuiGraphics guiGraphics, int rarity, int x, int y) {
-        // 从 RarityClientConfig 获取该等级的 RGB 颜色
-        int rgbColor = RarityClientConfigManager.getRarityColor(rarity);
+        // 从 RarityStyle 获取该等级的 RGB 颜色
+        int rgbColor = RarityStyleConfigManager.getColor(rarity);
         // 补全 alpha 通道为完全不透明
         int borderColor = 0xFF000000 | rgbColor;
         

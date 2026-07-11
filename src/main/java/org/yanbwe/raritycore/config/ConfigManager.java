@@ -48,14 +48,11 @@ public class ConfigManager {
             return;
         }
         
-        // 初始化星星显示配置（先设默认值，随后 ClientConfigManager 会加载真实配置覆盖）
-        StarDisplayConfigManager.initialize();
-
-        // 初始化客户端配置
+        // 初始化客户端配置（仅缓存系统总开关）
         ClientConfigManager.initialize();
 
-        // 初始化 RarityClientConfig（逐级视觉表现配置）
-        RarityClientConfigManager.initialize();
+        // 初始化 RarityStyle 视觉表现配置（含旧文件处理与迁移）
+        RarityStyleConfigManager.initialize();
 
         // 初始化 TagRarity 批量分配
         TagRarityConfigManager.initialize();

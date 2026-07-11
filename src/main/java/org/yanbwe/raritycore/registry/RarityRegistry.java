@@ -213,9 +213,12 @@ public class RarityRegistry {
         
         if (isSpecialRarity) {
             String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(displayRarity);
-            String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(displayRarity);
+            String customText = org.yanbwe.raritycore.config.RarityStyleConfigManager.getSpecialRarityText(displayRarity);
             if (customText != null && !customText.isEmpty()) {
-                if (customText.startsWith("$") && customText.length() > 1) {
+                if (customText.startsWith("$(") && customText.endsWith(")")) {
+                    String translated = net.minecraft.network.chat.Component.translatable(customText.substring(2, customText.length() - 1)).getString();
+                    return "[" + translated + "-" + stars + "]";
+                } else if (customText.startsWith("$") && customText.length() > 1) {
                     String translated = net.minecraft.network.chat.Component.translatable(customText.substring(1)).getString();
                     return "[" + translated + "-" + stars + "]";
                 }
@@ -224,34 +227,22 @@ public class RarityRegistry {
                 return "[" + displayRarity + "级稀有度-" + stars + "]";
             }
         } else {
-            String rarityKey;
-            switch (normalizedRarity) {
-                case RarityConstants.RARITY_COMMON:
-                    rarityKey = "rarity.core.common";
-                    break;
-                case RarityConstants.RARITY_UNCOMMON:
-                    rarityKey = "rarity.core.uncommon";
-                    break;
-                case RarityConstants.RARITY_RARE:
-                    rarityKey = "rarity.core.rare";
-                    break;
-                case RarityConstants.RARITY_EPIC:
-                    rarityKey = "rarity.core.epic";
-                    break;
-                case RarityConstants.RARITY_LEGENDARY:
-                    rarityKey = "rarity.core.legendary";
-                    break;
-                case RarityConstants.RARITY_MYTHICAL:
-                    rarityKey = "rarity.core.mythical";
-                    break;
-                case RarityConstants.RARITY_UNIQUE:
-                    rarityKey = "rarity.core.unique";
-                    break;
-                default:
-                    rarityKey = "rarity.core.common";
-                    break;
+            String key = org.yanbwe.raritycore.config.RarityStyleConfigManager.getLevelTranslationKey(normalizedRarity)
+                .replace("{level}", String.valueOf(normalizedRarity));
+            String localizedLabel;
+            if (org.yanbwe.raritycore.util.StringResolver.isTranslationKey(key)) {
+                String realKey = org.yanbwe.raritycore.util.StringResolver.extractKey(key);
+                if (org.yanbwe.raritycore.util.StringResolver.isKeyMissing(realKey)) {
+                    localizedLabel = net.minecraft.network.chat.Component.translatable(
+                        org.yanbwe.raritycore.util.StringResolver.extractKey(
+                            org.yanbwe.raritycore.config.RarityStyleConfigManager.getLevelFallbackKey(normalizedRarity)
+                                .replace("{level}", String.valueOf(normalizedRarity)))).getString();
+                } else {
+                    localizedLabel = net.minecraft.network.chat.Component.translatable(realKey).getString();
+                }
+            } else {
+                localizedLabel = org.yanbwe.raritycore.util.StringResolver.resolveEmbeddedKeys(key);
             }
-            String localizedLabel = net.minecraft.network.chat.Component.translatable(rarityKey).getString();
             String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(normalizedRarity);
             return localizedLabel + " " + stars;
         }
@@ -265,19 +256,19 @@ public class RarityRegistry {
      */
     public static @NotNull Integer getRarity(@Nullable ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) {
-            return 1;
+            return getNoRarityDefault();
         }
-        
+
         Item item = itemStack.getItem();
         ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
         if (itemId == null || itemId.equals(ForgeRegistries.ITEMS.getDefaultKey())) {
-            return 1;
+            return getNoRarityDefault();
         }
-        
+
         // 使用统一的稀有度获取逻辑
         return getRarityInternal(itemId, itemStack, item);
     }
-    
+
     /**
      * 获取物品的稀有度等级
      * 优先级顺序:NBT匹配 > 神化模组稀有度 > 本模组稀有度(配置和数据包) > 原版稀有度映射
@@ -291,7 +282,18 @@ public class RarityRegistry {
                 return getRarityFromItemId(itemId, item);
             }
         }
-        return 1;
+        return getNoRarityDefault();
+    }
+
+    /**
+     * 获取未配置稀有度物品的默认等级（来自 RarityStyle 配置 defaults.noRarity.defaultRarity）
+     */
+    private static int getNoRarityDefault() {
+        try {
+            return org.yanbwe.raritycore.config.RarityStyleConfigManager.getDefaultsNoRarityDefaultRarity();
+        } catch (Exception ignored) {
+            return 1;
+        }
     }
 
     private static @NotNull Integer getRarityFromItemId(ResourceLocation itemId, Item item) {
@@ -320,7 +322,7 @@ public class RarityRegistry {
             }
         }
 
-        return 1;
+        return getNoRarityDefault();
     }
     
     /**
@@ -409,7 +411,7 @@ public class RarityRegistry {
             return fireQueryEvent(itemStack, result, source);
         }
         
-        result = 1;
+        result = getNoRarityDefault();
         return fireQueryEvent(itemStack, result, source);
     }
 

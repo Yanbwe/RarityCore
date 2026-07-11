@@ -9,7 +9,7 @@ import org.yanbwe.raritycore.cache.CacheConfig;
 import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.config.ClientConfigManager;
-import org.yanbwe.raritycore.config.RarityClientConfigManager;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.util.CacheRefreshCoordinator;
 import org.yanbwe.raritycore.util.StarDisplayManager;
 
@@ -25,7 +25,7 @@ public class ClientCommands {
             .then(Commands.literal("reload")
                 .executes(context -> {
                     ClientConfigManager.loadClientConfig();
-                    RarityClientConfigManager.loadConfig();
+                    RarityStyleConfigManager.loadConfig();
                     // 刷新星星显示配置
                     StarDisplayManager.getInstance().reloadConfiguration();
                     // 刷新缓存

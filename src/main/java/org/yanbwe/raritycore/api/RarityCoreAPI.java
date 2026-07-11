@@ -7,7 +7,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.MinecraftForge;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.yanbwe.raritycore.config.RarityClientConfigManager;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.config.TagRarityConfigManager;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
@@ -112,14 +112,14 @@ public final class RarityCoreAPI {
         return RarityColorUtil.getRarityRgbColor(rarity);
     }
 
-    /** 通过 RarityClientConfig 获取逐级配置的颜色 */
+    /** 通过 RarityStyle 获取逐级配置的颜色 */
     public static int getRarityColor(int rarity) {
-        return RarityClientConfigManager.getRarityColor(rarity);
+        return RarityStyleConfigManager.getColor(rarity);
     }
 
-    /** 通过 RarityClientConfig 获取逐级配置的纹理路径 */
+    /** 通过 RarityStyle 获取逐级配置的纹理路径 */
     public static String getRarityTexture(int rarity) {
-        return RarityClientConfigManager.getRarityTexture(rarity);
+        return RarityStyleConfigManager.getBorderTexture(rarity);
     }
 
     /** 解析十六进制颜色字符串 "#RRGGBB" 为 RGB int */
@@ -181,17 +181,17 @@ public final class RarityCoreAPI {
 
     /** 逐级开关：该等级是否渲染边框 */
     public static boolean isLevelRendererEnabled(int rarity) {
-        return RarityClientConfigManager.isRendererEnabled(rarity);
+        return RarityStyleConfigManager.isLevelRendererEnabled(rarity);
     }
 
     /** 逐级开关：该等级是否显示工具提示 */
     public static boolean isLevelTooltipEnabled(int rarity) {
-        return RarityClientConfigManager.isTooltipsEnabled(rarity);
+        return RarityStyleConfigManager.isLevelTooltipEnabled(rarity);
     }
 
     /** 逐级开关：该等级是否变色名称 */
     public static boolean isLevelNameColorEnabled(int rarity) {
-        return RarityClientConfigManager.isNameColorEnabled(rarity);
+        return RarityStyleConfigManager.isLevelNameColorEnabled(rarity);
     }
 
     /** 服务端：是否启用 NBT 稀有度控制 */

@@ -1,9 +1,6 @@
 package org.yanbwe.raritycore.command;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -14,10 +11,6 @@ import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.edit.EditModeManager;
 import org.yanbwe.raritycore.network.SyncManager;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -154,48 +147,8 @@ public class UtilityCommands {
         boolean currentState = ClientConfigManager.isUseTextureBorder();
         boolean newState = !currentState;
         ClientConfigManager.setUseTextureBorder(newState);
-        
-        // 尝试保存到配置文件
-        try {
-            Path configDir = org.yanbwe.raritycore.config.ConfigManager.getConfigDirPath();
-            Files.createDirectories(configDir);
-            
-            Path configFile = ClientConfigManager.getClientConfigPath();
-            
-            // 读取现有配置
-            JsonObject jsonObject;
-            if (Files.exists(configFile)) {
-                String content = Files.readString(configFile);
-                if (!content.trim().isEmpty()) {
-                    try {
-                        jsonObject = JsonParser.parseString(content).getAsJsonObject();
-                    } catch (Exception e) {
-                        RarityCore.LOGGER.warn("Failed to parse config file, will recreate", e);
-                        jsonObject = new JsonObject();
-                    }
-                } else {
-                    jsonObject = new JsonObject();
-                }
-            } else {
-                jsonObject = new JsonObject();
-            }
-            
-            // 更新配置
-            jsonObject.addProperty("useTextureBorder", newState);
-            
-            // 写入配置文件
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(configFile), StandardCharsets.UTF_8)) {
-                gson.toJson(jsonObject, writer);
-            }
-            
-            source.sendSuccess(() -> Component.translatable("rarity.core.texture_border_toggle_success", 
-                newState ? Component.translatable("rarity.core.enabled") : Component.translatable("rarity.core.disabled")).withStyle(ChatFormatting.GREEN), false);
-            return 1;
-        } catch (IOException e) {
-            RarityCore.LOGGER.error("Failed to save client config", e);
-            source.sendSuccess(() -> Component.translatable("rarity.core.texture_border_toggle_error").withStyle(ChatFormatting.RED), false);
-            return 0;
-        }
+        source.sendSuccess(() -> Component.translatable("rarity.core.texture_border_toggle_success",
+            newState ? Component.translatable("rarity.core.enabled") : Component.translatable("rarity.core.disabled")).withStyle(ChatFormatting.GREEN), false);
+        return 1;
     }
 }

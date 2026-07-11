@@ -6,8 +6,8 @@ import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
-import org.yanbwe.raritycore.config.RarityClientConfigManager;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.config.TagRarityConfigManager;
 import org.yanbwe.raritycore.nbtmatching.NbtConfigLoader;
@@ -176,12 +176,12 @@ public class ConfigReloadService {
      */
     private static void handleClientSideConfigs() {
         try {
-            // 重新加载客户端配置
+            // 重新加载客户端配置（缓存系统总开关）
             ClientConfigManager.loadClientConfig();
-            
-            // 重新加载逐级视觉表现配置（RarityClientConfig.json）
-            RarityClientConfigManager.loadConfig();
-            
+
+            // 重新加载 RarityStyle 视觉表现配置
+            RarityStyleConfigManager.loadConfig();
+
             // 通知星星显示管理器重新加载配置
             StarDisplayManager.getInstance().reloadConfiguration();
             

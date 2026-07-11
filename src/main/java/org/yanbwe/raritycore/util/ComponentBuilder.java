@@ -94,17 +94,19 @@ public class ComponentBuilder {
      */
     @Nonnull
     public static MutableComponent buildSpecialRarityComponent(int rarity, ChatFormatting color) {
-        String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(rarity);
+        String customText = org.yanbwe.raritycore.config.RarityStyleConfigManager.getSpecialRarityText(rarity);
 
         MutableComponent rarityTextComponent;
         if (customText != null && !customText.isEmpty()) {
-            if (customText.startsWith("$") && customText.length() > 1) {
+            if (customText.startsWith("$(") && customText.endsWith(")")) {
+                rarityTextComponent = Component.translatable(customText.substring(2, customText.length() - 1)).withStyle(color);
+            } else if (customText.startsWith("$") && customText.length() > 1) {
                 rarityTextComponent = Component.translatable(customText.substring(1)).withStyle(color);
             } else {
                 rarityTextComponent = Component.literal(customText + " ").withStyle(color);
             }
         } else {
-            rarityTextComponent = Component.translatable("rarity.core.special.rarity.prefix", rarity).withStyle(color);
+            rarityTextComponent = Component.translatable("rarity.core.special.rarity.prefix").withStyle(color);
         }
 
         String stars = getStars(rarity);
@@ -122,7 +124,7 @@ public class ComponentBuilder {
      */
     @Nonnull
     public static MutableComponent buildSpecialRarityComponent(int rarity, ChatFormatting color, boolean enableColor) {
-        String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(rarity);
+        String customText = org.yanbwe.raritycore.config.RarityStyleConfigManager.getSpecialRarityText(rarity);
 
         MutableComponent rarityTextComponent;
         if (customText != null && !customText.isEmpty()) {
@@ -138,9 +140,9 @@ public class ComponentBuilder {
             }
         } else {
             if (enableColor) {
-                rarityTextComponent = Component.translatable("rarity.core.special.rarity.prefix", rarity).withStyle(color);
+                rarityTextComponent = Component.translatable("rarity.core.special.rarity.prefix").withStyle(color);
             } else {
-                rarityTextComponent = Component.translatable("rarity.core.special.rarity.prefix", rarity);
+                rarityTextComponent = Component.translatable("rarity.core.special.rarity.prefix");
             }
         }
 
@@ -160,7 +162,7 @@ public class ComponentBuilder {
      */
     @Nonnull
     public static MutableComponent buildSpecialRarityComponent(int rarity, Style colorStyle, boolean enableColor) {
-        String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(rarity);
+        String customText = org.yanbwe.raritycore.config.RarityStyleConfigManager.getSpecialRarityText(rarity);
 
         MutableComponent rarityTextComponent;
         if (customText != null && !customText.isEmpty()) {
@@ -176,9 +178,9 @@ public class ComponentBuilder {
             }
         } else {
             if (enableColor) {
-                rarityTextComponent = Component.translatable("rarity.core.special.rarity.prefix", rarity).withStyle(colorStyle);
+                rarityTextComponent = Component.translatable("rarity.core.special.rarity.prefix").withStyle(colorStyle);
             } else {
-                rarityTextComponent = Component.translatable("rarity.core.special.rarity.prefix", rarity);
+                rarityTextComponent = Component.translatable("rarity.core.special.rarity.prefix");
             }
         }
 
