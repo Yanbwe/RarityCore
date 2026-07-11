@@ -54,6 +54,10 @@ public class ConfigReloadService {
             }
             handleClientSideConfigs();
 
+            // 发布客户端侧配置重载完成事件
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+                new org.yanbwe.raritycore.event.RarityConfigReloadEvent.Client(isStartup, source));
+
             // 2.5 加载 TagRarity 批量分配配置
             TagRarityConfigManager.loadConfig();
                         
@@ -106,7 +110,11 @@ public class ConfigReloadService {
             if (source != null) {
                 sendCompletionMessage(source);
             }
-            
+
+            // 11. 发布服务端配置重载完成事件
+            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+                new org.yanbwe.raritycore.event.RarityConfigReloadEvent.Server(isStartup, source));
+
             RarityCore.LOGGER.info("Config reload process completed");
             
         } catch (Exception e) {

@@ -17,11 +17,11 @@ public class RarityColorUtil {
     /** 默认 RGB 颜色（灰色），用于无效输入的回退 */
     public static final int DEFAULT_RGB_COLOR = 0xCCCCCC;
 
-    /** 外部注入的自定义颜色（来自 RarityClientConfig.json） */
+    /** 外部注入的自定义颜色（来自 RarityStyle.json） */
     private static final Map<Integer, Integer> CUSTOM_COLORS = new ConcurrentHashMap<>();
 
     /**
-     * 注入自定义颜色（由 RarityClientConfigManager 调用）
+     * 注入自定义颜色（由 RarityStyleConfigManager 调用）
      */
     public static void setCustomColor(int rarity, int rgb) {
         CUSTOM_COLORS.put(rarity, rgb);

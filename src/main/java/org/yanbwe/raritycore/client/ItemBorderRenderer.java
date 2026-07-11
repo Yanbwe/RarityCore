@@ -64,8 +64,8 @@ public class ItemBorderRenderer {
             return;
         }
         
-        // 根据配置选择渲染方式
-        if (ClientConfigManager.isUseTextureBorder()) {
+        // 根据逐级配置选择渲染方式
+        if (RarityStyleConfigManager.getBorder(rarity).useTexture) {
             // 使用纹理渲染边框
             renderTextureBorder(guiGraphics, rarity, x, y);
         } else {
@@ -125,7 +125,7 @@ public class ItemBorderRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         
-        if (ClientConfigManager.getItemBorderStyle() == 1) {
+        if (RarityStyleConfigManager.getBorder(rarity).style == 1) {
             // 实心边框 - 50%半透明,16x16大小
             // 通过将alpha值设置为0x80(128/255 ≈ 50%透明度)实现半透明
             int translucentColor = (borderColor & 0x00FFFFFF) | 0x80000000;

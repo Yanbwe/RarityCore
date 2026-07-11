@@ -3,6 +3,7 @@ package org.yanbwe.raritycore.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import net.minecraftforge.common.MinecraftForge;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -111,7 +112,7 @@ public class RarityStyleConfigManager {
      */
     public static class NoRarityConfig {
         public boolean skip = false;
-        public int defaultRarity = 3;
+        public int defaultRarity = 1;
     }
 
     /**
@@ -465,6 +466,188 @@ public class RarityStyleConfigManager {
         return path.replace("{level}", String.valueOf(rarity));
     }
 
+    // ───────────────────────── 公共读写接口 ─────────────────────────
+
+    /** 边框回退纹理（defaults.border.fallback） */
+    public static String getBorderFallback() {
+        return defaults.border.fallback;
+    }
+
+    /** 逐级边框是否使用纹理 */
+    public static boolean isBorderUseTexture(int rarity) {
+        return getBorder(rarity).useTexture;
+    }
+
+    /** 逐级边框样式（1=实心，0=空心） */
+    public static int getBorderStyle(int rarity) {
+        return getBorder(rarity).style;
+    }
+
+    // ── 主开关写入 ──
+
+    public static void setBorderEnabled(boolean enable) {
+        enableBorder = enable;
+        saveToFile();
+        notifyStyleChanged(0, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.BORDER_ENABLED);
+    }
+
+    public static void setTooltipEnabled(boolean enable) {
+        enableTooltip = enable;
+        saveToFile();
+        notifyStyleChanged(0, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.TOOLTIP_ENABLED);
+    }
+
+    public static void setTooltipColorEnabled(boolean enable) {
+        tooltipColorEnabled = enable;
+        saveToFile();
+        notifyStyleChanged(0, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.TOOLTIP_COLOR_ENABLED);
+    }
+
+    // ── 无稀有度回退写入 ──
+
+    public static void setNoRaritySkip(boolean skip) {
+        defaults.noRarity.skip = skip;
+        saveToFile();
+        notifyStyleChanged(0, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.NO_RARITY_SKIP);
+    }
+
+    public static void setNoRarityDefaultRarity(int rarity) {
+        defaults.noRarity.defaultRarity = rarity;
+        saveToFile();
+        notifyStyleChanged(0, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.NO_RARITY_DEFAULT_RARITY);
+    }
+
+    // ── 逐级边框写入 ──
+
+    public static void setBorderUseTexture(int rarity, boolean useTexture) {
+        LevelOverride o = ensureOverride(rarity);
+        o.border = o.border == null ? new BorderConfig() : o.border;
+        BorderConfig b = o.border;
+        BorderConfig base = previousBorder(rarity);
+        b.useTexture = useTexture;
+        b.useTextureSpecified = true;
+        b.defaultTexture = base.defaultTexture;
+        b.style = base.style;
+        b.show = base.show;
+        b.fallback = base.fallback;
+        saveToFile();
+        notifyStyleChanged(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.BORDER_USE_TEXTURE);
+    }
+
+    public static void setBorderStyle(int rarity, int style) {
+        LevelOverride o = ensureOverride(rarity);
+        o.border = o.border == null ? new BorderConfig() : o.border;
+        BorderConfig b = o.border;
+        BorderConfig base = previousBorder(rarity);
+        b.style = style;
+        b.styleSpecified = true;
+        b.useTexture = base.useTexture;
+        b.defaultTexture = base.defaultTexture;
+        b.show = base.show;
+        b.fallback = base.fallback;
+        saveToFile();
+        notifyStyleChanged(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.BORDER_STYLE);
+    }
+
+    // ── 工具提示内容写入 ──
+
+    public static void setTooltipContent(int rarity, String content) {
+        LevelOverride o = ensureOverride(rarity);
+        o.tooltip = o.tooltip == null ? new TooltipConfig() : o.tooltip;
+        TooltipConfig t = o.tooltip;
+        TooltipConfig base = previousTooltip(rarity);
+        copyTooltip(base, t);
+        t.content = content;
+        t.contentSpecified = true;
+        saveToFile();
+        notifyStyleChanged(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.TOOLTIP_CONTENT);
+    }
+
+    // ── 星星写入 ──
+
+    public static void setStarMode(int rarity, String mode) {
+        LevelOverride o = ensureOverride(rarity);
+        o.tooltip = o.tooltip == null ? new TooltipConfig() : o.tooltip;
+        StarSegmentConfig s = o.tooltip.star;
+        s.mode = mode;
+        s.modeSpecified = true;
+        saveToFile();
+        notifyStyleChanged(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.STAR_MODE);
+    }
+
+    public static void setStarRepeatChar(int rarity, String repeatChar) {
+        LevelOverride o = ensureOverride(rarity);
+        o.tooltip = o.tooltip == null ? new TooltipConfig() : o.tooltip;
+        StarSegmentConfig s = o.tooltip.star;
+        s.repeatChar = repeatChar;
+        s.repeatCharSpecified = true;
+        saveToFile();
+        notifyStyleChanged(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.STAR_REPEAT_CHAR);
+    }
+
+    // ── 特殊文本写入 ──
+
+    public static void setSpecialRarityText(int rarity, String text) {
+        if (defaults.tooltip.specialRarityTexts == null) {
+            defaults.tooltip.specialRarityTexts = new HashMap<>();
+        }
+        if (text == null || text.isEmpty()) {
+            defaults.tooltip.specialRarityTexts.remove(rarity);
+        } else {
+            defaults.tooltip.specialRarityTexts.put(rarity, text);
+        }
+        SPECIAL_RARITY_TEXTS.clear();
+        SPECIAL_RARITY_TEXTS.putAll(defaults.tooltip.specialRarityTexts);
+        saveToFile();
+        notifyStyleChanged(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.SPECIAL_RARITY_TEXT);
+    }
+
+    private static void notifyStyleChanged(int rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget target) {
+        MinecraftForge.EVENT_BUS.post(
+            new org.yanbwe.raritycore.event.RarityStyleChangedEvent(rarity, target));
+    }
+
+    // ── 逐级覆盖辅助 ──
+
+    private static LevelOverride ensureOverride(int rarity) {
+        LevelOverride o = RARITIES.get(rarity);
+        if (o == null) {
+            o = new LevelOverride();
+            RARITIES.put(rarity, o);
+        }
+        return o;
+    }
+
+    private static BorderConfig previousBorder(int rarity) {
+        BorderConfig base = new BorderConfig();
+        base.useTexture = defaults.border.useTexture;
+        base.defaultTexture = defaults.border.defaultTexture;
+        base.style = defaults.border.style;
+        base.show = defaults.border.show;
+        base.fallback = defaults.border.fallback;
+        for (int l = 1; l < rarity; l++) {
+            LevelOverride o = RARITIES.get(l);
+            if (o != null && o.border != null) {
+                if (o.border.useTextureSpecified) base.useTexture = o.border.useTexture;
+                if (o.border.defaultTextureSpecified) base.defaultTexture = o.border.defaultTexture;
+                if (o.border.styleSpecified) base.style = o.border.style;
+                if (o.border.showSpecified) base.show = o.border.show;
+                if (o.border.fallbackSpecified) base.fallback = o.border.fallback;
+            }
+        }
+        return base;
+    }
+
+    private static TooltipConfig previousTooltip(int rarity) {
+        TooltipConfig base = new TooltipConfig();
+        copyTooltip(defaults.tooltip, base);
+        for (int l = 1; l < rarity; l++) {
+            LevelOverride o = RARITIES.get(l);
+            if (o != null && o.tooltip != null) mergeTooltip(o.tooltip, base);
+        }
+        return base;
+    }
+
     // ───────────────────────── 内部工具 ─────────────────────────
 
     private static void copyTooltip(TooltipConfig src, TooltipConfig dst) {
@@ -634,7 +817,7 @@ public class RarityStyleConfigManager {
 
         JsonObject noRarity = new JsonObject();
         noRarity.addProperty("skip", false);
-        noRarity.addProperty("defaultRarity", 3);
+        noRarity.addProperty("defaultRarity", 1);
         defaults.add("noRarity", noRarity);
 
         root.add("defaults", defaults);

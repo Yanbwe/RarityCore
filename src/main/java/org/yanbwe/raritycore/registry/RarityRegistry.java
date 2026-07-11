@@ -574,6 +574,50 @@ public class RarityRegistry {
     public static java.util.Map<net.minecraft.resources.ResourceLocation, Integer> getItemRarityMap() {
         return ITEM_RARITY_MAP;
     }
+
+    /**
+     * 返回所有被解析为指定稀有度等级的物品
+     * 遍历全部物品注册表并对每件物品调用 getRarity() 解析，覆盖显式配置、自动计算、原版与联动来源
+     * @param rarity 目标稀有度等级
+     * @return 该等级的物品列表（不可变）
+     */
+    public static java.util.List<Item> getItemsByRarity(int rarity) {
+        java.util.List<Item> result = new java.util.ArrayList<>();
+        for (Item item : ForgeRegistries.ITEMS.getValues()) {
+            if (getRarity(item) == rarity) {
+                result.add(item);
+            }
+        }
+        return java.util.Collections.unmodifiableList(result);
+    }
+
+    /**
+     * 返回所有被解析为指定稀有度等级的物品 ID
+     * @param rarity 目标稀有度等级
+     * @return 该等级的物品资源位置列表（不可变）
+     */
+    public static java.util.List<ResourceLocation> getItemIdsByRarity(int rarity) {
+        java.util.List<ResourceLocation> result = new java.util.ArrayList<>();
+        for (Item item : ForgeRegistries.ITEMS.getValues()) {
+            if (getRarity(item) == rarity) {
+                result.add(ForgeRegistries.ITEMS.getKey(item));
+            }
+        }
+        return java.util.Collections.unmodifiableList(result);
+    }
+
+    /**
+     * 返回当前出现过的稀有度等级集合
+     * 来源为显式配置、自动计算映射与无稀有度默认等级
+     * @return 已配置的稀有度等级集合（不可变）
+     */
+    public static java.util.Set<Integer> getConfiguredRarities() {
+        java.util.Set<Integer> result = new java.util.HashSet<>();
+        result.addAll(ITEM_RARITY_MAP.values());
+        result.addAll(AUTO_RARITY_MAP.values());
+        result.add(getNoRarityDefault());
+        return java.util.Collections.unmodifiableSet(result);
+    }
     
     /**
      * 获取自动计算的稀有度映射

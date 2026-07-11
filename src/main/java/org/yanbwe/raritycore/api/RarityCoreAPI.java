@@ -164,19 +164,19 @@ public final class RarityCoreAPI {
     // 配置
     // ══════════════════════════════════════════════════════
 
-    /** 客户端主开关：是否渲染物品边框 */
+    /** 主开关：是否渲染物品边框 */
     public static boolean isBorderRenderingEnabled() {
-        return org.yanbwe.raritycore.config.ClientConfigManager.isEnableItemBorderRendering();
+        return RarityStyleConfigManager.isBorderEnabled();
     }
 
-    /** 客户端主开关：是否插入工具提示 */
+    /** 主开关：是否插入工具提示 */
     public static boolean isTooltipInsertEnabled() {
-        return org.yanbwe.raritycore.config.ClientConfigManager.isEnableTooltipInsert();
+        return RarityStyleConfigManager.isTooltipEnabled();
     }
 
-    /** 客户端主开关：是否变色物品名称 */
+    /** 主开关：是否变色物品名称 */
     public static boolean isNameColorEnabled() {
-        return org.yanbwe.raritycore.config.ClientConfigManager.isEnableItemNameColor();
+        return RarityStyleConfigManager.isItemNameColorEnabled(RARITY_COMMON);
     }
 
     /** 逐级开关：该等级是否渲染边框 */
@@ -197,6 +197,172 @@ public final class RarityCoreAPI {
     /** 服务端：是否启用 NBT 稀有度控制 */
     public static boolean isNbtRarityControlEnabled() {
         return ServerConfigManager.isEnableNbtRarityControl();
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 批量注册
+    // ══════════════════════════════════════════════════════
+
+    /** 批量注册物品稀有度映射（不逐条同步，注册结束后统一同步一次） */
+    public static void registerRarities(@NotNull java.util.Map<Item, Integer> entries) {
+        for (java.util.Map.Entry<Item, Integer> e : entries.entrySet()) {
+            RarityRegistry.register(e.getKey(), e.getValue(), false);
+        }
+        RarityRegistry.syncIncrementalChangesToClients();
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 稀有度物品查询
+    // ══════════════════════════════════════════════════════
+
+    /** 返回所有被解析为指定稀有度等级的物品 */
+    public static java.util.List<net.minecraft.world.item.Item> getItemsByRarity(int rarity) {
+        return RarityRegistry.getItemsByRarity(rarity);
+    }
+
+    /** 返回所有被解析为指定稀有度等级的物品 ID */
+    public static java.util.List<ResourceLocation> getItemIdsByRarity(int rarity) {
+        return RarityRegistry.getItemIdsByRarity(rarity);
+    }
+
+    /** 返回当前出现过的稀有度等级集合 */
+    public static java.util.Set<Integer> getConfiguredRarities() {
+        return RarityRegistry.getConfiguredRarities();
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 配置重载
+    // ══════════════════════════════════════════════════════
+
+    /** 触发完整配置重载（命令源为空，视为程序化触发） */
+    public static void reloadConfigs() {
+        org.yanbwe.raritycore.service.ConfigReloadService.reloadAllConfigs(null, false);
+    }
+
+    // ══════════════════════════════════════════════════════
+    // V14 视觉表现查询与写入
+    // ══════════════════════════════════════════════════════
+
+    /** 主开关：工具提示是否染色 */
+    public static boolean isTooltipColorEnabled() {
+        return RarityStyleConfigManager.isTooltipColorEnabled();
+    }
+
+    /** 主开关：是否渲染物品边框 */
+    public static boolean isBorderEnabled() {
+        return RarityStyleConfigManager.isBorderEnabled();
+    }
+
+    /** 主开关：是否插入工具提示 */
+    public static boolean isTooltipEnabled() {
+        return RarityStyleConfigManager.isTooltipEnabled();
+    }
+
+    /** 无稀有度物品是否跳过渲染 */
+    public static boolean isNoRaritySkip() {
+        return RarityStyleConfigManager.getDefaultsNoRaritySkip();
+    }
+
+    /** 无稀有度物品兜底等级 */
+    public static int getNoRarityDefaultRarity() {
+        return RarityStyleConfigManager.getDefaultsNoRarityDefaultRarity();
+    }
+
+    /** 逐级工具提示内容 */
+    public static String getTooltipContent(int rarity) {
+        return RarityStyleConfigManager.getTooltipContent(rarity);
+    }
+
+    /** 逐级 level 段翻译键 */
+    public static String getLevelTranslationKey(int rarity) {
+        return RarityStyleConfigManager.getLevelTranslationKey(rarity);
+    }
+
+    /** 逐级 level 段回退键 */
+    public static String getLevelFallbackKey(int rarity) {
+        return RarityStyleConfigManager.getLevelFallbackKey(rarity);
+    }
+
+    /** 逐级星星配置 */
+    public static RarityStyleConfigManager.StarSegmentConfig getStarConfig(int rarity) {
+        return RarityStyleConfigManager.getStarConfig(rarity);
+    }
+
+    /** 大于 MAX_RARITY 的特殊稀有度文本 */
+    public static String getSpecialRarityText(int rarity) {
+        return RarityStyleConfigManager.getSpecialRarityText(rarity);
+    }
+
+    /** 逐级边框是否使用纹理 */
+    public static boolean isBorderUseTexture(int rarity) {
+        return RarityStyleConfigManager.isBorderUseTexture(rarity);
+    }
+
+    /** 逐级边框样式（1=实心，0=空心） */
+    public static int getBorderStyle(int rarity) {
+        return RarityStyleConfigManager.getBorderStyle(rarity);
+    }
+
+    /** 边框回退纹理 */
+    public static String getBorderFallback() {
+        return RarityStyleConfigManager.getBorderFallback();
+    }
+
+    // ── 写入 ──
+
+    /** 设置主开关：是否渲染物品边框 */
+    public static void setBorderEnabled(boolean enable) {
+        RarityStyleConfigManager.setBorderEnabled(enable);
+    }
+
+    /** 设置主开关：是否插入工具提示 */
+    public static void setTooltipEnabled(boolean enable) {
+        RarityStyleConfigManager.setTooltipEnabled(enable);
+    }
+
+    /** 设置主开关：工具提示是否染色 */
+    public static void setTooltipColorEnabled(boolean enable) {
+        RarityStyleConfigManager.setTooltipColorEnabled(enable);
+    }
+
+    /** 设置无稀有度物品跳过渲染 */
+    public static void setNoRaritySkip(boolean skip) {
+        RarityStyleConfigManager.setNoRaritySkip(skip);
+    }
+
+    /** 设置无稀有度物品兜底等级 */
+    public static void setNoRarityDefaultRarity(int rarity) {
+        RarityStyleConfigManager.setNoRarityDefaultRarity(rarity);
+    }
+
+    /** 设置逐级边框是否使用纹理 */
+    public static void setBorderUseTexture(int rarity, boolean useTexture) {
+        RarityStyleConfigManager.setBorderUseTexture(rarity, useTexture);
+    }
+
+    /** 设置逐级边框样式 */
+    public static void setBorderStyle(int rarity, int style) {
+        RarityStyleConfigManager.setBorderStyle(rarity, style);
+    }
+
+    /** 设置逐级工具提示内容 */
+    public static void setTooltipContent(int rarity, String content) {
+        RarityStyleConfigManager.setTooltipContent(rarity, content);
+    }
+
+    /** 设置逐级星星显示模式 */
+    public static void setStarMode(int rarity, String mode) {
+        RarityStyleConfigManager.setStarMode(rarity, mode);
+    }
+
+    /** 设置逐级星星重复字符 */
+    public static void setStarRepeatChar(int rarity, String repeatChar) {
+        RarityStyleConfigManager.setStarRepeatChar(rarity, repeatChar);
+    }
+
+    /** 设置大于 MAX_RARITY 的特殊稀有度文本 */
+    public static void setSpecialRarityText(int rarity, String text) {
+        RarityStyleConfigManager.setSpecialRarityText(rarity, text);
     }
 
     // ══════════════════════════════════════════════════════
