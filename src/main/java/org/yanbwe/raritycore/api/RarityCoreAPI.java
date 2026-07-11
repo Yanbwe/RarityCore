@@ -294,10 +294,7 @@ public final class RarityCoreAPI {
      * 等级小于 MIN_RARITY 时返回 1，其余等级保持原值
      */
     public static int validateRarity(int rarity) {
-        if (rarity < MIN_RARITY) {
-            return RarityValidator.normalizeRarity(rarity);
-        }
-        return rarity;
+        return RarityValidator.normalizeRarity(rarity);
     }
 
     /** 返回某等级生效视觉表现的不可变快照（border/tooltip/star 合并结果） */

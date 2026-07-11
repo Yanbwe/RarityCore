@@ -110,16 +110,6 @@ public class RarityRegistry {
         return org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rawRarity);
     }
 
-    // 获取本地化文本（仅客户端可用）
-    @OnlyIn(Dist.CLIENT)
-    private static String getLocalizedText(String key) {
-        try {
-            return net.minecraft.network.chat.Component.translatable(key).getString();
-        } catch (Exception e) {
-            return key;
-        }
-    }
-
     // 获取物品的完整稀有度工具提示字符串（仅客户端，基于 Item）
     @OnlyIn(Dist.CLIENT)
     public static @NotNull String getLocalizedRarityTooltip(@Nullable Item item) {
@@ -247,7 +237,8 @@ public class RarityRegistry {
                     && tag.contains("raritycore", CompoundTag.TAG_COMPOUND)) {
                 CompoundTag data = tag.getCompound("raritycore");
                 if (data.contains("Level", CompoundTag.TAG_INT)) {
-                    result = data.getInt("Level");
+                    // 钳制下限，避免负值/0 进入颜色与样式解析产生异常回退
+                    result = org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(data.getInt("Level"));
                     source = "nbt_control";
                     return fireQueryEvent(itemStack, result, source);
                 }

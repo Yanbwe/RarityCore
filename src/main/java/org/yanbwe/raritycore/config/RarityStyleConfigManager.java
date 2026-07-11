@@ -321,13 +321,30 @@ public class RarityStyleConfigManager {
         acc.defaultTexture = defaults.border.defaultTexture;
         acc.style = defaults.border.style;
         acc.show = defaults.border.show;
+        acc.fallback = defaults.border.fallback;
         for (int l = 1; l <= rarity; l++) {
             LevelOverride o = RARITIES.get(l);
             if (o != null && o.border != null) {
-                if (o.border.useTextureSpecified) acc.useTexture = o.border.useTexture;
-                if (o.border.defaultTextureSpecified) acc.defaultTexture = o.border.defaultTexture;
-                if (o.border.styleSpecified) acc.style = o.border.style;
-                if (o.border.showSpecified) acc.show = o.border.show;
+                if (o.border.useTextureSpecified) {
+                    acc.useTexture = o.border.useTexture;
+                    acc.useTextureSpecified = true;
+                }
+                if (o.border.defaultTextureSpecified) {
+                    acc.defaultTexture = o.border.defaultTexture;
+                    acc.defaultTextureSpecified = true;
+                }
+                if (o.border.styleSpecified) {
+                    acc.style = o.border.style;
+                    acc.styleSpecified = true;
+                }
+                if (o.border.showSpecified) {
+                    acc.show = o.border.show;
+                    acc.showSpecified = true;
+                }
+                if (o.border.fallbackSpecified) {
+                    acc.fallback = o.border.fallback;
+                    acc.fallbackSpecified = true;
+                }
             }
         }
         return acc;
@@ -417,7 +434,7 @@ public class RarityStyleConfigManager {
     /**
      * 获取边框纹理路径
      * 内置档位（rarity ≤ MAX_RARITY）直接使用各自 {level} 模板解析出的纹理；
-     * 超出内置档位且未显式配置边框纹理的等级按 defaults.border.fallback 回退：
+     * 超出内置档位且未显式配置边框纹理的等级按逐级回退值（getBorder 合并结果）回退：
      * inherit 复用最高已配置档位（MAX_RARITY）纹理，具体路径则使用该路径（支持 {level}）
      */
     public static String getBorderTexture(int rarity) {
@@ -428,7 +445,7 @@ public class RarityStyleConfigManager {
         if (getBorder(rarity).defaultTextureSpecified) {
             return path;
         }
-        String fb = defaults.border.fallback;
+        String fb = getBorder(rarity).fallback;
         if (fb != null && fb.equalsIgnoreCase("inherit")) {
             return getBorder(RarityConstants.MAX_RARITY).defaultTexture
                 .replace("{level}", String.valueOf(RarityConstants.MAX_RARITY));
@@ -463,7 +480,7 @@ public class RarityStyleConfigManager {
     public static StyleSnapshot getStyleSnapshot(int rarity) {
         BorderConfig b = getBorder(rarity);
         TooltipConfig t = getTooltip(rarity);
-        return new StyleSnapshot(rarity, b.useTexture, b.style, t.show, t.content,
+        return new StyleSnapshot(rarity, b.useTexture, b.style, b.fallback, t.show, t.content,
                 t.colored, t.star.mode, t.star.repeatChar, t.star.custom, t.star.colored);
     }
 
@@ -472,9 +489,31 @@ public class RarityStyleConfigManager {
     /** 批量写入进行中的计数器；大于 0 时跳过逐条 saveToFile 与事件发布 */
     private static int batchDepth = 0;
 
-    /** 批量写入期间被修改的等级集合（含 0 表示全局） */
-    private static final java.util.Set<Integer> batchTouched =
-            java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+    /** 批量写入期间被修改的等级与变更项组合（用于去重，结束时按真实变更类型发布事件） */
+    private static final java.util.Set<BatchChange> batchTouched = new java.util.HashSet<>();
+
+    /** 批量写入的单个变更标记：等级 + 变更项 */
+    private static final class BatchChange {
+        final int rarity;
+        final org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget target;
+
+        BatchChange(int rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget target) {
+            this.rarity = rarity;
+            this.target = target;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof BatchChange other)) return false;
+            return rarity == other.rarity && target == other.target;
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * rarity + target.hashCode();
+        }
+    }
 
     /** 开始批量写入，期间 setter 不逐条写盘与发布事件 */
     public static void beginStyleBatch() {
@@ -489,8 +528,8 @@ public class RarityStyleConfigManager {
         batchDepth--;
         if (batchDepth == 0) {
             saveToFile();
-            for (Integer r : batchTouched) {
-                notifyStyleChanged(r, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.BORDER_STYLE);
+            for (BatchChange c : batchTouched) {
+                notifyStyleChanged(c.rarity, c.target);
             }
             batchTouched.clear();
         }
@@ -526,6 +565,7 @@ public class RarityStyleConfigManager {
         public final int rarity;
         public final boolean borderUseTexture;
         public final int borderStyle;
+        public final String borderFallback;
         public final boolean tooltipShow;
         public final String tooltipContent;
         public final boolean tooltipColored;
@@ -534,12 +574,13 @@ public class RarityStyleConfigManager {
         public final String starCustom;
         public final boolean starColored;
 
-        StyleSnapshot(int rarity, boolean borderUseTexture, int borderStyle, boolean tooltipShow,
-                      String tooltipContent, boolean tooltipColored, String starMode,
+        StyleSnapshot(int rarity, boolean borderUseTexture, int borderStyle, String borderFallback,
+                      boolean tooltipShow, String tooltipContent, boolean tooltipColored, String starMode,
                       String starRepeatChar, String starCustom, boolean starColored) {
             this.rarity = rarity;
             this.borderUseTexture = borderUseTexture;
             this.borderStyle = borderStyle;
+            this.borderFallback = borderFallback;
             this.tooltipShow = tooltipShow;
             this.tooltipContent = tooltipContent;
             this.tooltipColored = tooltipColored;
@@ -660,7 +701,7 @@ public class RarityStyleConfigManager {
     /** setter 写入后调用：批量进行中时仅记录变更，否则立即写盘并发布事件 */
     private static void persistStyleChange(int rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget target) {
         if (batchDepth > 0) {
-            batchTouched.add(rarity);
+            batchTouched.add(new BatchChange(rarity, target));
             return;
         }
         saveToFile();

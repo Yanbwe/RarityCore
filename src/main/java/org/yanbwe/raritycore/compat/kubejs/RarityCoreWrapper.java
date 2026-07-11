@@ -140,6 +140,16 @@ public interface RarityCoreWrapper {
         return RarityCoreAPI.getNoRarityDefaultRarity();
     }
 
+    @Info("检查是否对物品名称染色（全局主开关）")
+    static boolean isNameColorEnabled() {
+        return RarityCoreAPI.isNameColorEnabled();
+    }
+
+    @Info("检查该等级是否对物品名称染色")
+    static boolean isLevelNameColorEnabled(int rarity) {
+        return RarityCoreAPI.isLevelNameColorEnabled(rarity);
+    }
+
     @Info("获取该等级工具提示内容")
     static String getTooltipContent(int rarity) {
         return RarityCoreAPI.getTooltipContent(rarity);
@@ -285,5 +295,55 @@ public interface RarityCoreWrapper {
     @Info("模组是否可用")
     static boolean isAvailable() {
         return RarityCoreAPI.isAvailable();
+    }
+
+    // ---- V14 视觉表现批量写入与诊断 ----
+
+    @Info("开始批量写入，期间 setter 不逐条写盘与发布事件")
+    static void beginStyleBatch() {
+        RarityCoreAPI.beginStyleBatch();
+    }
+
+    @Info("结束批量写入，统一写盘并发布一次聚合事件")
+    static void endStyleBatch() {
+        RarityCoreAPI.endStyleBatch();
+    }
+
+    @Info("以结构化补丁整体写入某等级视觉表现（borderUseTexture/borderStyle/tooltipContent/starMode/starRepeatChar 任一为 null 则保留现有值）")
+    static void setStyle(int rarity, Boolean borderUseTexture, Integer borderStyle,
+                         String tooltipContent, String starMode, String starRepeatChar) {
+        org.yanbwe.raritycore.config.RarityStyleConfigManager.StylePatch patch =
+            new org.yanbwe.raritycore.config.RarityStyleConfigManager.StylePatch();
+        patch.rarity = rarity;
+        patch.borderUseTexture = borderUseTexture;
+        patch.borderStyle = borderStyle;
+        patch.tooltipContent = tooltipContent;
+        patch.starMode = starMode;
+        patch.starRepeatChar = starRepeatChar;
+        RarityCoreAPI.setStyle(patch);
+    }
+
+    @Info("返回某等级生效视觉表现的快照（border/tooltip/star 合并结果）")
+    static java.util.Map<String, Object> getStyleSnapshot(int rarity) {
+        org.yanbwe.raritycore.config.RarityStyleConfigManager.StyleSnapshot s =
+            RarityCoreAPI.getStyleSnapshot(rarity);
+        java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
+        map.put("rarity", s.rarity);
+        map.put("borderUseTexture", s.borderUseTexture);
+        map.put("borderStyle", s.borderStyle);
+        map.put("borderFallback", s.borderFallback);
+        map.put("tooltipShow", s.tooltipShow);
+        map.put("tooltipContent", s.tooltipContent);
+        map.put("tooltipColored", s.tooltipColored);
+        map.put("starMode", s.starMode);
+        map.put("starRepeatChar", s.starRepeatChar);
+        map.put("starCustom", s.starCustom);
+        map.put("starColored", s.starColored);
+        return map;
+    }
+
+    @Info("校验并标准化稀有度等级（小于 1 的值钳制为 1）")
+    static int validateRarity(int rarity) {
+        return RarityCoreAPI.validateRarity(rarity);
     }
 }

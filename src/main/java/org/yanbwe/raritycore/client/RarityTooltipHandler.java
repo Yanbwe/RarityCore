@@ -123,36 +123,49 @@ public class RarityTooltipHandler {
     /**
      * 按 content 模板将 level / star 分段插入，并对各段独立着色
      * 当 totalColored 开启时，对整个工具提示行着色（level/star 段不再单独着色，避免重复上色）
+     * 支持 content 中重复出现占位符（每次出现均被替换）
      */
     private static MutableComponent buildSegmentedComponent(int rarity, Component levelName, Component starComp,
                                                              Style colorStyle, boolean levelColored, boolean starColored,
                                                              boolean totalColored) {
         String content = RarityStyleConfigManager.getTooltipContent(rarity);
         MutableComponent result = Component.empty();
-        int idxLevel = content.indexOf("@{level}");
-        int idxStar = content.indexOf("@{star}");
+        final String levelToken = "@{level}";
+        final String starToken = "@{star}";
+        int idxLevel = content.indexOf(levelToken);
+        int idxStar = content.indexOf(starToken);
         if (idxLevel < 0 && idxStar < 0) {
             // 无占位符，按字面量整体处理
             return result.append(Component.literal(StringResolver.resolveEmbeddedKeys(content)));
         }
         int cursor = 0;
         while (cursor < content.length()) {
-            if (idxLevel >= 0 && cursor == idxLevel) {
-                if (!totalColored) result.append(levelColored ? levelName.copy().withStyle(colorStyle) : levelName);
-                else result.append(levelName);
-                cursor += "@{level}".length();
-                continue;
+            int nextLevel = content.indexOf(levelToken, cursor);
+            int nextStar = content.indexOf(starToken, cursor);
+            int next = content.length();
+            boolean isLevel = false;
+            boolean isStar = false;
+            if (nextLevel >= 0) {
+                next = nextLevel;
+                isLevel = true;
             }
-            if (idxStar >= 0 && cursor == idxStar) {
-                if (!totalColored) result.append(starColored ? starComp.copy().withStyle(colorStyle) : starComp);
-                else result.append(starComp);
-                cursor += "@{star}".length();
+            if (nextStar >= 0 && nextStar < next) {
+                next = nextStar;
+                isLevel = false;
+                isStar = true;
+            }
+            if (next == cursor) {
+                // 命中占位符
+                if (isLevel) {
+                    result.append(totalColored ? levelName : (levelColored ? levelName.copy().withStyle(colorStyle) : levelName));
+                    cursor += levelToken.length();
+                } else {
+                    result.append(totalColored ? starComp : (starColored ? starComp.copy().withStyle(colorStyle) : starComp));
+                    cursor += starToken.length();
+                }
                 continue;
             }
             // 静态文本段，直到下一个占位符
-            int next = content.length();
-            if (idxLevel >= 0 && idxLevel > cursor) next = Math.min(next, idxLevel);
-            if (idxStar >= 0 && idxStar > cursor) next = Math.min(next, idxStar);
             result.append(Component.literal(StringResolver.resolveEmbeddedKeys(content.substring(cursor, next))));
             cursor = next;
         }
