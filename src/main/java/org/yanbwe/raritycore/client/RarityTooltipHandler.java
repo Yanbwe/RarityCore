@@ -39,6 +39,11 @@ public class RarityTooltipHandler {
             return;
         }
 
+        // 检测到 ColorTooltips 模组时跳过本模组工具提示插入，避免重复展示
+        if (org.yanbwe.raritycore.compat.CompatibilityManager.isColorTooltipsLoaded()) {
+            return;
+        }
+
         ItemStack itemStack = event.getItemStack();
         Item item = itemStack.getItem();
 

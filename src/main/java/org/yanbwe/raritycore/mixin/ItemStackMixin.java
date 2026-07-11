@@ -24,6 +24,11 @@ public class ItemStackMixin {
         if (!org.yanbwe.raritycore.config.ClientConfigManager.isEnableItemNameColor()) {
             return;
         }
+
+        // 检测到 ColorTooltips 模组时跳过名称染色，避免重复上色
+        if (org.yanbwe.raritycore.compat.CompatibilityManager.isColorTooltipsLoaded()) {
+            return;
+        }
         
         // 获取物品的稀有度(支持 NBT 匹配,使用物品堆缓存)
         // RenderCacheManager.getCachedRarity() 在未命中时已自动计算并缓存
