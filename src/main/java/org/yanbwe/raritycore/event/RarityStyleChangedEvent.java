@@ -39,7 +39,6 @@ public class RarityStyleChangedEvent extends Event {
         BORDER_STYLE,
         TOOLTIP_CONTENT,
         STAR_MODE,
-        STAR_REPEAT_CHAR,
-        SPECIAL_RARITY_TEXT
+        STAR_REPEAT_CHAR
     }
 }

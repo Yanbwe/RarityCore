@@ -26,7 +26,7 @@ public class NbtMatchRule {
      * @param itemId 物品ID
      * @param conditions 匹配条件列表
      * @param priority 优先级（数值越大优先级越高）
-     * @param rarity 稀有度等级（1-7）
+     * @param rarity 稀有度等级（不小于 1）
      * @param enabled 是否启用
      * @param fuzzyMatch 是否启用模糊匹配（整个规则级别）
      * @param description 规则描述（可选）

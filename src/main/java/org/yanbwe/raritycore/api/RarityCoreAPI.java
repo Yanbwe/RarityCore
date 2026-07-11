@@ -48,7 +48,7 @@ public final class RarityCoreAPI {
     // 稀有度注册与查询
     // ══════════════════════════════════════════════════════
 
-    /** 注册物品稀有度 (1-7)，同步到客户端 */
+    /** 注册物品稀有度，同步到客户端 */
     public static void registerRarity(@NotNull Item item, int rarity) {
         RarityRegistry.register(item, rarity, true);
     }
@@ -63,17 +63,17 @@ public final class RarityCoreAPI {
         RarityRegistry.unregister(item, true);
     }
 
-    /** 获取 ItemStack 的稀有度 (1-7) */
+    /** 获取 ItemStack 的稀有度 */
     public static int getRarity(@NotNull ItemStack itemStack) {
         return RarityRegistry.getRarity(itemStack);
     }
 
-    /** 获取 Item 的稀有度 (1-7) */
+    /** 获取 Item 的稀有度 */
     public static int getRarity(@NotNull Item item) {
         return RarityRegistry.getRarity(item);
     }
 
-    /** 获取标准化稀有度（非法值会被规范化到 1-7 范围） */
+    /** 获取标准化稀有度（小于 1 的值会钳制为 1） */
     public static int getNormalizedRarity(@NotNull ItemStack itemStack) {
         return RarityRegistry.getNormalizedRarity(itemStack);
     }
@@ -136,12 +136,12 @@ public final class RarityCoreAPI {
     // 验证
     // ══════════════════════════════════════════════════════
 
-    /** 验证稀有度值是否在有效范围内 (1-7) */
+    /** 验证稀有度值是否有效（小于 1 视为无效） */
     public static boolean isValidRarity(int rarity) {
         return RarityValidator.isValidRarity(rarity);
     }
 
-    /** 标准化稀有度值（非法值会被规范化到 1-7 范围） */
+    /** 标准化稀有度值（小于 1 的值会钳制为 1） */
     public static int normalizeRarity(int rarity) {
         return RarityValidator.normalizeRarity(rarity);
     }
@@ -176,7 +176,7 @@ public final class RarityCoreAPI {
 
     /** 主开关：是否变色物品名称 */
     public static boolean isNameColorEnabled() {
-        return RarityStyleConfigManager.isItemNameColorEnabled(RARITY_COMMON);
+        return RarityStyleConfigManager.isItemNameColorEnabled(MIN_RARITY);
     }
 
     /** 逐级开关：该等级是否渲染边框 */
@@ -291,11 +291,10 @@ public final class RarityCoreAPI {
 
     /**
      * 校验并标准化稀有度等级
-     * 等级超出 [MIN_RARITY, MAX_RARITY] 时记录告警日志并返回边界值，合法时返回原值
+     * 等级小于 MIN_RARITY 时返回 1，其余等级保持原值
      */
     public static int validateRarity(int rarity) {
-        if (rarity < MIN_RARITY || rarity > MAX_RARITY) {
-            org.yanbwe.raritycore.RarityCore.LOGGER.warn("RarityCoreAPI.validateRarity: 稀有度等级 {} 超出范围 [{}, {}]，已钳制", rarity, MIN_RARITY, MAX_RARITY);
+        if (rarity < MIN_RARITY) {
             return RarityValidator.normalizeRarity(rarity);
         }
         return rarity;
@@ -353,11 +352,6 @@ public final class RarityCoreAPI {
     /** 逐级星星配置 */
     public static RarityStyleConfigManager.StarSegmentConfig getStarConfig(int rarity) {
         return RarityStyleConfigManager.getStarConfig(rarity);
-    }
-
-    /** 大于 MAX_RARITY 的特殊稀有度文本 */
-    public static String getSpecialRarityText(int rarity) {
-        return RarityStyleConfigManager.getSpecialRarityText(rarity);
     }
 
     /** 逐级边框是否使用纹理 */
@@ -427,11 +421,6 @@ public final class RarityCoreAPI {
         RarityStyleConfigManager.setStarRepeatChar(rarity, repeatChar);
     }
 
-    /** 设置大于 MAX_RARITY 的特殊稀有度文本 */
-    public static void setSpecialRarityText(int rarity, String text) {
-        RarityStyleConfigManager.setSpecialRarityText(rarity, text);
-    }
-
     // ══════════════════════════════════════════════════════
     // 网络同步
     // ══════════════════════════════════════════════════════
@@ -445,13 +434,6 @@ public final class RarityCoreAPI {
     // 常量
     // ══════════════════════════════════════════════════════
 
-    public static final int RARITY_COMMON = RarityConstants.RARITY_COMMON;
-    public static final int RARITY_UNCOMMON = RarityConstants.RARITY_UNCOMMON;
-    public static final int RARITY_RARE = RarityConstants.RARITY_RARE;
-    public static final int RARITY_EPIC = RarityConstants.RARITY_EPIC;
-    public static final int RARITY_LEGENDARY = RarityConstants.RARITY_LEGENDARY;
-    public static final int RARITY_MYTHICAL = RarityConstants.RARITY_MYTHICAL;
-    public static final int RARITY_UNIQUE = RarityConstants.RARITY_UNIQUE;
     public static final int MIN_RARITY = RarityConstants.MIN_RARITY;
     public static final int MAX_RARITY = RarityConstants.MAX_RARITY;
     public static final int DEFAULT_RGB_COLOR = RarityColorUtil.DEFAULT_RGB_COLOR;

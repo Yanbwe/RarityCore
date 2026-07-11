@@ -26,7 +26,6 @@ import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.event.RarityTooltipEvent;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.ComponentBuilder;
-import org.yanbwe.raritycore.util.RarityConstants;
 import org.yanbwe.raritycore.util.RarityValidator;
 import org.yanbwe.raritycore.util.StringResolver;
 
@@ -60,9 +59,8 @@ public class RarityTooltipHandler {
 
         rarity = applyApotheosisRarityFallback(itemStack, item, rarity);
 
-        boolean isSpecial = rarity > RarityConstants.RARITY_UNIQUE;
         RarityTooltipEvent tooltipEvent = new RarityTooltipEvent(itemStack, rarity,
-            new java.util.ArrayList<>(), isSpecial);
+            new java.util.ArrayList<>());
         MinecraftForge.EVENT_BUS.post(tooltipEvent);
         java.util.List<Component> extraTooltips = tooltipEvent.getTooltipList();
 
@@ -71,19 +69,11 @@ public class RarityTooltipHandler {
             return;
         }
 
-        boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;
-        int displayRarity = rarity;
-
         boolean tooltipColorOn = ClientConfigManager.isEnableTooltipColor();
         int rgbColor = RarityStyleConfigManager.getColor(RarityValidator.normalizeRarity(rarity));
         Style colorStyle = tooltipColorOn ? Style.EMPTY.withColor(TextColor.fromRgb(rgbColor)) : Style.EMPTY;
 
-        MutableComponent rarityComponent;
-        if (isSpecialRarity) {
-            rarityComponent = buildSpecialTooltipComponent(displayRarity, colorStyle, tooltipColorOn);
-        } else {
-            rarityComponent = buildStandardTooltipComponent(RarityValidator.normalizeRarity(rarity), colorStyle, tooltipColorOn);
-        }
+        MutableComponent rarityComponent = buildStandardTooltipComponent(RarityValidator.normalizeRarity(rarity), colorStyle, tooltipColorOn);
 
         ComponentBuilder.insertIntoTooltip(event.getToolTip(), rarityComponent);
         if (!extraTooltips.isEmpty()) {
@@ -128,36 +118,6 @@ public class RarityTooltipHandler {
             resolved = Component.literal(StringResolver.resolveEmbeddedKeys(key));
         }
         return resolved;
-    }
-
-    /**
-     * 构建特殊（>7 级）工具提示组件
-     * 复用内容模板与星星配置，使专属稀有度也受 RarityStyle 默认值控制
-     */
-    private static MutableComponent buildSpecialTooltipComponent(int rarity, Style colorStyle, boolean colorOn) {
-        RarityStyleConfigManager.TooltipConfig tc = RarityStyleConfigManager.getTooltip(rarity);
-        boolean levelColored = colorOn && tc.level.colored && RarityStyleConfigManager.isTooltipColorEnabled();
-        boolean starColored = colorOn && tc.star.colored && RarityStyleConfigManager.isTooltipColorEnabled();
-        boolean totalColored = colorOn && tc.colored && RarityStyleConfigManager.isTooltipColorEnabled();
-
-        // level 段文本：优先使用专属稀有度文本（specialRarityTexts），否则与 1~7 级一致采用 translationKey
-        String customText = RarityStyleConfigManager.getSpecialRarityText(rarity);
-        Component levelName;
-        if (customText != null && !customText.isEmpty()) {
-            if (customText.startsWith("$(") && customText.endsWith(")")) {
-                levelName = Component.translatable(customText.substring(2, customText.length() - 1));
-            } else if (customText.startsWith("$") && customText.length() > 1) {
-                levelName = Component.translatable(customText.substring(1));
-            } else {
-                levelName = Component.literal(customText);
-            }
-        } else {
-            // 未配置专属文本时，复用 translationKey（字面量直接显示，翻译键缺失才走 fallback）
-            levelName = buildLevelComponent(rarity);
-        }
-
-        Component starComp = Component.literal(ComponentBuilder.getStars(rarity));
-        return buildSegmentedComponent(rarity, levelName, starComp, colorStyle, levelColored, starColored, totalColored);
     }
 
     /**

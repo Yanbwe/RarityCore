@@ -42,7 +42,7 @@ public class IronSpellbooksAdapter {
     /**
      * 获取法术卷轴映射后的稀有度等级
      * @param itemStack 物品栈
-     * @return 映射后的稀有度等级 (1-7)，无数据返回 null
+     * @return 映射后的稀有度等级，无数据返回 null
      */
     @Nullable
     public static Integer getMappedRarity(ItemStack itemStack) {

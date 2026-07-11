@@ -39,9 +39,6 @@ public class RarityStyleConfigManager {
     // 各稀有度覆盖配置（缺失字段向低等级继承）
     private static final Map<Integer, LevelOverride> RARITIES = new ConcurrentHashMap<>();
 
-    // >7 级特殊文本映射（来自 defaults.tooltip.specialRarityTexts）
-    private static final Map<Integer, String> SPECIAL_RARITY_TEXTS = new ConcurrentHashMap<>();
-
     static {
         for (int i = 1; i <= RarityConstants.MAX_RARITY; i++) {
             RARITIES.put(i, new LevelOverride());
@@ -56,7 +53,7 @@ public class RarityStyleConfigManager {
         public String defaultTexture = RarityConstants.BORDER_TEXTURE_PATH + "rarity_{level}.png";
         public int style = 1; // 1=实心, 0=空心
         public boolean show = true;
-        // 大于 MAX_RARITY 等级的边框纹理回退："inherit"=沿用 MAX_RARITY 等级纹理；否则为具体纹理路径（支持 {level}）
+        // 未显式配置边框的等级的纹理回退："inherit"=沿用最高已配置档位纹理；否则为具体纹理路径（支持 {level}）
         public String fallback = "inherit";
         // 显式指定标记（用于继承判断）
         public boolean useTextureSpecified;
@@ -101,7 +98,6 @@ public class RarityStyleConfigManager {
         public boolean colored = true; // 对整个工具提示行染色
         public LevelSegmentConfig level = new LevelSegmentConfig();
         public StarSegmentConfig star = new StarSegmentConfig();
-        public Map<Integer, String> specialRarityTexts; // null = 未配置
         public boolean showSpecified;
         public boolean contentSpecified;
         public boolean coloredSpecified;
@@ -168,7 +164,6 @@ public class RarityStyleConfigManager {
         for (int i = 1; i <= RarityConstants.MAX_RARITY; i++) {
             RARITIES.put(i, new LevelOverride());
         }
-        SPECIAL_RARITY_TEXTS.clear();
         injectColors();
     }
 
@@ -205,12 +200,6 @@ public class RarityStyleConfigManager {
                         RarityCore.LOGGER.warn("Invalid rarity key in RarityStyle: {}", key);
                     }
                 }
-            }
-
-            // 全局特殊稀有度文本
-            SPECIAL_RARITY_TEXTS.clear();
-            if (defaults.tooltip.specialRarityTexts != null) {
-                SPECIAL_RARITY_TEXTS.putAll(defaults.tooltip.specialRarityTexts);
             }
 
             injectColors();
@@ -261,7 +250,6 @@ public class RarityStyleConfigManager {
         t.star.mode = base.star.mode;
         t.star.repeatChar = base.star.repeatChar;
         t.star.custom = base.star.custom;
-        t.specialRarityTexts = base.specialRarityTexts;
         if (obj.has("show")) { t.show = obj.get("show").getAsBoolean(); t.showSpecified = true; }
         if (obj.has("content")) { t.content = obj.get("content").getAsString(); t.contentSpecified = true; }
         if (obj.has("colored")) { t.colored = obj.get("colored").getAsBoolean(); t.coloredSpecified = true; }
@@ -277,19 +265,6 @@ public class RarityStyleConfigManager {
             if (s.has("mode")) { t.star.mode = s.get("mode").getAsString(); t.star.modeSpecified = true; }
             if (s.has("repeatChar")) { t.star.repeatChar = s.get("repeatChar").getAsString(); t.star.repeatCharSpecified = true; }
             if (s.has("custom")) { t.star.custom = s.get("custom").getAsString(); t.star.customSpecified = true; }
-        }
-        if (obj.has("specialRarityTexts")) {
-            JsonObject sp = obj.getAsJsonObject("specialRarityTexts");
-            t.specialRarityTexts = new HashMap<>();
-            for (String k : sp.keySet()) {
-                try {
-                    int lvl = Integer.parseInt(k);
-                    String v = sp.get(k).getAsString();
-                    if (v != null && !v.isEmpty()) t.specialRarityTexts.put(lvl, v);
-                } catch (NumberFormatException e) {
-                    RarityCore.LOGGER.warn("Invalid key in specialRarityTexts: {}", k);
-                }
-            }
         }
         return t;
     }
@@ -361,7 +336,6 @@ public class RarityStyleConfigManager {
     public static TooltipConfig getTooltip(int rarity) {
         TooltipConfig acc = new TooltipConfig();
         copyTooltip(defaults.tooltip, acc);
-        acc.specialRarityTexts = defaults.tooltip.specialRarityTexts == null ? null : new HashMap<>(defaults.tooltip.specialRarityTexts);
         for (int l = 1; l <= rarity; l++) {
             LevelOverride o = RARITIES.get(l);
             if (o != null && o.tooltip != null) mergeTooltip(o.tooltip, acc);
@@ -440,28 +414,12 @@ public class RarityStyleConfigManager {
         return getTooltip(rarity).star;
     }
 
-    public static String getSpecialRarityText(int rarity) {
-        String t = SPECIAL_RARITY_TEXTS.get(rarity);
-        if (t == null && defaults.tooltip.specialRarityTexts != null) {
-            t = defaults.tooltip.specialRarityTexts.get(rarity);
-        }
-        return t;
-    }
-
     /**
      * 获取边框纹理路径
-     * 稀有度不超过 MAX_RARITY 时按 {level} 替换；
-     * 大于 MAX_RARITY 时按 defaults.border.fallback 处理：
-     * "inherit"=沿用 MAX_RARITY 等级纹理，否则作为具体纹理路径（支持 {level} 替换）
+     * 任意等级先取 getBorder(rarity).defaultTexture 并替换 {level}；
+     * 未显式配置边框的等级由 getBorder 的继承链解析，fallback=inherit 时复用最高已配置档位纹理
      */
     public static String getBorderTexture(int rarity) {
-        if (rarity > RarityConstants.MAX_RARITY) {
-            String fb = defaults.border.fallback;
-            if (fb == null || fb.isEmpty() || fb.equalsIgnoreCase("inherit")) {
-                return getBorderTexture(RarityConstants.MAX_RARITY);
-            }
-            return fb.replace("{level}", String.valueOf(rarity));
-        }
         String path = getBorder(rarity).defaultTexture;
         return path.replace("{level}", String.valueOf(rarity));
     }
@@ -491,8 +449,7 @@ public class RarityStyleConfigManager {
         BorderConfig b = getBorder(rarity);
         TooltipConfig t = getTooltip(rarity);
         return new StyleSnapshot(rarity, b.useTexture, b.style, t.show, t.content,
-                t.colored, t.star.mode, t.star.repeatChar, t.star.custom, t.star.colored,
-                getSpecialRarityText(rarity));
+                t.colored, t.star.mode, t.star.repeatChar, t.star.custom, t.star.colored);
     }
 
     // ── 批量写入（防抖） ──
@@ -547,9 +504,6 @@ public class RarityStyleConfigManager {
         if (patch.starRepeatChar != null) {
             setStarRepeatChar(patch.rarity, patch.starRepeatChar);
         }
-        if (patch.specialRarityText != null) {
-            setSpecialRarityText(patch.rarity, patch.specialRarityText);
-        }
     }
 
     /** 某等级生效视觉表现的不可变快照 */
@@ -564,11 +518,10 @@ public class RarityStyleConfigManager {
         public final String starRepeatChar;
         public final String starCustom;
         public final boolean starColored;
-        public final String specialRarityText;
 
         StyleSnapshot(int rarity, boolean borderUseTexture, int borderStyle, boolean tooltipShow,
                       String tooltipContent, boolean tooltipColored, String starMode,
-                      String starRepeatChar, String starCustom, boolean starColored, String specialRarityText) {
+                      String starRepeatChar, String starCustom, boolean starColored) {
             this.rarity = rarity;
             this.borderUseTexture = borderUseTexture;
             this.borderStyle = borderStyle;
@@ -579,7 +532,6 @@ public class RarityStyleConfigManager {
             this.starRepeatChar = starRepeatChar;
             this.starCustom = starCustom;
             this.starColored = starColored;
-            this.specialRarityText = specialRarityText;
         }
     }
 
@@ -591,7 +543,6 @@ public class RarityStyleConfigManager {
         public String tooltipContent;
         public String starMode;
         public String starRepeatChar;
-        public String specialRarityText;
     }
 
     // ── 主开关写入 ──
@@ -686,22 +637,6 @@ public class RarityStyleConfigManager {
         persistStyleChange(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.STAR_REPEAT_CHAR);
     }
 
-    // ── 特殊文本写入 ──
-
-    public static void setSpecialRarityText(int rarity, String text) {
-        if (defaults.tooltip.specialRarityTexts == null) {
-            defaults.tooltip.specialRarityTexts = new HashMap<>();
-        }
-        if (text == null || text.isEmpty()) {
-            defaults.tooltip.specialRarityTexts.remove(rarity);
-        } else {
-            defaults.tooltip.specialRarityTexts.put(rarity, text);
-        }
-        SPECIAL_RARITY_TEXTS.clear();
-        SPECIAL_RARITY_TEXTS.putAll(defaults.tooltip.specialRarityTexts);
-        persistStyleChange(rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget.SPECIAL_RARITY_TEXT);
-    }
-
     private static void notifyStyleChanged(int rarity, org.yanbwe.raritycore.event.RarityStyleChangedEvent.ChangeTarget target) {
         MinecraftForge.EVENT_BUS.post(
             new org.yanbwe.raritycore.event.RarityStyleChangedEvent(rarity, target));
@@ -771,7 +706,6 @@ public class RarityStyleConfigManager {
         dst.star.mode = src.star.mode;
         dst.star.repeatChar = src.star.repeatChar;
         dst.star.custom = src.star.custom;
-        dst.specialRarityTexts = src.specialRarityTexts;
     }
 
     private static void mergeTooltip(TooltipConfig src, TooltipConfig acc) {
@@ -838,13 +772,6 @@ public class RarityStyleConfigManager {
         star.addProperty("repeatChar", defaults.tooltip.star.repeatChar);
         star.addProperty("custom", defaults.tooltip.star.custom);
         tooltip.add("star", star);
-        JsonObject special = new JsonObject();
-        if (defaults.tooltip.specialRarityTexts != null) {
-            for (Map.Entry<Integer, String> e : defaults.tooltip.specialRarityTexts.entrySet()) {
-                special.addProperty(String.valueOf(e.getKey()), e.getValue());
-            }
-        }
-        tooltip.add("specialRarityTexts", special);
         d.add("tooltip", tooltip);
         d.addProperty("itemNameColor", defaults.itemNameColor);
         JsonObject noRarity = new JsonObject();
@@ -919,8 +846,6 @@ public class RarityStyleConfigManager {
         star.addProperty("repeatChar", "★");
         star.addProperty("custom", "");
         tooltip.add("star", star);
-
-        tooltip.add("specialRarityTexts", new JsonObject());
         defaults.add("tooltip", tooltip);
 
         defaults.addProperty("itemNameColor", true);

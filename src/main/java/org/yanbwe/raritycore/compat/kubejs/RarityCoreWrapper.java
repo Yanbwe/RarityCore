@@ -29,7 +29,7 @@ public interface RarityCoreWrapper {
 
     // ---- 注册 ----
 
-    @Info("注册物品稀有度 (1-7)")
+    @Info("注册物品稀有度")
     static void register(String itemId, int rarity) {
         Item item = ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(itemId));
         if (item != null) {
@@ -53,7 +53,7 @@ public interface RarityCoreWrapper {
         return item != null ? RarityCoreAPI.getRarity(item) : 1;
     }
 
-    @Info("通过物品 ID 获取标准化稀有度 (1-7)")
+    @Info("通过物品 ID 获取标准化稀有度")
     static int getNormalizedRarity(String itemId) {
         Item item = ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(itemId));
         return item != null ? RarityCoreAPI.getNormalizedRarity(item) : 1;
@@ -91,12 +91,12 @@ public interface RarityCoreWrapper {
 
     // ---- 验证 ----
 
-    @Info("验证稀有度值是否在有效范围内 (1-7)")
+    @Info("验证稀有度值是否有效（小于 1 视为无效）")
     static boolean isValidRarity(int rarity) {
         return RarityCoreAPI.isValidRarity(rarity);
     }
 
-    @Info("标准化稀有度值 (<1→1, >7→7)")
+    @Info("标准化稀有度值（小于 1 的值钳制为 1）")
     static int normalizeRarity(int rarity) {
         return RarityCoreAPI.normalizeRarity(rarity);
     }
@@ -153,11 +153,6 @@ public interface RarityCoreWrapper {
     @Info("获取该等级 level 段回退键")
     static String getLevelFallbackKey(int rarity) {
         return RarityCoreAPI.getLevelFallbackKey(rarity);
-    }
-
-    @Info("获取该等级大于 MAX_RARITY 的特殊稀有度文本")
-    static String getSpecialRarityText(int rarity) {
-        return RarityCoreAPI.getSpecialRarityText(rarity);
     }
 
     @Info("检查该等级边框是否使用纹理")
@@ -227,11 +222,6 @@ public interface RarityCoreWrapper {
         RarityCoreAPI.setStarRepeatChar(rarity, repeatChar);
     }
 
-    @Info("设置大于 MAX_RARITY 的特殊稀有度文本")
-    static void setSpecialRarityText(int rarity, String text) {
-        RarityCoreAPI.setSpecialRarityText(rarity, text);
-    }
-
     // ---- 配置与查询 ----
 
     @Info("触发完整配置重载")
@@ -296,13 +286,4 @@ public interface RarityCoreWrapper {
     static boolean isAvailable() {
         return RarityCoreAPI.isAvailable();
     }
-
-    @Info("稀有度常量")
-    static int COMMON() { return RarityCoreAPI.RARITY_COMMON; }
-    static int UNCOMMON() { return RarityCoreAPI.RARITY_UNCOMMON; }
-    static int RARE() { return RarityCoreAPI.RARITY_RARE; }
-    static int EPIC() { return RarityCoreAPI.RARITY_EPIC; }
-    static int LEGENDARY() { return RarityCoreAPI.RARITY_LEGENDARY; }
-    static int MYTHICAL() { return RarityCoreAPI.RARITY_MYTHICAL; }
-    static int UNIQUE() { return RarityCoreAPI.RARITY_UNIQUE; }
 }

@@ -25,10 +25,6 @@ public class RarityTooltipEventJS extends EventJS {
         return forgeEvent.getRarity();
     }
 
-    public boolean isSpecialRarity() {
-        return forgeEvent.isSpecialRarity();
-    }
-
     /** 添加自定义文本到 tooltip */
     public void addText(String text) {
         forgeEvent.getTooltipList().add(Component.literal(text));

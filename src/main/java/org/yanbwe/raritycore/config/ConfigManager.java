@@ -62,6 +62,6 @@ public class ConfigManager {
      * 验证稀有度值是否有效
      */
     public static boolean isValidRarity(int rarity) {
-        return rarity >= RarityConstants.MIN_RARITY && rarity <= RarityConstants.MAX_RARITY;
+        return rarity >= RarityConstants.MIN_RARITY;
     }
 }

@@ -10,7 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 稀有度颜色工具类
  * 统一管理不同稀有度对应的颜色值
- * 支持外部注入自定义颜色（从 RarityClientConfig），1-7 级有内置默认值
+ * 支持外部注入自定义颜色（从 RarityStyle.json），内置前 7 档默认颜色，
+ * 未配置的更高等级沿用最高已配置内置档位颜色
  */
 public class RarityColorUtil {
 
@@ -46,6 +47,9 @@ public class RarityColorUtil {
         if (custom != null) {
             return rgbToChatFormatting(custom);
         }
+        if (rarity > RarityConstants.MAX_RARITY) {
+            return getRarityChatColor(RarityConstants.MAX_RARITY);
+        }
         return switch (rarity) {
             case 1 -> ChatFormatting.WHITE;
             case 2 -> ChatFormatting.GREEN;
@@ -60,6 +64,7 @@ public class RarityColorUtil {
 
     /**
      * 根据稀有度等级获取对应的 RGB 颜色值（不含 alpha 通道）
+     * 未注入自定义颜色且等级超过内置档位时，沿用最高已配置内置档位颜色
      * @param rarity 稀有度等级
      * @return RGB 颜色值 (0xRRGGBB)
      */
@@ -67,6 +72,10 @@ public class RarityColorUtil {
         Integer custom = CUSTOM_COLORS.get(rarity);
         if (custom != null) {
             return custom;
+        }
+        if (rarity > RarityConstants.MAX_RARITY) {
+            Integer highest = CUSTOM_COLORS.get(RarityConstants.MAX_RARITY);
+            return highest != null ? highest : 0xFF3333;
         }
         return switch (rarity) {
             case 1 -> 0xCCCCCC;

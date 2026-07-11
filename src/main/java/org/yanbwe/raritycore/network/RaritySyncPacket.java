@@ -146,7 +146,7 @@ public class RaritySyncPacket {
 
         /**
          * @param tagLocation Tag 的资源路径字符串
-         * @param rarity      稀有度等级 (1-7)
+         * @param rarity      稀有度等级
          */
         public TagRuleEntry(String tagLocation, int rarity) {
             if (tagLocation == null) throw new IllegalArgumentException("tagLocation must not be null");

@@ -51,8 +51,8 @@ public class ItemStackMixin {
         // 从 RarityStyle 获取该等级的 RGB 颜色
         int rgbColor = RarityStyleConfigManager.getColor(rarity);
         
-        // 如果是普通稀有度(1),则使用白色,但不添加格式化代码(默认颜色)
-        if (rarity == RarityConstants.RARITY_COMMON) {
+        // 如果是最低档位(1),则使用白色,但不添加格式化代码(默认颜色)
+        if (rarity == RarityConstants.MIN_RARITY) {
             return;
         }
         Component originalName = cir.getReturnValue();

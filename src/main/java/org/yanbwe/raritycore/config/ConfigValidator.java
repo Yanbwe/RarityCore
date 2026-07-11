@@ -154,7 +154,6 @@ public class ConfigValidator {
         customStrings.addProperty("7", "★★★★★★");
         customStrings.addProperty("8", "★★★★★★★");
         customConfig.add("strings", customStrings);
-        customConfig.add("specialRarityTexts", new JsonObject());
         starDisplay.add("custom", customConfig);
         
         configObject.add("starDisplay", starDisplay);

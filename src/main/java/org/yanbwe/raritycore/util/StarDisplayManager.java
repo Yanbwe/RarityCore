@@ -38,7 +38,7 @@ public class StarDisplayManager {
      * 根据配置更新当前策略
      */
     public void updateStrategyFromConfig() {
-        RarityStyleConfigManager.StarSegmentConfig star = RarityStyleConfigManager.getStarConfig(RarityConstants.RARITY_COMMON);
+        RarityStyleConfigManager.StarSegmentConfig star = RarityStyleConfigManager.getStarConfig(RarityConstants.MIN_RARITY);
         if (star == null || star.custom == null || star.custom.isEmpty()) {
             // 自定义模式但未配置字符串时回退到重复模式
             currentStrategy = createRepeatStrategy(star);

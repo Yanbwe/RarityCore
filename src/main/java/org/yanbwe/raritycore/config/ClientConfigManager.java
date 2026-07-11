@@ -120,7 +120,7 @@ public class ClientConfigManager {
 
     @Deprecated
     public static boolean isEnableItemNameColor() {
-        return RarityStyleConfigManager.isItemNameColorEnabled(RarityConstants.RARITY_COMMON);
+        return RarityStyleConfigManager.isItemNameColorEnabled(RarityConstants.MIN_RARITY);
     }
 
     @Deprecated
