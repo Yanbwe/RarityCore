@@ -416,12 +416,27 @@ public class RarityStyleConfigManager {
 
     /**
      * 获取边框纹理路径
-     * 任意等级先取 getBorder(rarity).defaultTexture 并替换 {level}；
-     * 未显式配置边框的等级由 getBorder 的继承链解析，fallback=inherit 时复用最高已配置档位纹理
+     * 内置档位（rarity ≤ MAX_RARITY）直接使用各自 {level} 模板解析出的纹理；
+     * 超出内置档位且未显式配置边框纹理的等级按 defaults.border.fallback 回退：
+     * inherit 复用最高已配置档位（MAX_RARITY）纹理，具体路径则使用该路径（支持 {level}）
      */
     public static String getBorderTexture(int rarity) {
-        String path = getBorder(rarity).defaultTexture;
-        return path.replace("{level}", String.valueOf(rarity));
+        String path = getBorder(rarity).defaultTexture.replace("{level}", String.valueOf(rarity));
+        if (rarity <= RarityConstants.MAX_RARITY) {
+            return path;
+        }
+        if (getBorder(rarity).defaultTextureSpecified) {
+            return path;
+        }
+        String fb = defaults.border.fallback;
+        if (fb != null && fb.equalsIgnoreCase("inherit")) {
+            return getBorder(RarityConstants.MAX_RARITY).defaultTexture
+                .replace("{level}", String.valueOf(RarityConstants.MAX_RARITY));
+        }
+        if (fb != null && !fb.isEmpty()) {
+            return fb.replace("{level}", String.valueOf(rarity));
+        }
+        return path;
     }
 
     // ───────────────────────── 公共读写接口 ─────────────────────────
