@@ -168,6 +168,12 @@ dependencies {
 
 }
 
+// KubeJS 依赖不存在时排除相关源码
+def kubejsLib = file('libs/kubejs-forge-2001.6.5-build.26.jar')
+if (!kubejsLib.exists()) {
+    sourceSets.main.java.exclude('**/compat/kubejs/**')
+}
+
 // This block of code expands all declared replace properties in the specified resource targets.
 // A missing property will result in an error. Properties are expanded using ${} Groovy notation.
 // When "copyIdeResources" is enabled, this will also run before the game launches in IDE environments.
