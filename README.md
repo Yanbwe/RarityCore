@@ -42,6 +42,150 @@ Whether you're a casual player or a modpack author, RarityCore makes your game w
 RarityCore provides a simple Java API for other mods to call directly.  
 https://yanbwe.github.io/Yanbwe-Wiki/en/raritycore/
 
+### Add as a Dependency
+
+**Recommended: Modrinth Maven (no authentication required)**
+
+<details>
+<summary>1.20.1 (Forge) — click to expand</summary>
+
+```gradle
+repositories {
+    mavenCentral()
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+
+dependencies {
+    implementation fg.deobf("maven.modrinth:raritycore:1201.14.0")
+}
+```
+</details>
+
+<details>
+<summary>1.21.1 (NeoForge) — click to expand</summary>
+
+```gradle
+repositories {
+    mavenCentral()
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+
+dependencies {
+    implementation "maven.modrinth:raritycore:<version>"
+}
+```
+</details>
+
+> The version can be found on the [Modrinth version page](https://modrinth.com/mod/raritycore/versions).
+
+**Alternative: GitHub Packages (requires authentication)**
+
+<details>
+<summary>1.20.1 (Forge) — click to expand</summary>
+
+```gradle
+repositories {
+    mavenCentral()
+    maven {
+        url = "https://maven.pkg.github.com/Yanbwe/RarityCore"
+        credentials {
+            username = "your-github-username"
+            password = "your-github-personal-access-token"
+        }
+    }
+}
+
+dependencies {
+    implementation fg.deobf("org.yanbwe:raritycore:1201.14.0")
+}
+```
+</details>
+
+<details>
+<summary>1.21.1 (NeoForge) — click to expand</summary>
+
+```gradle
+repositories {
+    mavenCentral()
+    maven {
+        url = "https://maven.pkg.github.com/Yanbwe/RarityCore"
+        credentials {
+            username = "your-github-username"
+            password = "your-github-personal-access-token"
+        }
+    }
+}
+
+dependencies {
+    implementation "org.yanbwe:raritycore:1211.<version>"
+}
+```
+</details>
+
+> Create a Personal Access Token (with `read:packages` scope) at:  
+> `GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens`  
+> You can store credentials in `~/.gradle/gradle.properties` to avoid hardcoding:
+> ```properties
+> gpr.user=your-github-username
+> gpr.key=your-personal-access-token
+> ```
+
+<details>
+<summary>1.20.1 (Forge) — click to expand</summary>
+
+```gradle
+repositories {
+    mavenCentral()
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+
+dependencies {
+    implementation fg.deobf("maven.modrinth:raritycore:1201.14.0")
+}
+```
+</details>
+
+<details>
+<summary>1.21.1 (NeoForge) — click to expand</summary>
+
+```gradle
+repositories {
+    mavenCentral()
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+
+dependencies {
+    implementation "maven.modrinth:raritycore:<version>"
+}
+```
+</details>
+
+> The version can be found on the [Modrinth version page](https://modrinth.com/mod/raritycore/versions).
+
 ## 📜 License
 
 This project is licensed under **GPL-3.0**.  
