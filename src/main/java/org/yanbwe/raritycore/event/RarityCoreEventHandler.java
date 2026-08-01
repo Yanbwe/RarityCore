@@ -17,6 +17,7 @@ import org.yanbwe.raritycore.network.NetworkRetryManager;
 import org.yanbwe.raritycore.network.SyncBatchManager;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
+import org.yanbwe.raritycore.service.ConfigReloadService;
 import org.yanbwe.raritycore.service.ServiceFactory;
 
 /**
@@ -49,6 +50,8 @@ public class RarityCoreEventHandler {
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         ServiceFactory factory = ServiceFactory.getInstance();
+        // 服务器启动时执行完整配置重载（此时所有模组物品已注册，保证模组物品的稀有度配置正确加载）
+        ConfigReloadService.reloadOnStartup();
         // 启动调度器服务
         factory.getSchedulerService().startScheduledTasks();
     }
