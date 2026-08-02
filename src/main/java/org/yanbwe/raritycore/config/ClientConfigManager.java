@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Set;
 
 /**
  * 客户端配置管理器
@@ -69,15 +70,29 @@ public class ClientConfigManager {
         loadClientConfigFromFile();
     }
 
+    /** V14 需裁剪的旧配置键集合 */
+    private static final Set<String> OBSOLETE_CLIENT_KEYS = Set.of(
+        "enableItemBorderRendering", "itemBorderStyle", "useTextureBorder",
+        "enableItemNameColor", "enableTooltipColor", "enableTooltipInsert",
+        "skipUnconfiguredItems", "starDisplay"
+    );
+
     /**
-     * 从文件加载客户端配置
+     * 从文件加载客户端配置。
+     * 自动检测并裁剪掉旧版配置项，仅保留 enableCacheSystem 与 enableSophisticatedCoreAdapter。
      */
     private static void loadClientConfigFromFile() {
         try (BufferedReader reader = Files.newBufferedReader(CLIENT_CONFIG_FILE)) {
             JsonObject jsonObject = GSON.fromJson(reader, JsonObject.class);
 
             if (jsonObject != null) {
-                RarityCore.LOGGER.info("Loading client config from {}", CLIENT_CONFIG_FILE.getFileName());
+                boolean hasObsoleteKeys = false;
+                for (String key : OBSOLETE_CLIENT_KEYS) {
+                    if (jsonObject.has(key)) {
+                        hasObsoleteKeys = true;
+                        break;
+                    }
+                }
 
                 // 读取缓存系统开关
                 if (jsonObject.has("enableCacheSystem")) {
@@ -91,6 +106,12 @@ public class ClientConfigManager {
                     enableSophisticatedCoreAdapter = jsonObject.get("enableSophisticatedCoreAdapter").getAsBoolean();
                 } else {
                     enableSophisticatedCoreAdapter = RarityConstants.DEFAULT_ENABLE_SOPHISTICATED_CORE_ADAPTER;
+                }
+
+                // 检测到旧版配置项存在，自动裁剪并重新保存
+                if (hasObsoleteKeys) {
+                    RarityCore.LOGGER.info("Detected obsolete keys in client.json, trimming...");
+                    saveClientConfig();
                 }
 
                 RarityCore.LOGGER.info("Client config loaded: enableCacheSystem={}, enableSophisticatedCoreAdapter={}",

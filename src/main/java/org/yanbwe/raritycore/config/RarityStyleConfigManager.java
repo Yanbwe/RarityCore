@@ -664,14 +664,24 @@ public class RarityStyleConfigManager {
 
     /**
      * 解析等级名称组件。根据 translationKey 模板生成可翻译组件。
+     * 若 translationKey 对应翻译不存在（getString 返回键名本身），则回退到 fallback 模板。
      */
     public Component resolveLevelNameComponent(int level) {
         TooltipConfig t = resolveTooltip(level);
         String template = t.level.translationKey.replace("{level}", String.valueOf(level));
         Component result = StringResolver.resolveTranslation(template, level);
-        // 如果翻译键解析结果等价于原始键（即翻译缺失），按 fallback 处理
-        String fallbackTemplate = t.level.fallback.replace("{level}", String.valueOf(level));
-        if (result.getString().equals(template.replace("{level}", String.valueOf(level)))) {
+
+        // 提取翻译键：$(key) → key，否则为整个模板
+        String expectedKey;
+        if (template.startsWith("$(") && template.endsWith(")")) {
+            expectedKey = template.substring(2, template.length() - 1);
+        } else {
+            expectedKey = template;
+        }
+
+        // 翻译缺失时 Component.translatable(key).getString() 直接返回键名本身
+        if (result.getString().equals(expectedKey)) {
+            String fallbackTemplate = t.level.fallback.replace("{level}", String.valueOf(level));
             return StringResolver.resolveTranslation(fallbackTemplate, level);
         }
         return result;

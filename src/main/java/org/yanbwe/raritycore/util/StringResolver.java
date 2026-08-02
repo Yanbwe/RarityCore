@@ -58,10 +58,10 @@ public final class StringResolver {
 
     /**
      * 解析 level.translationKey 或 level.fallback 字符串。
-     * 仅处理 $(key) 形式和纯文本，不进行 @{level}/@{star} 替换。
+     * 先替换 {level} 占位符，再扫描字符串中内嵌的 $(key) 模式并替换为翻译文本。
      *
      * @param template 模板字符串
-     * @param level    稀有度等级（用于 fallback 的 {level} 占位符替换）
+     * @param level    稀有度等级（用于 {level} 占位符替换）
      * @return 解析后的 MutableComponent
      */
     public static MutableComponent resolveTranslation(String template, int level) {
@@ -69,7 +69,7 @@ public final class StringResolver {
             return Component.empty();
         }
 
-        // 整串匹配 $(key) → 翻译键
+        // 整串匹配 $(key) → 翻译键（无需拼接）
         if (template.startsWith("$(") && template.endsWith(")") && template.indexOf("$(", 1) < 0) {
             String key = template.substring(2, template.length() - 1);
             if (!key.isEmpty()) {
@@ -77,8 +77,44 @@ public final class StringResolver {
             }
         }
 
-        // 字面量，替换 {level} 占位符
+        // 先替换 {level} 占位符
         String result = template.replace("{level}", String.valueOf(level));
-        return Component.literal(result);
+
+        // 扫描内嵌的 $(key) 模式并逐个替换为翻译文本
+        return resolveEmbeddedTranslations(result);
+    }
+
+    /**
+     * 扫描字符串中的 $(key) 模式，将每个翻译键替换为翻译结果。
+     * 非 $(key) 段保持为字面量。
+     */
+    private static MutableComponent resolveEmbeddedTranslations(String text) {
+        MutableComponent component = Component.empty();
+        int pos = 0;
+        while (pos < text.length()) {
+            int start = text.indexOf("$(", pos);
+            if (start == -1) {
+                // 剩余部分全部为字面量
+                component.append(Component.literal(text.substring(pos)));
+                break;
+            }
+            // $( 前面的字面量
+            if (start > pos) {
+                component.append(Component.literal(text.substring(pos, start)));
+            }
+            // 查找匹配的 )
+            int end = text.indexOf(")", start + 2);
+            if (end == -1) {
+                // 未闭合的 $( 视为字面量
+                component.append(Component.literal(text.substring(start)));
+                break;
+            }
+            String key = text.substring(start + 2, end);
+            if (!key.isEmpty()) {
+                component.append(Component.translatable(key));
+            }
+            pos = end + 1;
+        }
+        return component;
     }
 }
