@@ -11,8 +11,7 @@ import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.cache.RarityCacheCoordinator;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.config.ClientConfigManager;
-import org.yanbwe.raritycore.config.RarityClientConfig;
-import org.yanbwe.raritycore.config.RarityClientConfigLoader;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.util.StarDisplayManager;
 
 /**
@@ -27,18 +26,18 @@ public class ClientCommands {
             // 重载全部客户端配置（客户端专用，不在服务端 reload 中触发）
             .then(Commands.literal("reload")
                 .executes(context -> {
-                    // 1. 重载 client.json（含星星显示配置）
+                    // 1. 重载 client.json
                     ClientConfigManager.loadClientConfig();
                     // 2. 重载星星显示策略
                     StarDisplayManager.getInstance().reloadConfiguration();
-                    // 3. 重载 RarityClientConfig.json（per-rarity 视觉配置）
-                    RarityClientConfigLoader.load();
+                    // 3. 重载 RarityStyle.json
+                    RarityStyleConfigManager.getInstance().reload();
                     // 4. 处理 skipUnconfiguredItems 配置变更
                     ItemBorderRenderer.handleSkipConfigChange();
                     RarityTooltipHandler.handleSkipConfigChange();
                     // 5. 刷新渲染缓存
                     RenderCacheManager.clearAllCache();
-                    int levelCount = RarityClientConfig.getInstance().size();
+                    int levelCount = RarityStyleConfigManager.getInstance().getConfiguredLevels().size();
                     context.getSource().sendSuccess(() -> Component.translatable(
                         "rarity.core.rarity_client_config_reloaded", levelCount)
                         .withStyle(ChatFormatting.GREEN), false);

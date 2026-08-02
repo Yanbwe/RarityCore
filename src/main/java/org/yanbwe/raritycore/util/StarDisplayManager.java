@@ -1,7 +1,8 @@
 package org.yanbwe.raritycore.util;
 
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.config.StarDisplayConfigManager;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager.TooltipStarConfig;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,26 +44,28 @@ public class StarDisplayManager {
     }
     
     /**
-     * 根据配置更新当前策略
+     * 根据 RarityStyleConfigManager 逐级配置更新当前策略（使用等级1作为全局默认）
      */
     public void updateStrategyFromConfig() {
-        if (!StarDisplayConfigManager.isEnableStarDisplay()) {
+        RarityStyleConfigManager mgr = RarityStyleConfigManager.getInstance();
+        if (!mgr.isTooltipEnabled()) {
             currentStrategy = null;
             return;
         }
         
-        String mode = StarDisplayConfigManager.getStarMode();
+        TooltipStarConfig star = mgr.resolveTooltip(RarityConstants.MIN_RARITY).star;
+        String mode = star.mode;
         StarMode starMode = parseStarMode(mode);
         
         switch (starMode) {
             case REPEAT:
-                currentStrategy = createRepeatStrategy();
+                currentStrategy = createRepeatStrategy(RarityConstants.MIN_RARITY);
                 break;
             case CUSTOM:
-                currentStrategy = createCustomStrategy();
+                currentStrategy = createCustomStrategy(RarityConstants.MIN_RARITY);
                 break;
             default:
-                currentStrategy = createRepeatStrategy(); // 默认使用重复模式
+                currentStrategy = createRepeatStrategy(RarityConstants.MIN_RARITY);
                 break;
         }
         
@@ -86,10 +89,11 @@ public class StarDisplayManager {
     }
     
     /**
-     * 创建重复模式策略
+     * 创建重复模式策略（从 RarityStyleConfigManager 逐级配置读取字符）
      */
-    private StarDisplayStrategy createRepeatStrategy() {
-        String character = StarDisplayConfigManager.getRepeatCharacter();
+    private StarDisplayStrategy createRepeatStrategy(int level) {
+        TooltipStarConfig star = RarityStyleConfigManager.getInstance().resolveTooltip(level).star;
+        String character = star.repeatChar;
         if (character == null || character.isEmpty()) {
             character = RarityConstants.DEFAULT_REPEAT_CHARACTER;
         }
@@ -97,28 +101,39 @@ public class StarDisplayManager {
     }
     
     /**
-     * 创建自定义模式策略
+     * 创建自定义模式策略（从 RarityStyleConfigManager 逐级配置读取自定义字符串）
      */
-    private StarDisplayStrategy createCustomStrategy() {
-        Map<Integer, String> customStrings = StarDisplayConfigManager.getCustomStarStrings();
-        return new CustomStarStrategy(customStrings);
+    private StarDisplayStrategy createCustomStrategy(int level) {
+        TooltipStarConfig star = RarityStyleConfigManager.getInstance().resolveTooltip(level).star;
+        String custom = star.custom;
+        if (custom != null && !custom.isEmpty()) {
+            Map<Integer, String> customStrings = new java.util.HashMap<>();
+            customStrings.put(level, custom);
+            return new CustomStarStrategy(customStrings);
+        }
+        // 回退到重复模式
+        return createRepeatStrategy(level);
     }
     
     /**
-     * 获取星星显示字符串
+     * 获取星星显示字符串（逐级从 RarityStyleConfigManager 读取配置）
      * @param rarity 稀有度等级
      * @return 显示的字符串,如果不应显示则返回空字符串
      */
     public String getStarDisplayString(int rarity) {
-        if (!StarDisplayConfigManager.isEnableStarDisplay() || currentStrategy == null) {
+        RarityStyleConfigManager mgr = RarityStyleConfigManager.getInstance();
+        if (!mgr.isTooltipEnabled()) {
             return "";
         }
         
         try {
-            return currentStrategy.getDisplayString(rarity);
+            // 逐级获取配置并动态构建策略
+            TooltipStarConfig star = mgr.resolveTooltip(rarity).star;
+            StarDisplayStrategy strategy = buildStrategyForLevel(rarity, star);
+            return strategy.getDisplayString(rarity);
         } catch (Exception e) {
             RarityCore.LOGGER.error("获取星星显示字符串时发生错误: 稀有度{}", rarity, e);
-            return ""; // 安全回退
+            return "";
         }
     }
     
@@ -128,12 +143,33 @@ public class StarDisplayManager {
      * @return 是否应该显示
      */
     public boolean shouldDisplayStars(int rarity) {
-        if (!StarDisplayConfigManager.isEnableStarDisplay() || currentStrategy == null) {
+        RarityStyleConfigManager mgr = RarityStyleConfigManager.getInstance();
+        if (!mgr.isTooltipEnabled()) {
             return false;
         }
-        
         String displayString = getStarDisplayString(rarity);
         return displayString != null && !displayString.isEmpty();
+    }
+    
+    /**
+     * 根据逐级配置动态构建策略
+     */
+    private StarDisplayStrategy buildStrategyForLevel(int level, TooltipStarConfig star) {
+        String cacheKey = level + "_" + star.mode + "_" + star.repeatChar + "_" + star.custom;
+        return strategyCache.computeIfAbsent(cacheKey, k -> {
+            String mode = star.mode;
+            if ("custom".equals(mode) && star.custom != null && !star.custom.isEmpty()) {
+                Map<Integer, String> customStrings = new java.util.HashMap<>();
+                customStrings.put(level, star.custom);
+                return new CustomStarStrategy(customStrings);
+            } else {
+                String character = star.repeatChar;
+                if (character == null || character.isEmpty()) {
+                    character = RarityConstants.DEFAULT_REPEAT_CHARACTER;
+                }
+                return new RepeatStarStrategy(character);
+            }
+        });
     }
     
     /**

@@ -6,27 +6,21 @@ package org.yanbwe.raritycore.util;
  */
 public class RarityConstants {
     
-    // 稀有度等级常量
-    public static final int RARITY_COMMON = 1;      // 普通
-    public static final int RARITY_UNCOMMON = 2;    // 稀有
-    public static final int RARITY_RARE = 3;        // 罕见
-    public static final int RARITY_EPIC = 4;        // 史诗
-    public static final int RARITY_LEGENDARY = 5;   // 传说
-    public static final int RARITY_MYTHICAL = 6;    // 神话
-    public static final int RARITY_UNIQUE = 7;      // 唯一
-    
     // 配置文件相关常量
     public static final String CONFIG_DIR_PARENT = "config";
     public static final String CONFIG_DIR_NAME = "raritycore";
     public static final String CLIENT_CONFIG_FILE_NAME = "client.json";
     public static final String SERVER_CONFIG_FILE_NAME = "server.json";
     public static final String RARITY_CLIENT_CONFIG_FILE_NAME = "RarityClientConfig.json";
+    public static final String RARITY_STYLE_CONFIG_FILE_NAME = "RarityStyle.json";
     public static final String FINAL_RARITY_FILE_NAME = "FinalRarity.json";
     public static final String FINAL_RARITY_CONFIG_FOLDER_NAME = "FinalRarityConfig";
     public static final String TAG_RARITY_CONFIG_FILE_NAME = "TagRarity.json";
     
-    // 验证范围
+    // 稀有度等级范围
+    /** 最低档位 */
     public static final int MIN_RARITY = 1;
+    /** 内置预置档位数（非稀有度上限），默认为 7 */
     public static final int MAX_RARITY = 7;
     
     // 默认值
@@ -80,4 +74,7 @@ public class RarityConstants {
     // 同步批处理配置默认值
     /** SyncBatchManager 最大待处理操作数默认值 */
     public static final int DEFAULT_MAX_PENDING_OPERATIONS = 1000;
+
+    // SophisticatedCore 适配
+    public static final boolean DEFAULT_ENABLE_SOPHISTICATED_CORE_ADAPTER = true;
 }

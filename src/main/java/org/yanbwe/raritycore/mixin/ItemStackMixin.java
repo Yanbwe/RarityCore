@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.config.ClientConfigManager;
-import org.yanbwe.raritycore.config.RarityClientConfig;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityConstants;
 
@@ -49,23 +49,22 @@ public class ItemStackMixin {
             return;
         }
 
-        // 直接使用原始稀有度值查询 RarityClientConfig，其 getConfig() 内部处理：
-        // level < 1 → 回退1 | level > 7 未配置 → 回退7 | level 已配置 → 直接命中
-        // 如果是普通稀有度(1),则使用白色,但不添加格式化代码(默认颜色)
-        if (rarity == RarityConstants.RARITY_COMMON) {
+        // 直接使用原始稀有度值查询 RarityStyleConfigManager
+        // 如果是默认稀有度(1)，则使用白色，但不添加格式化代码(默认颜色)
+        if (rarity == RarityConstants.MIN_RARITY) {
             return;
         }
         
-        // 从 RarityClientConfig 获取该等级的 RGB 颜色
+        // 从 RarityStyleConfigManager 获取该等级的 RGB 颜色
         // 使用 TextColor.fromRgb() + Style.EMPTY.withColor() 替代 ChatFormatting
-        RarityClientConfig clientConfig = RarityClientConfig.getInstance();
+        RarityStyleConfigManager mgr = RarityStyleConfigManager.getInstance();
         
-        // 检查 RarityClientConfig 的 per-level nameColor 开关
-        if (!clientConfig.isEmpty() && !clientConfig.isNameColorEnabled(rarity)) {
+        // 检查逐级 nameColor 开关
+        if (!mgr.resolveItemNameColor(rarity)) {
             return;
         }
         
-        int rgbColor = clientConfig.getColor(rarity);
+        int rgbColor = mgr.resolveColor(rarity);
         Component originalName = cir.getReturnValue();
         
         // 使用 RGB 颜色设置物品名称

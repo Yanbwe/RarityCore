@@ -19,7 +19,7 @@ import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.compat.colortooltips.ColorTooltipsCompat;
 import org.yanbwe.raritycore.config.ClientConfigManager;
-import org.yanbwe.raritycore.config.RarityClientConfig;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.event.RarityTooltipEvent;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.ComponentBuilder;
@@ -42,9 +42,6 @@ public class RarityTooltipHandler {
     /** 星星组件缓存（普通稀有度）：rarityLevel → 带颜色星星的完整 tooltip 组件 */
     private static final ConcurrentHashMap<Integer, MutableComponent> rarityTooltipCache = new ConcurrentHashMap<>();
 
-    /** 特殊稀有度组件缓存：rarityLevel → [xx级稀有度] ⭐⭐ 组件 */
-    private static final ConcurrentHashMap<Integer, MutableComponent> specialRarityTooltipCache = new ConcurrentHashMap<>();
-
     /** 前缀组件已初始化标记 */
     private static volatile boolean prefixCacheInitialized = false;
 
@@ -55,25 +52,25 @@ public class RarityTooltipHandler {
         if (!prefixCacheInitialized) {
             synchronized (PREFIX_CACHE) {
                 if (!prefixCacheInitialized) {
-                    PREFIX_CACHE[RarityConstants.RARITY_COMMON] =
-                        Component.translatable("rarity.core.common");
-                    PREFIX_CACHE[RarityConstants.RARITY_UNCOMMON] =
-                        Component.translatable("rarity.core.uncommon");
-                    PREFIX_CACHE[RarityConstants.RARITY_RARE] =
-                        Component.translatable("rarity.core.rare");
-                    PREFIX_CACHE[RarityConstants.RARITY_EPIC] =
-                        Component.translatable("rarity.core.epic");
-                    PREFIX_CACHE[RarityConstants.RARITY_LEGENDARY] =
-                        Component.translatable("rarity.core.legendary");
-                    PREFIX_CACHE[RarityConstants.RARITY_MYTHICAL] =
-                        Component.translatable("rarity.core.mythical");
-                    PREFIX_CACHE[RarityConstants.RARITY_UNIQUE] =
-                        Component.translatable("rarity.core.unique");
+                    PREFIX_CACHE[1] =
+                        Component.translatable("rarity.core.1");
+                    PREFIX_CACHE[2] =
+                        Component.translatable("rarity.core.2");
+                    PREFIX_CACHE[3] =
+                        Component.translatable("rarity.core.3");
+                    PREFIX_CACHE[4] =
+                        Component.translatable("rarity.core.4");
+                    PREFIX_CACHE[5] =
+                        Component.translatable("rarity.core.5");
+                    PREFIX_CACHE[6] =
+                        Component.translatable("rarity.core.6");
+                    PREFIX_CACHE[7] =
+                        Component.translatable("rarity.core.7");
                     prefixCacheInitialized = true;
                 }
             }
         }
-        if (rarity >= 1 && rarity <= RarityConstants.RARITY_UNIQUE) {
+        if (rarity >= 1 && rarity <= 7) {
             return PREFIX_CACHE[rarity];
         }
         return null;
@@ -87,7 +84,6 @@ public class RarityTooltipHandler {
             prefixCacheInitialized = false;
         }
         rarityTooltipCache.clear();
-        specialRarityTooltipCache.clear();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -125,7 +121,7 @@ public class RarityTooltipHandler {
 
         // 如果仍然没有获取到稀有度,使用默认值
         if (rarity == null) {
-            rarity = RarityConstants.RARITY_COMMON;
+            rarity = RarityConstants.MIN_RARITY;
         }
 
         // 如果启用了跳过未配置物品且物品没有配置稀有度,则不插入工具提示
@@ -134,63 +130,30 @@ public class RarityTooltipHandler {
             return;
         }
 
+        RarityStyleConfigManager styleMgr = RarityStyleConfigManager.getInstance();
 
-        // 先检查是否为特殊稀有度(大于7),保存原始值用于显示
-        boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;
-        int displayRarity = rarity; // 保存用于显示的原始稀有度值
-
-        // 直接使用原始稀有度值查询 RarityClientConfig，其 getConfig() 内部处理：
-        // level < 1 → 回退1 | level > 7 未配置 → 回退7 | level 已配置 → 直接命中
-        // 从 RarityClientConfig 获取该等级的客户端配置
-        RarityClientConfig clientConfig = RarityClientConfig.getInstance();
-
-        // RarityClientConfig 的 per-level tooltips 开关：如果该等级配置为不显示 tooltip，则跳过
-        // 注：此开关仅在 RarityClientConfig 已加载时生效（非空配置）
-        if (!clientConfig.isEmpty() && !clientConfig.isTooltipsEnabled(rarity)) {
+        // 从 RarityStyleConfigManager 获取该等级的 tooltip 配置
+        if (!styleMgr.resolveTooltip(rarity).show) {
             return;
         }
 
-        // 从 RarityClientConfig 获取 RGB 颜色（含等级 >7 回退）
-        int rgbColor = clientConfig.getColor(rarity);
+        // 从 RarityStyleConfigManager 获取 RGB 颜色（含等级 >7 回退）
+        int rgbColor = styleMgr.resolveColor(rarity);
 
-        if (isSpecialRarity) {
-            // 特殊稀有度工具提示 — 从缓存获取，避免每帧(60fps)重建
-            MutableComponent rarityComponent = getOrCreateSpecialRarityComponent(
-                displayRarity, rgbColor);
+        // 所有等级统一走标准路径
+        // 从缓存获取 tooltip 组件，避免每帧重新构建 translatable + stars
+        MutableComponent rarityComponent = getOrCreateRarityTooltipComponent(rarity, rgbColor);
 
-            // 发送 RarityTooltipEvent（当无监听器时仅迭代空数组，开销极小）
-            List<Component> tipComponents = new ArrayList<>();
-            tipComponents.add(rarityComponent);
-            RarityTooltipEvent tipEvent = new RarityTooltipEvent(itemStack, displayRarity, tipComponents, true);
-            NeoForge.EVENT_BUS.post(tipEvent);
+        // 发送 RarityTooltipEvent
+        List<Component> tipComponents = new ArrayList<>();
+        tipComponents.add(rarityComponent);
+        RarityTooltipEvent tipEvent = new RarityTooltipEvent(itemStack, rarity, tipComponents);
+        NeoForge.EVENT_BUS.post(tipEvent);
 
-            List<Component> tooltip = event.getToolTip();
-            List<Component> eventComponents = new ArrayList<>(tipEvent.getTooltipComponents());
-            for (int i = eventComponents.size() - 1; i >= 0; i--) {
-                tooltip.add(1, eventComponents.get(i));
-            }
-            return;
-        } else {
-            // 标准稀有度(1-7级)
-            if (rarity < RarityConstants.RARITY_COMMON || rarity > RarityConstants.RARITY_UNIQUE) {
-                return;
-            }
-
-            // 从缓存获取 tooltip 组件，避免每帧重新构建 translatable + stars
-            MutableComponent rarityComponent = getOrCreateRarityTooltipComponent(
-                rarity, rgbColor);
-
-            // 发送 RarityTooltipEvent
-            List<Component> tipComponents = new ArrayList<>();
-            tipComponents.add(rarityComponent);
-            RarityTooltipEvent tipEvent = new RarityTooltipEvent(itemStack, displayRarity, tipComponents, false);
-            NeoForge.EVENT_BUS.post(tipEvent);
-
-            List<Component> tooltip = event.getToolTip();
-            List<Component> eventComponents = new ArrayList<>(tipEvent.getTooltipComponents());
-            for (int i = eventComponents.size() - 1; i >= 0; i--) {
-                tooltip.add(1, eventComponents.get(i));
-            }
+        List<Component> tooltip = event.getToolTip();
+        List<Component> eventComponents = new ArrayList<>(tipEvent.getTooltipComponents());
+        for (int i = eventComponents.size() - 1; i >= 0; i--) {
+            tooltip.add(1, eventComponents.get(i));
         }
         } finally {
             RarityExclusionManager.setRenderingTooltipItem(false);
@@ -204,16 +167,20 @@ public class RarityTooltipHandler {
     /**
      * 获取或创建标准稀有度 tooltip 组件（带缓存）。
      * 缓存 key：rarity * 0x1000000 + (rgbColor & 0xFFFFFF)
-     * 注意：由于 RarityClientConfig 可能被重新加载改变颜色，
+     * 注意：由于 RarityStyleConfigManager 可能被重新加载改变颜色，
      * 缓存会在 invalidateCaches() 时清空。
      */
     private static MutableComponent getOrCreateRarityTooltipComponent(int rarity, int rgbColor) {
         int cacheKey = (rarity << 24) | (rgbColor & 0x00FFFFFF);
         return rarityTooltipCache.computeIfAbsent(cacheKey, k -> {
             MutableComponent prefixComponent = getCachedPrefix(rarity);
+            if (prefixComponent == null) {
+                // 等级超过7时，使用 RarityStyleConfigManager 获取等级名称组件
+                prefixComponent = (MutableComponent) RarityStyleConfigManager.getInstance().resolveLevelNameComponent(rarity);
+            }
 
-            // 应用前缀颜色：client.json 的 enableTooltipColor 为总闸
-            if (ClientConfigManager.isEnableTooltipColor()) {
+            // 应用前缀颜色
+            if (RarityStyleConfigManager.getInstance().isTooltipColorEnabled()) {
                 prefixComponent = prefixComponent.copy().withStyle(Style.EMPTY.withColor(rgbColor));
             }
 
@@ -221,14 +188,6 @@ public class RarityTooltipHandler {
             MutableComponent starsComponent = ComponentBuilder.buildRarityComponent(rarity, rgbColor);
             return Component.empty().append(prefixComponent).append(starsComponent);
         });
-    }
-
-    /**
-     * 获取或创建特殊稀有度 tooltip 组件（带缓存）。
-     */
-    private static MutableComponent getOrCreateSpecialRarityComponent(int displayRarity, int rgbColor) {
-        return specialRarityTooltipCache.computeIfAbsent(displayRarity, k ->
-            ComponentBuilder.buildSpecialRarityComponent(displayRarity, rgbColor));
     }
 
     /**

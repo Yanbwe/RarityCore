@@ -119,52 +119,20 @@ public class ConfigValidator {
     }
 
     /**
-     * 创建默认客户端配置对象
+     * 创建默认客户端配置对象（已精简，仅保留核心配置项）
      * @return 默认客户端配置对象
      */
     public static JsonObject createDefaultClientConfig() {
         JsonObject configObject = new JsonObject();
-        
-        // 基本配置
-        configObject.addProperty("enableItemBorderRendering", true);
-        configObject.addProperty("itemBorderStyle", 1);
-        configObject.addProperty("useTextureBorder", true);
-        configObject.addProperty("enableItemNameColor", true);
-        configObject.addProperty("enableTooltipColor", true);
-        configObject.addProperty("enableTooltipInsert", true);
-        configObject.addProperty("skipUnconfiguredItems", false);
         configObject.addProperty("enableCacheSystem", true);
-        
-        // 星星显示配置
-        JsonObject starDisplay = new JsonObject();
-        starDisplay.addProperty("enabled", true);
-        starDisplay.addProperty("mode", "repeat");
-        
-        JsonObject repeatConfig = new JsonObject();
-        repeatConfig.addProperty("character", "★");
-        starDisplay.add("repeat", repeatConfig);
-        
-        JsonObject customConfig = new JsonObject();
-        JsonObject customStrings = new JsonObject();
-        customStrings.addProperty("1", "☆☆☆☆☆");
-        customStrings.addProperty("2", "★☆☆☆☆");
-        customStrings.addProperty("3", "★★☆☆☆");
-        customStrings.addProperty("4", "★★★☆☆");
-        customStrings.addProperty("5", "★★★★☆");
-        customStrings.addProperty("6", "★★★★★");
-        customStrings.addProperty("7", "★★★★★★");
-        customStrings.addProperty("8", "★★★★★★★");
-        customConfig.add("strings", customStrings);
-        customConfig.add("specialRarityTexts", new JsonObject());
-        starDisplay.add("custom", customConfig);
-        
-        configObject.add("starDisplay", starDisplay);
-        
+        configObject.addProperty("enableSophisticatedCoreAdapter", true);
         return configObject;
     }
 
     /**
      * 创建默认 RarityClientConfig 配置对象。
+     *
+     * @deprecated 使用 {@link RarityStyleConfigManager} 替代，保留仅为向后兼容
      *
      * <p>结构：
      * <pre>{@code
@@ -179,6 +147,7 @@ public class ConfigValidator {
      *
      * @return 默认的 RarityClientConfig JSON 对象
      */
+    @Deprecated
     public static JsonObject createDefaultRarityClientConfig() {
         JsonObject root = new JsonObject();
         JsonObject rarities = new JsonObject();

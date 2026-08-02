@@ -11,25 +11,23 @@ import net.minecraft.world.item.Item;
 public class RarityValidator {
     
     /**
-     * 验证稀有度值是否有效
+     * 验证稀有度值是否有效（仅检查下限，无上限）。
      * @param rarity 稀有度值
      * @return 是否有效
      */
     public static boolean isValidRarity(int rarity) {
-        return rarity >= RarityConstants.MIN_RARITY && rarity <= RarityConstants.MAX_RARITY;
+        return rarity >= RarityConstants.MIN_RARITY;
     }
     
     /**
-     * 标准化稀有度值，遵循模组的包容性原则
-     * 小于1的值视为1，大于7的值视为7
+     * 标准化稀有度值，遵循包容性原则。
+     * 小于 MIN_RARITY 的值视为 MIN_RARITY，其余不变。
      * @param rarity 稀有度值
-     * @return 标准化后的稀有度值 (1-7)
+     * @return 标准化后的稀有度值
      */
     public static int normalizeRarity(int rarity) {
         if (rarity < RarityConstants.MIN_RARITY) {
             return RarityConstants.MIN_RARITY; 
-        } else if (rarity > RarityConstants.MAX_RARITY) {
-            return RarityConstants.MAX_RARITY; 
         }
         return rarity; 
     }

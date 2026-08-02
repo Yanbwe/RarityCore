@@ -47,9 +47,9 @@ public class ConfigManager {
             RarityCore.LOGGER.error("Cannot create config directory: {}", CONFIG_DIR, e);
             return;
         }
-        
-        // 初始化星星显示配置（先设默认值，随后 ClientConfigManager 会加载真实配置覆盖）
-        StarDisplayConfigManager.initialize();
+
+        // 初始化 RarityStyle.json 配置管理器
+        RarityStyleConfigManager.getInstance();
 
         // 初始化客户端配置
         ClientConfigManager.initialize();

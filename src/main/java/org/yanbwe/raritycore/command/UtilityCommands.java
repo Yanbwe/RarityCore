@@ -18,6 +18,7 @@ import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.ConfigManager;
 import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.edit.EditModeManager;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
@@ -219,55 +220,16 @@ public class UtilityCommands {
     }
     
     /**
-     * 切换纹理边框启用状态
+     * 切换纹理边框启用状态（V14：切换全局边框总开关）
      */
     private static int toggleTextureBorder(CommandSourceStack source) {
-        boolean currentState = ClientConfigManager.isUseTextureBorder();
-        boolean newState = !currentState;
-        ClientConfigManager.setUseTextureBorder(newState);
+        RarityStyleConfigManager styleMgr = RarityStyleConfigManager.getInstance();
+        boolean newState = !styleMgr.isBorderEnabled();
+        styleMgr.setBorderEnabled(newState);
         
-        // 尝试保存到配置文件
-        try {
-            Path configDir = ConfigManager.getConfigDirPath();
-            Files.createDirectories(configDir);
-            
-            Path configFile = ClientConfigManager.getClientConfigPath();
-            
-            // 读取现有配置
-            JsonObject jsonObject;
-            if (Files.exists(configFile)) {
-                String content = Files.readString(configFile);
-                if (!content.trim().isEmpty()) {
-                    try {
-                        jsonObject = JsonParser.parseString(content).getAsJsonObject();
-                    } catch (Exception e) {
-                        RarityCore.LOGGER.warn("Failed to parse config file, will recreate", e);
-                        jsonObject = new JsonObject();
-                    }
-                } else {
-                    jsonObject = new JsonObject();
-                }
-            } else {
-                jsonObject = new JsonObject();
-            }
-            
-            // 更新配置
-            jsonObject.addProperty("useTextureBorder", newState);
-            
-            // 写入配置文件
-            Gson gson = JsonPerformanceOptimizer.getOptimizedGson();
-            try (FileWriter writer = new FileWriter(configFile.toFile())) {
-                gson.toJson(jsonObject, writer);
-            }
-            
-            source.sendSuccess(() -> Component.translatable("rarity.core.texture_border_toggle_success", 
-                newState ? Component.translatable("rarity.core.enabled") : Component.translatable("rarity.core.disabled")).withStyle(ChatFormatting.GREEN), false);
-            return 1;
-        } catch (IOException e) {
-            RarityCore.LOGGER.error("Failed to save client config", e);
-            source.sendSuccess(() -> Component.translatable("rarity.core.texture_border_toggle_error").withStyle(ChatFormatting.RED), false);
-            return 0;
-        }
+        source.sendSuccess(() -> Component.translatable("rarity.core.texture_border_toggle_success", 
+            newState ? Component.translatable("rarity.core.enabled") : Component.translatable("rarity.core.disabled")).withStyle(ChatFormatting.GREEN), false);
+        return 1;
     }
 
     // ──────────── v13 新增: 编辑模式命令执行器 ────────────

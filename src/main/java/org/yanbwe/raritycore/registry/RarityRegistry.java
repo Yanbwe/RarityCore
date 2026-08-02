@@ -15,7 +15,7 @@ import org.yanbwe.raritycore.compat.CompatibilityChecker;
 import org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter;
 import org.yanbwe.raritycore.compat.ironsspells.IronSpellsAdapter;
 import org.yanbwe.raritycore.config.ServerConfigManager;
-import org.yanbwe.raritycore.config.StarDisplayConfigManager;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.config.TagRarityConfig;
 import org.yanbwe.raritycore.config.TagRarityConfigLoader;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
@@ -223,70 +223,23 @@ public class RarityRegistry {
         // 获取物品栈稀有度(支持 NBT/组件数据匹配)
         Integer rarity = getRarity(itemStack);
         if (rarity == null) {
-            rarity = RarityConstants.RARITY_COMMON;
+            rarity = RarityConstants.MIN_RARITY;
         }
         
-        // 先检查是否为特殊稀有度(大于7),保存原始值用于显示
-        boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;
-        int displayRarity = rarity; // 保存用于显示的原始稀有度值
+        int level = RarityValidator.normalizeRarity(rarity);
+        String stars = ComponentBuilder.getStars(rarity);
         
-        // 标准化稀有度值用于内部处理
-        rarity = RarityValidator.normalizeRarity(rarity);
+        RarityStyleConfigManager styleMgr = RarityStyleConfigManager.getInstance();
         
-        // 构建工具提示字符串
-        if (isSpecialRarity) {
-            // 特殊稀有度(大于 7 级)
-            String stars = ComponentBuilder.getStars(displayRarity);
-            
-            // 检查是否有自定义特殊稀有度文本
-            String customText = StarDisplayConfigManager.getCustomSpecialRarityText(displayRarity);
-            
-            if (customText != null && !customText.isEmpty()) {
-                // 使用自定义文本,保持与标准格式一致:[自定义文本] <星星>
-                // $前缀表示翻译键
-                String displayText = customText.startsWith("$") && customText.length() > 1
-                    ? Component.translatable(customText.substring(1)).getString()
-                    : customText;
-                return "[" + displayText + "] " + stars;
-            } else {
-                // 使用默认格式,使用本地化文本:[xx级稀有度] <星星>
-                String localizedSuffix = Component.translatable("rarity.core.unusual.tips").getString();
-                return "[" + displayRarity + localizedSuffix + "]" + stars;
-            }
-        } else {
-            // 标准稀有度(1-7级)
-            String rarityKey;
-            switch (rarity) {
-                case RarityConstants.RARITY_COMMON:
-                    rarityKey = "rarity.core.common";
-                    break;
-                case RarityConstants.RARITY_UNCOMMON:
-                    rarityKey = "rarity.core.uncommon";
-                    break;
-                case RarityConstants.RARITY_RARE:
-                    rarityKey = "rarity.core.rare";
-                    break;
-                case RarityConstants.RARITY_EPIC:
-                    rarityKey = "rarity.core.epic";
-                    break;
-                case RarityConstants.RARITY_LEGENDARY:
-                    rarityKey = "rarity.core.legendary";
-                    break;
-                case RarityConstants.RARITY_MYTHICAL:
-                    rarityKey = "rarity.core.mythical";
-                    break;
-                case RarityConstants.RARITY_UNIQUE:
-                    rarityKey = "rarity.core.unique";
-                    break;
-                default:
-                    rarityKey = "rarity.core.common";
-                    break;
-            }
-            
-            // 获取本地化文本
-            String localizedLabel = Component.translatable(rarityKey).getString();
-            String stars = ComponentBuilder.getStars(rarity);
+        if (level <= 7) {
+            // 标准稀有度(1-7级)：使用数字翻译键 "rarity.core.{level}"
+            String translationKey = "rarity.core." + level;
+            String localizedLabel = Component.translatable(translationKey).getString();
             return localizedLabel + " " + stars;
+        } else {
+            // 超出内置档位(>7)：使用 RarityStyleConfigManager 获取等级名称组件
+            String levelName = styleMgr.resolveLevelNameComponent(level).getString();
+            return levelName + " " + stars;
         }
     }
     

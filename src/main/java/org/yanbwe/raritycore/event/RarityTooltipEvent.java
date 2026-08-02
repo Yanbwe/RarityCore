@@ -19,19 +19,16 @@ public class RarityTooltipEvent extends Event {
     private final ItemStack itemStack;
     private final int rarity;
     private final List<Component> tooltipComponents;
-    private final boolean isSpecialRarity;
 
     /**
      * @param itemStack         触发 tooltip 渲染的物品栈
      * @param rarity            稀有度等级（未标准化的原始值，可大于 7）
      * @param tooltipComponents 要插入 tooltip 的组件可变列表，监听器可向此列表追加组件
-     * @param isSpecialRarity   是否为特殊稀有度（等级 &gt; 7）
      */
-    public RarityTooltipEvent(ItemStack itemStack, int rarity, List<Component> tooltipComponents, boolean isSpecialRarity) {
+    public RarityTooltipEvent(ItemStack itemStack, int rarity, List<Component> tooltipComponents) {
         this.itemStack = itemStack;
         this.rarity = rarity;
         this.tooltipComponents = tooltipComponents;
-        this.isSpecialRarity = isSpecialRarity;
     }
 
     /**
@@ -56,12 +53,5 @@ public class RarityTooltipEvent extends Event {
      */
     public List<Component> getTooltipComponents() {
         return tooltipComponents;
-    }
-
-    /**
-     * @return 是否为特殊稀有度（等级 &gt; 7）
-     */
-    public boolean isSpecialRarity() {
-        return isSpecialRarity;
     }
 }
