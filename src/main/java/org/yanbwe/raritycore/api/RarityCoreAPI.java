@@ -231,8 +231,16 @@ public final class RarityCoreAPI {
      * @param level 稀有度等级
      * @return RGB 颜色值 (0xRRGGBB)
      */
-    public static int getColor(int level) {
+    public static int getRarityColor(int level) {
         return RarityStyleConfigManager.getInstance().resolveColor(level);
+    }
+
+    /**
+     * @deprecated 使用 {@link #getRarityColor(int)}
+     */
+    @Deprecated
+    public static int getColor(int level) {
+        return getRarityColor(level);
     }
 
     /**
@@ -241,8 +249,16 @@ public final class RarityCoreAPI {
      * @param level 稀有度等级
      * @return 纹理资源路径
      */
-    public static String getTexture(int level) {
+    public static String getRarityTexture(int level) {
         return RarityStyleConfigManager.getInstance().getBorderTexture(level);
+    }
+
+    /**
+     * @deprecated 使用 {@link #getRarityTexture(int)}
+     */
+    @Deprecated
+    public static String getTexture(int level) {
+        return getRarityTexture(level);
     }
 
     /**
@@ -299,9 +315,7 @@ public final class RarityCoreAPI {
      *
      * @param level 稀有度等级
      * @return 启用返回 true
-     * @deprecated 使用 {@link #isBorderEnabled()} 进行全局检查
      */
-    @Deprecated
     public static boolean isLevelRendererEnabled(int level) {
         return RarityStyleConfigManager.getInstance().isLevelRendererEnabled(level);
     }
@@ -311,9 +325,7 @@ public final class RarityCoreAPI {
      *
      * @param level 稀有度等级
      * @return 启用返回 true
-     * @deprecated 使用 {@link #isTooltipEnabled()} 进行全局检查
      */
-    @Deprecated
     public static boolean isLevelTooltipEnabled(int level) {
         return RarityStyleConfigManager.getInstance().isLevelTooltipEnabled(level);
     }
@@ -323,9 +335,7 @@ public final class RarityCoreAPI {
      *
      * @param level 稀有度等级
      * @return 启用返回 true
-     * @deprecated 使用 {@link #isBorderEnabled()} 进行全局检查
      */
-    @Deprecated
     public static boolean isLevelNameColorEnabled(int level) {
         return RarityStyleConfigManager.getInstance().isLevelNameColorEnabled(level);
     }
@@ -349,12 +359,22 @@ public final class RarityCoreAPI {
         return RarityStyleConfigManager.getInstance().isTooltipColorEnabled();
     }
 
-    /** V14 逐级边框开关（对齐 1.20.1 版本命名） */
+    /**
+     * 逐级边框开关。
+     *
+     * @deprecated 使用 {@link #isLevelRendererEnabled(int)}
+     */
+    @Deprecated
     public static boolean isBorderEnabled(int level) {
         return RarityStyleConfigManager.getInstance().isLevelRendererEnabled(level);
     }
 
-    /** V14 逐级工具提示开关（对齐 1.20.1 版本命名） */
+    /**
+     * 逐级工具提示开关。
+     *
+     * @deprecated 使用 {@link #isLevelTooltipEnabled(int)}
+     */
+    @Deprecated
     public static boolean isTooltipEnabled(int level) {
         return RarityStyleConfigManager.getInstance().isLevelTooltipEnabled(level);
     }
@@ -381,7 +401,17 @@ public final class RarityCoreAPI {
         return RarityStyleConfigManager.getInstance().getNoRarityDefaultRarity();
     }
 
-    /** V14 逐级名称颜色查询（对齐 1.20.1 版本命名） */
+    /** 主开关：是否变色物品名称（1.20.1 兼容，查询 MIN_RARITY 等级）。 */
+    public static boolean isNameColorEnabled() {
+        return RarityStyleConfigManager.getInstance().resolveItemNameColor(RarityConstants.MIN_RARITY);
+    }
+
+    /**
+     * 逐级名称颜色查询。
+     *
+     * @deprecated 使用 {@link #isLevelNameColorEnabled(int)}
+     */
+    @Deprecated
     public static boolean isNameColorEnabled(int level) {
         return RarityStyleConfigManager.getInstance().isLevelNameColorEnabled(level);
     }
@@ -391,12 +421,21 @@ public final class RarityCoreAPI {
     // ══════════════════════════════════════════════════════
 
     /**
-     * 检查是否开启了 DataComponent 稀有度控制功能。
+     * 检查是否开启了 NBT/DataComponent 稀有度控制功能。
+     * 1.20.1 兼容命名：实际控制的是 DataComponent（CUSTOM_DATA）稀有度读取。
      *
      * @return 启用返回 true
      */
-    public static boolean isComponentRarityControlEnabled() {
+    public static boolean isNbtRarityControlEnabled() {
         return ServerConfigManager.isEnableComponentRarityControl();
+    }
+
+    /**
+     * @deprecated 使用 {@link #isNbtRarityControlEnabled()}
+     */
+    @Deprecated
+    public static boolean isComponentRarityControlEnabled() {
+        return isNbtRarityControlEnabled();
     }
 
     /**
