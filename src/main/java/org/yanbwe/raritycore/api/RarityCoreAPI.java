@@ -231,6 +231,26 @@ public final class RarityCoreAPI {
         RarityRegistry.register(item, rarity, sync);
     }
 
+    /**
+     * 批量注册物品稀有度映射（不逐条同步，注册结束后统一同步一次）。
+     * 注册完成后发布 {@link org.yanbwe.raritycore.event.RarityRegistryChangedEvent}。
+     *
+     * @param entries 物品到稀有度等级的映射
+     */
+    public static void registerRarities(@NotNull java.util.Map<Item, Integer> entries) {
+        java.util.Map<ResourceLocation, Integer> changed = new java.util.HashMap<>();
+        for (java.util.Map.Entry<Item, Integer> e : entries.entrySet()) {
+            ResourceLocation id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(e.getKey());
+            RarityRegistry.register(e.getKey(), e.getValue(), false);
+            if (id != null) {
+                changed.put(id, e.getValue());
+            }
+        }
+        RarityRegistry.syncIncrementalChangesToClients();
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(
+                new org.yanbwe.raritycore.event.RarityRegistryChangedEvent(changed, java.util.Collections.emptySet()));
+    }
+
     // ══════════════════════════════════════════════════════
     // 颜色与纹理
     // ══════════════════════════════════════════════════════
@@ -408,6 +428,30 @@ public final class RarityCoreAPI {
     /** 设置逐级星星重复字符 */
     public static void setStarRepeatChar(int rarity, String repeatChar) {
         RarityStyleConfigManager.getInstance().setTooltipStarRepeatChar(rarity, repeatChar);
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 样式批量写入（1.20.1 兼容）
+    // ══════════════════════════════════════════════════════
+
+    /** 开始批量写入，期间 setter 不逐条写盘与失效缓存 */
+    public static void beginStyleBatch() {
+        RarityStyleConfigManager.getInstance().beginStyleBatch();
+    }
+
+    /** 结束批量写入，统一写盘并失效缓存 */
+    public static void endStyleBatch() {
+        RarityStyleConfigManager.getInstance().endStyleBatch();
+    }
+
+    /** 以结构化补丁整体写入某等级视觉表现配置（null 字段保留现有值） */
+    public static void setStyle(RarityStyleConfigManager.StylePatch patch) {
+        RarityStyleConfigManager.getInstance().setStyle(patch);
+    }
+
+    /** 返回某等级生效视觉表现的不可变快照（border/tooltip/star 合并结果） */
+    public static RarityStyleConfigManager.StyleSnapshot getStyleSnapshot(int rarity) {
+        return RarityStyleConfigManager.getInstance().getStyleSnapshot(rarity);
     }
 
     // ══════════════════════════════════════════════════════
