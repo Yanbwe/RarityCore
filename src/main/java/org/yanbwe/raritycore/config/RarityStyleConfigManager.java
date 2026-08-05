@@ -52,6 +52,9 @@ public class RarityStyleConfigManager {
     private final Map<Integer, TooltipConfig> tooltipCache = new HashMap<>();
     private final Map<Integer, Boolean> nameColorCache = new HashMap<>();
 
+    // 批量写入深度（>0 时 setter 延迟写盘与缓存失效，endStyleBatch 归零时统一执行）
+    private int batchDepth = 0;
+
     // ================================================================
     //  数据模型
     // ================================================================
@@ -136,6 +139,59 @@ public class RarityStyleConfigManager {
         public BorderConfig border;   // null 表示继承
         public TooltipConfig tooltip; // null 表示继承
         public Boolean itemNameColor; // null 表示继承
+    }
+
+    // ================================================================
+    //  1.20.1 兼容值对象
+    // ================================================================
+
+    /** 1.20.1 兼容：逐级星星配置（1.21.1 无 Specified 标志概念，故省略） */
+    public static class StarSegmentConfig {
+        public boolean colored = true;
+        public String mode = "repeat";
+        public String repeatChar = "★";
+        public String custom = "";
+
+        public StarSegmentConfig() {}
+        public StarSegmentConfig(boolean colored, String mode, String repeatChar, String custom) {
+            this.colored = colored; this.mode = mode; this.repeatChar = repeatChar; this.custom = custom;
+        }
+    }
+
+    /** 1.20.1 兼容：样式补丁（null 字段跳过） */
+    public static class StylePatch {
+        public final int rarity;
+        public Boolean borderUseTexture;
+        public Integer borderStyle;
+        public String tooltipContent;
+        public String starMode;
+        public String starRepeatChar;
+
+        public StylePatch(int rarity) { this.rarity = rarity; }
+    }
+
+    /** 1.20.1 兼容：样式快照（不可变） */
+    public static class StyleSnapshot {
+        public final int rarity;
+        public final boolean borderUseTexture;
+        public final int borderStyle;
+        public final String borderFallback;
+        public final boolean tooltipShow;
+        public final String tooltipContent;
+        public final boolean tooltipColored;
+        public final String starMode;
+        public final String starRepeatChar;
+        public final String starCustom;
+        public final boolean starColored;
+
+        public StyleSnapshot(int rarity, boolean borderUseTexture, int borderStyle, String borderFallback,
+                             boolean tooltipShow, String tooltipContent, boolean tooltipColored,
+                             String starMode, String starRepeatChar, String starCustom, boolean starColored) {
+            this.rarity = rarity; this.borderUseTexture = borderUseTexture; this.borderStyle = borderStyle;
+            this.borderFallback = borderFallback; this.tooltipShow = tooltipShow; this.tooltipContent = tooltipContent;
+            this.tooltipColored = tooltipColored; this.starMode = starMode; this.starRepeatChar = starRepeatChar;
+            this.starCustom = starCustom; this.starColored = starColored;
+        }
     }
 
     // ================================================================
@@ -704,6 +760,31 @@ public class RarityStyleConfigManager {
     }
 
     // ================================================================
+    //  1.20.1 兼容：星星配置 / 样式补丁 / 样式快照
+    // ================================================================
+
+    public StarSegmentConfig getStarConfig(int level) {
+        TooltipStarConfig star = resolveTooltip(level).star;
+        return new StarSegmentConfig(star.colored, star.mode, star.repeatChar, star.custom);
+    }
+
+    public void setStyle(StylePatch patch) {
+        if (patch.borderUseTexture != null) setBorderUseTexture(patch.rarity, patch.borderUseTexture);
+        if (patch.borderStyle != null) setBorderStyle(patch.rarity, patch.borderStyle);
+        if (patch.tooltipContent != null) setTooltipContent(patch.rarity, patch.tooltipContent);
+        if (patch.starMode != null) setTooltipStarMode(patch.rarity, patch.starMode);
+        if (patch.starRepeatChar != null) setTooltipStarRepeatChar(patch.rarity, patch.starRepeatChar);
+    }
+
+    public StyleSnapshot getStyleSnapshot(int level) {
+        BorderConfig border = resolveBorder(level);
+        TooltipConfig tooltip = resolveTooltip(level);
+        return new StyleSnapshot(level, border.useTexture, border.style, getBorderFallback(),
+                tooltip.show, tooltip.content, tooltip.colored,
+                tooltip.star.mode, tooltip.star.repeatChar, tooltip.star.custom, tooltip.star.colored);
+    }
+
+    // ================================================================
     //  缓存管理
     // ================================================================
 
@@ -740,58 +821,97 @@ public class RarityStyleConfigManager {
     public boolean isNoRaritySkip() { return defaults.noRarity.skip; }
     public int getNoRarityDefaultRarity() { return defaults.noRarity.defaultRarity; }
 
+    public void setNoRaritySkip(boolean skip) { defaults.noRarity.skip = skip; persist(); }
+    public void setNoRarityDefaultRarity(int rarity) { defaults.noRarity.defaultRarity = rarity; persist(); }
+
+    // ================================================================
+    //  批量写入
+    // ================================================================
+
+    /** 开始批量写入：期间 setter 不逐条写盘与失效缓存，endStyleBatch 归零时统一执行一次 */
+    public void beginStyleBatch() {
+        batchDepth++;
+    }
+
+    /** 结束批量写入：归零时统一写盘并失效缓存 */
+    public void endStyleBatch() {
+        if (batchDepth <= 0) return;
+        batchDepth--;
+        if (batchDepth == 0) {
+            saveToFile();
+            invalidateCaches();
+        }
+    }
+
     // ================================================================
     //  逐级 Setter（自动保存）
     // ================================================================
 
     public void setColor(int level, String hex) {
         ensureLevel(level).color = RarityColorUtil.parseRgbColor(hex);
-        saveToFile(); invalidateCaches();
+        persist();
     }
 
     public void setBorderUseTexture(int level, boolean v) {
         ensureBorder(level).useTexture = v;
-        saveToFile(); invalidateCaches();
+        persist();
     }
 
     public void setBorderStyle(int level, int style) {
         ensureBorder(level).style = style;
-        saveToFile(); invalidateCaches();
+        persist();
     }
 
     public void setBorderShow(int level, boolean v) {
         ensureBorder(level).show = v;
-        saveToFile(); invalidateCaches();
+        persist();
     }
 
     public void setTooltipShow(int level, boolean v) {
         ensureTooltip(level).show = v;
-        saveToFile(); invalidateCaches();
+        persist();
     }
 
     public void setTooltipContent(int level, String content) {
         ensureTooltip(level).content = content;
-        saveToFile(); invalidateCaches();
+        persist();
     }
 
     public void setTooltipColored(int level, boolean v) {
         ensureTooltip(level).colored = v;
-        saveToFile(); invalidateCaches();
+        persist();
     }
 
     public void setTooltipStarMode(int level, String mode) {
         ensureTooltip(level).star.mode = mode;
-        saveToFile(); invalidateCaches();
+        persist();
+    }
+
+    public void setTooltipStarRepeatChar(int level, String repeatChar) {
+        ensureTooltip(level).star.repeatChar = repeatChar;
+        persist();
+    }
+
+    public String getBorderFallback() {
+        return defaults.border.fallback;
     }
 
     public void setItemNameColorEnabled(int level, boolean v) {
         ensureLevel(level).itemNameColor = v;
-        saveToFile(); invalidateCaches();
+        persist();
     }
 
     // ================================================================
     //  内部辅助
     // ================================================================
+
+    /** 批量模式下延迟写盘与缓存失效，非批量模式立即执行 */
+    private void persist() {
+        if (batchDepth == 0) {
+            saveToFile();
+            invalidateCaches();
+        }
+    }
 
     private PerRarityStyle ensureLevel(int level) {
         PerRarityStyle s = rarities.get(level);
