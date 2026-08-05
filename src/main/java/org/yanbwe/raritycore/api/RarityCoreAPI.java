@@ -43,6 +43,17 @@ public final class RarityCoreAPI {
     private RarityCoreAPI() {}
 
     // ══════════════════════════════════════════════════════
+    // 常量（1.20.1 兼容）
+    // ══════════════════════════════════════════════════════
+
+    public static final int MIN_RARITY = RarityConstants.MIN_RARITY;
+    public static final int MAX_RARITY = RarityConstants.MAX_RARITY;
+    /** 默认 RGB 颜色（1.21.1 现值） */
+    public static final int DEFAULT_RGB_COLOR = RarityColorUtil.DEFAULT_RGB_COLOR;
+    /** 正式 API 版本号（与 1.20.1 特性集对齐，供联动模组做特性探测，与模组版本解耦） */
+    public static final int API_VERSION = 1400;
+
+    // ══════════════════════════════════════════════════════
     // 稀有度注册与查询
     // ══════════════════════════════════════════════════════
 
@@ -488,5 +499,57 @@ public final class RarityCoreAPI {
     public static boolean hasConfiguredRarity(@NotNull Item item, @NotNull ItemStack itemStack) {
         return RarityRegistry.hasConfiguredRarity(item)
                 || ComponentRarityReader.hasComponentRarity(itemStack);
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 版本探测（1.20.1 兼容）
+    // ══════════════════════════════════════════════════════
+
+    /**
+     * 模组是否可用（类与基础依赖已加载）
+     */
+    public static boolean isAvailable() {
+        return true;
+    }
+
+    /**
+     * 获取模组的版本号（来自 neoforge.mods.toml 的 version 字段）
+     * @return 版本字符串，获取失败时返回 unknown
+     */
+    public static String getModVersion() {
+        try {
+            return net.neoforged.fml.ModList.get()
+                    .getModContainerById(org.yanbwe.raritycore.RarityCore.MODID)
+                    .map(c -> c.getModInfo().getVersion().toString())
+                    .orElse("unknown");
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
+    /**
+     * 获取当前配置版本号（配置重载时递增，供客户端同步校验）
+     */
+    public static int getConfigVersion() {
+        return org.yanbwe.raritycore.network.SyncManager.getConfigVersion();
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 简单委托（1.20.1 兼容）
+    // ══════════════════════════════════════════════════════
+
+    /** 校验并标准化稀有度等级（与 normalizeRarity 等价） */
+    public static int validateRarity(int rarity) {
+        return normalizeRarity(rarity);
+    }
+
+    /** 触发完整配置重载（命令源为空，视为程序化触发） */
+    public static void reloadConfigs() {
+        org.yanbwe.raritycore.service.ConfigReloadService.reloadAllConfigs(null, false);
+    }
+
+    /** 获取稀有度等级对应的内置 RGB 颜色 (0xRRGGBB) */
+    public static int getRarityRgbColor(int rarity) {
+        return RarityColorUtil.getRarityRgbColor(rarity);
     }
 }
