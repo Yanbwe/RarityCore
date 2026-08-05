@@ -22,6 +22,26 @@ public class SyncManager {
     private static final List<ChangeOperation> CHANGE_OPERATIONS_BUFFER = new ArrayList<>();
 
     /**
+     * 配置版本号（1.20.1 兼容）：初始 1，每次配置重载 +1
+     */
+    private static final java.util.concurrent.atomic.AtomicInteger CONFIG_VERSION =
+            new java.util.concurrent.atomic.AtomicInteger(1);
+
+    /**
+     * 获取当前配置版本号（配置重载时递增，供外部探测）
+     */
+    public static int getConfigVersion() {
+        return CONFIG_VERSION.get();
+    }
+
+    /**
+     * 配置版本号递增（配置重载流程中调用）
+     */
+    public static void bumpConfigVersion() {
+        CONFIG_VERSION.incrementAndGet();
+    }
+
+    /**
      * 向所有在线玩家发送完整的稀有度映射表（全量同步）
      * 仅在配置重载、服务器启动等需要完整状态同步的场景使用
      */

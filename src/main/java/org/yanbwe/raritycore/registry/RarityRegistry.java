@@ -609,7 +609,85 @@ public class RarityRegistry {
     public static java.util.Map<ResourceLocation, Integer> getAutoRarityMap() {
         return AUTO_RARITY_MAP;
     }
-    
+
+    // ==================== 遍历查询族（1.20.1 兼容） ====================
+
+    /**
+     * 返回所有被解析为指定稀有度等级的物品（遍历全注册表）
+     * @param rarity 稀有度等级
+     * @return 匹配物品的只读列表
+     */
+    public static java.util.List<Item> getItemsByRarity(int rarity) {
+        java.util.List<Item> result = new java.util.ArrayList<>();
+        for (Item item : BuiltInRegistries.ITEM) {
+            if (getRarity(item) == rarity) result.add(item);
+        }
+        return java.util.Collections.unmodifiableList(result);
+    }
+
+    /**
+     * 返回所有被解析为指定稀有度等级的物品 ID
+     * @param rarity 稀有度等级
+     * @return 匹配物品 ID 的只读列表
+     */
+    public static java.util.List<ResourceLocation> getItemIdsByRarity(int rarity) {
+        java.util.List<ResourceLocation> result = new java.util.ArrayList<>();
+        for (Item item : BuiltInRegistries.ITEM) {
+            if (getRarity(item) == rarity) result.add(BuiltInRegistries.ITEM.getKey(item));
+        }
+        return java.util.Collections.unmodifiableList(result);
+    }
+
+    /**
+     * 返回当前出现过的稀有度等级集合（手动配置 ∪ 自动计算 ∪ 无稀有度兜底等级）
+     * @return 出现过的等级集合（只读）
+     */
+    public static java.util.Set<Integer> getConfiguredRarities() {
+        java.util.Set<Integer> set = new java.util.HashSet<>(ITEM_RARITY_MAP.values());
+        set.addAll(AUTO_RARITY_MAP.values());
+        set.add(RarityStyleConfigManager.getInstance().getNoRarityDefaultRarity());
+        return java.util.Collections.unmodifiableSet(set);
+    }
+
+    /**
+     * 返回所有被解析为指定稀有度等级集合中任一等级的物品
+     * @param rarities 稀有度等级集合
+     * @return 匹配物品的只读列表
+     */
+    public static java.util.List<Item> getItemsByRarities(java.util.Set<Integer> rarities) {
+        if (rarities == null || rarities.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        java.util.List<Item> result = new java.util.ArrayList<>();
+        for (Item item : BuiltInRegistries.ITEM) {
+            if (rarities.contains(getRarity(item))) result.add(item);
+        }
+        return java.util.Collections.unmodifiableList(result);
+    }
+
+    /**
+     * 返回被解析为指定稀有度等级的物品数量
+     * @param rarity 稀有度等级
+     * @return 匹配物品数量
+     */
+    public static int getRarityCount(int rarity) {
+        int count = 0;
+        for (Item item : BuiltInRegistries.ITEM) {
+            if (getRarity(item) == rarity) count++;
+        }
+        return count;
+    }
+
+    /**
+     * 返回当前全部已解析稀有度等级的快照（显式配置与自动计算合并，ITEM 覆盖 AUTO）
+     * @return 合并后的只读映射
+     */
+    public static java.util.Map<ResourceLocation, Integer> getAllRarityEntries() {
+        java.util.Map<ResourceLocation, Integer> map = new java.util.HashMap<>(AUTO_RARITY_MAP);
+        map.putAll(ITEM_RARITY_MAP); // ITEM 覆盖 AUTO，与 1.20.1 一致
+        return java.util.Collections.unmodifiableMap(map);
+    }
+
     /**
      * 应用来自服务端同步的自动稀有度映射（仅客户端）
      */
