@@ -318,6 +318,99 @@ public final class RarityCoreAPI {
     }
 
     // ══════════════════════════════════════════════════════
+    // 样式查询（1.20.1 兼容）
+    // ══════════════════════════════════════════════════════
+
+    /** 逐级工具提示内容 */
+    public static String getTooltipContent(int rarity) {
+        return RarityStyleConfigManager.getInstance().resolveTooltip(rarity).content;
+    }
+
+    /** 逐级 level 段翻译键 */
+    public static String getLevelTranslationKey(int rarity) {
+        return RarityStyleConfigManager.getInstance().resolveTooltip(rarity).level.translationKey;
+    }
+
+    /** 逐级 level 段回退键 */
+    public static String getLevelFallbackKey(int rarity) {
+        return RarityStyleConfigManager.getInstance().resolveTooltip(rarity).level.fallback;
+    }
+
+    /** 逐级星星配置 */
+    public static RarityStyleConfigManager.StarSegmentConfig getStarConfig(int rarity) {
+        return RarityStyleConfigManager.getInstance().getStarConfig(rarity);
+    }
+
+    /** 逐级边框是否使用纹理 */
+    public static boolean isBorderUseTexture(int rarity) {
+        return RarityStyleConfigManager.getInstance().resolveBorder(rarity).useTexture;
+    }
+
+    /** 逐级边框样式（1=实心，0=空心） */
+    public static int getBorderStyle(int rarity) {
+        return RarityStyleConfigManager.getInstance().resolveBorder(rarity).style;
+    }
+
+    /** 边框回退纹理 */
+    public static String getBorderFallback() {
+        return RarityStyleConfigManager.getInstance().getBorderFallback();
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 样式写入（1.20.1 兼容）
+    // ══════════════════════════════════════════════════════
+
+    /** 设置主开关：是否渲染物品边框 */
+    public static void setBorderEnabled(boolean enable) {
+        RarityStyleConfigManager.getInstance().setBorderEnabled(enable);
+    }
+
+    /** 设置主开关：是否插入工具提示 */
+    public static void setTooltipEnabled(boolean enable) {
+        RarityStyleConfigManager.getInstance().setTooltipEnabled(enable);
+    }
+
+    /** 设置主开关：工具提示是否染色 */
+    public static void setTooltipColorEnabled(boolean enable) {
+        RarityStyleConfigManager.getInstance().setTooltipColorEnabled(enable);
+    }
+
+    /** 设置无稀有度物品跳过渲染 */
+    public static void setNoRaritySkip(boolean skip) {
+        RarityStyleConfigManager.getInstance().setNoRaritySkip(skip);
+    }
+
+    /** 设置无稀有度物品兜底等级 */
+    public static void setNoRarityDefaultRarity(int rarity) {
+        RarityStyleConfigManager.getInstance().setNoRarityDefaultRarity(rarity);
+    }
+
+    /** 设置逐级边框是否使用纹理 */
+    public static void setBorderUseTexture(int rarity, boolean useTexture) {
+        RarityStyleConfigManager.getInstance().setBorderUseTexture(rarity, useTexture);
+    }
+
+    /** 设置逐级边框样式 */
+    public static void setBorderStyle(int rarity, int style) {
+        RarityStyleConfigManager.getInstance().setBorderStyle(rarity, style);
+    }
+
+    /** 设置逐级工具提示内容 */
+    public static void setTooltipContent(int rarity, String content) {
+        RarityStyleConfigManager.getInstance().setTooltipContent(rarity, content);
+    }
+
+    /** 设置逐级星星显示模式 */
+    public static void setStarMode(int rarity, String mode) {
+        RarityStyleConfigManager.getInstance().setTooltipStarMode(rarity, mode);
+    }
+
+    /** 设置逐级星星重复字符 */
+    public static void setStarRepeatChar(int rarity, String repeatChar) {
+        RarityStyleConfigManager.getInstance().setTooltipStarRepeatChar(rarity, repeatChar);
+    }
+
+    // ══════════════════════════════════════════════════════
     // 逐级表现开关
     // ══════════════════════════════════════════════════════
 
