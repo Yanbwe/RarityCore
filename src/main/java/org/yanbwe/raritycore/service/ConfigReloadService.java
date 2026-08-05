@@ -102,6 +102,10 @@ public class ConfigReloadService {
             }
             handleClientSideConfigs();
             
+            // 8.5 发布客户端侧配置重载完成事件
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(
+                new org.yanbwe.raritycore.event.RarityConfigReloadEvent.Client(isStartup, source));
+            
             // 9. 处理双缓存系统重载
             handleCacheSystems();
             
@@ -109,6 +113,10 @@ public class ConfigReloadService {
             if (source != null) {
                 sendCompletionMessage(source);
             }
+            
+            // 10.5 发布服务端配置重载完成事件
+            net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(
+                new org.yanbwe.raritycore.event.RarityConfigReloadEvent.Server(isStartup, source));
             
             RarityCore.LOGGER.info("Config reload process completed");
             

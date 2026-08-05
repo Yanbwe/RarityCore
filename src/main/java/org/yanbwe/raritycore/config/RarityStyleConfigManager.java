@@ -2,7 +2,10 @@ package org.yanbwe.raritycore.config;
 
 import com.google.gson.*;
 import net.minecraft.network.chat.Component;
+import net.neoforged.neoforge.common.NeoForge;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.event.RarityStyleChangedEvent;
+import org.yanbwe.raritycore.event.RarityStyleReloadEvent;
 import org.yanbwe.raritycore.util.*;
 
 import java.io.*;
@@ -54,6 +57,9 @@ public class RarityStyleConfigManager {
 
     // 批量写入深度（>0 时 setter 延迟写盘与缓存失效，endStyleBatch 归零时统一执行）
     private int batchDepth = 0;
+
+    // 批量写入期间暂存的样式变更记录（endStyleBatch 归零时逐条发布 RarityStyleChangedEvent）
+    private final List<BatchChange> batchTouched = new ArrayList<>();
 
     // ================================================================
     //  数据模型
@@ -142,10 +148,10 @@ public class RarityStyleConfigManager {
     }
 
     // ================================================================
-    //  1.20.1 兼容值对象
+    //  值对象
     // ================================================================
 
-    /** 1.20.1 兼容：逐级星星配置（1.21.1 无 Specified 标志概念，故省略） */
+    /** 逐级星星配置（无 Specified 标志概念） */
     public static class StarSegmentConfig {
         public boolean colored = true;
         public String mode = "repeat";
@@ -158,7 +164,7 @@ public class RarityStyleConfigManager {
         }
     }
 
-    /** 1.20.1 兼容：样式补丁（null 字段跳过） */
+    /** 样式补丁（null 字段跳过） */
     public static class StylePatch {
         public final int rarity;
         public Boolean borderUseTexture;
@@ -170,7 +176,7 @@ public class RarityStyleConfigManager {
         public StylePatch(int rarity) { this.rarity = rarity; }
     }
 
-    /** 1.20.1 兼容：样式快照（不可变） */
+    /** 样式快照（不可变） */
     public static class StyleSnapshot {
         public final int rarity;
         public final boolean borderUseTexture;
@@ -760,7 +766,7 @@ public class RarityStyleConfigManager {
     }
 
     // ================================================================
-    //  1.20.1 兼容：星星配置 / 样式补丁 / 样式快照
+    //  星星配置 / 样式补丁 / 样式快照
     // ================================================================
 
     public StarSegmentConfig getStarConfig(int level) {
@@ -799,6 +805,8 @@ public class RarityStyleConfigManager {
         invalidateCaches();
         rarities.clear();
         load();
+        // 发布视觉表现配置重载事件（文件驱动的内部重载，全等级）
+        NeoForge.EVENT_BUS.post(new RarityStyleReloadEvent(-1, false));
     }
 
     public Set<Integer> getConfiguredLevels() {
@@ -810,19 +818,19 @@ public class RarityStyleConfigManager {
     // ================================================================
 
     public boolean isBorderEnabled() { return enableBorder; }
-    public void setBorderEnabled(boolean v) { enableBorder = v; saveToFile(); invalidateCaches(); }
+    public void setBorderEnabled(boolean v) { enableBorder = v; saveToFile(); invalidateCaches(); fireStyleChanged(0, RarityStyleChangedEvent.ChangeTarget.BORDER_ENABLED); }
 
     public boolean isTooltipEnabled() { return enableTooltip; }
-    public void setTooltipEnabled(boolean v) { enableTooltip = v; saveToFile(); invalidateCaches(); }
+    public void setTooltipEnabled(boolean v) { enableTooltip = v; saveToFile(); invalidateCaches(); fireStyleChanged(0, RarityStyleChangedEvent.ChangeTarget.TOOLTIP_ENABLED); }
 
     public boolean isTooltipColorEnabled() { return tooltipColorEnabled; }
-    public void setTooltipColorEnabled(boolean v) { tooltipColorEnabled = v; saveToFile(); invalidateCaches(); }
+    public void setTooltipColorEnabled(boolean v) { tooltipColorEnabled = v; saveToFile(); invalidateCaches(); fireStyleChanged(0, RarityStyleChangedEvent.ChangeTarget.TOOLTIP_COLOR_ENABLED); }
 
     public boolean isNoRaritySkip() { return defaults.noRarity.skip; }
     public int getNoRarityDefaultRarity() { return defaults.noRarity.defaultRarity; }
 
-    public void setNoRaritySkip(boolean skip) { defaults.noRarity.skip = skip; persist(); }
-    public void setNoRarityDefaultRarity(int rarity) { defaults.noRarity.defaultRarity = rarity; persist(); }
+    public void setNoRaritySkip(boolean skip) { defaults.noRarity.skip = skip; persist(); fireStyleChanged(0, RarityStyleChangedEvent.ChangeTarget.NO_RARITY_SKIP); }
+    public void setNoRarityDefaultRarity(int rarity) { defaults.noRarity.defaultRarity = rarity; persist(); fireStyleChanged(0, RarityStyleChangedEvent.ChangeTarget.NO_RARITY_DEFAULT_RARITY); }
 
     // ================================================================
     //  批量写入
@@ -833,13 +841,17 @@ public class RarityStyleConfigManager {
         batchDepth++;
     }
 
-    /** 结束批量写入：归零时统一写盘并失效缓存 */
+    /** 结束批量写入：归零时统一写盘并失效缓存，逐条发布暂存的样式变更事件 */
     public void endStyleBatch() {
         if (batchDepth <= 0) return;
         batchDepth--;
         if (batchDepth == 0) {
             saveToFile();
             invalidateCaches();
+            for (BatchChange c : batchTouched) {
+                NeoForge.EVENT_BUS.post(new RarityStyleChangedEvent(c.level, c.target));
+            }
+            batchTouched.clear();
         }
     }
 
@@ -855,11 +867,13 @@ public class RarityStyleConfigManager {
     public void setBorderUseTexture(int level, boolean v) {
         ensureBorder(level).useTexture = v;
         persist();
+        fireStyleChanged(level, RarityStyleChangedEvent.ChangeTarget.BORDER_USE_TEXTURE);
     }
 
     public void setBorderStyle(int level, int style) {
         ensureBorder(level).style = style;
         persist();
+        fireStyleChanged(level, RarityStyleChangedEvent.ChangeTarget.BORDER_STYLE);
     }
 
     public void setBorderShow(int level, boolean v) {
@@ -875,6 +889,7 @@ public class RarityStyleConfigManager {
     public void setTooltipContent(int level, String content) {
         ensureTooltip(level).content = content;
         persist();
+        fireStyleChanged(level, RarityStyleChangedEvent.ChangeTarget.TOOLTIP_CONTENT);
     }
 
     public void setTooltipColored(int level, boolean v) {
@@ -885,11 +900,13 @@ public class RarityStyleConfigManager {
     public void setTooltipStarMode(int level, String mode) {
         ensureTooltip(level).star.mode = mode;
         persist();
+        fireStyleChanged(level, RarityStyleChangedEvent.ChangeTarget.STAR_MODE);
     }
 
     public void setTooltipStarRepeatChar(int level, String repeatChar) {
         ensureTooltip(level).star.repeatChar = repeatChar;
         persist();
+        fireStyleChanged(level, RarityStyleChangedEvent.ChangeTarget.STAR_REPEAT_CHAR);
     }
 
     public String getBorderFallback() {
@@ -910,6 +927,26 @@ public class RarityStyleConfigManager {
         if (batchDepth == 0) {
             saveToFile();
             invalidateCaches();
+        }
+    }
+
+    /** 批量模式下暂存变更、非批量模式立即发布 RarityStyleChangedEvent */
+    private void fireStyleChanged(int level, RarityStyleChangedEvent.ChangeTarget target) {
+        if (batchDepth > 0) {
+            batchTouched.add(new BatchChange(level, target));
+            return;
+        }
+        NeoForge.EVENT_BUS.post(new RarityStyleChangedEvent(level, target));
+    }
+
+    /** 批量写入期间暂存的样式变更记录 */
+    private static final class BatchChange {
+        final int level;
+        final RarityStyleChangedEvent.ChangeTarget target;
+
+        BatchChange(int level, RarityStyleChangedEvent.ChangeTarget target) {
+            this.level = level;
+            this.target = target;
         }
     }
 

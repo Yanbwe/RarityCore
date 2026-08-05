@@ -12,21 +12,46 @@ import net.neoforged.bus.api.Event;
 public class RarityStyleChangedEvent extends Event {
 
     /** 变更目标类型 */
+    public enum ChangeTarget {
+        BORDER_ENABLED,
+        TOOLTIP_ENABLED,
+        TOOLTIP_COLOR_ENABLED,
+        NO_RARITY_SKIP,
+        NO_RARITY_DEFAULT_RARITY,
+        BORDER_USE_TEXTURE,
+        BORDER_STYLE,
+        TOOLTIP_CONTENT,
+        STAR_MODE,
+        STAR_REPEAT_CHAR
+    }
+
+    /** 变更目标类型（1.21.1 旧名，已废弃） */
+    @Deprecated
     public enum Target {
         COLOR, BORDER, TOOLTIP, NAME_COLOR
     }
 
     private final int level;
-    private final Target target;
+    private final ChangeTarget target;
 
-    public RarityStyleChangedEvent(int level, Target target) {
+    public RarityStyleChangedEvent(int level, ChangeTarget target) {
         this.level = level;
         this.target = target;
     }
 
-    /** @return 受影响的稀有度等级 */
-    public int getLevel() { return level; }
+    /** 受影响的稀有度等级（0=全局主开关/无稀有度回退等非逐级项） */
+    public int getRarity() {
+        return level;
+    }
 
-    /** @return 变更目标类型 */
-    public Target getTarget() { return target; }
+    /** @deprecated 使用 {@link #getRarity()} */
+    @Deprecated
+    public int getLevel() {
+        return level;
+    }
+
+    /** 变更项标识 */
+    public ChangeTarget getTarget() {
+        return target;
+    }
 }

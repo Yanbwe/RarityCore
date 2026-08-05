@@ -13,7 +13,9 @@ import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
 import org.yanbwe.raritycore.util.RarityValidator;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * RarityCore 正式公共 API (V14)
@@ -43,14 +45,14 @@ public final class RarityCoreAPI {
     private RarityCoreAPI() {}
 
     // ══════════════════════════════════════════════════════
-    // 常量（1.20.1 兼容）
+    // 常量
     // ══════════════════════════════════════════════════════
 
     public static final int MIN_RARITY = RarityConstants.MIN_RARITY;
     public static final int MAX_RARITY = RarityConstants.MAX_RARITY;
     /** 默认 RGB 颜色（1.21.1 现值） */
     public static final int DEFAULT_RGB_COLOR = RarityColorUtil.DEFAULT_RGB_COLOR;
-    /** 正式 API 版本号（与 1.20.1 特性集对齐，供联动模组做特性探测，与模组版本解耦） */
+    /** 正式 API 版本号（供联动模组做特性探测，与模组版本解耦） */
     public static final int API_VERSION = 1400;
 
     // ══════════════════════════════════════════════════════
@@ -338,7 +340,7 @@ public final class RarityCoreAPI {
     }
 
     // ══════════════════════════════════════════════════════
-    // 样式查询（1.20.1 兼容）
+    // 样式查询
     // ══════════════════════════════════════════════════════
 
     /** 逐级工具提示内容 */
@@ -377,7 +379,7 @@ public final class RarityCoreAPI {
     }
 
     // ══════════════════════════════════════════════════════
-    // 样式写入（1.20.1 兼容）
+    // 样式写入
     // ══════════════════════════════════════════════════════
 
     /** 设置主开关：是否渲染物品边框 */
@@ -431,7 +433,7 @@ public final class RarityCoreAPI {
     }
 
     // ══════════════════════════════════════════════════════
-    // 样式批量写入（1.20.1 兼容）
+    // 样式批量写入
     // ══════════════════════════════════════════════════════
 
     /** 开始批量写入，期间 setter 不逐条写盘与失效缓存 */
@@ -452,6 +454,82 @@ public final class RarityCoreAPI {
     /** 返回某等级生效视觉表现的不可变快照（border/tooltip/star 合并结果） */
     public static RarityStyleConfigManager.StyleSnapshot getStyleSnapshot(int rarity) {
         return RarityStyleConfigManager.getInstance().getStyleSnapshot(rarity);
+    }
+
+    // ══════════════════════════════════════════════════════
+    // 遍历查询
+    // ══════════════════════════════════════════════════════
+
+    /**
+     * 返回所有被解析为指定稀有度等级的物品（遍历物品注册表，覆盖配置/自动/原版/联动来源）。
+     *
+     * @param rarity 稀有度等级
+     * @return 匹配物品的只读列表
+     */
+    public static List<Item> getItemsByRarity(int rarity) {
+        return RarityRegistry.getItemsByRarity(rarity);
+    }
+
+    /**
+     * 返回所有被解析为指定稀有度等级的物品 ID。
+     *
+     * @param rarity 稀有度等级
+     * @return 匹配物品 ID 的只读列表
+     */
+    public static List<ResourceLocation> getItemIdsByRarity(int rarity) {
+        return RarityRegistry.getItemIdsByRarity(rarity);
+    }
+
+    /**
+     * 返回当前出现过的稀有度等级集合（手动配置 ∪ 自动计算 ∪ 无稀有度兜底等级）。
+     *
+     * @return 出现过的等级集合（只读）
+     */
+    public static Set<Integer> getConfiguredRarities() {
+        return RarityRegistry.getConfiguredRarities();
+    }
+
+    /**
+     * 返回所有被解析为指定稀有度等级集合中任一等级的物品。
+     *
+     * @param rarities 稀有度等级集合
+     * @return 匹配物品的只读列表
+     */
+    public static List<Item> getItemsByRarities(Set<Integer> rarities) {
+        return RarityRegistry.getItemsByRarities(rarities);
+    }
+
+    /**
+     * 返回所有被解析为指定稀有度等级集合中任一等级的物品 ID（由物品列表组装）。
+     *
+     * @param rarities 稀有度等级集合
+     * @return 匹配物品 ID 的列表
+     */
+    public static List<ResourceLocation> getItemIdsByRarities(Set<Integer> rarities) {
+        List<ResourceLocation> ids = new java.util.ArrayList<>();
+        for (Item item : RarityRegistry.getItemsByRarities(rarities)) {
+            ids.add(net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item));
+        }
+        return ids;
+    }
+
+    /**
+     * 返回被解析为指定稀有度等级的物品数量。
+     *
+     * @param rarity 稀有度等级
+     * @return 匹配物品数量
+     */
+    public static int getRarityCount(int rarity) {
+        return RarityRegistry.getRarityCount(rarity);
+    }
+
+    /**
+     * 返回当前全部已解析稀有度等级的快照（显式配置与自动计算合并，手动覆盖自动）。
+     *
+     * @return 合并后的只读映射
+     */
+    public static Map<ResourceLocation, Integer> getAllRarityEntries() {
+        return RarityRegistry.getAllRarityEntries();
     }
 
     // ══════════════════════════════════════════════════════
@@ -549,7 +627,7 @@ public final class RarityCoreAPI {
         return RarityStyleConfigManager.getInstance().getNoRarityDefaultRarity();
     }
 
-    /** 主开关：是否变色物品名称（1.20.1 兼容，查询 MIN_RARITY 等级）。 */
+    /** 主开关：是否变色物品名称（查询 MIN_RARITY 等级）。 */
     public static boolean isNameColorEnabled() {
         return RarityStyleConfigManager.getInstance().resolveItemNameColor(RarityConstants.MIN_RARITY);
     }
@@ -570,7 +648,7 @@ public final class RarityCoreAPI {
 
     /**
      * 检查是否开启了 NBT/DataComponent 稀有度控制功能。
-     * 1.20.1 兼容命名：实际控制的是 DataComponent（CUSTOM_DATA）稀有度读取。
+     * 实际控制的是 DataComponent（CUSTOM_DATA）稀有度读取。
      *
      * @return 启用返回 true
      */
@@ -639,7 +717,7 @@ public final class RarityCoreAPI {
     }
 
     // ══════════════════════════════════════════════════════
-    // 版本探测（1.20.1 兼容）
+    // 版本探测
     // ══════════════════════════════════════════════════════
 
     /**
@@ -672,7 +750,7 @@ public final class RarityCoreAPI {
     }
 
     // ══════════════════════════════════════════════════════
-    // 简单委托（1.20.1 兼容）
+    // 简单委托
     // ══════════════════════════════════════════════════════
 
     /** 校验并标准化稀有度等级（与 normalizeRarity 等价） */

@@ -22,7 +22,7 @@ public class SyncManager {
     private static final List<ChangeOperation> CHANGE_OPERATIONS_BUFFER = new ArrayList<>();
 
     /**
-     * 配置版本号（1.20.1 兼容）：初始 1，每次配置重载 +1
+     * 配置版本号：初始 1，每次配置重载 +1
      */
     private static final java.util.concurrent.atomic.AtomicInteger CONFIG_VERSION =
             new java.util.concurrent.atomic.AtomicInteger(1);

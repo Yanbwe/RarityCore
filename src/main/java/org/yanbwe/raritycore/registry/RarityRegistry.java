@@ -610,7 +610,7 @@ public class RarityRegistry {
         return AUTO_RARITY_MAP;
     }
 
-    // ==================== 遍历查询族（1.20.1 兼容） ====================
+    // ==================== 遍历查询族 ====================
 
     /**
      * 返回所有被解析为指定稀有度等级的物品（遍历全注册表）
@@ -684,7 +684,7 @@ public class RarityRegistry {
      */
     public static java.util.Map<ResourceLocation, Integer> getAllRarityEntries() {
         java.util.Map<ResourceLocation, Integer> map = new java.util.HashMap<>(AUTO_RARITY_MAP);
-        map.putAll(ITEM_RARITY_MAP); // ITEM 覆盖 AUTO，与 1.20.1 一致
+        map.putAll(ITEM_RARITY_MAP); // ITEM 覆盖 AUTO
         return java.util.Collections.unmodifiableMap(map);
     }
 
