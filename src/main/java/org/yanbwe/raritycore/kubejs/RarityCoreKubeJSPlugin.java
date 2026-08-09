@@ -1,14 +1,15 @@
 package org.yanbwe.raritycore.kubejs;
 
-import dev.latvian.mods.kubejs.KubeJSPlugin;
-import dev.latvian.mods.kubejs.script.BindingsEvent;
+import dev.latvian.mods.kubejs.event.EventGroupRegistry;
+import dev.latvian.mods.kubejs.plugin.KubeJSPlugin;
+import dev.latvian.mods.kubejs.script.BindingRegistry;
 import org.yanbwe.raritycore.api.RarityCoreAPI;
 
 /**
  * RarityCore KubeJS 集成插件
  * <p>
  * 通过 {@code kubejs.plugins.txt} 被 KubeJS 自动发现和加载。
- * 在 {@link #registerBindings(BindingsEvent)} 中将 {@link RarityCoreAPI}
+ * 在 {@link #registerBindings(BindingRegistry)} 中将 {@link RarityCoreAPI}
  * 的所有 public static 方法和常量注册为 {@code raritycore} 绑定。
  *
  * <h3>脚本使用示例</h3>
@@ -28,7 +29,7 @@ import org.yanbwe.raritycore.api.RarityCoreAPI;
  *
  * @see RarityCoreAPI 正式公共 API
  */
-public class RarityCoreKubeJSPlugin extends KubeJSPlugin {
+public class RarityCoreKubeJSPlugin implements KubeJSPlugin {
 
     @Override
     public void init() {
@@ -37,15 +38,15 @@ public class RarityCoreKubeJSPlugin extends KubeJSPlugin {
     }
 
     @Override
-    public void registerEvents() {
+    public void registerEvents(EventGroupRegistry registry) {
         // 向 KubeJS 注册 RarityCoreEvents 事件组
-        RarityCoreKubeJSEvents.GROUP.register();
+        registry.register(RarityCoreKubeJSEvents.GROUP);
     }
 
     @Override
-    public void registerBindings(BindingsEvent event) {
+    public void registerBindings(BindingRegistry bindings) {
         // 双绑定：支持 raritycore（小写 modid，推荐）和 RarityCore（文档兼容）
-        event.add("raritycore", RarityCoreAPI.class);
-        event.add("RarityCore", RarityCoreAPI.class);
+        bindings.add("raritycore", RarityCoreAPI.class);
+        bindings.add("RarityCore", RarityCoreAPI.class);
     }
 }

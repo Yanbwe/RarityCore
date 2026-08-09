@@ -138,12 +138,12 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
     // KubeJS integration (compileOnly — KubeJS is optional at runtime, provided by the KubeJS mod)
-    compileOnly files("libs/kubejs-forge-2001.6.5-build.26.jar")
-    compileOnly files("libs/rhino-forge-2001.2.3-build.10.jar")
+    compileOnly files("libs/kubejs-neoforge-2101.7.2-build.368.jar")
+    compileOnly files("libs/rhino-2101.2.7-build.81.jar")
 }
 
 // KubeJS 依赖不存在时排除相关源码
-def kubejsLib = file('libs/kubejs-forge-2001.6.5-build.26.jar')
+def kubejsLib = file('libs/kubejs-neoforge-2101.7.2-build.368.jar')
 if (!kubejsLib.exists()) {
     sourceSets.main.java.exclude('**/kubejs/**')
 }

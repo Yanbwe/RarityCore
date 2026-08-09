@@ -2,7 +2,7 @@ package org.yanbwe.raritycore.kubejs;
 
 import dev.latvian.mods.kubejs.event.EventGroup;
 import dev.latvian.mods.kubejs.event.EventHandler;
-import dev.latvian.mods.kubejs.event.EventJS;
+import dev.latvian.mods.kubejs.event.KubeEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -124,7 +124,7 @@ public final class RarityCoreKubeJSEvents {
      *   <li><b>changeType</b> — 变更类型："register" | "update" | "remove"</li>
      * </ul>
      */
-    public static class RarityChangedEventJS extends EventJS {
+    public static class RarityChangedEventJS implements KubeEvent {
         private final String itemId;
         private final int oldRarity;
         private final int newRarity;
@@ -155,7 +155,7 @@ public final class RarityCoreKubeJSEvents {
      *   <li><b>rarity</b> — 当前稀有度等级，可读写</li>
      * </ul>
      */
-    public static class RarityQueryEventJS extends EventJS {
+    public static class RarityQueryEventJS implements KubeEvent {
         private final String source;
         private final String itemId;
         private int rarity;
@@ -182,7 +182,7 @@ public final class RarityCoreKubeJSEvents {
      *   <li><b>addText(text)</b> — 追加一行自定义文本</li>
      * </ul>
      */
-    public static class RarityTooltipEventJS extends EventJS {
+    public static class RarityTooltipEventJS implements KubeEvent {
         private final int rarity;
         private final List<String> texts = new ArrayList<>();
 
