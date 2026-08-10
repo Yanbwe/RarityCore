@@ -13,7 +13,8 @@
     "AbstractContainerScreenMixin",
     "GuiGraphicsMixin",
     "GuiMixin",
-    "refinedstorage.BaseScreenMixin"
+    "refinedstorage.BaseScreenMixin",
+    "ftblibrary.GuiHelperMixin"
   ],
   "injectors": {
     "defaultRequire": 1

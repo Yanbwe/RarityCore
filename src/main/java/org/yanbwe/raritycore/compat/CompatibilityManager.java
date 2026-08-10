@@ -106,6 +106,18 @@ public class CompatibilityManager {
             RarityCore.LOGGER.debug("Refined Storage not found, skipping compatibility adapter");
         }
         
+        // 初始化 FTB Library 适配器（物品边框渲染兼容，覆盖 FTB Quests 等 FTB 系列界面）
+        if (isModLoaded("ftblibrary")) {
+            try {
+                org.yanbwe.raritycore.compat.ftblibrary.FtbLibraryCompat.initialize();
+                RarityCore.LOGGER.info("FTB Library compatibility adapter initialized");
+            } catch (Exception e) {
+                RarityCore.LOGGER.error("Failed to initialize FTB Library compatibility adapter", e);
+            }
+        } else {
+            RarityCore.LOGGER.debug("FTB Library not found, skipping compatibility adapter");
+        }
+        
         // 初始化 TacZ 适配器
         try {
             org.yanbwe.raritycore.compat.tacz.TacZAdapter.init();
