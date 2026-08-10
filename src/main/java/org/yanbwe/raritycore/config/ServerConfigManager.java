@@ -2,6 +2,7 @@ package org.yanbwe.raritycore.config;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import net.neoforged.fml.ModList;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.RarityCacheCoordinator;
 import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
@@ -223,6 +224,11 @@ public class ServerConfigManager {
      * 获取是否启用组件稀有度控制
      */
     public static boolean isEnableComponentRarityControl() {
+        // ModularRarity 模组加载时自动视为开启（不改动用户配置值，仅运行时生效）
+        ModList modList = ModList.get();
+        if (modList != null && modList.isLoaded("modularrarity")) {
+            return true;
+        }
         return enableComponentRarityControl;
     }
     

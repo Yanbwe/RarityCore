@@ -1,9 +1,11 @@
 package org.yanbwe.raritycore.api;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import org.yanbwe.raritycore.cache.RarityCacheCoordinator;
 import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.config.TagRarityConfigLoader;
@@ -674,6 +676,24 @@ public final class RarityCoreAPI {
     public static int getComponentRarity(@NotNull ItemStack itemStack) {
         Integer level = ComponentRarityReader.readLevel(itemStack);
         return level != null ? level : 0;
+    }
+
+    /**
+     * 使指定物品堆的稀有度缓存立即失效（ID 缓存 + 组件缓存）。
+     *
+     * <p>供外部模组在写入/移除组件稀有度后调用（如 ModularRarity 装/拆插件后），
+     * 避免类型级 ID 缓存快速路径返回旧值导致视觉延迟（最长约 30-60 分钟）。</p>
+     *
+     * <p>注意：必须同时失效两类缓存——{@link RarityCacheCoordinator#invalidate(ItemStack)}
+     * 只清组件缓存，类型级 ID 缓存需按物品 id 失效（{@link RarityCacheCoordinator#invalidate(ResourceLocation)}，
+     * 内部已判空）。</p>
+     *
+     * @param itemStack 组件刚发生变更的物品堆
+     */
+    public static void invalidateItem(@NotNull ItemStack itemStack) {
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
+        RarityCacheCoordinator.invalidate(itemId); // 清 ID 缓存（内部已判空）
+        RarityCacheCoordinator.invalidate(itemStack); // 清组件缓存
     }
 
     // ══════════════════════════════════════════════════════
