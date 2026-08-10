@@ -16,5 +16,3 @@
 ### Build & Other
 - Updated build and release workflow with version parsing and publishing support
 - Updated .gitignore to exclude new build files
-
-[1201.14.1]: https://github.com/YanbweMod/RarityCore/releases/tag/1201.14.1

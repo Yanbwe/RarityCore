@@ -16,5 +16,3 @@
 ### 构建与其他
 - 更新构建和发布工作流，添加版本解析与发布功能
 - 更新 .gitignore 以排除新增构建文件
-
-[1201.14.1]: https://github.com/YanbweMod/RarityCore/releases/tag/1201.14.1
