@@ -72,7 +72,6 @@ public class EditModeEventHandler {
     @SuppressWarnings("null")
     public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
         if (!EditModeManager.isEditModeEnabled()) return;
-        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
 
         Screen screen = event.getScreen();
         int mouseX = (int) event.getMouseX();
@@ -80,6 +79,7 @@ public class EditModeEventHandler {
 
         // 左键按下在面板内 → 记录起点并拦截，按钮逻辑延迟到释放时执行
         if (isInPanel(mouseX, mouseY)) {
+            if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return; // 面板交互仅左键
             pressMouseX = mouseX;
             pressMouseY = mouseY;
             pressedInPanel = true;
@@ -88,7 +88,11 @@ public class EditModeEventHandler {
             return;
         }
 
-        // 否则处理物品槽点击（原逻辑原样保留）
+        // 面板外按下：复位拖动状态（防御：避免 GUI 关闭时释放事件未送达导致残留）
+        pressedInPanel = false;
+        dragging = false;
+
+        // 否则处理物品槽点击（原逻辑原样保留，对所有鼠标按钮生效）
         if (!(screen instanceof AbstractContainerScreen<?> containerScreen)) return;
 
         Slot clickedSlot = getSlotUnderMouse(containerScreen, event.getMouseX(), event.getMouseY());
@@ -160,6 +164,12 @@ public class EditModeEventHandler {
             return;
         }
 
+        // 折叠面板点击无按钮动作（仅拦截防穿透）；1.20.1 折叠展开仅由 Ctrl+H 控制
+        if (panelCollapsed) {
+            event.setCanceled(true);
+            return;
+        }
+
         // 未拖动 → 视为点击，执行原面板按钮逻辑（相对坐标）
         if (!isInPanel(mouseX, mouseY)) return;
         event.setCanceled(true);
@@ -171,6 +181,8 @@ public class EditModeEventHandler {
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onScreenRender(ScreenEvent.Render.Post event) {
         if (!EditModeManager.isEditModeEnabled()) return;
+
+        clampToScreen(); // 状态变化（折叠/模式切换）后确保面板仍在屏幕内
 
         Screen screen = event.getScreen();
         GuiGraphics graphics = event.getGuiGraphics();
