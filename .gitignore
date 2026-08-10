@@ -134,3 +134,7 @@ Doc
 .tmp
 
 ROADMAP_v13.md
+.zcode
+docs
+# Git worktrees
+.worktrees

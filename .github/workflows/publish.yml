@@ -1,12 +1,14 @@
-name: Publish to GitHub Packages
+name: Build and Publish Release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
+      - '[0-9]*'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -25,10 +27,66 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TAG="${GITHUB_REF_NAME}"
+            VERSION="${TAG#v}"
+          else
+            VERSION="$(sed -n 's/^mod_version=//p' gradle.properties)"
+            TAG="${VERSION}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Sync mod version with tag
+        run: sed -i "s/^mod_version=.*/mod_version=${{ steps.version.outputs.version }}/" gradle.properties
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Build
+        run: ./gradlew build -PenableReobf=true --no-daemon
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mod-jar
+          path: build/libs/*.jar
+          if-no-files-found: error
+
       - name: Publish to GitHub Packages
-        run: ./gradlew publish -PenableReobf=true
+        run: ./gradlew publish -PenableReobf=true --no-daemon
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          NOTES_FILE="$RUNNER_TEMP/release_notes.md"
+          if [ -f CHANGELOG.md ]; then
+            awk -v v="[${{ steps.version.outputs.version }}]" \
+              'BEGIN{f=0} /^## /{if(index($0,v)>0){f=1}else if(f){exit}} f' \
+              CHANGELOG.md > "$NOTES_FILE"
+          fi
+          JARS=$(find build/libs -maxdepth 1 -name '*.jar' \
+            ! -name '*-sources.jar' ! -name '*-javadoc.jar' ! -name '*-api.jar')
+          if [ -z "$JARS" ]; then
+            echo "::error::No release jar found in build/libs"
+            exit 1
+          fi
+          ARGS=(--title "$TAG")
+          if [ -s "$NOTES_FILE" ]; then
+            ARGS+=(--notes-file "$NOTES_FILE")
+          else
+            ARGS+=(--generate-notes)
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" "${ARGS[@]}"
+            for jar in $JARS; do gh release upload "$TAG" "$jar" --clobber; done
+          else
+            gh release create "$TAG" $JARS "${ARGS[@]}"
+          fi
