@@ -7,6 +7,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.MinecraftForge;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.config.TagRarityConfigManager;
@@ -197,6 +198,24 @@ public final class RarityCoreAPI {
     /** 服务端：是否启用 NBT 稀有度控制 */
     public static boolean isNbtRarityControlEnabled() {
         return ServerConfigManager.isEnableNbtRarityControl();
+    }
+
+    /**
+     * 使指定物品堆的稀有度缓存立即失效（ID 缓存 + NBT 缓存）。
+     *
+     * <p>供外部模组在写入/移除 NBT 稀有度（raritycore 复合标签）后调用，
+     * 避免类型级 ID 缓存快速路径返回旧值导致视觉延迟（NBT 缓存最长约 30-60 分钟过期）。</p>
+     *
+     * <p>注意：必须同时失效两类缓存——{@link DualCacheManager#invalidate(ItemStack)}
+     * 只清 NBT 缓存，类型级 ID 缓存需按物品 id 失效（{@link DualCacheManager#invalidate(ResourceLocation)}，
+     * 内部已判空）。</p>
+     *
+     * @param itemStack NBT 刚发生变更的物品堆
+     */
+    public static void invalidateItem(@NotNull ItemStack itemStack) {
+        ResourceLocation itemId = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(itemStack.getItem());
+        DualCacheManager.invalidate(itemId); // 清 ID 缓存（内部已判空）
+        DualCacheManager.invalidate(itemStack); // 清 NBT 缓存
     }
 
     // ══════════════════════════════════════════════════════

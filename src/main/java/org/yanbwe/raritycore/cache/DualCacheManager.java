@@ -397,6 +397,27 @@ public class DualCacheManager {
     }
     
     /**
+     * 使指定物品的ID缓存失效（供外部模组写入NBT稀有度后调用，避免快速路径返回旧值）
+     * @param itemId 物品资源位置
+     */
+    public static void invalidate(ResourceLocation itemId) {
+        if (itemId != null && idCache != null) {
+            idCache.invalidate(itemId);
+        }
+    }
+    
+    /**
+     * 使指定物品堆的NBT缓存失效
+     * @param itemStack 物品堆
+     */
+    public static void invalidate(ItemStack itemStack) {
+        if (itemStack == null || itemStack.isEmpty() || nbtCache == null) {
+            return;
+        }
+        nbtCache.invalidate(generateNbtKey(itemStack));
+    }
+    
+    /**
      * 获取NBT缓存当前大小
      * @return 缓存条目数
      */
