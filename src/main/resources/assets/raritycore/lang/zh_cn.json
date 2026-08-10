@@ -45,6 +45,8 @@
   "rarity.core.edit_mode_status_enabled": "编辑模式: 已启用 (当前稀有度: %d)",
   "rarity.core.edit_mode_status_disabled": "编辑模式: 已禁用",
   "rarity.core.edit_mode_applied": "已将物品稀有度设置为 %d",
+  "rarity.core.edit_mode_applied_fullmatch": "已将物品数据匹配稀有度设置为 %d",
+  "rarity.core.edit_mode_applied_tacz": "已将 TacZ 子物品稀有度设置为 %d",
   "rarity.core.edit_mode_rarity_selected": "已选择稀有度 %d",
   "rarity.core.edit_mode_delete_mode_enabled": "已进入删除模式 - 点击物品将删除其稀有度配置",
   "rarity.core.edit_mode_delete_mode_disabled": "已退出删除模式",

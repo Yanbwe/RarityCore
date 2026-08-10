@@ -3,6 +3,7 @@ package org.yanbwe.raritycore.util;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.minecraft.resources.ResourceLocation;
 import org.yanbwe.raritycore.RarityCore;
 
 import java.io.BufferedReader;
@@ -111,5 +112,20 @@ public class ConfigFileUtils {
     @FunctionalInterface
     public interface JsonUpdater {
         void update(JsonObject jsonObject) throws Exception;
+    }
+
+    /**
+     * 构建 TacZ 子物品匹配配置文件名（确定性，重复编辑同一子物品时覆盖写）
+     * 格式：editTacZ_<namespace>_<itemPath>_<sanitizedSubId>.json
+     * 文件名包含子物品 ID，以区分同一物品 ID 下不同的 TacZ 子物品，不互相覆盖
+     *
+     * @param itemId 物品注册 ID（如 tacz:modern_kinetic_gun）
+     * @param subId  TacZ 子物品 ID（如 tacz:m4a1）
+     * @return 配置文件名（不含目录）
+     */
+    public static String buildTacZConfigFileName(ResourceLocation itemId, String subId) {
+        // 清理子物品 ID 中的非文件名字符（冒号等），与 1.20.1 行为一致
+        String safeValue = subId == null ? "" : subId.replaceAll("[^a-zA-Z0-9_\\-]", "_");
+        return "editTacZ_" + itemId.getNamespace() + "_" + itemId.getPath() + "_" + safeValue + ".json";
     }
 }

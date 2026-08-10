@@ -20,6 +20,7 @@ import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.ItemDataSyncManager;
 import org.yanbwe.raritycore.network.SyncManager;
+import org.yanbwe.raritycore.util.ConfigFileUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -156,13 +157,17 @@ public record EditModeRequestPayload(
         final boolean shouldAutoReload = autoReload;
         final String jsonString = GSON.toJson(config);
         final String playerName = player.getName().getString();
+        // TacZ 编辑模式: 使用确定性文件名（含子物品 ID）覆盖写，重复编辑同一子物品不累积文件
+        final String taczFileName = isTacZGeneratedConfig(config) ? buildTacZFileNameFromConfig(config) : null;
 
         java.util.concurrent.CompletableFuture.runAsync(() -> {
             try {
                 Path configDir = ConfigManager.getConfigDirPath().resolve("item_data_matches");
                 Files.createDirectories(configDir);
 
-                Path configFile = findNextAvailableFile(configDir, "edit_" + safeName);
+                Path configFile = taczFileName != null
+                    ? configDir.resolve(taczFileName)
+                    : findNextAvailableFile(configDir, "edit_" + safeName);
 
                 // 路径遍历防护：确保生成的文件规范化路径在 configDir 子树内
                 // configFile 尚不存在，仅规范化父目录，然后拼接文件名后验证
@@ -191,6 +196,30 @@ public record EditModeRequestPayload(
                 RarityCore.LOGGER.error("Error processing FullMatch request: {}", e.getMessage(), e);
             }
         });
+    }
+
+    /**
+     * 判断配置是否由 TacZ 编辑模式生成（客户端写入 edit_mode_source=tacz 标记）
+     */
+    private static boolean isTacZGeneratedConfig(JsonObject config) {
+        return config.has("edit_mode_source")
+            && config.get("edit_mode_source").isJsonPrimitive()
+            && "tacz".equals(config.get("edit_mode_source").getAsString());
+    }
+
+    /**
+     * 从 TacZ 生成的配置 JSON 中派生确定性文件名
+     * TacZ 编辑固定生成单条件，子物品 ID 取自 conditions[0].substring，
+     * 文件名格式与客户端本地保存一致（editTacZ_<ns>_<itemPath>_<sanitizedSubId>.json）
+     */
+    private String buildTacZFileNameFromConfig(JsonObject config) {
+        String subId = "";
+        try {
+            subId = config.getAsJsonArray("conditions").get(0).getAsJsonObject().get("substring").getAsString();
+        } catch (Exception e) {
+            RarityCore.LOGGER.warn("TacZ: Config missing substring in first condition, falling back to generic name");
+        }
+        return ConfigFileUtils.buildTacZConfigFileName(itemId, subId);
     }
 
     /**

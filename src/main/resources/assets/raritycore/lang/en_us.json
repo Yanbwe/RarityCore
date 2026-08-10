@@ -45,6 +45,8 @@
   "rarity.core.edit_mode_status_enabled": "Edit mode: Enabled (Current rarity: %d)",
   "rarity.core.edit_mode_status_disabled": "Edit mode: Disabled",
   "rarity.core.edit_mode_applied": "Item rarity set to %d",
+  "rarity.core.edit_mode_applied_fullmatch": "Item data match rarity set to %d",
+  "rarity.core.edit_mode_applied_tacz": "TacZ item rarity set to %d",
   "rarity.core.edit_mode_rarity_selected": "Selected rarity %d",
   "rarity.core.edit_mode_delete_mode_enabled": "Delete mode enabled - Click items to remove their rarity configuration",
   "rarity.core.edit_mode_delete_mode_disabled": "Delete mode disabled",

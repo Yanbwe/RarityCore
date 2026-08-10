@@ -128,3 +128,5 @@ doc/
 .zcode
 docs
 libs
+.zcode
+docs
