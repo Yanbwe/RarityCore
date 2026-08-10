@@ -79,6 +79,8 @@ public class EditModeOverlay {
     public static void onScreenRender(ScreenEvent.Render.Post event) {
         if (!EditModeManager.isEditModeEnabled()) return;
 
+        clampToScreen(); // 状态变化（折叠/展开/模式切换）后确保面板仍在屏幕内
+
         GuiGraphics gui = event.getGuiGraphics();
         Font font = Minecraft.getInstance().font;
 
@@ -221,7 +223,12 @@ public class EditModeOverlay {
         double mouseY = event.getMouseY();
 
         boolean inPanel = collapsed ? isInCollapsedPanel(mouseX, mouseY) : isInPanel(mouseX, mouseY);
-        if (!inPanel) return;
+        if (!inPanel) {
+            // 面板外按下：复位拖动状态（防御：避免 GUI 关闭时释放事件未送达导致残留）
+            pressedInPanel = false;
+            dragging = false;
+            return;
+        }
 
         pressMouseX = (int) mouseX;
         pressMouseY = (int) mouseY;
