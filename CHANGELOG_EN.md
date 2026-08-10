@@ -1,5 +1,16 @@
 # RarityCore Changelog
 
+## [1211.14.5] - 2026-08-10
+
+### Fixed
+- Fixed cache component-awareness: stacks with component rarity control (`raritycore.Level`) are now cached per-stack via NBT hash, no longer polluted by the shared ID cache (fixes the "all guns change together" root cause)
+
+### Adjusted
+- Component rarity control is now "half-enabled": when ModularRarity is detected, component rarity is only read for ModularShoot's gun (`modularshoot:gun`) and plugin (`modularshoot:plugin`) items; all other items short-circuit in O(1), removing the hot-path cost of a full `copyTag` NBT copy (bound items keep working via `registerRarity`)
+
+### Build & Other
+- Bumped mod version to 1211.14.5
+
 ## [1211.14.4] - 2026-08-10
 
 ### Added
@@ -14,5 +25,3 @@
 ### Build & Other
 - Bumped mod version to 1211.14.4 and fixed related configuration
 - Updated release workflow to support version tag pushes
-
-[1211.14.4]: https://github.com/YanbweMod/RarityCore/releases/tag/1211.14.4

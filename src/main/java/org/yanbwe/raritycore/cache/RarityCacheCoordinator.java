@@ -10,6 +10,7 @@ import org.yanbwe.raritycore.compat.ironsspells.IronSpellsAdapter;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher;
+import org.yanbwe.raritycore.registry.ComponentRarityReader;
 
 import javax.annotation.Nullable;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -70,9 +71,12 @@ public class RarityCacheCoordinator {
             return null;
         }
 
-        // P2 FIX: 无组件匹配规则且神化/Iron's Spells 均未激活 → 快速ID缓存路径
-        // 神化/Iron's Spells 激活时必须走完整逻辑，因为它们的稀有度基于组件数据
-        if (!hasComponentMatchRules(itemId) && !isApotheosisActive() && !isIronSpellsActive()) {
+        // P2 FIX: 无组件匹配规则、神化/Iron's Spells 未激活、且栈上无组件稀有度控制数据
+        // → 快速ID缓存路径。组件稀有度控制（raritycore.Level）是 per-stack 的，
+        // 必须走完整查询链（组件缓存按 NBT 哈希区分物品堆），
+        // 否则 ID 缓存会让所有同 itemId 的物品堆共享同一稀有度（互相污染）。
+        if (!hasComponentMatchRules(itemId) && !isApotheosisActive() && !isIronSpellsActive()
+                && ComponentRarityReader.readLevel(itemStack) == null) {
             return IdCacheManager.getCachedRarity(itemId);
         }
 
@@ -149,6 +153,13 @@ public class RarityCacheCoordinator {
 
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(itemStack.getItem());
         if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
+            return;
+        }
+
+        // 栈上存在组件稀有度控制数据（raritycore.Level）→ 必须按物品堆缓存（NBT 哈希），
+        // 否则写入 ID 缓存会让所有同 itemId 的物品共享同一稀有度（互相污染）。
+        if (ComponentRarityReader.readLevel(itemStack) != null) {
+            ComponentCacheManager.cacheRarity(itemStack, rarity);
             return;
         }
 

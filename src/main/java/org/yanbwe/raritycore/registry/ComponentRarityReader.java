@@ -7,6 +7,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import org.jetbrains.annotations.Nullable;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.compat.modularshoot.ModularShootAdapter;
 
 /**
  * 组件稀有度读取器
@@ -84,6 +85,12 @@ public class ComponentRarityReader {
             return null;
         }
 
+        // 半开判定：仅 ModularShoot 提供的枪械/插件物品参与组件稀有度读取，
+        // 无关物品 O(1) 短路跳过（避免 copyTag 全量 NBT 复制的热路径开销）
+        if (!ModularShootAdapter.isRelevant(stack)) {
+            return null;
+        }
+
         try {
             CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
             if (customData == null) {
@@ -128,6 +135,12 @@ public class ComponentRarityReader {
     @Nullable
     public static Integer readLevel(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
+            return null;
+        }
+
+        // 半开判定：仅 ModularShoot 提供的枪械/插件物品参与组件稀有度读取，
+        // 无关物品 O(1) 短路跳过（避免 copyTag 全量 NBT 复制的热路径开销）
+        if (!ModularShootAdapter.isRelevant(stack)) {
             return null;
         }
 
