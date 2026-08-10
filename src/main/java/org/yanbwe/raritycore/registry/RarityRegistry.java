@@ -355,6 +355,9 @@ public class RarityRegistry {
     // 检查 Iron's Spellbooks 稀有度
     @Nullable
     private static Integer checkIronSpellbooksRarity(@Nullable ItemStack itemStack) {
+        if (!org.yanbwe.raritycore.config.ClientConfigManager.isEnableIronSpellsAdapter()) {
+            return null;
+        }
         if (itemStack == null || itemStack.isEmpty() || !itemStack.hasTag()) {
             return null;
         }

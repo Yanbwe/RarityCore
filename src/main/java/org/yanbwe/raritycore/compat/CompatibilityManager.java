@@ -79,15 +79,19 @@ public class CompatibilityManager {
             RarityCore.LOGGER.error("Failed to initialize Apotheosis compatibility adapter", e);
         }
         
-        // 初始化 Iron's Spellbooks 适配器
-        try {
-            Class.forName("io.redspace.ironsspellbooks.IronsSpellbooks");
-            org.yanbwe.raritycore.compat.ironsspellbooks.IronSpellbooksAdapter.init();
-            RarityCore.LOGGER.info("Iron's Spellbooks compatibility adapter initialized");
-        } catch (ClassNotFoundException e) {
-            RarityCore.LOGGER.debug("Iron's Spellbooks not found, skipping compatibility adapter");
-        } catch (Exception e) {
-            RarityCore.LOGGER.error("Failed to initialize Iron's Spellbooks compatibility adapter", e);
+        // 初始化 Iron's Spellbooks 适配器（可在 client.json 中通过 enableIronSpellsAdapter 禁用）
+        if (org.yanbwe.raritycore.config.ClientConfigManager.isEnableIronSpellsAdapter()) {
+            try {
+                Class.forName("io.redspace.ironsspellbooks.IronsSpellbooks");
+                org.yanbwe.raritycore.compat.ironsspellbooks.IronSpellbooksAdapter.init();
+                RarityCore.LOGGER.info("Iron's Spellbooks compatibility adapter initialized");
+            } catch (ClassNotFoundException e) {
+                RarityCore.LOGGER.debug("Iron's Spellbooks not found, skipping compatibility adapter");
+            } catch (Exception e) {
+                RarityCore.LOGGER.error("Failed to initialize Iron's Spellbooks compatibility adapter", e);
+            }
+        } else {
+            RarityCore.LOGGER.info("Iron's Spellbooks compatibility adapter disabled by client config");
         }
 
         // 初始化精致存储适配器

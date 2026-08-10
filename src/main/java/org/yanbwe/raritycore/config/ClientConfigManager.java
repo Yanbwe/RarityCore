@@ -23,6 +23,7 @@ public class ClientConfigManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private static boolean enableCacheSystem = RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM;
+    private static boolean enableIronSpellsAdapter = RarityConstants.DEFAULT_ENABLE_IRON_SPELLS_ADAPTER;
 
     private static final Path CONFIG_DIR = Paths.get(RarityConstants.CONFIG_DIR_PARENT).resolve(RarityConstants.CONFIG_DIR_NAME);
     private static final Path CLIENT_CONFIG_FILE = CONFIG_DIR.resolve(RarityConstants.CLIENT_CONFIG_FILE_NAME);
@@ -53,11 +54,17 @@ public class ClientConfigManager {
                 } else {
                     enableCacheSystem = RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM;
                 }
+                if (jsonObject != null && jsonObject.has("enableIronSpellsAdapter")) {
+                    enableIronSpellsAdapter = jsonObject.get("enableIronSpellsAdapter").getAsBoolean();
+                } else {
+                    enableIronSpellsAdapter = RarityConstants.DEFAULT_ENABLE_IRON_SPELLS_ADAPTER;
+                }
             }
-            RarityCore.LOGGER.info("Client config loaded: enableCacheSystem={}", enableCacheSystem);
+            RarityCore.LOGGER.info("Client config loaded: enableCacheSystem={}, enableIronSpellsAdapter={}", enableCacheSystem, enableIronSpellsAdapter);
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error loading client config, using defaults", e);
             enableCacheSystem = RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM;
+            enableIronSpellsAdapter = RarityConstants.DEFAULT_ENABLE_IRON_SPELLS_ADAPTER;
             createDefaultClientConfig();
         }
     }
@@ -65,6 +72,7 @@ public class ClientConfigManager {
     private static void createDefaultClientConfig() {
         JsonObject configObject = new JsonObject();
         configObject.addProperty("enableCacheSystem", enableCacheSystem);
+        configObject.addProperty("enableIronSpellsAdapter", enableIronSpellsAdapter);
         try {
             try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(CLIENT_CONFIG_FILE), StandardCharsets.UTF_8)) {
                 GSON.toJson(configObject, writer);
@@ -78,6 +86,7 @@ public class ClientConfigManager {
     public static void saveClientConfig() {
         JsonObject configObject = new JsonObject();
         configObject.addProperty("enableCacheSystem", enableCacheSystem);
+        configObject.addProperty("enableIronSpellsAdapter", enableIronSpellsAdapter);
         try {
             try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(CLIENT_CONFIG_FILE), StandardCharsets.UTF_8)) {
                 GSON.toJson(configObject, writer);
@@ -93,6 +102,19 @@ public class ClientConfigManager {
 
     public static void setEnableCacheSystem(boolean enable) {
         enableCacheSystem = enable;
+        try {
+            org.yanbwe.raritycore.client.CacheInvalidationListener.onClientConfigChange();
+        } catch (Exception e) {
+            RarityCore.LOGGER.warn("Failed to notify cache of config change", e);
+        }
+    }
+
+    public static boolean isEnableIronSpellsAdapter() {
+        return enableIronSpellsAdapter;
+    }
+
+    public static void setEnableIronSpellsAdapter(boolean enable) {
+        enableIronSpellsAdapter = enable;
         try {
             org.yanbwe.raritycore.client.CacheInvalidationListener.onClientConfigChange();
         } catch (Exception e) {

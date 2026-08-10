@@ -59,6 +59,7 @@ public class RarityConstants {
     
     // 缓存系统相关常量
     public static final boolean DEFAULT_ENABLE_CACHE_SYSTEM = true; // 默认启用缓存系统
+    public static final boolean DEFAULT_ENABLE_IRON_SPELLS_ADAPTER = true; // 默认启用铁魔法适配器
     
     // 服务端配置默认值
     public static final boolean DEFAULT_CHECK_APOTHEOSIS_RARITY = true; // 默认启用神化模组稀有度检查
