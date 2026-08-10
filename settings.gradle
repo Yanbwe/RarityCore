@@ -11,7 +11,8 @@ plugins {
 
 rootProject.name = 'raritycore'
 
-include 'common', 'v26_1', 'v26_2'
+// common 为共享源码/资源容器（非独立 gradle 模块），由各版本模块通过 srcDir 引用
+include 'v26_1', 'v26_2'
 
 project(':v26_1').projectDir = file('26.1')
 project(':v26_2').projectDir = file('26.2')

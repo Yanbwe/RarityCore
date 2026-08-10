@@ -6,6 +6,10 @@ plugins {
 version = mod_version_26_2
 group = mod_group_id
 
+// 引用共享源码与资源（common 为纯源码容器，由各版本模块以自己的 MC 版本编译）
+sourceSets.main.java.srcDir('../common/src/main/java')
+sourceSets.main.resources.srcDir('../common/src/main/resources')
+
 sourceSets.main.resources {
     srcDir('src/generated/resources')
     exclude("**/*.bbmodel")
@@ -58,10 +62,6 @@ neoForge {
 
 configurations {
     runtimeClasspath.extendsFrom localRuntime
-}
-
-dependencies {
-    implementation project(':common')
 }
 
 tasks.withType(ProcessResources).configureEach {
