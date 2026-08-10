@@ -37,6 +37,8 @@ public class ClientCommands {
                     RarityTooltipHandler.handleSkipConfigChange();
                     // 5. 刷新渲染缓存
                     RenderCacheManager.clearAllCache();
+                    // 6. 重置缓存协调器激活状态标志（Iron's Spells 等）并清空 ID/组件缓存
+                    DualCacheManager.handleConfigReload();
                     int levelCount = RarityStyleConfigManager.getInstance().getConfiguredLevels().size();
                     context.getSource().sendSuccess(() -> Component.translatable(
                         "rarity.core.rarity_client_config_reloaded", levelCount)

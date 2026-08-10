@@ -5,6 +5,7 @@ import org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter;
 import org.yanbwe.raritycore.compat.colortooltips.ColorTooltipsCompat;
 import org.yanbwe.raritycore.compat.refinedstorage.RefinedStorageCompat;
 import org.yanbwe.raritycore.compat.ironsspells.IronSpellsAdapter;
+import org.yanbwe.raritycore.config.ClientConfigManager;
 
 /**
  * 兼容性管理器
@@ -52,15 +53,19 @@ public class CompatibilityManager {
             RarityCore.LOGGER.debug("Refined Storage not found, skipping compatibility adapter");
         }
         
-        // 初始化 Iron's Spells 适配器
-        try {
-            Class.forName("io.redspace.ironsspellbooks.IronsSpellbooks");
-            IronSpellsAdapter.init();
-            RarityCore.LOGGER.info("Iron's Spells compatibility adapter initialized");
-        } catch (ClassNotFoundException e) {
-            RarityCore.LOGGER.debug("Iron's Spells not found, skipping compatibility adapter");
-        } catch (Exception e) {
-            RarityCore.LOGGER.error("Failed to initialize Iron's Spells compatibility adapter", e);
+        // 初始化 Iron's Spells 适配器（可在 client.json 中通过 enableIronSpellsAdapter 禁用）
+        if (ClientConfigManager.isEnableIronSpellsAdapter()) {
+            try {
+                Class.forName("io.redspace.ironsspellbooks.IronsSpellbooks");
+                IronSpellsAdapter.init();
+                RarityCore.LOGGER.info("Iron's Spells compatibility adapter initialized");
+            } catch (ClassNotFoundException e) {
+                RarityCore.LOGGER.debug("Iron's Spells not found, skipping compatibility adapter");
+            } catch (Exception e) {
+                RarityCore.LOGGER.error("Failed to initialize Iron's Spells compatibility adapter", e);
+            }
+        } else {
+            RarityCore.LOGGER.info("Iron's Spells compatibility adapter disabled by client config");
         }
 
         // 初始化 colortooltips 适配器

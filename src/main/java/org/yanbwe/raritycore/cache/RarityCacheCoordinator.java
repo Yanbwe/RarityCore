@@ -7,6 +7,7 @@ import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter;
 import org.yanbwe.raritycore.compat.ironsspells.IronSpellsAdapter;
+import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher;
 
@@ -280,7 +281,8 @@ public class RarityCacheCoordinator {
             return cachedIronSpellsActive;
         }
         try {
-            cachedIronSpellsActive = IronSpellsAdapter.isLoaded();
+            cachedIronSpellsActive = ClientConfigManager.isEnableIronSpellsAdapter()
+                && IronSpellsAdapter.isLoaded();
         } catch (Exception e) {
             cachedIronSpellsActive = false;
         }

@@ -126,6 +126,7 @@ public class ConfigValidator {
         JsonObject configObject = new JsonObject();
         configObject.addProperty("enableCacheSystem", true);
         configObject.addProperty("enableSophisticatedCoreAdapter", true);
+        configObject.addProperty("enableIronSpellsAdapter", true);
         return configObject;
     }
 

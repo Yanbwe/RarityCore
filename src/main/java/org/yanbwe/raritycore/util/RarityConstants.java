@@ -77,4 +77,7 @@ public class RarityConstants {
 
     // SophisticatedCore 适配
     public static final boolean DEFAULT_ENABLE_SOPHISTICATED_CORE_ADAPTER = true;
+
+    // Iron's Spells 适配
+    public static final boolean DEFAULT_ENABLE_IRON_SPELLS_ADAPTER = true;
 }

@@ -14,6 +14,7 @@ import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.compat.CompatibilityChecker;
 import org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter;
 import org.yanbwe.raritycore.compat.ironsspells.IronSpellsAdapter;
+import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.config.TagRarityConfig;
@@ -499,6 +500,9 @@ public class RarityRegistry {
      * @return 稀有度等级，如果模组未加载或无有效法术数据则返回 null
      */
     private static Integer checkIronSpellsRarity(@Nullable ItemStack itemStack) {
+        if (!ClientConfigManager.isEnableIronSpellsAdapter()) {
+            return null;
+        }
         if (!IronSpellsAdapter.isLoaded()) {
             return null;
         }
