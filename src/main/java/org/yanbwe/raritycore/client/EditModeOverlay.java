@@ -239,6 +239,7 @@ public class EditModeOverlay {
     public static void onMouseDragged(ScreenEvent.MouseDragged.Pre event) {
         if (!EditModeManager.isEditModeEnabled()) return;
         if (event.getMouseButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
+        if (!pressedInPanel) return; // 未在面板内按下，不响应拖动
 
         if (!dragging) {
             // 尚未进入拖动：位移未超阈值前不响应
