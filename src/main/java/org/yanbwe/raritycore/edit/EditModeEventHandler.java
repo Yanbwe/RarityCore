@@ -28,6 +28,17 @@ public class EditModeEventHandler {
 
     private static boolean panelCollapsed = false;
 
+    // ---- 面板位置（内存态，不持久化）----
+    private static int panelX = 4;
+    private static int panelY = 4;
+
+    // ---- 拖动状态 ----
+    private static final int DRAG_THRESHOLD = 4; // px
+    private static int pressMouseX = 0;
+    private static int pressMouseY = 0;
+    private static boolean pressedInPanel = false;
+    private static boolean dragging = false;
+
     // 编辑点击防抖：避免快速连点产生大量网络请求
     private static long lastEditClickTime = 0;
     private static final long EDIT_CLICK_COOLDOWN_MS = 200;
@@ -51,23 +62,33 @@ public class EditModeEventHandler {
         }
     }
 
-    // ---- Mouse Click ----
+    // ---- Mouse Interaction: Press / Drag / Release ----
 
+    /**
+     * 鼠标按下：左键在面板内时记录按下点并拦截事件（按钮逻辑延迟到释放时执行，
+     * 以区分"点击"与"拖动"）；面板外则保留原物品槽编辑逻辑。
+     */
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     @SuppressWarnings("null")
-    public static void onMouseClick(ScreenEvent.MouseButtonPressed.Pre event) {
+    public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
         if (!EditModeManager.isEditModeEnabled()) return;
+        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
 
         Screen screen = event.getScreen();
+        int mouseX = (int) event.getMouseX();
+        int mouseY = (int) event.getMouseY();
 
-        // 如果点击在浮动面板区域内，处理面板交互
-        if (!panelCollapsed && isInPanel((int) event.getMouseX(), (int) event.getMouseY())) {
-            handlePanelClick(screen, (int) event.getMouseX(), (int) event.getMouseY());
+        // 左键按下在面板内 → 记录起点并拦截，按钮逻辑延迟到释放时执行
+        if (isInPanel(mouseX, mouseY)) {
+            pressMouseX = mouseX;
+            pressMouseY = mouseY;
+            pressedInPanel = true;
+            dragging = false;
             event.setCanceled(true);
             return;
         }
 
-        // 否则处理物品槽点击
+        // 否则处理物品槽点击（原逻辑原样保留）
         if (!(screen instanceof AbstractContainerScreen<?> containerScreen)) return;
 
         Slot clickedSlot = getSlotUnderMouse(containerScreen, event.getMouseX(), event.getMouseY());
@@ -94,6 +115,56 @@ public class EditModeEventHandler {
         event.setCanceled(true);
     }
 
+    /**
+     * 鼠标拖动：位移超过阈值后进入拖动状态，
+     * 用 dragX/dragY 增量更新面板位置并钳制在屏幕内。
+     * 拖动开始后鼠标移出面板仍继续拖动（已抓取）。
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onMouseDragged(ScreenEvent.MouseDragged.Pre event) {
+        if (!EditModeManager.isEditModeEnabled()) return;
+        if (event.getMouseButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
+
+        if (!dragging) {
+            // 尚未进入拖动：位移未超阈值前不响应
+            int dx = (int) Math.abs(event.getMouseX() - pressMouseX);
+            int dy = (int) Math.abs(event.getMouseY() - pressMouseY);
+            if (dx < DRAG_THRESHOLD && dy < DRAG_THRESHOLD) return;
+            dragging = true;
+        }
+
+        panelX += (int) event.getDragX();
+        panelY += (int) event.getDragY();
+        clampToScreen();
+        event.setCanceled(true);
+    }
+
+    /**
+     * 鼠标释放：若未发生拖动则执行面板按钮点击；若已拖动则仅结束拖动。
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    @SuppressWarnings("null")
+    public static void onMouseReleased(ScreenEvent.MouseButtonReleased.Pre event) {
+        if (!EditModeManager.isEditModeEnabled()) return;
+        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
+        if (!pressedInPanel) return;
+
+        pressedInPanel = false;
+        int mouseX = (int) event.getMouseX();
+        int mouseY = (int) event.getMouseY();
+
+        if (dragging) {
+            dragging = false;
+            event.setCanceled(true);
+            return;
+        }
+
+        // 未拖动 → 视为点击，执行原面板按钮逻辑（相对坐标）
+        if (!isInPanel(mouseX, mouseY)) return;
+        event.setCanceled(true);
+        handlePanelClick(event.getScreen(), mouseX, mouseY);
+    }
+
     // ---- GUI Overlay Render ----
 
     @SubscribeEvent(priority = EventPriority.LOW)
@@ -104,7 +175,7 @@ public class EditModeEventHandler {
         GuiGraphics graphics = event.getGuiGraphics();
         Font font = Minecraft.getInstance().font;
 
-        int x = 4, y = 4;
+        int x = panelX, y = panelY;
         int bgColor = 0xCC000000;
         int textColor = 0xFFFFFFFF;
         int highlightColor = 0xFF00FF00;
@@ -160,25 +231,41 @@ public class EditModeEventHandler {
     // ---- Panel Click Handling ----
 
     private static boolean isInPanel(int mouseX, int mouseY) {
-        if (panelCollapsed) return mouseX >= 4 && mouseX < 24 && mouseY >= 4 && mouseY < 18;
-        return mouseX >= 4 && mouseX < 164 && mouseY >= 4 && mouseY < 90;
+        if (panelCollapsed) return mouseX >= panelX && mouseX < panelX + 20 && mouseY >= panelY && mouseY < panelY + 14;
+        int panelHeight = EditModeManager.getCurrentMode() == EditModeManager.EditMode.FULLMATCH ? 106 : 66;
+        return mouseX >= panelX && mouseX < panelX + 160 && mouseY >= panelY && mouseY < panelY + panelHeight;
     }
 
     private static void handlePanelClick(Screen screen, int mouseX, int mouseY) {
-        // 模式切换按钮区域: y=4~16 (line 2~14), x=4~124
-        if (mouseY >= 4 && mouseY < 16 && mouseX >= 4 && mouseX < 124) {
+        int rx = mouseX - panelX;
+        int ry = mouseY - panelY;
+        // 模式切换按钮区域: 相对 y=0~12, x=0~120
+        if (ry >= 0 && ry < 12 && rx >= 0 && rx < 120) {
             EditModeManager.EditMode newMode = EditModeManager.getCurrentMode() == EditModeManager.EditMode.FULLMATCH
                 ? EditModeManager.EditMode.NORMAL : EditModeManager.EditMode.FULLMATCH;
             EditModeManager.setMode(newMode);
         }
-        // 稀有度 - 按钮区域: x=8, y=16, w=20, h=10
-        if (mouseX >= 8 && mouseX < 28 && mouseY >= 16 && mouseY < 28) {
+        // 稀有度 - 按钮区域: 相对 x=4~24, y=12~24
+        if (rx >= 4 && rx < 24 && ry >= 12 && ry < 24) {
             EditModeManager.previousRarity();
         }
-        // 稀有度 + 按钮区域: x=124, y=16, w=20, h=10
-        if (mouseX >= 124 && mouseX < 144 && mouseY >= 16 && mouseY < 28) {
+        // 稀有度 + 按钮区域: 相对 x=120~140, y=12~24
+        if (rx >= 120 && rx < 140 && ry >= 12 && ry < 24) {
             EditModeManager.nextRarity();
         }
+    }
+
+    /**
+     * 将面板位置钳制在屏幕内（按当前折叠/展开尺寸）。
+     */
+    private static void clampToScreen() {
+        int screenW = Minecraft.getInstance().getWindow().getGuiScaledWidth();
+        int screenH = Minecraft.getInstance().getWindow().getGuiScaledHeight();
+        int panelWidth = panelCollapsed ? 20 : 160;
+        int panelHeight = panelCollapsed ? 14
+            : (EditModeManager.getCurrentMode() == EditModeManager.EditMode.FULLMATCH ? 106 : 66);
+        panelX = Math.max(0, Math.min(panelX, screenW - panelWidth));
+        panelY = Math.max(0, Math.min(panelY, screenH - panelHeight));
     }
 
     // ---- Key Handlers ----
