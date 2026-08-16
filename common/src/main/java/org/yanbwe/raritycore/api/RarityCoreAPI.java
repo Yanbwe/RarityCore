@@ -3,8 +3,10 @@ package org.yanbwe.raritycore.api;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.fml.ModList;
 import org.jetbrains.annotations.NotNull;
-import org.yanbwe.raritycore.config.RarityClientConfig;
+import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.config.TagRarityLoader;
 import org.yanbwe.raritycore.registry.ComponentRarityResolver;
@@ -14,24 +16,26 @@ import org.yanbwe.raritycore.util.RarityValidator;
 
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * RarityCore 正式公共 API
+ * RarityCore 正式公共 API (V14)
  * <p>
  * 为其他模组和外部调用方提供统一的静态方法入口。
- * 所有方法均委托至 {@link RarityRegistry} 及其他底层类，
+ * 所有方法均委托至 {@link RarityRegistry}、{@link RarityStyleConfigManager} 及其他底层类，
  * 确保行为一致且不受内部重构影响。
  * </p>
  *
  * <h3>使用示例</h3>
  * <pre>{@code
  * int rarity = RarityCoreAPI.getRarity(myItemStack);
- * if (rarity >= RarityCoreAPI.RARITY_EPIC) {
- *     // 处理史诗及以上稀有度物品
+ * if (RarityCoreAPI.validateRarity(rarity)) {
+ *     // 处理该稀有度物品
  * }
  * }</pre>
  *
  * @see RarityRegistry
+ * @see RarityStyleConfigManager
  * @since 1.13
  */
 public final class RarityCoreAPI {
@@ -44,32 +48,36 @@ public final class RarityCoreAPI {
     // 稀有度等级常量
     // ============================================================
 
-    /** 普通 (Common) */
+    /** 普通 (Common)，内置预设档位 */
     public static final int RARITY_COMMON = 1;
-    /** 稀有 (Uncommon) */
+    /** 稀有 (Uncommon)，内置预设档位 */
     public static final int RARITY_UNCOMMON = 2;
-    /** 罕见 (Rare) */
+    /** 罕见 (Rare)，内置预设档位 */
     public static final int RARITY_RARE = 3;
-    /** 史诗 (Epic) */
+    /** 史诗 (Epic)，内置预设档位 */
     public static final int RARITY_EPIC = 4;
-    /** 传说 (Legendary) */
+    /** 传说 (Legendary)，内置预设档位 */
     public static final int RARITY_LEGENDARY = 5;
-    /** 神话 (Mythical) */
+    /** 神话 (Mythical)，内置预设档位 */
     public static final int RARITY_MYTHICAL = 6;
-    /** 唯一 (Unique) */
+    /** 唯一 (Unique)，内置预设档位 */
     public static final int RARITY_UNIQUE = 7;
 
-    /** 最小稀有度等级 */
+    /** 最小稀有度等级（V14 无上限，仅保证下限） */
     public static final int MIN_RARITY = RARITY_COMMON;
-    /** 最大稀有度等级 */
+    /** 内置预设档位数量（默认 7），非稀有度上限 */
     public static final int MAX_RARITY = RARITY_UNIQUE;
+
+    /** V14 API 版本号（供联动模组做特性探测，与模组版本解耦） */
+    public static final int API_VERSION = 1400;
 
     /** 默认 RGB 颜色值 (灰色) */
     public static final int DEFAULT_RGB_COLOR = 0xCCCCCC;
 
     /**
-     * 7 级稀有度的默认 RGB 颜色映射。
-     * 键为稀有度等级 (1-7)，值为 {@code #RRGGBB} 格式的十六进制颜色字符串。
+     * 内置预设档位的默认 RGB 颜色映射。
+     * 键为稀有度等级 (内置档位 1-7)，值为 {@code #RRGGBB} 格式的十六进制颜色字符串。
+     * V14 不限制上限，8+ 等级颜色由 {@link RarityStyleConfigManager} 继承/回退规则处理。
      */
     public static final Map<Integer, String> DEFAULT_RGB_COLORS = Map.of(
             RARITY_COMMON, "#A0A0A0",
@@ -91,7 +99,7 @@ public final class RarityCoreAPI {
      * 回退至仅通过物品 ID 查询。
      *
      * @param item 要查询的物品，可为 null（返回默认稀有度）
-     * @return 稀有度等级 (1-7)，默认返回 {@value #RARITY_COMMON}
+     * @return 稀有度等级 (1+，V14 不限制上限)，默认返回 {@value #MIN_RARITY}
      */
     public static int getRarity(@Nullable Item item) {
         return RarityRegistry.getRarity(item);
@@ -102,7 +110,7 @@ public final class RarityCoreAPI {
      * 遵循完整的优先级链。
      *
      * @param itemStack 要查询的物品栈，可为 null（返回默认稀有度）
-     * @return 稀有度等级 (1-7)，默认返回 {@value #RARITY_COMMON}
+     * @return 稀有度等级 (1+，V14 不限制上限)，默认返回 {@value #MIN_RARITY}
      */
     public static int getRarity(@Nullable ItemStack itemStack) {
         return RarityRegistry.getRarity(itemStack);
@@ -110,10 +118,10 @@ public final class RarityCoreAPI {
 
     /**
      * 获取物品的标准化稀有度等级。
-     * 小于 1 的值视为 1，大于 7 的值视为 7。
+     * 小于 1 的值视为 1；V14 不限制上限，不再将大于 7 的值截断。
      *
      * @param item 要查询的物品，可为 null
-     * @return 标准化后的稀有度等级 (1-7)
+     * @return 标准化后的稀有度等级 (≥1，无上限)
      */
     public static int getNormalizedRarity(@Nullable Item item) {
         return RarityRegistry.getNormalizedRarity(item);
@@ -121,10 +129,10 @@ public final class RarityCoreAPI {
 
     /**
      * 获取物品栈的标准化稀有度等级。
-     * 小于 1 的值视为 1，大于 7 的值视为 7。
+     * 小于 1 的值视为 1；V14 不限制上限，不再将大于 7 的值截断。
      *
      * @param itemStack 要查询的物品栈，可为 null
-     * @return 标准化后的稀有度等级 (1-7)
+     * @return 标准化后的稀有度等级 (≥1，无上限)
      */
     public static int getNormalizedRarity(@Nullable ItemStack itemStack) {
         return RarityRegistry.getNormalizedRarity(itemStack);
@@ -138,7 +146,7 @@ public final class RarityCoreAPI {
      * 注册物品的稀有度等级，并同步到客户端。
      *
      * @param item   要注册的物品
-     * @param rarity 稀有度等级 (1-7)
+     * @param rarity 稀有度等级 (1+，V14 不限制上限)
      */
     public static void registerRarity(@NotNull Item item, int rarity) {
         RarityRegistry.register(item, rarity, true);
@@ -148,7 +156,7 @@ public final class RarityCoreAPI {
      * 注册物品的稀有度等级，可选是否同步到客户端。
      *
      * @param item   要注册的物品
-     * @param rarity 稀有度等级 (1-7)
+     * @param rarity 稀有度等级 (1+，V14 不限制上限)
      * @param sync   是否同步到客户端
      */
     public static void registerRarity(@NotNull Item item, int rarity, boolean sync) {
@@ -229,20 +237,20 @@ public final class RarityCoreAPI {
     // ============================================================
 
     /**
-     * 验证稀有度值是否在有效范围内 (1-7)。
+     * 验证稀有度值是否有效（≥ {@link #MIN_RARITY}，V14 不限制上限）。
      *
      * @param rarity 要验证的稀有度值
-     * @return 如果在 1-7 范围内返回 true
+     * @return 有效返回 true
      */
     public static boolean isValidRarity(int rarity) {
         return RarityValidator.isValidRarity(rarity);
     }
 
     /**
-     * 标准化稀有度值：小于 1 视为 1，大于 7 视为 7。
+     * 标准化稀有度值：小于 1 视为 1；V14 不限制上限，不再截断大于 7 的值。
      *
      * @param rarity 原始稀有度值
-     * @return 标准化后的稀有度值 (1-7)
+     * @return 标准化后的稀有度值 (≥1，无上限)
      */
     public static int normalizeRarity(int rarity) {
         return RarityValidator.normalizeRarity(rarity);
@@ -254,28 +262,24 @@ public final class RarityCoreAPI {
 
     /**
      * 获取指定稀有度等级的 RGB 颜色值。
-     * 优先使用 RarityClientConfig 中配置的自定义颜色。
+     * 委托 {@link RarityStyleConfigManager#getColor(int)}，支持 V14 继承与回退。
      *
      * @param level 稀有度等级
      * @return RGB 颜色值 (0xRRGGBB)
      */
     public static int getColor(int level) {
-        String hex = RarityClientConfig.getColorHex(level);
-        try {
-            return Integer.parseInt(hex, 16);
-        } catch (NumberFormatException e) {
-            return RarityColorUtil.getRarityRgbColor(level);
-        }
+        return RarityStyleConfigManager.getColor(level);
     }
 
     /**
      * 获取指定稀有度等级的纹理边框路径。
+     * 委托 {@link RarityStyleConfigManager#getBorderTexture(int)}，8+ 等级按继承/回退规则处理。
      *
      * @param level 稀有度等级
      * @return 纹理资源路径
      */
     public static String getTexture(int level) {
-        return RarityClientConfig.getLevelConfig(level).texture();
+        return RarityStyleConfigManager.getBorderTexture(level);
     }
 
     /**
@@ -299,6 +303,452 @@ public final class RarityCoreAPI {
     }
 
     // ============================================================
+    // V14 全局开关
+    // ============================================================
+
+    /**
+     * 全局边框渲染总开关。
+     *
+     * @return 启用返回 true
+     */
+    public static boolean isBorderEnabled() {
+        return RarityStyleConfigManager.isBorderEnabled();
+    }
+
+    /**
+     * 全局工具提示插入总开关。
+     *
+     * @return 启用返回 true
+     */
+    public static boolean isTooltipEnabled() {
+        return RarityStyleConfigManager.isTooltipEnabled();
+    }
+
+    /**
+     * 全局工具提示着色总开关。
+     *
+     * @return 启用返回 true
+     */
+    public static boolean isTooltipColorEnabled() {
+        return RarityStyleConfigManager.isTooltipColorEnabled();
+    }
+
+    /**
+     * 无稀有度物品是否跳过渲染。
+     *
+     * @return 跳过返回 true
+     */
+    public static boolean isNoRaritySkip() {
+        return RarityStyleConfigManager.isNoRaritySkip();
+    }
+
+    /**
+     * 无稀有度物品的兜底稀有度等级。
+     *
+     * @return 兜底等级
+     */
+    public static int getNoRarityDefaultRarity() {
+        return RarityStyleConfigManager.getNoRarityDefaultRarity();
+    }
+
+    // ============================================================
+    // 逐级表现开关 (RarityStyleConfigManager)
+    // ============================================================
+
+    /**
+     * 检查指定稀有度等级是否启用边框渲染。
+     *
+     * @param level 稀有度等级
+     * @return 启用返回 true
+     */
+    public static boolean isBorderEnabled(int level) {
+        return RarityStyleConfigManager.getBorder(level).show();
+    }
+
+    /**
+     * 检查指定稀有度等级是否启用工具提示显示。
+     *
+     * @param level 稀有度等级
+     * @return 启用返回 true
+     */
+    public static boolean isTooltipEnabled(int level) {
+        return RarityStyleConfigManager.getTooltip(level).show();
+    }
+
+    /**
+     * 检查指定稀有度等级是否启用物品名称颜色修改。
+     *
+     * @param level 稀有度等级
+     * @return 启用返回 true
+     */
+    public static boolean isNameColorEnabled(int level) {
+        return RarityStyleConfigManager.isNameColorEnabled(level);
+    }
+
+    /**
+     * 检查指定稀有度等级是否启用边框渲染。
+     *
+     * @param level 稀有度等级
+     * @return 启用返回 true
+     * @deprecated 使用 {@link #isBorderEnabled(int)}
+     */
+    @Deprecated
+    public static boolean isLevelRendererEnabled(int level) {
+        return isBorderEnabled(level);
+    }
+
+    /**
+     * 检查指定稀有度等级是否启用工具提示显示。
+     *
+     * @param level 稀有度等级
+     * @return 启用返回 true
+     * @deprecated 使用 {@link #isTooltipEnabled(int)}
+     */
+    @Deprecated
+    public static boolean isLevelTooltipEnabled(int level) {
+        return isTooltipEnabled(level);
+    }
+
+    /**
+     * 检查指定稀有度等级是否启用物品名称颜色修改。
+     *
+     * @param level 稀有度等级
+     * @return 启用返回 true
+     * @deprecated 使用 {@link #isNameColorEnabled(int)}
+     */
+    @Deprecated
+    public static boolean isLevelNameColorEnabled(int level) {
+        return isNameColorEnabled(level);
+    }
+
+    // ============================================================
+    // 逐级查询与诊断
+    // ============================================================
+
+    /**
+     * 获取指定稀有度等级的工具提示内容模板。
+     *
+     * @param level 稀有度等级
+     * @return 工具提示内容模板
+     */
+    public static String getTooltipContent(int level) {
+        return RarityStyleConfigManager.getTooltipContent(level);
+    }
+
+    /**
+     * 获取指定稀有度等级的等级翻译键模板。
+     *
+     * @param level 稀有度等级
+     * @return 翻译键模板
+     */
+    public static String getLevelTranslationKey(int level) {
+        return RarityStyleConfigManager.getLevelTranslationKey(level);
+    }
+
+    /**
+     * 获取指定稀有度等级的等级回退键模板。
+     *
+     * @param level 稀有度等级
+     * @return 回退键模板
+     */
+    public static String getLevelFallbackKey(int level) {
+        return RarityStyleConfigManager.getLevelFallbackKey(level);
+    }
+
+    /**
+     * 获取指定稀有度等级的星星配置。
+     *
+     * @param level 稀有度等级
+     * @return 星星配置
+     */
+    public static RarityStyleConfigManager.StarStyle getStarConfig(int level) {
+        return RarityStyleConfigManager.getStarConfig(level);
+    }
+
+    /**
+     * 检查指定稀有度等级的边框是否使用纹理。
+     *
+     * @param level 稀有度等级
+     * @return 使用纹理返回 true
+     */
+    public static boolean isBorderUseTexture(int level) {
+        return RarityStyleConfigManager.isBorderUseTexture(level);
+    }
+
+    /**
+     * 获取指定稀有度等级的边框样式（1=实心，0=空心）。
+     *
+     * @param level 稀有度等级
+     * @return 边框样式
+     */
+    public static int getBorderStyle(int level) {
+        return RarityStyleConfigManager.getBorderStyle(level);
+    }
+
+    /**
+     * 获取默认边框回退纹理。
+     *
+     * @return 回退纹理配置
+     */
+    public static String getBorderFallback() {
+        return RarityStyleConfigManager.getBorderFallback();
+    }
+
+    // ============================================================
+    // V14 样式写入
+    // ============================================================
+
+    /**
+     * 设置全局边框渲染总开关。
+     *
+     * @param enable 是否启用
+     */
+    public static void setBorderEnabled(boolean enable) {
+        RarityStyleConfigManager.setBorderEnabled(enable);
+    }
+
+    /**
+     * 设置全局工具提示插入总开关。
+     *
+     * @param enable 是否启用
+     */
+    public static void setTooltipEnabled(boolean enable) {
+        RarityStyleConfigManager.setTooltipEnabled(enable);
+    }
+
+    /**
+     * 设置全局工具提示着色总开关。
+     *
+     * @param enable 是否启用
+     */
+    public static void setTooltipColorEnabled(boolean enable) {
+        RarityStyleConfigManager.setTooltipColorEnabled(enable);
+    }
+
+    /**
+     * 设置指定稀有度等级的边框是否使用纹理。
+     *
+     * @param level     稀有度等级
+     * @param useTexture 是否使用纹理
+     */
+    public static void setBorderUseTexture(int level, boolean useTexture) {
+        RarityStyleConfigManager.setBorderUseTexture(level, useTexture);
+    }
+
+    /**
+     * 设置指定稀有度等级的边框样式（1=实心，0=空心）。
+     *
+     * @param level 稀有度等级
+     * @param style 边框样式
+     */
+    public static void setBorderStyle(int level, int style) {
+        RarityStyleConfigManager.setBorderStyle(level, style);
+    }
+
+    /**
+     * 设置指定稀有度等级的工具提示内容模板。
+     *
+     * @param level   稀有度等级
+     * @param content 工具提示内容模板
+     */
+    public static void setTooltipContent(int level, String content) {
+        RarityStyleConfigManager.setTooltipContent(level, content);
+    }
+
+    /**
+     * 设置指定稀有度等级的星星显示模式。
+     *
+     * @param level 稀有度等级
+     * @param mode  星星模式
+     */
+    public static void setStarMode(int level, String mode) {
+        RarityStyleConfigManager.setStarMode(level, mode);
+    }
+
+    /**
+     * 设置指定稀有度等级的星星重复字符。
+     *
+     * @param level      稀有度等级
+     * @param repeatChar 重复字符
+     */
+    public static void setStarRepeatChar(int level, String repeatChar) {
+        RarityStyleConfigManager.setStarRepeatChar(level, repeatChar);
+    }
+
+    /**
+     * 开始批量样式写入；期间 setter 不逐条写盘、不发布事件。
+     */
+    public static void beginStyleBatch() {
+        RarityStyleConfigManager.beginStyleBatch();
+    }
+
+    /**
+     * 结束批量样式写入；归零时统一保存并发布一次聚合事件。
+     */
+    public static void endStyleBatch() {
+        RarityStyleConfigManager.endStyleBatch();
+    }
+
+    /**
+     * 以单个补丁整体写入某稀有度等级的视觉表现配置。
+     * 补丁内 null 字段表示保留现有值。
+     *
+     * @param level 稀有度等级
+     * @param patch 样式补丁
+     */
+    public static void setStyle(int level, RarityStyleConfigManager.StylePatch patch) {
+        RarityStyleConfigManager.setStyle(level, patch);
+    }
+
+    /**
+     * 遍历当前已配置等级，批量设置边框是否使用纹理。
+     *
+     * @param useTexture 是否使用纹理
+     */
+    public static void setAllBorderUseTexture(boolean useTexture) {
+        RarityStyleConfigManager.setAllBorderUseTexture(useTexture);
+    }
+
+    // ============================================================
+    // 校验 / 快照 / 可用性 / 版本
+    // ============================================================
+
+    /**
+     * 校验稀有度值是否有效（≥ {@link #MIN_RARITY}，V14 不限制上限）。
+     *
+     * @param rarity 稀有度值
+     * @return 有效返回 true
+     */
+    public static boolean validateRarity(int rarity) {
+        return RarityStyleConfigManager.validateRarity(rarity);
+    }
+
+    /**
+     * 获取指定稀有度等级的完整生效视觉表现快照。
+     *
+     * @param level 稀有度等级
+     * @return 样式快照
+     */
+    public static RarityStyleConfigManager.StyleSnapshot getStyleSnapshot(int level) {
+        return RarityStyleConfigManager.getStyleSnapshot(level);
+    }
+
+    /**
+     * RarityStyle.json 配置是否已成功初始化。
+     *
+     * @return 可用返回 true
+     */
+    public static boolean isAvailable() {
+        return RarityStyleConfigManager.isAvailable();
+    }
+
+    /**
+     * 获取模组的版本号（来自 neoforge.mods.toml 的 version 字段）。
+     *
+     * @return 版本字符串，获取失败时返回 unknown
+     */
+    public static String getModVersion() {
+        try {
+            return ModList.get()
+                    .getModContainerById(RarityCore.MODID)
+                    .map(c -> c.getModInfo().getVersion().toString())
+                    .orElse("unknown");
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
+    /**
+     * 获取当前 RarityStyle.json 的配置版本号。
+     *
+     * @return 配置版本号
+     */
+    public static int getConfigVersion() {
+        return RarityStyleConfigManager.getConfigVersion();
+    }
+
+    // ============================================================
+    // 集合查询与批量注册
+    // ============================================================
+
+    /**
+     * 返回所有被解析为指定稀有度等级的物品。
+     *
+     * @param rarity 稀有度等级
+     * @return 匹配物品的只读集合
+     */
+    public static Set<Item> getItemsByRarity(int rarity) {
+        return RarityRegistry.getItemsByRarity(rarity);
+    }
+
+    /**
+     * 返回所有被解析为指定稀有度等级的物品 ID。
+     *
+     * @param rarity 稀有度等级
+     * @return 匹配物品 ID 的只读集合
+     */
+    public static Set<Identifier> getItemIdsByRarity(int rarity) {
+        return RarityRegistry.getItemIdsByRarity(rarity);
+    }
+
+    /**
+     * 返回当前出现过的稀有度等级集合（手动配置 ∪ 自动计算 ∪ 无稀有度兜底等级）。
+     *
+     * @return 出现过的等级集合（只读）
+     */
+    public static Set<Integer> getConfiguredRarities() {
+        return RarityRegistry.getConfiguredRarities();
+    }
+
+    /**
+     * 批量注册物品稀有度映射（不逐条同步，注册结束后统一同步一次）。
+     *
+     * @param entries 物品到稀有度等级的映射
+     */
+    public static void registerRarities(Map<Item, Integer> entries) {
+        RarityRegistry.registerRarities(entries);
+    }
+
+    /**
+     * 返回所有被解析为指定稀有度等级集合中任一等级的物品。
+     *
+     * @param rarities 稀有度等级集合
+     * @return 匹配物品的只读集合
+     */
+    public static Set<Item> getItemsByRarities(Set<Integer> rarities) {
+        return RarityRegistry.getItemsByRarities(rarities);
+    }
+
+    /**
+     * 返回所有被解析为指定稀有度等级集合中任一等级的物品 ID。
+     *
+     * @param rarities 稀有度等级集合
+     * @return 匹配物品 ID 的只读集合
+     */
+    public static Set<Identifier> getItemIdsByRarities(Set<Integer> rarities) {
+        return RarityRegistry.getItemIdsByRarities(rarities);
+    }
+
+    /**
+     * 返回被解析为指定稀有度等级的物品数量。
+     *
+     * @param rarity 稀有度等级
+     * @return 匹配物品数量
+     */
+    public static int getRarityCount(int rarity) {
+        return RarityRegistry.getRarityCount(rarity);
+    }
+
+    /**
+     * 返回当前全部已注册稀有度条目快照（显式配置与自动计算合并，手动覆盖自动）。
+     *
+     * @return 合并后的只读映射
+     */
+    public static Map<Identifier, Integer> getAllRarityEntries() {
+        return RarityRegistry.getAllRarityEntries();
+    }
+
+    // ============================================================
     // Tag 稀有度
     // ============================================================
 
@@ -307,7 +757,7 @@ public final class RarityCoreAPI {
      * 遍历 TagRarity.json 中定义的规则，返回第一个匹配 Tag 的稀有度等级。
      *
      * @param item 要查询的物品
-     * @return 稀有度等级 (1-7)，无匹配时返回 0
+     * @return 稀有度等级 (1+，V14 不限制上限)，无匹配时返回 0
      */
     public static int getTagRarity(@NotNull Item item) {
         Integer result = RarityRegistry.getTagRarity(item);
@@ -321,40 +771,6 @@ public final class RarityCoreAPI {
      */
     public static int getTagRuleCount() {
         return TagRarityLoader.getTagRules().size();
-    }
-
-    // ============================================================
-    // 逐级表现开关 (RarityClientConfig)
-    // ============================================================
-
-    /**
-     * 检查指定稀有度等级是否启用边框渲染。
-     *
-     * @param level 稀有度等级
-     * @return 启用返回 true
-     */
-    public static boolean isLevelRendererEnabled(int level) {
-        return RarityClientConfig.isRendererEnabled(level);
-    }
-
-    /**
-     * 检查指定稀有度等级是否启用工具提示显示。
-     *
-     * @param level 稀有度等级
-     * @return 启用返回 true
-     */
-    public static boolean isLevelTooltipEnabled(int level) {
-        return RarityClientConfig.isTooltipsEnabled(level);
-    }
-
-    /**
-     * 检查指定稀有度等级是否启用物品名称颜色修改。
-     *
-     * @param level 稀有度等级
-     * @return 启用返回 true
-     */
-    public static boolean isLevelNameColorEnabled(int level) {
-        return RarityClientConfig.isNameColorEnabled(level);
     }
 
     // ============================================================
