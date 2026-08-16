@@ -32,6 +32,18 @@ public final class StringResolver {
      * @return 解析后的字符串，永不为 null
      */
     public static String resolve(String template, int level, String starText) {
+        return resolve(template, String.valueOf(level), starText);
+    }
+
+    /**
+     * 解析工具提示内容模板字符串（纯字符串结果）。
+     *
+     * @param template  内容模板（如 "[@{level}] @{star}"）
+     * @param levelName 稀有度等级显示名称（如 "普通"、"Common" 或 "1"）
+     * @param starText  星星字符串
+     * @return 解析后的字符串，永不为 null
+     */
+    public static String resolve(String template, String levelName, String starText) {
         if (template == null || template.isEmpty()) {
             return "";
         }
@@ -44,7 +56,7 @@ public final class StringResolver {
         }
         // 规则 2：字面量替换占位符
         String result = template;
-        result = result.replace("@{level}", String.valueOf(level));
+        result = result.replace("@{level}", levelName == null ? "" : levelName);
         result = result.replace("@{star}", starText == null ? "" : starText);
         return result;
     }
@@ -70,9 +82,26 @@ public final class StringResolver {
      */
     public static MutableComponent resolveComponent(String template, int level, String starText, boolean colored,
                                                     TextColor levelColor, TextColor starColor) {
+        return resolveComponent(template, String.valueOf(level), starText, colored, levelColor, starColor);
+    }
+
+    /**
+     * 解析工具提示内容模板为 {@link MutableComponent}。
+     *
+     * @param template   内容模板
+     * @param levelName  稀有度等级显示名称（如 "普通"、"Common" 或 "1"）
+     * @param starText   星星字符串
+     * @param colored    是否整体着色
+     * @param levelColor 等级颜色（可为 null）
+     * @param starColor  星星颜色（可为 null）
+     * @return 解析后的可变组件，永不为 null
+     */
+    public static MutableComponent resolveComponent(String template, String levelName, String starText, boolean colored,
+                                                    TextColor levelColor, TextColor starColor) {
         if (template == null || template.isEmpty()) {
             return Component.empty();
         }
+        String levelTextSafe = levelName == null ? "" : levelName;
         String starTextSafe = starText == null ? "" : starText;
 
         // 规则 1：整串 $(key) → 翻译键
@@ -122,7 +151,7 @@ public final class StringResolver {
 
             // 占位符本身
             if (isLevel) {
-                MutableComponent seg = Component.literal(String.valueOf(level));
+                MutableComponent seg = Component.literal(levelTextSafe);
                 // @{level} 段在 colored 与 !colored 下都使用 levelColor
                 if (levelColor != null) {
                     seg = seg.withStyle(Style.EMPTY.withColor(levelColor));

@@ -177,7 +177,7 @@ public class RarityRegistry {
         rarity = RarityValidator.normalizeRarity(rarity);
         return StringResolver.resolve(
                 RarityStyleConfigManager.getTooltipContent(rarity),
-                rarity,
+                RarityStyleConfigManager.getLevelDisplayName(rarity),
                 ComponentBuilder.getStars(rarity)
         );
     }

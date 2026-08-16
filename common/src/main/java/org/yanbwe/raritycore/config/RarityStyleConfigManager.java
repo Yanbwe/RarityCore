@@ -100,8 +100,8 @@ public class RarityStyleConfigManager {
 
     private static final class LevelCfg {
         boolean colored = true;
-        String translationKey = "{level}";
-        String fallback = "{level}";
+        String translationKey = "$(rarity.core.{level})";
+        String fallback = "{level}$(rarity.core.special.rarity.prefix)";
         boolean coloredSpecified;
         boolean translationKeySpecified;
         boolean fallbackSpecified;
@@ -335,8 +335,8 @@ public class RarityStyleConfigManager {
 
         JsonObject level = new JsonObject();
         level.addProperty("colored", true);
-        level.addProperty("translationKey", "{level}");
-        level.addProperty("fallback", "{level}");
+        level.addProperty("translationKey", "$(rarity.core.{level})");
+        level.addProperty("fallback", "{level}$(rarity.core.special.rarity.prefix)");
         tooltip.add("level", level);
 
         JsonObject star = new JsonObject();
@@ -642,6 +642,59 @@ public class RarityStyleConfigManager {
     /** 获取某稀有度等级回退模板 */
     public static String getLevelFallbackKey(int level) {
         return getTooltip(level).level().fallback();
+    }
+
+    /**
+     * 获取某稀有度等级显示名称。
+     * <p>
+     * 默认配置下 translationKey 为 {@code $(rarity.core.{level})}，
+     * 会通过翻译键显示文字（如“普通 / Common”）；若翻译缺失则回退到 fallback 模板。
+     *
+     * @param level 稀有度等级
+     * @return 等级显示名称，永不为 null
+     */
+    public static String getLevelDisplayName(int level) {
+        String keyTemplate = getLevelTranslationKey(level);
+        if (keyTemplate == null || keyTemplate.isEmpty()) {
+            return resolveLevelTemplate(getLevelFallbackKey(level), level);
+        }
+        // 整串 $(key) 形式：优先按翻译键解析
+        if (keyTemplate.startsWith("$(") && keyTemplate.endsWith(")") && keyTemplate.indexOf("$(", 1) < 0) {
+            String key = keyTemplate.substring(2, keyTemplate.length() - 1).replace("{level}", String.valueOf(level));
+            if (!key.isEmpty()) {
+                String translated = net.minecraft.network.chat.Component.translatable(key).getString();
+                if (!translated.equals(key)) {
+                    return translated;
+                }
+            }
+            return resolveLevelTemplate(getLevelFallbackKey(level), level);
+        }
+        // 非整串翻译键：作为字面量模板解析
+        return resolveLevelTemplate(keyTemplate, level);
+    }
+
+    /** 解析等级名称模板：替换 {level}，并翻译其中嵌入的 $(key) 片段 */
+    private static String resolveLevelTemplate(String template, int level) {
+        if (template == null || template.isEmpty()) {
+            return String.valueOf(level);
+        }
+        String result = template.replace("{level}", String.valueOf(level));
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        while (i < result.length()) {
+            if (result.startsWith("$(", i)) {
+                int end = result.indexOf(')', i);
+                if (end > i + 2) {
+                    String key = result.substring(i + 2, end);
+                    sb.append(net.minecraft.network.chat.Component.translatable(key).getString());
+                    i = end + 1;
+                    continue;
+                }
+            }
+            sb.append(result.charAt(i));
+            i++;
+        }
+        return sb.toString();
     }
 
     /** 获取某稀有度星星配置 */

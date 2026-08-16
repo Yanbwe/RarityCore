@@ -86,7 +86,8 @@ public class ComponentBuilder {
 
         String stars = getStars(rarity);
         TextColor color = org.yanbwe.raritycore.config.RarityStyleConfigManager.getTextColor(rarity);
-        return StringResolver.resolveComponent(tooltip.content(), rarity, stars, tooltip.colored(), color, color);
+        String levelName = org.yanbwe.raritycore.config.RarityStyleConfigManager.getLevelDisplayName(rarity);
+        return StringResolver.resolveComponent(tooltip.content(), levelName, stars, tooltip.colored(), color, color);
     }
 
     /**
