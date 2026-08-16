@@ -29,7 +29,8 @@ public class ComponentBuilder {
      * 按 {@link org.yanbwe.raritycore.config.RarityStyleConfigManager.StarStyle} 构建星星字符串。
      * <p>
      * <ul>
-     *   <li>mode 为 {@code custom} 且 custom 非空时，直接返回 custom 字符串；</li>
+     *   <li>{@code starStyle} 为 null，或其 mode 为 null/空时返回空字符串；</li>
+     *   <li>{@code custom} 非 null 且非空时直接返回 custom（不要求 mode 为 custom）；</li>
      *   <li>否则按 repeatChar 重复 {@code max(1, rarity)} 次（默认字符为 {@code ★}）。</li>
      * </ul>
      *
@@ -44,8 +45,12 @@ public class ComponentBuilder {
         }
 
         String mode = starStyle.mode();
+        if (mode == null || mode.isEmpty()) {
+            return "";
+        }
+
         String custom = starStyle.custom();
-        if (mode != null && mode.equalsIgnoreCase("custom") && custom != null && !custom.isEmpty()) {
+        if (custom != null && !custom.isEmpty()) {
             return custom;
         }
 

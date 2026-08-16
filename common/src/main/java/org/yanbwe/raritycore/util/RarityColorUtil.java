@@ -114,10 +114,10 @@ public class RarityColorUtil {
     @Deprecated
     public static int getRarityArgbColor(int rarity) {
         return switch (rarity) {
-            case 1 -> // 普通 - 灰色(更明显)
-                    0xFFA0A0A0;
+            case 1 -> // 普通 - 灰色
+                    0xFFCCCCCC;
             case 2 -> // 稀有 - 绿色
-                    0xFF00AA00;
+                    0xFF55FF55;
             case 3 -> // 罕见 - 青蓝色
                     0xFF00AAAA;
             case 4 -> // 史诗 - 浅紫色
@@ -126,18 +126,18 @@ public class RarityColorUtil {
                     0xFFFFAA00;
             case 6 -> // 神话 - 红色
                     0xFFFF5555;
-            case 7 -> // 唯一 - 深红色
-                    0xFFAA0000;
-            default -> 0xFFA0A0A0; // 默认灰色
+            case 7 -> // 唯一 - 红色
+                    0xFFFF3333;
+            default -> 0xFFFF3333; // 默认红色（回退到 7 级色）
         };
     }
 
-    /** Default fallback RGB color (white). */
+    /** 解析十六进制颜色失败或输入为空时使用的回退色（白色）。 */
     private static final int DEFAULT_RGB = 0xFFFFFF;
 
     /**
      * 根据稀有度等级获取对应的 RGB 颜色值 (0xRRGGBB packed int, 无 alpha 通道)。
-     * 颜色值与现有 {@link #getRarityArgbColor(int)} 一致（去掉 alpha 通道）：
+     * 内置回退 RGB 颜色值：
      * <ul>
      *   <li>1 (普通) — 灰色 {@code #CCCCCC}</li>
      *   <li>2 (稀有) — 绿色 {@code #55FF55}</li>
@@ -148,8 +148,8 @@ public class RarityColorUtil {
      *   <li>7 (唯一) — 红色 {@code #FF3333}</li>
      * </ul>
      *
-     * @param rarity 稀有度等级 (1-7)
-     * @return RGB 颜色值 (0xRRGGBB), 默认返回 0xFFFFFF (白色)
+     * @param rarity 稀有度等级
+     * @return RGB 颜色值 (0xRRGGBB), 未匹配时回退到 7 级色 {@code 0xFF3333}
      */
     public static int getRarityRgbColor(int rarity) {
         Integer custom = CUSTOM_COLORS.get(rarity);
@@ -164,7 +164,7 @@ public class RarityColorUtil {
             case 5 -> 0xFFAA00;  // 传说 - 金色
             case 6 -> 0xFF5555;  // 神话 - 红色
             case 7 -> 0xFF3333;  // 唯一 - 红色
-            default -> DEFAULT_RGB;
+            default -> getRarityRgbColor(RarityConstants.MAX_RARITY); // 回退到 7 级色
         };
     }
 
