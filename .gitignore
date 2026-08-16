@@ -1,7 +1,9 @@
 ### Gradle ###
 .gradle
 build/
+!gradle/wrapper/
 !gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
 !**/src/**/build/
 
 ### IntelliJ IDEA ###
@@ -40,7 +42,6 @@ repo/
 !**/src/**/repo/
 .trae
 .vscode
-gradle
 runs
 AGENTS.md
 CLAUDE.md
