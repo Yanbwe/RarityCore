@@ -10,15 +10,25 @@ import net.neoforged.neoforge.common.NeoForge;
 import org.jetbrains.annotations.NotNull;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.compat.CompatibilityChecker;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.config.TagRarityLoader;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
 import org.yanbwe.raritycore.event.RarityQueryEvent;
+import org.yanbwe.raritycore.event.RarityRegistryChangedEvent;
 import org.yanbwe.raritycore.network.ChangeOperation;
 import org.yanbwe.raritycore.network.SyncManager;
+import org.yanbwe.raritycore.util.ComponentBuilder;
 import org.yanbwe.raritycore.util.RarityConstants;
+import org.yanbwe.raritycore.util.RarityValidator;
+import org.yanbwe.raritycore.util.StringResolver;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RarityRegistry {
@@ -166,86 +176,26 @@ public class RarityRegistry {
     }
     
     /**
-     * 获取物品栈的完整稀有度工具提示字符串(支持本地化,支持物品数据匹配)
-     * 返回格式示例:
-     * - 普通物品:"[普通] ⭐" (中文) 或 "[Common] ⭐" (英文)
-     * - 高级物品:"[5级稀有度-⭐⭐⭐⭐⭐]"
+     * 获取物品栈的完整稀有度工具提示字符串（V14）。
+     * <p>
+     * 统一使用 {@link StringResolver#resolve(String, int, String)} 解析
+     * {@link RarityStyleConfigManager#getTooltipContent(int)} 模板，
+     * 不再区分标准/特殊稀有度，也无需拼接旧的命名翻译键。
+     *
      * @param itemStack 要获取工具提示的物品栈
-     * @return 本地化的稀有度工具提示字符串
+     * @return 解析后的稀有度工具提示字符串
      */
     public static @NotNull String getLocalizedRarityTooltip(@Nullable ItemStack itemStack) {
-        if (itemStack == null || itemStack.isEmpty()) {
-            return "[普通]"; // 默认返回普通稀有度
-        }
-        
-        // 获取物品栈稀有度(支持 NBT/组件数据匹配)
         Integer rarity = getRarity(itemStack);
         if (rarity == null) {
-            rarity = RarityConstants.RARITY_COMMON;
+            rarity = RarityConstants.MIN_RARITY;
         }
-        
-        // 先检查是否为特殊稀有度(大于7),保存原始值用于显示
-        boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;
-        int displayRarity = rarity; // 保存用于显示的原始稀有度值
-        
-        // 标准化稀有度值用于内部处理
-        rarity = org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rarity);
-        
-        // 构建工具提示字符串
-        if (isSpecialRarity) {
-            // 特殊稀有度(大于 7 级)
-            String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(displayRarity);
-            
-            // 检查是否有自定义特殊稀有度文本
-            String customText = org.yanbwe.raritycore.config.StarDisplayConfigManager.getCustomSpecialRarityText(displayRarity);
-            
-            if (customText != null && !customText.isEmpty()) {
-                // 使用自定义文本,保持与标准格式一致:[自定义文本] <星星>
-                // $前缀表示翻译键
-                String displayText = customText.startsWith("$") && customText.length() > 1
-                    ? net.minecraft.network.chat.Component.translatable(customText.substring(1)).getString()
-                    : customText;
-                return "[" + displayText + "] " + stars;
-            } else {
-                // 使用默认格式,使用本地化文本:[xx级稀有度] <星星>
-                String localizedSuffix = net.minecraft.network.chat.Component.translatable("rarity.core.unusual.tips").getString();
-                return "[" + displayRarity + localizedSuffix + "]" + stars;
-            }
-        } else {
-            // 标准稀有度(1-7级)
-            String rarityKey;
-            switch (rarity) {
-                case RarityConstants.RARITY_COMMON:
-                    rarityKey = "rarity.core.common";
-                    break;
-                case RarityConstants.RARITY_UNCOMMON:
-                    rarityKey = "rarity.core.uncommon";
-                    break;
-                case RarityConstants.RARITY_RARE:
-                    rarityKey = "rarity.core.rare";
-                    break;
-                case RarityConstants.RARITY_EPIC:
-                    rarityKey = "rarity.core.epic";
-                    break;
-                case RarityConstants.RARITY_LEGENDARY:
-                    rarityKey = "rarity.core.legendary";
-                    break;
-                case RarityConstants.RARITY_MYTHICAL:
-                    rarityKey = "rarity.core.mythical";
-                    break;
-                case RarityConstants.RARITY_UNIQUE:
-                    rarityKey = "rarity.core.unique";
-                    break;
-                default:
-                    rarityKey = "rarity.core.common";
-                    break;
-            }
-            
-            // 获取本地化文本
-            String localizedLabel = net.minecraft.network.chat.Component.translatable(rarityKey).getString();
-            String stars = org.yanbwe.raritycore.util.ComponentBuilder.getStars(rarity);
-            return localizedLabel + " " + stars;
-        }
+        rarity = RarityValidator.normalizeRarity(rarity);
+        return StringResolver.resolve(
+                RarityStyleConfigManager.getTooltipContent(rarity),
+                rarity,
+                ComponentBuilder.getStars(rarity)
+        );
     }
     
     /**
@@ -256,13 +206,13 @@ public class RarityRegistry {
      */
     public static @NotNull Integer getRarity(@Nullable ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) {
-            return 1;
+            return RarityStyleConfigManager.getNoRarityDefaultRarity();
         }
         
         Item item = itemStack.getItem();
         Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
         if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
-            return 1;
+            return RarityStyleConfigManager.getNoRarityDefaultRarity();
         }
 
         return getRarityInternal(itemId, itemStack, item);
@@ -283,7 +233,7 @@ public class RarityRegistry {
                 }
             }
         }
-        return 1; // 默认为普通
+        return RarityStyleConfigManager.getNoRarityDefaultRarity();
     }
 
     /**
@@ -293,7 +243,7 @@ public class RarityRegistry {
         Integer rarity = ITEM_RARITY_MAP.get(itemId);
         if (rarity != null) return rarity;
         rarity = AUTO_RARITY_MAP.get(itemId);
-        return rarity != null ? rarity : 1;
+        return rarity != null ? rarity : RarityStyleConfigManager.getNoRarityDefaultRarity();
     }
     
     private static @NotNull Integer getRarityInternal(Identifier itemId, @Nullable ItemStack itemStack, Item item) {
@@ -361,7 +311,7 @@ public class RarityRegistry {
             return rarity;
         }
 
-        rarity = 1;
+        rarity = RarityStyleConfigManager.getNoRarityDefaultRarity();
         if (itemStack != null) {
             org.yanbwe.raritycore.cache.DualCacheManager.cacheRarity(itemStack, rarity);
         }
@@ -456,6 +406,163 @@ public class RarityRegistry {
 
     public static java.util.Map<Identifier, Integer> getAutoRarityMap() {
         return AUTO_RARITY_MAP;
+    }
+
+    // ==================== 集合查询与批量注册 ====================
+
+    /**
+     * 返回所有被解析为指定稀有度等级的物品。
+     *
+     * @param rarity 稀有度等级
+     * @return 匹配物品的只读集合
+     */
+    public static Set<Item> getItemsByRarity(int rarity) {
+        Set<Item> result = new LinkedHashSet<>();
+        for (Item item : BuiltInRegistries.ITEM) {
+            if (getRarity(item) == rarity) {
+                result.add(item);
+            }
+        }
+        return Collections.unmodifiableSet(result);
+    }
+
+    /**
+     * 返回所有被解析为指定稀有度等级的物品 ID。
+     *
+     * @param rarity 稀有度等级
+     * @return 匹配物品 ID 的只读集合
+     */
+    public static Set<Identifier> getItemIdsByRarity(int rarity) {
+        Set<Identifier> result = new LinkedHashSet<>();
+        for (Item item : BuiltInRegistries.ITEM) {
+            if (getRarity(item) == rarity) {
+                Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+                if (itemId != null) {
+                    result.add(itemId);
+                }
+            }
+        }
+        return Collections.unmodifiableSet(result);
+    }
+
+    /**
+     * 返回所有被解析为指定稀有度等级集合中任一等级的物品。
+     *
+     * @param rarities 稀有度等级集合
+     * @return 匹配物品的只读集合
+     */
+    public static Set<Item> getItemsByRarities(Set<Integer> rarities) {
+        if (rarities == null || rarities.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Set<Item> result = new LinkedHashSet<>();
+        for (Item item : BuiltInRegistries.ITEM) {
+            if (rarities.contains(getRarity(item))) {
+                result.add(item);
+            }
+        }
+        return Collections.unmodifiableSet(result);
+    }
+
+    /**
+     * 返回所有被解析为指定稀有度等级集合中任一等级的物品 ID。
+     *
+     * @param rarities 稀有度等级集合
+     * @return 匹配物品 ID 的只读集合
+     */
+    public static Set<Identifier> getItemIdsByRarities(Set<Integer> rarities) {
+        if (rarities == null || rarities.isEmpty()) {
+            return Collections.emptySet();
+        }
+        Set<Identifier> result = new LinkedHashSet<>();
+        for (Item item : BuiltInRegistries.ITEM) {
+            if (rarities.contains(getRarity(item))) {
+                Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+                if (itemId != null) {
+                    result.add(itemId);
+                }
+            }
+        }
+        return Collections.unmodifiableSet(result);
+    }
+
+    /**
+     * 返回被解析为指定稀有度等级的物品数量。
+     *
+     * @param rarity 稀有度等级
+     * @return 匹配物品数量
+     */
+    public static int getRarityCount(int rarity) {
+        int count = 0;
+        for (Item item : BuiltInRegistries.ITEM) {
+            if (getRarity(item) == rarity) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * 返回当前全部已注册稀有度条目快照（显式配置与自动计算合并，ITEM 覆盖 AUTO）。
+     *
+     * @return 合并后的只读映射
+     */
+    public static Map<Identifier, Integer> getAllRarityEntries() {
+        Map<Identifier, Integer> result = new HashMap<>(AUTO_RARITY_MAP);
+        result.putAll(ITEM_RARITY_MAP);
+        return Collections.unmodifiableMap(result);
+    }
+
+    /**
+     * 返回当前出现过的稀有度等级集合（手动配置 ∪ 自动计算 ∪ 无稀有度兜底等级）。
+     *
+     * @return 出现过的等级集合（只读）
+     */
+    public static Set<Integer> getConfiguredRarities() {
+        Set<Integer> result = new HashSet<>();
+        result.addAll(ITEM_RARITY_MAP.values());
+        result.addAll(AUTO_RARITY_MAP.values());
+        result.add(RarityStyleConfigManager.getNoRarityDefaultRarity());
+        return Collections.unmodifiableSet(result);
+    }
+
+    /**
+     * 批量注册物品稀有度映射。
+     * <p>
+     * 不逐条同步；注册全部完成后统一同步一次，并发布
+     * {@link RarityRegistryChangedEvent}，事件携带本次实际写入/更新的条目。
+     *
+     * @param entries 物品到稀有度等级的映射
+     */
+    public static void registerRarities(Map<Item, Integer> entries) {
+        if (entries == null || entries.isEmpty()) {
+            return;
+        }
+
+        Map<Identifier, Integer> changedEntries = new HashMap<>();
+        for (Map.Entry<Item, Integer> entry : entries.entrySet()) {
+            Item item = entry.getKey();
+            Integer rarity = entry.getValue();
+            if (item == null || rarity == null) {
+                continue;
+            }
+
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+            if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
+                continue;
+            }
+
+            Integer oldRarity = ITEM_RARITY_MAP.get(itemId);
+            register(item, rarity, false);
+            if (oldRarity == null || !oldRarity.equals(rarity)) {
+                changedEntries.put(itemId, rarity);
+            }
+        }
+
+        if (!changedEntries.isEmpty()) {
+            syncRarityToClients();
+            NeoForge.EVENT_BUS.post(new RarityRegistryChangedEvent(changedEntries));
+        }
     }
     
     /**
