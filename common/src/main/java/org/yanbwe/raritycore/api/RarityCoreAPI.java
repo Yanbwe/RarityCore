@@ -9,6 +9,7 @@ import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.config.TagRarityLoader;
+import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.ComponentRarityResolver;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityColorUtil;
@@ -649,7 +650,7 @@ public final class RarityCoreAPI {
      * @return 配置版本号
      */
     public static int getConfigVersion() {
-        return RarityStyleConfigManager.getConfigVersion();
+        return SyncManager.getConfigVersion();
     }
 
     // ============================================================

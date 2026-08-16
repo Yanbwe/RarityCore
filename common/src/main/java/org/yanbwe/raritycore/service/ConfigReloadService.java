@@ -84,6 +84,9 @@ public class ConfigReloadService {
             // 6. 强制处理批处理队列中的操作(关键步骤)
             processPendingBatchOperations(source);
             
+            // 配置版本号递增（与 1.21.1 保持一致，同步数据前调用）
+            SyncManager.bumpConfigVersion();
+            
             // 7. 同步数据到所有客户端
             if (!isStartup) { // 启动时不需要同步,会在玩家登录时处理
                 SyncManager.syncRarityToClientsWithRetry(RarityRegistry.ITEM_RARITY_MAP,

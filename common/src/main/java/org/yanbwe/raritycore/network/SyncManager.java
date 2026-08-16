@@ -20,6 +20,18 @@ public class SyncManager {
     private static final Object BUFFER_LOCK = new Object();
     private static final List<ChangeOperation> changeOpsBuffer = new ArrayList<>();
 
+    /** 配置版本号，重载后递增，用于客户端判断是否需要重新同步样式配置（对齐 1.21.1）。 */
+    private static final java.util.concurrent.atomic.AtomicInteger CONFIG_VERSION =
+            new java.util.concurrent.atomic.AtomicInteger(1);
+
+    public static int getConfigVersion() {
+        return CONFIG_VERSION.get();
+    }
+
+    public static void bumpConfigVersion() {
+        CONFIG_VERSION.incrementAndGet();
+    }
+
     // ───── 同步入口 ─────
 
     public static void syncRarityToClients(Map<Identifier, Integer> itemRarityMap,

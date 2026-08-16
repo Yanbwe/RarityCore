@@ -150,8 +150,6 @@ public class RarityStyleConfigManager {
 
     private static volatile boolean available;
 
-    private static volatile int version = 1;
-
     private static boolean enableBorder = true;
     private static boolean enableTooltip = true;
     private static boolean tooltipColorEnabled = true;
@@ -392,11 +390,6 @@ public class RarityStyleConfigManager {
         } catch (IOException e) {
             RarityCore.LOGGER.error("Cannot create default RarityStyle.json: {}", STYLE_CONFIG_FILE, e);
         }
-    }
-
-    /** 当前 RarityStyle.json 内版本字段；无则返回 1 */
-    public static int getConfigVersion() {
-        return version;
     }
 
     // ================================================================
@@ -1312,7 +1305,6 @@ public class RarityStyleConfigManager {
         synchronized (RARITIES) {
             RARITIES.clear();
         }
-        version = 1;
         enableBorder = true;
         enableTooltip = true;
         tooltipColorEnabled = true;
