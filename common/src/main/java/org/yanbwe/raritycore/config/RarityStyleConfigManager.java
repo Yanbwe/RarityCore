@@ -951,6 +951,24 @@ public class RarityStyleConfigManager {
     }
 
     /**
+     * 设置某稀有度物品名称颜色是否启用（与 1.21.1 行为一致）。
+     * <p>
+     * 写入该等级的显式覆盖 {@code itemNameColor}。非批量模式下立即保存，
+     * 批量模式下由 {@link #endStyleBatch()} 统一保存；本方法不发布
+     * {@link RarityStyleChangedEvent}（1.21.1 的 ChangeTarget 无 NAME_COLOR）。
+     *
+     * @param level 稀有度等级
+     * @param v     是否启用物品名称颜色
+     */
+    public static void setItemNameColorEnabled(int level, boolean v) {
+        PerRarity pr = ensureOverride(level);
+        pr.itemNameColor = v;
+        if (batchDepth == 0) {
+            save();
+        }
+    }
+
+    /**
      * 以单个补丁整体写入某稀有度的视觉表现配置（canonical，与 1.21.1 对齐）。
      * 稀有度由 {@code patch.rarity} 指定；补丁内 null 字段表示保留现有值。
      */
