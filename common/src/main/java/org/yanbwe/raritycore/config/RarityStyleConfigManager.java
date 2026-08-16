@@ -649,13 +649,13 @@ public class RarityStyleConfigManager {
         return getTooltip(level).star();
     }
 
-    /** 获取某稀有度物品名称颜色是否启用（defaults 与逐级取与语义） */
+    /** 获取某稀有度物品名称颜色是否启用（defaults 与逐级显式配置取与语义） */
     public static boolean isNameColorEnabled(int level) {
         boolean acc = defaultItemNameColor;
         for (int l = RarityConstants.MIN_RARITY; l <= level; l++) {
             PerRarity pr = RARITIES.get(l);
             if (pr != null && pr.itemNameColor != null) {
-                acc = pr.itemNameColor;
+                acc = acc && pr.itemNameColor;
             }
         }
         return acc;
@@ -713,7 +713,9 @@ public class RarityStyleConfigManager {
         if (level <= RarityConstants.MAX_RARITY) {
             return path;
         }
-        if (resolved.defaultTextureSpecified) {
+        // defaults.defaultTexture 只是全局默认值，不能算作逐级显式覆盖；
+        // 只有 rarities 中显式配置的 defaultTexture 才应优先于 8+ 回退。
+        if (hasExplicitDefaultTexture(level)) {
             return path;
         }
         String fb = resolved.fallback;
@@ -724,6 +726,16 @@ public class RarityStyleConfigManager {
             return fb.replace("{level}", String.valueOf(level));
         }
         return path;
+    }
+
+    private static boolean hasExplicitDefaultTexture(int level) {
+        for (int l = RarityConstants.MIN_RARITY; l <= level; l++) {
+            PerRarity pr = RARITIES.get(l);
+            if (pr != null && pr.border != null && pr.border.defaultTextureSpecified) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static BorderCfg resolveBorderCfg(int level) {
@@ -860,20 +872,24 @@ public class RarityStyleConfigManager {
             pr.tooltip.contentSpecified = true;
             pr.tooltip.colored = ts.colored();
             pr.tooltip.coloredSpecified = true;
-            pr.tooltip.level.colored = ts.level().colored();
-            pr.tooltip.level.coloredSpecified = true;
-            pr.tooltip.level.translationKey = ts.level().translationKey();
-            pr.tooltip.level.translationKeySpecified = true;
-            pr.tooltip.level.fallback = ts.level().fallback();
-            pr.tooltip.level.fallbackSpecified = true;
-            pr.tooltip.star.colored = ts.star().colored();
-            pr.tooltip.star.coloredSpecified = true;
-            pr.tooltip.star.mode = ts.star().mode();
-            pr.tooltip.star.modeSpecified = true;
-            pr.tooltip.star.repeatChar = ts.star().repeatChar();
-            pr.tooltip.star.repeatCharSpecified = true;
-            pr.tooltip.star.custom = ts.star().custom();
-            pr.tooltip.star.customSpecified = true;
+            if (ts.level() != null) {
+                pr.tooltip.level.colored = ts.level().colored();
+                pr.tooltip.level.coloredSpecified = true;
+                pr.tooltip.level.translationKey = ts.level().translationKey();
+                pr.tooltip.level.translationKeySpecified = true;
+                pr.tooltip.level.fallback = ts.level().fallback();
+                pr.tooltip.level.fallbackSpecified = true;
+            }
+            if (ts.star() != null) {
+                pr.tooltip.star.colored = ts.star().colored();
+                pr.tooltip.star.coloredSpecified = true;
+                pr.tooltip.star.mode = ts.star().mode();
+                pr.tooltip.star.modeSpecified = true;
+                pr.tooltip.star.repeatChar = ts.star().repeatChar();
+                pr.tooltip.star.repeatCharSpecified = true;
+                pr.tooltip.star.custom = ts.star().custom();
+                pr.tooltip.star.customSpecified = true;
+            }
             changed = true;
         }
         if (patch.itemNameColor() != null) {
@@ -916,7 +932,6 @@ public class RarityStyleConfigManager {
     /** 遍历当前已配置等级，批量设置边框是否使用纹理。 */
     public static void setAllBorderUseTexture(boolean useTexture) {
         if (RARITIES.isEmpty()) {
-            setBorderUseTexture(RarityConstants.MIN_RARITY, useTexture);
             return;
         }
         beginStyleBatch();

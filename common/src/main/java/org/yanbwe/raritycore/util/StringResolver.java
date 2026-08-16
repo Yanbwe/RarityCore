@@ -123,9 +123,8 @@ public final class StringResolver {
             // 占位符本身
             if (isLevel) {
                 MutableComponent seg = Component.literal(String.valueOf(level));
-                if (colored && levelColor != null) {
-                    seg = seg.withStyle(Style.EMPTY.withColor(levelColor));
-                } else if (!colored && levelColor != null) {
+                // @{level} 段在 colored 与 !colored 下都使用 levelColor
+                if (levelColor != null) {
                     seg = seg.withStyle(Style.EMPTY.withColor(levelColor));
                 }
                 result.append(seg);
