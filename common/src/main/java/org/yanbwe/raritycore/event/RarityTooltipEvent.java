@@ -18,14 +18,11 @@ public class RarityTooltipEvent extends Event {
     private final ItemStack itemStack;
     private final int rarity;
     private final List<Component> tooltipList;
-    private final boolean isSpecialRarity;
 
-    public RarityTooltipEvent(ItemStack itemStack, int rarity,
-                              List<Component> tooltipList, boolean isSpecialRarity) {
+    public RarityTooltipEvent(ItemStack itemStack, int rarity, List<Component> tooltipList) {
         this.itemStack = itemStack;
         this.rarity = rarity;
         this.tooltipList = tooltipList;
-        this.isSpecialRarity = isSpecialRarity;
     }
 
     /** 获取当前显示工具提示的物品堆 */
@@ -45,10 +42,5 @@ public class RarityTooltipEvent extends Event {
      */
     public List<Component> getTooltipList() {
         return tooltipList;
-    }
-
-    /** 该物品是否具有特殊稀有度（非标准等级） */
-    public boolean isSpecialRarity() {
-        return isSpecialRarity;
     }
 }

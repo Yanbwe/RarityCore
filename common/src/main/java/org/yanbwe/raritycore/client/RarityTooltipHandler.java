@@ -6,10 +6,7 @@ package org.yanbwe.raritycore.client;
  */
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -21,11 +18,9 @@ import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.event.RarityTooltipEvent;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
-import org.yanbwe.raritycore.config.ClientConfigManager;
-import org.yanbwe.raritycore.config.RarityClientConfig;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.ComponentBuilder;
-import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
 
 @EventBusSubscriber(modid = RarityCore.MODID, value = Dist.CLIENT)
@@ -37,107 +32,51 @@ public class RarityTooltipHandler {
         RarityExclusionManager.setRenderingTooltipItem(true);
         try {
             // 检查是否启用工具提示插入
-            if (!ClientConfigManager.isEnableTooltipInsert()) {
+            if (!RarityStyleConfigManager.isTooltipEnabled()) {
                 return;
             }
-        
-        
-        ItemStack itemStack = event.getItemStack();
-        Item item = itemStack.getItem();
-        
-        // 获取物品的稀有度(支持 NBT 匹配,使用物品堆缓存)
-        Integer rarity = RenderCacheManager.getCachedRarity(itemStack);
-                
-        // 如果缓存未命中,则从注册表获取并缓存
-        if (rarity == null) {
-            rarity = RarityRegistry.getRarity(itemStack);
-            if (rarity != null) {
-                RenderCacheManager.cacheItemStackRarity(itemStack, rarity);
+
+            ItemStack itemStack = event.getItemStack();
+            Item item = itemStack.getItem();
+
+            // 获取物品的稀有度(支持 NBT 匹配,使用物品堆缓存)
+            Integer rarity = RenderCacheManager.getCachedRarity(itemStack);
+
+            // 如果缓存未命中,则从注册表获取并缓存
+            if (rarity == null) {
+                rarity = RarityRegistry.getRarity(itemStack);
+                if (rarity != null) {
+                    RenderCacheManager.cacheItemStackRarity(itemStack, rarity);
+                }
             }
-        }
-                
-        // 如果仍然没有获取到稀有度,使用默认值
-        if (rarity == null) {
-            rarity = RarityConstants.RARITY_COMMON;
-        }
-        
-        // 如果启用了跳过未配置物品且物品没有配置稀有度,则不插入工具提示
-        // 注意:需要检查物品是否真的没有配置,而不是检查rarity是否为null
-        if (ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
-            return;
-        }
-        
-        
-        // 先检查是否为特殊稀有度(大于7),保存原始值用于显示
-        boolean isSpecialRarity = rarity > RarityConstants.RARITY_UNIQUE;
-        int displayRarity = rarity; // 保存用于显示的原始稀有度值
-        
-        // Post RarityTooltipEvent to allow other mods to modify the tooltip list before insertion
-        NeoForge.EVENT_BUS.post(new RarityTooltipEvent(itemStack, displayRarity, event.getToolTip(), isSpecialRarity));
-        
-        // Check per-level tooltips config — pass raw rarity; RarityClientConfig handles >7 fallback
-        if (!RarityClientConfig.getLevelConfig(rarity).tooltips()) {
-            return;
-        }
-        
-        // 处理超出范围的稀有度值
-        TextColor color = RarityColorUtil.getRarityTextColor(rarity);
-        MutableComponent prefixComponent;
-        
-        if (isSpecialRarity) {
-            // 如果稀有度大于7,显示为 [x级稀有度] <星星>
-            TextColor specialColor = RarityColorUtil.getRarityTextColor(displayRarity);
-            MutableComponent rarityComponent = ComponentBuilder.buildSpecialRarityComponent(displayRarity, specialColor);
-            
-            // 高效插入到工具提示
+
+            // 如果仍然没有获取到稀有度,使用默认值
+            if (rarity == null) {
+                rarity = RarityConstants.MIN_RARITY;
+            }
+
+            // 如果启用了跳过未配置物品且物品没有配置稀有度,则不插入工具提示
+            // 注意:需要检查物品是否真的没有配置,而不是检查rarity是否为null
+            if (RarityStyleConfigManager.isNoRaritySkip() && !hasConfiguredRarity(item)) {
+                return;
+            }
+
+            // Post RarityTooltipEvent to allow other mods to modify the tooltip list before insertion
+            NeoForge.EVENT_BUS.post(new RarityTooltipEvent(itemStack, rarity, event.getToolTip()));
+
+            // Per-level tooltip visibility comes from RarityStyleConfigManager
+            if (!RarityStyleConfigManager.getTooltip(rarity).show()) {
+                return;
+            }
+
+            // Build the unified tooltip line from RarityStyle.json settings and insert it
+            MutableComponent rarityComponent = ComponentBuilder.buildRarityTooltipComponent(rarity);
             ComponentBuilder.insertIntoTooltip(event.getToolTip(), rarityComponent);
-            return;
-        } else {
-            
-            // 设置前缀和颜色
-            switch (rarity) {
-                case RarityConstants.RARITY_COMMON:
-                    prefixComponent = Component.translatable("rarity.core.common");
-                    break;
-                case RarityConstants.RARITY_UNCOMMON:
-                    prefixComponent = Component.translatable("rarity.core.uncommon");
-                    break;
-                case RarityConstants.RARITY_RARE:
-                    prefixComponent = Component.translatable("rarity.core.rare");
-                    break;
-                case RarityConstants.RARITY_EPIC:
-                    prefixComponent = Component.translatable("rarity.core.epic");
-                    break;
-                case RarityConstants.RARITY_LEGENDARY:
-                    prefixComponent = Component.translatable("rarity.core.legendary");
-                    break;
-                case RarityConstants.RARITY_MYTHICAL:
-                    prefixComponent = Component.translatable("rarity.core.mythical");
-                    break;
-                case RarityConstants.RARITY_UNIQUE:
-                    prefixComponent = Component.translatable("rarity.core.unique");
-                    break;
-                default:
-                    return;
-            }
-            
-            // 根据配置决定是否应用颜色
-            if (ClientConfigManager.isEnableTooltipColor()) {
-                prefixComponent = prefixComponent.withStyle(Style.EMPTY.withColor(color));
-            }
-        
-            // 构建文本(使用组件构建器)
-            MutableComponent starsComponent = ComponentBuilder.buildRarityComponent(rarity, color);
-            MutableComponent rarityComponent = Component.empty().append(prefixComponent).append(starsComponent);
-            
-            // 高效插入到工具提示
-            ComponentBuilder.insertIntoTooltip(event.getToolTip(), rarityComponent);
-        }
         } finally {
             RarityExclusionManager.setRenderingTooltipItem(false);
         }
     }
-    
+
     /**
      * 检查物品是否有配置的稀有度
      * @param item 要检查的物品
@@ -163,7 +102,7 @@ public class RarityTooltipHandler {
 
         return false;
     }
-    
+
     /**
      * 处理skipUnconfiguredItems配置变更
      * 当配置改变时调用此方法来刷新工具提示处理状态
