@@ -49,9 +49,6 @@ public class RarityStyleConfigManager {
     private static final Path CLIENT_CONFIG_FILE = CONFIG_DIR.resolve(RarityConstants.CLIENT_CONFIG_FILE_NAME);
     private static final Path LEGACY_CLIENT_CONFIG_FILE = CONFIG_DIR.resolve(RarityConstants.RARITY_CLIENT_CONFIG_FILE_NAME);
 
-    /** V14 配置版本（写入 RarityStyle.json 的 version 字段） */
-    public static final int API_VERSION = 1400;
-
     // ================================================================
     //  公开 record 类型（内部样式值对象）
     // ================================================================
@@ -1387,9 +1384,5 @@ public class RarityStyleConfigManager {
 
     private static boolean getBoolean(JsonObject o, String key, boolean def) {
         return o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsBoolean() : def;
-    }
-
-    private static int getInt(JsonObject o, String key, int def) {
-        return o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsInt() : def;
     }
 }

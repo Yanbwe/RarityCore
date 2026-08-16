@@ -284,7 +284,9 @@ public final class RarityCoreAPI {
      *
      * @param level 稀有度等级
      * @return RGB 颜色值 (0xRRGGBB)
+     * @deprecated 使用 {@link #getRarityColor(int)}
      */
+    @Deprecated
     public static int getColor(int level) {
         return RarityStyleConfigManager.getColor(level);
     }
@@ -306,7 +308,9 @@ public final class RarityCoreAPI {
      *
      * @param level 稀有度等级
      * @return 纹理资源路径
+     * @deprecated 使用 {@link #getRarityTexture(int)}
      */
+    @Deprecated
     public static String getTexture(int level) {
         return RarityStyleConfigManager.getBorderTexture(level);
     }
