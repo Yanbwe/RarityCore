@@ -7,6 +7,7 @@ import net.minecraft.network.chat.TextColor;
 import net.neoforged.neoforge.common.NeoForge;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.event.RarityStyleChangedEvent;
+import org.yanbwe.raritycore.event.RarityStyleReloadEvent;
 import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -22,10 +23,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * RarityStyle.json 配置管理器（V14，26.X 核心）。
@@ -166,11 +165,8 @@ public class RarityStyleConfigManager {
     /** 批量写入深度；>0 时 setter 延迟写盘与事件发布 */
     private static int batchDepth = 0;
 
-    /** 批量写入期间被修改的等级（去重，endStyleBatch 统一发布聚合事件） */
-    private static final Set<Integer> batchAffectedLevels = new LinkedHashSet<>();
-
-    /** 批量写入期间被修改的目标类型（聚合） */
-    private static final Set<RarityStyleChangedEvent.StyleChangeTarget> batchTargets = new LinkedHashSet<>();
+    /** 批量写入期间暂存的样式变更记录（endStyleBatch 归零时逐条发布 RarityStyleChangedEvent） */
+    private static final List<BatchChange> batchTouched = new ArrayList<>();
 
     private RarityStyleConfigManager() {
     }
@@ -209,6 +205,10 @@ public class RarityStyleConfigManager {
     public static void reload() {
         clearState();
         load();
+        if (available) {
+            // 发布视觉表现配置重载事件（文件驱动的内部重载，全等级）
+            NeoForge.EVENT_BUS.post(new RarityStyleReloadEvent(-1, false));
+        }
     }
 
     /**
@@ -814,19 +814,31 @@ public class RarityStyleConfigManager {
     /** 顶层边框渲染总开关 */
     public static void setBorderEnabled(boolean enable) {
         enableBorder = enable;
-        persistStyleChange(Collections.emptySet(), RarityStyleChangedEvent.StyleChangeTarget.BORDER);
+        persistStyleChange(0, RarityStyleChangedEvent.ChangeTarget.BORDER_ENABLED);
     }
 
     /** 顶层工具提示总开关 */
     public static void setTooltipEnabled(boolean enable) {
         enableTooltip = enable;
-        persistStyleChange(Collections.emptySet(), RarityStyleChangedEvent.StyleChangeTarget.TOOLTIP);
+        persistStyleChange(0, RarityStyleChangedEvent.ChangeTarget.TOOLTIP_ENABLED);
     }
 
     /** 顶层工具提示着色总开关 */
     public static void setTooltipColorEnabled(boolean enable) {
         tooltipColorEnabled = enable;
-        persistStyleChange(Collections.emptySet(), RarityStyleChangedEvent.StyleChangeTarget.COLOR);
+        persistStyleChange(0, RarityStyleChangedEvent.ChangeTarget.TOOLTIP_COLOR_ENABLED);
+    }
+
+    /** 无稀有度回退：是否跳过 */
+    public static void setNoRaritySkip(boolean skip) {
+        defaultNoRarity.skip = skip;
+        persistStyleChange(0, RarityStyleChangedEvent.ChangeTarget.NO_RARITY_SKIP);
+    }
+
+    /** 无稀有度回退：默认稀有度 */
+    public static void setNoRarityDefaultRarity(int rarity) {
+        defaultNoRarity.defaultRarity = rarity;
+        persistStyleChange(0, RarityStyleChangedEvent.ChangeTarget.NO_RARITY_DEFAULT_RARITY);
     }
 
     /** 某稀有度边框是否使用纹理 */
@@ -837,7 +849,7 @@ public class RarityStyleConfigManager {
         }
         pr.border.useTexture = useTexture;
         pr.border.useTextureSpecified = true;
-        persistStyleChange(Set.of(level), RarityStyleChangedEvent.StyleChangeTarget.BORDER);
+        persistStyleChange(level, RarityStyleChangedEvent.ChangeTarget.BORDER_USE_TEXTURE);
     }
 
     /** 某稀有度边框样式（1=实心，0=空心） */
@@ -848,7 +860,7 @@ public class RarityStyleConfigManager {
         }
         pr.border.style = style;
         pr.border.styleSpecified = true;
-        persistStyleChange(Set.of(level), RarityStyleChangedEvent.StyleChangeTarget.BORDER);
+        persistStyleChange(level, RarityStyleChangedEvent.ChangeTarget.BORDER_STYLE);
     }
 
     /** 某稀有度工具提示内容模板 */
@@ -859,7 +871,7 @@ public class RarityStyleConfigManager {
         }
         pr.tooltip.content = content;
         pr.tooltip.contentSpecified = true;
-        persistStyleChange(Set.of(level), RarityStyleChangedEvent.StyleChangeTarget.TOOLTIP);
+        persistStyleChange(level, RarityStyleChangedEvent.ChangeTarget.TOOLTIP_CONTENT);
     }
 
     /** 某稀有度星星模式 */
@@ -871,7 +883,7 @@ public class RarityStyleConfigManager {
         pr.tooltip.star.mode = mode;
         pr.tooltip.star.modeSpecified = true;
         pr.tooltip.starSpecified = true;
-        persistStyleChange(Set.of(level), RarityStyleChangedEvent.StyleChangeTarget.TOOLTIP);
+        persistStyleChange(level, RarityStyleChangedEvent.ChangeTarget.STAR_MODE);
     }
 
     /** 某稀有度星星重复字符 */
@@ -883,7 +895,7 @@ public class RarityStyleConfigManager {
         pr.tooltip.star.repeatChar = repeatChar;
         pr.tooltip.star.repeatCharSpecified = true;
         pr.tooltip.starSpecified = true;
-        persistStyleChange(Set.of(level), RarityStyleChangedEvent.StyleChangeTarget.TOOLTIP);
+        persistStyleChange(level, RarityStyleChangedEvent.ChangeTarget.STAR_REPEAT_CHAR);
     }
 
     /**
@@ -894,69 +906,73 @@ public class RarityStyleConfigManager {
         if (patch == null) {
             return;
         }
-        boolean changed = false;
-        if (patch.color() != null) {
-            PerRarity pr = ensureOverride(level);
-            pr.color = normalizeColor(patch.color());
-            changed = true;
-        }
-        if (patch.border() != null) {
-            PerRarity pr = ensureOverride(level);
-            if (pr.border == null) {
-                pr.border = new BorderCfg();
+        beginStyleBatch();
+        try {
+            if (patch.color() != null) {
+                PerRarity pr = ensureOverride(level);
+                pr.color = normalizeColor(patch.color());
             }
-            BorderStyle bs = patch.border();
-            pr.border.useTexture = bs.useTexture();
-            pr.border.useTextureSpecified = true;
-            pr.border.defaultTexture = bs.defaultTexture();
-            pr.border.defaultTextureSpecified = true;
-            pr.border.style = bs.style();
-            pr.border.styleSpecified = true;
-            pr.border.show = bs.show();
-            pr.border.showSpecified = true;
-            pr.border.fallback = bs.fallback();
-            pr.border.fallbackSpecified = true;
-            changed = true;
-        }
-        if (patch.tooltip() != null) {
-            PerRarity pr = ensureOverride(level);
-            if (pr.tooltip == null) {
-                pr.tooltip = new TooltipCfg();
+            if (patch.border() != null) {
+                PerRarity pr = ensureOverride(level);
+                if (pr.border == null) {
+                    pr.border = new BorderCfg();
+                }
+                BorderStyle bs = patch.border();
+                pr.border.useTexture = bs.useTexture();
+                pr.border.useTextureSpecified = true;
+                pr.border.defaultTexture = bs.defaultTexture();
+                pr.border.defaultTextureSpecified = true;
+                pr.border.style = bs.style();
+                pr.border.styleSpecified = true;
+                pr.border.show = bs.show();
+                pr.border.showSpecified = true;
+                pr.border.fallback = bs.fallback();
+                pr.border.fallbackSpecified = true;
+                persistStyleChange(level, RarityStyleChangedEvent.ChangeTarget.BORDER_USE_TEXTURE);
+                persistStyleChange(level, RarityStyleChangedEvent.ChangeTarget.BORDER_STYLE);
             }
-            TooltipStyle ts = patch.tooltip();
-            pr.tooltip.show = ts.show();
-            pr.tooltip.showSpecified = true;
-            pr.tooltip.content = ts.content();
-            pr.tooltip.contentSpecified = true;
-            pr.tooltip.colored = ts.colored();
-            pr.tooltip.coloredSpecified = true;
-            if (ts.level() != null) {
-                pr.tooltip.level.colored = ts.level().colored();
-                pr.tooltip.level.coloredSpecified = true;
-                pr.tooltip.level.translationKey = ts.level().translationKey();
-                pr.tooltip.level.translationKeySpecified = true;
-                pr.tooltip.level.fallback = ts.level().fallback();
-                pr.tooltip.level.fallbackSpecified = true;
+            if (patch.tooltip() != null) {
+                PerRarity pr = ensureOverride(level);
+                if (pr.tooltip == null) {
+                    pr.tooltip = new TooltipCfg();
+                }
+                TooltipStyle ts = patch.tooltip();
+                pr.tooltip.show = ts.show();
+                pr.tooltip.showSpecified = true;
+                pr.tooltip.content = ts.content();
+                pr.tooltip.contentSpecified = true;
+                pr.tooltip.colored = ts.colored();
+                pr.tooltip.coloredSpecified = true;
+                if (ts.level() != null) {
+                    pr.tooltip.level.colored = ts.level().colored();
+                    pr.tooltip.level.coloredSpecified = true;
+                    pr.tooltip.level.translationKey = ts.level().translationKey();
+                    pr.tooltip.level.translationKeySpecified = true;
+                    pr.tooltip.level.fallback = ts.level().fallback();
+                    pr.tooltip.level.fallbackSpecified = true;
+                }
+                if (ts.star() != null) {
+                    pr.tooltip.star.colored = ts.star().colored();
+                    pr.tooltip.star.coloredSpecified = true;
+                    pr.tooltip.star.mode = ts.star().mode();
+                    pr.tooltip.star.modeSpecified = true;
+                    pr.tooltip.star.repeatChar = ts.star().repeatChar();
+                    pr.tooltip.star.repeatCharSpecified = true;
+                    pr.tooltip.star.custom = ts.star().custom();
+                    pr.tooltip.star.customSpecified = true;
+                }
+                persistStyleChange(level, RarityStyleChangedEvent.ChangeTarget.TOOLTIP_CONTENT);
+                if (ts.star() != null) {
+                    persistStyleChange(level, RarityStyleChangedEvent.ChangeTarget.STAR_MODE);
+                    persistStyleChange(level, RarityStyleChangedEvent.ChangeTarget.STAR_REPEAT_CHAR);
+                }
             }
-            if (ts.star() != null) {
-                pr.tooltip.star.colored = ts.star().colored();
-                pr.tooltip.star.coloredSpecified = true;
-                pr.tooltip.star.mode = ts.star().mode();
-                pr.tooltip.star.modeSpecified = true;
-                pr.tooltip.star.repeatChar = ts.star().repeatChar();
-                pr.tooltip.star.repeatCharSpecified = true;
-                pr.tooltip.star.custom = ts.star().custom();
-                pr.tooltip.star.customSpecified = true;
+            if (patch.itemNameColor() != null) {
+                PerRarity pr = ensureOverride(level);
+                pr.itemNameColor = patch.itemNameColor();
             }
-            changed = true;
-        }
-        if (patch.itemNameColor() != null) {
-            PerRarity pr = ensureOverride(level);
-            pr.itemNameColor = patch.itemNameColor();
-            changed = true;
-        }
-        if (changed) {
-            persistStyleChange(Set.of(level), RarityStyleChangedEvent.StyleChangeTarget.ALL);
+        } finally {
+            endStyleBatch();
         }
     }
 
@@ -965,25 +981,20 @@ public class RarityStyleConfigManager {
         batchDepth++;
     }
 
-    /** 结束批量写入；归零时统一保存并发布一次聚合事件。 */
+    /** 结束批量写入；归零时统一保存，并逐条发布暂存的样式变更事件。 */
     public static void endStyleBatch() {
         if (batchDepth <= 0) {
             return;
         }
         batchDepth--;
         if (batchDepth == 0) {
-            if (!batchAffectedLevels.isEmpty() || !batchTargets.isEmpty()) {
+            if (!batchTouched.isEmpty()) {
                 save();
-                Set<Integer> levels = new LinkedHashSet<>(batchAffectedLevels);
-                Set<RarityStyleChangedEvent.StyleChangeTarget> targets = new LinkedHashSet<>(batchTargets);
-                Set<Integer> affected = levels.isEmpty() ? Collections.emptySet() : levels;
-                RarityStyleChangedEvent.StyleChangeTarget target = targets.size() == 1
-                    ? targets.iterator().next()
-                    : RarityStyleChangedEvent.StyleChangeTarget.ALL;
-                NeoForge.EVENT_BUS.post(new RarityStyleChangedEvent(affected, target));
+                for (BatchChange c : batchTouched) {
+                    NeoForge.EVENT_BUS.post(new RarityStyleChangedEvent(c.level, c.target));
+                }
             }
-            batchAffectedLevels.clear();
-            batchTargets.clear();
+            batchTouched.clear();
         }
     }
 
@@ -1017,14 +1028,25 @@ public class RarityStyleConfigManager {
         }
     }
 
-    private static void persistStyleChange(Set<Integer> affectedLevels, RarityStyleChangedEvent.StyleChangeTarget target) {
+    /** 批量模式下暂存变更、非批量模式立即保存并发布 RarityStyleChangedEvent */
+    private static void persistStyleChange(int level, RarityStyleChangedEvent.ChangeTarget target) {
         if (batchDepth > 0) {
-            batchAffectedLevels.addAll(affectedLevels);
-            batchTargets.add(target);
+            batchTouched.add(new BatchChange(level, target));
             return;
         }
         save();
-        NeoForge.EVENT_BUS.post(new RarityStyleChangedEvent(affectedLevels, target));
+        NeoForge.EVENT_BUS.post(new RarityStyleChangedEvent(level, target));
+    }
+
+    /** 批量写入期间暂存的样式变更记录 */
+    private static final class BatchChange {
+        final int level;
+        final RarityStyleChangedEvent.ChangeTarget target;
+
+        BatchChange(int level, RarityStyleChangedEvent.ChangeTarget target) {
+            this.level = level;
+            this.target = target;
+        }
     }
 
     // ================================================================
@@ -1314,8 +1336,7 @@ public class RarityStyleConfigManager {
         defaultItemNameColor = true;
         defaultNoRarity = new NoRarityCfg();
         batchDepth = 0;
-        batchAffectedLevels.clear();
-        batchTargets.clear();
+        batchTouched.clear();
         available = false;
     }
 

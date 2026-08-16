@@ -2,45 +2,56 @@ package org.yanbwe.raritycore.event;
 
 import net.neoforged.bus.api.Event;
 
-import java.util.Collections;
-import java.util.Set;
-
 /**
  * RarityStyle 视觉表现变更事件（V14）。
  *
- * <p>样式配置（颜色、边框、工具提示、名称颜色、无稀有度回退等）变更后触发。
- * 携带受影响的稀有度等级集合与变更目标枚举。
+ * <p>通过 API 写入并持久化视觉表现配置后触发。
+ * 携带受影响的稀有度等级和变更目标枚举。
  * 通过 {@code NeoForge.EVENT_BUS} 发布。
  */
 public class RarityStyleChangedEvent extends Event {
 
     /** 变更目标类型 */
-    public enum StyleChangeTarget {
-        COLOR,
-        BORDER,
-        TOOLTIP,
-        NAME_COLOR,
-        NO_RARITY,
-        ALL
+    public enum ChangeTarget {
+        BORDER_ENABLED,
+        TOOLTIP_ENABLED,
+        TOOLTIP_COLOR_ENABLED,
+        NO_RARITY_SKIP,
+        NO_RARITY_DEFAULT_RARITY,
+        BORDER_USE_TEXTURE,
+        BORDER_STYLE,
+        TOOLTIP_CONTENT,
+        STAR_MODE,
+        STAR_REPEAT_CHAR
     }
 
-    private final Set<Integer> affectedLevels;
-    private final StyleChangeTarget target;
+    /** 变更目标类型（1.21.1 旧名，已废弃） */
+    @Deprecated
+    public enum Target {
+        COLOR, BORDER, TOOLTIP, NAME_COLOR
+    }
 
-    public RarityStyleChangedEvent(Set<Integer> affectedLevels, StyleChangeTarget target) {
-        this.affectedLevels = affectedLevels != null
-            ? Collections.unmodifiableSet(affectedLevels)
-            : Collections.emptySet();
+    private final int level;
+    private final ChangeTarget target;
+
+    public RarityStyleChangedEvent(int level, ChangeTarget target) {
+        this.level = level;
         this.target = target;
     }
 
-    /** 受影响的稀有度等级集合，只读视图 */
-    public Set<Integer> getAffectedLevels() {
-        return affectedLevels;
+    /** 受影响的稀有度等级（0=全局主开关/无稀有度回退等非逐级项） */
+    public int getRarity() {
+        return level;
     }
 
-    /** 变更目标类型 */
-    public StyleChangeTarget getTarget() {
+    /** @deprecated 使用 {@link #getRarity()} */
+    @Deprecated
+    public int getLevel() {
+        return level;
+    }
+
+    /** 变更项标识 */
+    public ChangeTarget getTarget() {
         return target;
     }
 }
