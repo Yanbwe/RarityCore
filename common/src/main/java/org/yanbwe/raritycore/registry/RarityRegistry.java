@@ -139,9 +139,9 @@ public class RarityRegistry {
 
     /**
      * 获取物品的稀有度等级(标准化版本)
-     * 遵循模组的包容性原则:小于1的值视为1,大于7的值视为7
+     * V14 不限制上限，返回 >= {@link RarityConstants#MIN_RARITY}。
      * @param item 要查稀有度的物品
-     * @return 标准化后的物品稀有度等级(1-7)
+     * @return 标准化后的物品稀有度等级（>= {@link RarityConstants#MIN_RARITY}）
      */
     public static @NotNull Integer getNormalizedRarity(@Nullable Item item) {
         Integer rawRarity = getRarity(item);
@@ -150,29 +150,13 @@ public class RarityRegistry {
     
     /**
      * 获取物品栈的稀有度等级(标准化版本,支持物品数据匹配)
-     * 遵循模组的包容性原则:小于1的值视为1,大于7的值视为7
+     * V14 不限制上限，返回 >= {@link RarityConstants#MIN_RARITY}。
      * @param itemStack 要查稀有度的物品栈
-     * @return 标准化后的物品稀有度等级(1-7)
+     * @return 标准化后的物品稀有度等级（>= {@link RarityConstants#MIN_RARITY}）
      */
     public static @NotNull Integer getNormalizedRarity(@Nullable ItemStack itemStack) {
         Integer rawRarity = getRarity(itemStack);
         return org.yanbwe.raritycore.util.RarityValidator.normalizeRarity(rawRarity);
-    }
-    
-    /**
-     * 获取本地化文本
-     * @param key 本地化键
-     * @return 本地化文本
-     */
-    private static String getLocalizedText(String key) {
-        try {
-            // 使用 Component.translatable() 替代 I18n.get()，避免服务端加载客户端类导致 NoClassDefFoundError
-            return net.minecraft.network.chat.Component.translatable(key).getString();
-        } catch (Exception e) {
-            // 本地化失败时返回原始键
-            RarityCore.LOGGER.debug("Error getting localized text for key: {}", key, e);
-            return key;
-        }
     }
     
     /**
@@ -202,7 +186,7 @@ public class RarityRegistry {
      * 获取物品栈的稀有度等级(支持物品数据)
      * 优先级顺序:物品数据匹配 > 神化模组稀有度 > 本模组稀有度(配置和数据包) > 原版稀有度映射
      * @param itemStack 要查稀有度的物品栈
-     * @return 物品的稀有度等级(1-7)
+     * @return 物品的稀有度等级（>= {@link RarityConstants#MIN_RARITY}）
      */
     public static @NotNull Integer getRarity(@Nullable ItemStack itemStack) {
         if (itemStack == null || itemStack.isEmpty()) {
@@ -386,7 +370,7 @@ public class RarityRegistry {
     /**
      * 映射原版稀有度到本模组稀有度
      * @param vanillaRarity 原版稀有度
-     * @return 映射后的稀有度等级(1-7)
+     * @return 映射后的本模组稀有度等级（>= {@link RarityConstants#MIN_RARITY}）
      */
     private static Integer mapVanillaRarity(Rarity vanillaRarity) {
         if (vanillaRarity == Rarity.UNCOMMON) {
@@ -419,6 +403,10 @@ public class RarityRegistry {
     public static Set<Item> getItemsByRarity(int rarity) {
         Set<Item> result = new LinkedHashSet<>();
         for (Item item : BuiltInRegistries.ITEM) {
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+            if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
+                continue;
+            }
             if (getRarity(item) == rarity) {
                 result.add(item);
             }
@@ -435,11 +423,12 @@ public class RarityRegistry {
     public static Set<Identifier> getItemIdsByRarity(int rarity) {
         Set<Identifier> result = new LinkedHashSet<>();
         for (Item item : BuiltInRegistries.ITEM) {
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+            if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
+                continue;
+            }
             if (getRarity(item) == rarity) {
-                Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
-                if (itemId != null) {
-                    result.add(itemId);
-                }
+                result.add(itemId);
             }
         }
         return Collections.unmodifiableSet(result);
@@ -457,6 +446,10 @@ public class RarityRegistry {
         }
         Set<Item> result = new LinkedHashSet<>();
         for (Item item : BuiltInRegistries.ITEM) {
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+            if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
+                continue;
+            }
             if (rarities.contains(getRarity(item))) {
                 result.add(item);
             }
@@ -476,11 +469,12 @@ public class RarityRegistry {
         }
         Set<Identifier> result = new LinkedHashSet<>();
         for (Item item : BuiltInRegistries.ITEM) {
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+            if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
+                continue;
+            }
             if (rarities.contains(getRarity(item))) {
-                Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
-                if (itemId != null) {
-                    result.add(itemId);
-                }
+                result.add(itemId);
             }
         }
         return Collections.unmodifiableSet(result);
@@ -495,6 +489,10 @@ public class RarityRegistry {
     public static int getRarityCount(int rarity) {
         int count = 0;
         for (Item item : BuiltInRegistries.ITEM) {
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(item);
+            if (itemId == null || itemId.equals(BuiltInRegistries.ITEM.getDefaultKey())) {
+                continue;
+            }
             if (getRarity(item) == rarity) {
                 count++;
             }
@@ -553,10 +551,11 @@ public class RarityRegistry {
             }
 
             Integer oldRarity = ITEM_RARITY_MAP.get(itemId);
-            register(item, rarity, false);
-            if (oldRarity == null || !oldRarity.equals(rarity)) {
-                changedEntries.put(itemId, rarity);
+            if (oldRarity != null && oldRarity.equals(rarity)) {
+                continue;
             }
+            register(item, rarity, false);
+            changedEntries.put(itemId, rarity);
         }
 
         if (!changedEntries.isEmpty()) {
