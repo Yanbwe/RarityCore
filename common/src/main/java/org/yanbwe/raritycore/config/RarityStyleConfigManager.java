@@ -100,8 +100,8 @@ public class RarityStyleConfigManager {
 
     private static final class LevelCfg {
         boolean colored = true;
-        String translationKey = "$(rarity.core.{level})";
-        String fallback = "{level}$(rarity.core.special.rarity.prefix)";
+        String translationKey = "{level}";
+        String fallback = "{level}";
         boolean coloredSpecified;
         boolean translationKeySpecified;
         boolean fallbackSpecified;
@@ -335,8 +335,8 @@ public class RarityStyleConfigManager {
 
         JsonObject level = new JsonObject();
         level.addProperty("colored", true);
-        level.addProperty("translationKey", "$(rarity.core.{level})");
-        level.addProperty("fallback", "{level}$(rarity.core.special.rarity.prefix)");
+        level.addProperty("translationKey", "{level}");
+        level.addProperty("fallback", "{level}");
         tooltip.add("level", level);
 
         JsonObject star = new JsonObject();
