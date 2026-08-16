@@ -1,6 +1,6 @@
 # RarityCore Changelog
 
-## [2601.13.7] - 2026-08-16
+## [260x.14.0] - 2026-08-16
 
 ### Added
 - V14 config integration: added `RarityStyle.json` to centralize color, border, tooltip, star and no-rarity fallback settings; `client.json` is trimmed to only the cache and Sophisticated Core adapter switches; legacy `RarityClientConfig.json` is automatically removed on startup

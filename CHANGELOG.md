@@ -1,6 +1,6 @@
 # RarityCore 更新日志
 
-## [2601.13.7] - 2026-08-16
+## [260x.14.0] - 2026-08-16
 
 ### 新增
 - V14 配置整合：新增 `RarityStyle.json`，统一管理颜色、边框、Tooltip、星星与无稀有度回退；`client.json` 裁剪为仅保留缓存与精妙核心适配器开关；旧 `RarityClientConfig.json` 启动时自动删除
