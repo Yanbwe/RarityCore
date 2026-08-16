@@ -1,0 +1,140 @@
+name: Build and Publish Release
+
+on:
+  push:
+    tags:
+      - 'v2601*'
+      - 'v2602*'
+      - '2601*'
+      - '2602*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 2601.13.7 or 2602.13.6). Leave empty to build both current versions.'
+        required: false
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: 25
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TAG="${GITHUB_REF_NAME}"
+            VERSION="${TAG#v}"
+          else
+            INPUT_VERSION="${{ github.event.inputs.version }}"
+            if [ -n "$INPUT_VERSION" ]; then
+              VERSION="$INPUT_VERSION"
+              TAG="v${VERSION}"
+            else
+              VERSION="2601.13.7+2602.13.6"
+              TAG="v${VERSION}"
+            fi
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Determine targets
+        id: targets
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          case "$VERSION" in
+            2601*) echo "target=26_1" >> "$GITHUB_OUTPUT" ;;
+            2602*) echo "target=26_2" >> "$GITHUB_OUTPUT" ;;
+            *) echo "target=both" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Sync mod version with tag
+        run: |
+          TARGET="${{ steps.targets.outputs.target }}"
+          VERSION="${{ steps.version.outputs.version }}"
+          if [ "$TARGET" = "26_1" ]; then
+            sed -i "s/^mod_version_26_1=.*/mod_version_26_1=${VERSION}/" gradle.properties
+          elif [ "$TARGET" = "26_2" ]; then
+            sed -i "s/^mod_version_26_2=.*/mod_version_26_2=${VERSION}/" gradle.properties
+          else
+            echo "Both targets: keeping current mod_version_26_1/mod_version_26_2 from gradle.properties"
+          fi
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build
+        run: |
+          TARGET="${{ steps.targets.outputs.target }}"
+          if [ "$TARGET" = "26_1" ]; then
+            ./gradlew :v26_1:build --no-daemon
+          elif [ "$TARGET" = "26_2" ]; then
+            ./gradlew :v26_2:build --no-daemon
+          else
+            ./gradlew :v26_1:build :v26_2:build --no-daemon
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mod-jars
+          path: |
+            26.1/build/libs/*.jar
+            26.2/build/libs/*.jar
+          if-no-files-found: error
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          TARGET="${{ steps.targets.outputs.target }}"
+          NOTES_FILE="$RUNNER_TEMP/release_notes.md"
+          if [ "$TARGET" = "both" ]; then
+            if [ -f CHANGELOG.md ]; then
+              cat CHANGELOG.md > "$NOTES_FILE"
+            fi
+          else
+            if [ -f CHANGELOG.md ]; then
+              awk -v v="[${{ steps.version.outputs.version }}]" \
+                'BEGIN{f=0} /^## /{if(index($0,v)>0){f=1}else if(f){exit}} f' \
+                CHANGELOG.md > "$NOTES_FILE"
+            fi
+          fi
+          JARS=""
+          if [ "$TARGET" = "26_1" ] || [ "$TARGET" = "both" ]; then
+            JARS="$JARS $(find 26.1/build/libs -maxdepth 1 -name '*.jar' ! -name '*-sources.jar' ! -name '*-javadoc.jar' ! -name '*-api.jar')"
+          fi
+          if [ "$TARGET" = "26_2" ] || [ "$TARGET" = "both" ]; then
+            JARS="$JARS $(find 26.2/build/libs -maxdepth 1 -name '*.jar' ! -name '*-sources.jar' ! -name '*-javadoc.jar' ! -name '*-api.jar')"
+          fi
+          if [ -z "$JARS" ]; then
+            echo "::error::No release jar found"
+            exit 1
+          fi
+          ARGS=(--title "$TAG")
+          if [ -s "$NOTES_FILE" ]; then
+            ARGS+=(--notes-file "$NOTES_FILE")
+          else
+            ARGS+=(--generate-notes)
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" "${ARGS[@]}"
+            for jar in $JARS; do gh release upload "$TAG" "$jar" --clobber; done
+          else
+            gh release create "$TAG" $JARS "${ARGS[@]}"
+          fi
