@@ -16,22 +16,20 @@ public class RarityValidator {
      * @return 是否有效
      */
     public static boolean isValidRarity(int rarity) {
-        return rarity >= RarityConstants.MIN_RARITY && rarity <= RarityConstants.MAX_RARITY;
+        return rarity >= RarityConstants.MIN_RARITY;
     }
     
     /**
      * 标准化稀有度值，遵循模组的包容性原则
-     * 小于1的值视为1，大于7的值视为7
+     * 小于1的值视为1，不限制上限
      * @param rarity 稀有度值
-     * @return 标准化后的稀有度值 (1-7)
+     * @return 标准化后的稀有度值 (>=1)
      */
     public static int normalizeRarity(int rarity) {
         if (rarity < RarityConstants.MIN_RARITY) {
             return RarityConstants.MIN_RARITY; // 小于1视为1（普通）
-        } else if (rarity > RarityConstants.MAX_RARITY) {
-            return RarityConstants.MAX_RARITY; // 大于7视为7（唯一）
         }
-        return rarity; // 1-7范围内保持原值
+        return rarity; // >=1 保持原值（V14 无上限）
     }
     
     /**

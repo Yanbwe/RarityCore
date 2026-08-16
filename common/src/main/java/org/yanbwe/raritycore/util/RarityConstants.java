@@ -23,10 +23,11 @@ public class RarityConstants {
     public static final String FINAL_RARITY_FILE_NAME = "FinalRarity.json";
     public static final String FINAL_RARITY_CONFIG_FOLDER_NAME = "FinalRarityConfig";
     public static final String RARITY_CLIENT_CONFIG_FILE_NAME = "RarityClientConfig.json";
+    public static final String RARITY_STYLE_FILE_NAME = "RarityStyle.json";
     
-    // 验证范围
-    public static final int MIN_RARITY = 1;
-    public static final int MAX_RARITY = 7;
+    // 验证范围（V14：MAX_RARITY 为内置档位位数（默认 7），非稀有度上限）
+    public static final int MIN_RARITY = 1; // 最低档位
+    public static final int MAX_RARITY = 7; // 内置档位位数（默认 7），非稀有度上限
     
     // 默认值
     public static final boolean DEFAULT_ENABLE_ITEM_BORDER_RENDERING = true;
