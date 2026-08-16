@@ -260,13 +260,14 @@ public class ClientConfigManager {
     }
 
     /**
-     * @deprecated 由 {@link RarityStyleConfigManager#setStyle(int, RarityStyleConfigManager.StylePatch)} 接管，
+     * @deprecated 由 {@link RarityStyleConfigManager#setStyle(RarityStyleConfigManager.StylePatch)} 接管，
      * 桥接默认等级 1 的 itemNameColor 写入。
      */
     @Deprecated
     public static void setEnableItemNameColor(boolean enable) {
-        RarityStyleConfigManager.setStyle(RarityConstants.MIN_RARITY,
-                new RarityStyleConfigManager.StylePatch(null, null, null, enable));
+        RarityStyleConfigManager.StylePatch patch = new RarityStyleConfigManager.StylePatch(RarityConstants.MIN_RARITY);
+        patch.borderUseTexture = enable;
+        RarityStyleConfigManager.setStyle(patch);
     }
 
     /**

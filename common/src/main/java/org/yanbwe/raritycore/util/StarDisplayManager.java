@@ -68,19 +68,19 @@ public class StarDisplayManager {
      * </ul>
      */
     private StarDisplayStrategy selectStrategy(int rarity) {
-        RarityStyleConfigManager.StarStyle starStyle = RarityStyleConfigManager.getStarConfig(rarity);
+        RarityStyleConfigManager.StarSegmentConfig starStyle = RarityStyleConfigManager.getStarConfig(rarity);
         if (starStyle == null) {
             return repeatStrategy(RarityConstants.DEFAULT_REPEAT_CHARACTER);
         }
         
-        String custom = starStyle.custom();
+        String custom = starStyle.custom;
         if (custom != null && !custom.isEmpty()) {
             String cacheKey = "custom:" + rarity + ":" + custom;
             return strategyCache.computeIfAbsent(cacheKey,
                     k -> new CustomStarStrategy(Collections.singletonMap(rarity, custom)));
         }
 
-        String repeatChar = starStyle.repeatChar();
+        String repeatChar = starStyle.repeatChar;
         if (repeatChar == null || repeatChar.isEmpty()) {
             repeatChar = RarityConstants.DEFAULT_REPEAT_CHARACTER;
         }

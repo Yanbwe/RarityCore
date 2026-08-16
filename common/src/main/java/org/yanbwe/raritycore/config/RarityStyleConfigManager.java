@@ -53,7 +53,7 @@ public class RarityStyleConfigManager {
     public static final int API_VERSION = 1400;
 
     // ================================================================
-    //  公开 record 类型
+    //  公开 record 类型（内部样式值对象）
     // ================================================================
 
     public record BorderStyle(boolean useTexture, String defaultTexture, int style, boolean show, String fallback) {}
@@ -62,8 +62,59 @@ public class RarityStyleConfigManager {
     public record TooltipStyle(boolean show, String content, boolean colored, LevelStyle level, StarStyle star) {}
     public record NoRarityStyle(boolean skip, int defaultRarity) {}
     public record RarityStyleEntry(String color, BorderStyle border, TooltipStyle tooltip, Boolean itemNameColor) {}
-    public record StyleSnapshot(int level, String color, BorderStyle border, TooltipStyle tooltip, boolean itemNameColor) {}
-    public record StylePatch(String color, BorderStyle border, TooltipStyle tooltip, Boolean itemNameColor) {}
+
+    // ================================================================
+    //  公开值对象（与 1.21.1 对齐）
+    // ================================================================
+
+    /** 逐级星星配置（无 Specified 标志概念） */
+    public static class StarSegmentConfig {
+        public boolean colored = true;
+        public String mode = "repeat";
+        public String repeatChar = "★";
+        public String custom = "";
+
+        public StarSegmentConfig() {}
+        public StarSegmentConfig(boolean colored, String mode, String repeatChar, String custom) {
+            this.colored = colored; this.mode = mode; this.repeatChar = repeatChar; this.custom = custom;
+        }
+    }
+
+    /** 样式补丁（null 字段跳过） */
+    public static class StylePatch {
+        public final int rarity;
+        public Boolean borderUseTexture;
+        public Integer borderStyle;
+        public String tooltipContent;
+        public String starMode;
+        public String starRepeatChar;
+
+        public StylePatch(int rarity) { this.rarity = rarity; }
+    }
+
+    /** 样式快照（不可变） */
+    public static class StyleSnapshot {
+        public final int rarity;
+        public final boolean borderUseTexture;
+        public final int borderStyle;
+        public final String borderFallback;
+        public final boolean tooltipShow;
+        public final String tooltipContent;
+        public final boolean tooltipColored;
+        public final String starMode;
+        public final String starRepeatChar;
+        public final String starCustom;
+        public final boolean starColored;
+
+        public StyleSnapshot(int rarity, boolean borderUseTexture, int borderStyle, String borderFallback,
+                             boolean tooltipShow, String tooltipContent, boolean tooltipColored,
+                             String starMode, String starRepeatChar, String starCustom, boolean starColored) {
+            this.rarity = rarity; this.borderUseTexture = borderUseTexture; this.borderStyle = borderStyle;
+            this.borderFallback = borderFallback; this.tooltipShow = tooltipShow; this.tooltipContent = tooltipContent;
+            this.tooltipColored = tooltipColored; this.starMode = starMode; this.starRepeatChar = starRepeatChar;
+            this.starCustom = starCustom; this.starColored = starColored;
+        }
+    }
 
     // ================================================================
     //  内部可变配置（用于字段级继承，携带 Specified 标志）
@@ -702,9 +753,10 @@ public class RarityStyleConfigManager {
         return sb.toString();
     }
 
-    /** 获取某稀有度星星配置 */
-    public static StarStyle getStarConfig(int level) {
-        return getTooltip(level).star();
+    /** 获取某稀有度星星配置（与 1.21.1 对齐，返回 {@link StarSegmentConfig}） */
+    public static StarSegmentConfig getStarConfig(int level) {
+        StarStyle s = getTooltip(level).star();
+        return new StarSegmentConfig(s.colored(), s.mode(), s.repeatChar(), s.custom());
     }
 
     /** 获取某稀有度物品名称颜色是否启用（defaults 与逐级显式配置取与语义） */
@@ -899,81 +951,56 @@ public class RarityStyleConfigManager {
     }
 
     /**
-     * 以单个补丁整体写入某稀有度的视觉表现配置。
-     * 补丁内 null 字段表示保留现有值。
+     * 以单个补丁整体写入某稀有度的视觉表现配置（canonical，与 1.21.1 对齐）。
+     * 稀有度由 {@code patch.rarity} 指定；补丁内 null 字段表示保留现有值。
      */
-    public static void setStyle(int level, StylePatch patch) {
+    public static void setStyle(StylePatch patch) {
         if (patch == null) {
             return;
         }
+        int level = patch.rarity;
         beginStyleBatch();
         try {
-            if (patch.color() != null) {
-                PerRarity pr = ensureOverride(level);
-                pr.color = normalizeColor(patch.color());
+            if (patch.borderUseTexture != null) {
+                setBorderUseTexture(level, patch.borderUseTexture);
             }
-            if (patch.border() != null) {
-                PerRarity pr = ensureOverride(level);
-                if (pr.border == null) {
-                    pr.border = new BorderCfg();
-                }
-                BorderStyle bs = patch.border();
-                pr.border.useTexture = bs.useTexture();
-                pr.border.useTextureSpecified = true;
-                pr.border.defaultTexture = bs.defaultTexture();
-                pr.border.defaultTextureSpecified = true;
-                pr.border.style = bs.style();
-                pr.border.styleSpecified = true;
-                pr.border.show = bs.show();
-                pr.border.showSpecified = true;
-                pr.border.fallback = bs.fallback();
-                pr.border.fallbackSpecified = true;
-                persistStyleChange(level, RarityStyleChangedEvent.ChangeTarget.BORDER_USE_TEXTURE);
-                persistStyleChange(level, RarityStyleChangedEvent.ChangeTarget.BORDER_STYLE);
+            if (patch.borderStyle != null) {
+                setBorderStyle(level, patch.borderStyle);
             }
-            if (patch.tooltip() != null) {
-                PerRarity pr = ensureOverride(level);
-                if (pr.tooltip == null) {
-                    pr.tooltip = new TooltipCfg();
-                }
-                TooltipStyle ts = patch.tooltip();
-                pr.tooltip.show = ts.show();
-                pr.tooltip.showSpecified = true;
-                pr.tooltip.content = ts.content();
-                pr.tooltip.contentSpecified = true;
-                pr.tooltip.colored = ts.colored();
-                pr.tooltip.coloredSpecified = true;
-                if (ts.level() != null) {
-                    pr.tooltip.level.colored = ts.level().colored();
-                    pr.tooltip.level.coloredSpecified = true;
-                    pr.tooltip.level.translationKey = ts.level().translationKey();
-                    pr.tooltip.level.translationKeySpecified = true;
-                    pr.tooltip.level.fallback = ts.level().fallback();
-                    pr.tooltip.level.fallbackSpecified = true;
-                }
-                if (ts.star() != null) {
-                    pr.tooltip.star.colored = ts.star().colored();
-                    pr.tooltip.star.coloredSpecified = true;
-                    pr.tooltip.star.mode = ts.star().mode();
-                    pr.tooltip.star.modeSpecified = true;
-                    pr.tooltip.star.repeatChar = ts.star().repeatChar();
-                    pr.tooltip.star.repeatCharSpecified = true;
-                    pr.tooltip.star.custom = ts.star().custom();
-                    pr.tooltip.star.customSpecified = true;
-                }
-                persistStyleChange(level, RarityStyleChangedEvent.ChangeTarget.TOOLTIP_CONTENT);
-                if (ts.star() != null) {
-                    persistStyleChange(level, RarityStyleChangedEvent.ChangeTarget.STAR_MODE);
-                    persistStyleChange(level, RarityStyleChangedEvent.ChangeTarget.STAR_REPEAT_CHAR);
-                }
+            if (patch.tooltipContent != null) {
+                setTooltipContent(level, patch.tooltipContent);
             }
-            if (patch.itemNameColor() != null) {
-                PerRarity pr = ensureOverride(level);
-                pr.itemNameColor = patch.itemNameColor();
+            if (patch.starMode != null) {
+                setStarMode(level, patch.starMode);
+            }
+            if (patch.starRepeatChar != null) {
+                setStarRepeatChar(level, patch.starRepeatChar);
             }
         } finally {
             endStyleBatch();
         }
+    }
+
+    /**
+     * @deprecated 使用 {@link #setStyle(StylePatch)}；若 {@code patch.rarity} 非 0 直接委托新方法，
+     * 否则构造一个 {@code new StylePatch(level)} 并复制字段后调用新方法。
+     */
+    @Deprecated
+    public static void setStyle(int level, StylePatch patch) {
+        if (patch == null) {
+            return;
+        }
+        if (patch.rarity != 0) {
+            setStyle(patch);
+            return;
+        }
+        StylePatch copy = new StylePatch(level);
+        copy.borderUseTexture = patch.borderUseTexture;
+        copy.borderStyle = patch.borderStyle;
+        copy.tooltipContent = patch.tooltipContent;
+        copy.starMode = patch.starMode;
+        copy.starRepeatChar = patch.starRepeatChar;
+        setStyle(copy);
     }
 
     /** 开启批量写入；期间 setter 不写盘、不发布事件。可嵌套调用。 */
@@ -1060,11 +1087,11 @@ public class RarityStyleConfigManager {
 
     /** 获取某稀有度的完整生效视觉表现快照 */
     public static StyleSnapshot getStyleSnapshot(int level) {
-        String hex = getColorHex(level);
         BorderStyle border = getBorder(level);
         TooltipStyle tooltip = getTooltip(level);
-        boolean itemNameColor = isNameColorEnabled(level);
-        return new StyleSnapshot(level, hex, border, tooltip, itemNameColor);
+        return new StyleSnapshot(level, border.useTexture(), border.style(), getBorderFallback(),
+                tooltip.show(), tooltip.content(), tooltip.colored(),
+                tooltip.star().mode(), tooltip.star().repeatChar(), tooltip.star().custom(), tooltip.star().colored());
     }
 
     /** 配置是否已成功初始化 */

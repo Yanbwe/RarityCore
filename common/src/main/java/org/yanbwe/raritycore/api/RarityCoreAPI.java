@@ -447,7 +447,7 @@ public final class RarityCoreAPI {
      * @param level 稀有度等级
      * @return 星星配置
      */
-    public static RarityStyleConfigManager.StarStyle getStarConfig(int level) {
+    public static RarityStyleConfigManager.StarSegmentConfig getStarConfig(int level) {
         return RarityStyleConfigManager.getStarConfig(level);
     }
 
@@ -576,12 +576,25 @@ public final class RarityCoreAPI {
     }
 
     /**
-     * 以单个补丁整体写入某稀有度等级的视觉表现配置。
+     * 以单个补丁整体写入某稀有度等级的视觉表现配置（canonical，与 1.21.1 对齐）。
+     * 稀有度由 {@code patch.rarity} 指定；补丁内 null 字段表示保留现有值。
+     *
+     * @param patch 样式补丁
+     */
+    public static void setStyle(RarityStyleConfigManager.StylePatch patch) {
+        RarityStyleConfigManager.setStyle(patch);
+    }
+
+    /**
+     * 以单个补丁整体写入指定稀有度等级的视觉表现配置。
      * 补丁内 null 字段表示保留现有值。
      *
      * @param level 稀有度等级
      * @param patch 样式补丁
+     * @deprecated 使用 {@link #setStyle(RarityStyleConfigManager.StylePatch)}，
+     *             在 {@link RarityStyleConfigManager.StylePatch} 中指定 {@code rarity}。
      */
+    @Deprecated
     public static void setStyle(int level, RarityStyleConfigManager.StylePatch patch) {
         RarityStyleConfigManager.setStyle(level, patch);
     }

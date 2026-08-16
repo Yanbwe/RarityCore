@@ -26,7 +26,7 @@ public class ComponentBuilder {
     }
 
     /**
-     * 按 {@link org.yanbwe.raritycore.config.RarityStyleConfigManager.StarStyle} 构建星星字符串。
+     * 按 {@link org.yanbwe.raritycore.config.RarityStyleConfigManager.StarSegmentConfig} 构建星星字符串。
      * <p>
      * <ul>
      *   <li>{@code starStyle} 为 null，或其 mode 为 null/空时返回空字符串；</li>
@@ -39,22 +39,22 @@ public class ComponentBuilder {
      * @return 星星字符串,永不为null
      */
     @Nonnull
-    public static String getStars(int rarity, org.yanbwe.raritycore.config.RarityStyleConfigManager.StarStyle starStyle) {
+    public static String getStars(int rarity, org.yanbwe.raritycore.config.RarityStyleConfigManager.StarSegmentConfig starStyle) {
         if (starStyle == null) {
             return "";
         }
 
-        String mode = starStyle.mode();
+        String mode = starStyle.mode;
         if (mode == null || mode.isEmpty()) {
             return "";
         }
 
-        String custom = starStyle.custom();
+        String custom = starStyle.custom;
         if (custom != null && !custom.isEmpty()) {
             return custom;
         }
 
-        String repeatChar = starStyle.repeatChar();
+        String repeatChar = starStyle.repeatChar;
         if (repeatChar == null || repeatChar.isEmpty()) {
             repeatChar = "★";
         }
