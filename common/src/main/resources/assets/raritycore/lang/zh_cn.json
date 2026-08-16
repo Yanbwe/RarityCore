@@ -146,5 +146,6 @@
   "raritycore.message.vanilla_rarity_cause": "§7这通常是由于其它模组修改了原版 API 导致的",
   "rarity.core.item_data_items_count": "具有物品数据匹配配置的物品数量: %s",
   "rarity.core.item_data_rules_count": "总物品数据匹配配置数量: %s",
-  "rarity.core.item_data_configs_detail": "物品数据匹配配置详情"
+  "rarity.core.item_data_configs_detail": "物品数据匹配配置详情",
+  "rarity.core.special.rarity.prefix": "级稀有度"
 }

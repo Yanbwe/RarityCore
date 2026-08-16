@@ -1,10 +1,10 @@
 package org.yanbwe.raritycore.config;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yanbwe.raritycore.util.JsonPerformanceOptimizer;
 
 import java.io.BufferedReader;
 import java.io.FileOutputStream;
@@ -21,7 +21,7 @@ import java.nio.file.Path;
 public class ConfigValidator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigValidator.class);
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Gson GSON = JsonPerformanceOptimizer.getOptimizedGson();
 
     /**
      * 验证并更新配置文件

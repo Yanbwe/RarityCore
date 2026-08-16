@@ -6,6 +6,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.neoforged.neoforge.common.NeoForge;
 import org.yanbwe.raritycore.cache.CacheConfig;
 import org.yanbwe.raritycore.cache.ComponentCacheManager;
 import org.yanbwe.raritycore.cache.DualCacheManager;
@@ -14,6 +15,7 @@ import org.yanbwe.raritycore.cache.RarityCacheCoordinator;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.RarityStyleConfigManager;
+import org.yanbwe.raritycore.event.RarityConfigReloadEvent;
 import org.yanbwe.raritycore.util.StarDisplayManager;
 
 /**
@@ -129,6 +131,8 @@ public class ClientCommands {
                     RarityTooltipHandler.handleSkipConfigChange();
                     // 刷新缓存
                     RenderCacheManager.clearAllCache();
+                    // 发布客户端配置重载事件
+                    NeoForge.EVENT_BUS.post(new RarityConfigReloadEvent.Client());
                     context.getSource().sendSuccess(() -> Component.translatable("rarity.core.client_config_reloaded")
                         .withStyle(ChatFormatting.GREEN), false);
                     return 1;

@@ -5,11 +5,13 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.neoforged.neoforge.common.NeoForge;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.ConfigValidator;
 import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
+import org.yanbwe.raritycore.event.RarityConfigReloadEvent;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -70,6 +72,9 @@ public class ConfigManagementCommands {
         
         // 特别处理skipUnconfiguredItems配置变更 - 通知相关渲染系统
         handleSkipUnconfiguredItemsChange();
+        
+        // 发布客户端配置重载事件
+        NeoForge.EVENT_BUS.post(new RarityConfigReloadEvent.Client());
         
         // 简单的重载完成提示
         source.sendSuccess(() -> Component.translatable("rarity.core.client_config_reloaded").withStyle(ChatFormatting.GREEN), false);

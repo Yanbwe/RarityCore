@@ -4,6 +4,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.neoforged.neoforge.common.NeoForge;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
@@ -17,6 +18,7 @@ import org.yanbwe.raritycore.network.ItemDataSyncManager;
 import org.yanbwe.raritycore.network.SyncBatchManager;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
+import org.yanbwe.raritycore.event.RarityConfigReloadEvent;
 import org.yanbwe.raritycore.util.CacheRefreshCoordinator;
 import org.yanbwe.raritycore.util.StarDisplayManager;
 
@@ -96,6 +98,8 @@ public class ConfigReloadService {
             handleCacheSystems();
             
             // 10. 发送完成消息(仅在命令调用时)
+            // 发布服务端配置重载事件（服务端数据重载入口；reloadOnStartup 也会走到这里）
+            NeoForge.EVENT_BUS.post(new RarityConfigReloadEvent.Server());
             if (source != null) {
                 sendCompletionMessage(source);
             }

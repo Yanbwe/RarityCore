@@ -162,8 +162,8 @@ public class RarityStyleConfigManager {
     private static boolean defaultItemNameColor = true;
     private static NoRarityCfg defaultNoRarity = new NoRarityCfg();
 
-    /** level(int) → 显式覆盖 */
-    private static final Map<Integer, PerRarity> RARITIES = new LinkedHashMap<>();
+    /** level(int) → 显式覆盖；线程安全且保持插入顺序 */
+    private static final Map<Integer, PerRarity> RARITIES = Collections.synchronizedMap(new LinkedHashMap<>());
 
     /** 批量写入深度；>0 时 setter 延迟写盘与事件发布 */
     private static int batchDepth = 0;
@@ -931,12 +931,16 @@ public class RarityStyleConfigManager {
 
     /** 遍历当前已配置等级，批量设置边框是否使用纹理。 */
     public static void setAllBorderUseTexture(boolean useTexture) {
-        if (RARITIES.isEmpty()) {
-            return;
+        List<Integer> levels;
+        synchronized (RARITIES) {
+            if (RARITIES.isEmpty()) {
+                return;
+            }
+            levels = new ArrayList<>(RARITIES.keySet());
         }
         beginStyleBatch();
         try {
-            for (Integer level : new ArrayList<>(RARITIES.keySet())) {
+            for (Integer level : levels) {
                 setBorderUseTexture(level, useTexture);
             }
         } finally {
@@ -945,12 +949,14 @@ public class RarityStyleConfigManager {
     }
 
     private static PerRarity ensureOverride(int level) {
-        PerRarity pr = RARITIES.get(level);
-        if (pr == null) {
-            pr = new PerRarity();
-            RARITIES.put(level, pr);
+        synchronized (RARITIES) {
+            PerRarity pr = RARITIES.get(level);
+            if (pr == null) {
+                pr = new PerRarity();
+                RARITIES.put(level, pr);
+            }
+            return pr;
         }
-        return pr;
     }
 
     private static void persistStyleChange(Set<Integer> affectedLevels, RarityStyleChangedEvent.StyleChangeTarget target) {
@@ -992,10 +998,12 @@ public class RarityStyleConfigManager {
 
     private static void injectColors() {
         Map<Integer, Integer> colors = new LinkedHashMap<>();
-        for (Map.Entry<Integer, PerRarity> e : RARITIES.entrySet()) {
-            PerRarity pr = e.getValue();
-            if (pr != null && pr.color != null && !"inherit".equalsIgnoreCase(pr.color) && !pr.color.isEmpty()) {
-                colors.put(e.getKey(), RarityColorUtil.parseHexColor(pr.color));
+        synchronized (RARITIES) {
+            for (Map.Entry<Integer, PerRarity> e : RARITIES.entrySet()) {
+                PerRarity pr = e.getValue();
+                if (pr != null && pr.color != null && !"inherit".equalsIgnoreCase(pr.color) && !pr.color.isEmpty()) {
+                    colors.put(e.getKey(), RarityColorUtil.parseHexColor(pr.color));
+                }
             }
         }
         RarityColorUtil.setCustomColors(colors);
@@ -1052,8 +1060,10 @@ public class RarityStyleConfigManager {
         root.add("defaults", defaults);
 
         JsonObject rarities = new JsonObject();
-        for (Map.Entry<Integer, PerRarity> e : RARITIES.entrySet()) {
-            rarities.add(String.valueOf(e.getKey()), buildPerRarityJson(e.getValue()));
+        synchronized (RARITIES) {
+            for (Map.Entry<Integer, PerRarity> e : RARITIES.entrySet()) {
+                rarities.add(String.valueOf(e.getKey()), buildPerRarityJson(e.getValue()));
+            }
         }
         root.add("rarities", rarities);
         return root;
@@ -1235,7 +1245,9 @@ public class RarityStyleConfigManager {
     }
 
     private static void clearState() {
-        RARITIES.clear();
+        synchronized (RARITIES) {
+            RARITIES.clear();
+        }
         version = 1;
         enableBorder = true;
         enableTooltip = true;
