@@ -80,13 +80,13 @@ public final class RarityCoreAPI {
      * V14 不限制上限，8+ 等级颜色由 {@link RarityStyleConfigManager} 继承/回退规则处理。
      */
     public static final Map<Integer, String> DEFAULT_RGB_COLORS = Map.of(
-            RARITY_COMMON, "#A0A0A0",
-            RARITY_UNCOMMON, "#00AA00",
+            RARITY_COMMON, "#CCCCCC",
+            RARITY_UNCOMMON, "#55FF55",
             RARITY_RARE, "#00AAAA",
             RARITY_EPIC, "#C870FF",
             RARITY_LEGENDARY, "#FFAA00",
             RARITY_MYTHICAL, "#FF5555",
-            RARITY_UNIQUE, "#AA0000"
+            RARITY_UNIQUE, "#FF3333"
     );
 
     // ============================================================
