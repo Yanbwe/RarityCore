@@ -90,6 +90,19 @@ jobs:
             ./gradlew :v26_1:build :v26_2:build --no-daemon
           fi
 
+      - name: Publish to GitHub Packages
+        run: |
+          TARGET="${{ steps.targets.outputs.target }}"
+          if [ "$TARGET" = "26_1" ]; then
+            ./gradlew :v26_1:publish --no-daemon
+          elif [ "$TARGET" = "26_2" ]; then
+            ./gradlew :v26_2:publish --no-daemon
+          else
+            ./gradlew :v26_1:publish :v26_2:publish --no-daemon
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
