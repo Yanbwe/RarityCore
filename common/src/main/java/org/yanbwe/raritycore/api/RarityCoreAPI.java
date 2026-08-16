@@ -48,25 +48,10 @@ public final class RarityCoreAPI {
     // 稀有度等级常量
     // ============================================================
 
-    /** 普通 (Common)，内置预设档位 */
-    public static final int RARITY_COMMON = 1;
-    /** 稀有 (Uncommon)，内置预设档位 */
-    public static final int RARITY_UNCOMMON = 2;
-    /** 罕见 (Rare)，内置预设档位 */
-    public static final int RARITY_RARE = 3;
-    /** 史诗 (Epic)，内置预设档位 */
-    public static final int RARITY_EPIC = 4;
-    /** 传说 (Legendary)，内置预设档位 */
-    public static final int RARITY_LEGENDARY = 5;
-    /** 神话 (Mythical)，内置预设档位 */
-    public static final int RARITY_MYTHICAL = 6;
-    /** 唯一 (Unique)，内置预设档位 */
-    public static final int RARITY_UNIQUE = 7;
-
     /** 最小稀有度等级（V14 无上限，仅保证下限） */
-    public static final int MIN_RARITY = RARITY_COMMON;
+    public static final int MIN_RARITY = 1;
     /** 内置预设档位数量（默认 7），非稀有度上限 */
-    public static final int MAX_RARITY = RARITY_UNIQUE;
+    public static final int MAX_RARITY = 7;
 
     /** V14 API 版本号（供联动模组做特性探测，与模组版本解耦） */
     public static final int API_VERSION = 1400;
@@ -80,13 +65,13 @@ public final class RarityCoreAPI {
      * V14 不限制上限，8+ 等级颜色由 {@link RarityStyleConfigManager} 继承/回退规则处理。
      */
     public static final Map<Integer, String> DEFAULT_RGB_COLORS = Map.of(
-            RARITY_COMMON, "#CCCCCC",
-            RARITY_UNCOMMON, "#55FF55",
-            RARITY_RARE, "#00AAAA",
-            RARITY_EPIC, "#C870FF",
-            RARITY_LEGENDARY, "#FFAA00",
-            RARITY_MYTHICAL, "#FF5555",
-            RARITY_UNIQUE, "#FF3333"
+            1, "#CCCCCC",
+            2, "#55FF55",
+            3, "#00AAAA",
+            4, "#C870FF",
+            5, "#FFAA00",
+            6, "#FF5555",
+            7, "#FF3333"
     );
 
     // ============================================================

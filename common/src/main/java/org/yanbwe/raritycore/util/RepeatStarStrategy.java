@@ -14,7 +14,7 @@ public class RepeatStarStrategy implements StarDisplayStrategy {
     private final String character;
     
     public RepeatStarStrategy(String character) {
-        this.character = character != null && !character.isEmpty() ? character : "⭐";
+        this.character = character != null && !character.isEmpty() ? character : "★";
         LOGGER.debug("初始化重复模式策略,使用字符: {}", this.character);
     }
     

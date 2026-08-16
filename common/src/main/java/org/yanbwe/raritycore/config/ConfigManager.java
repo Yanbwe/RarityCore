@@ -3,6 +3,7 @@ package org.yanbwe.raritycore.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yanbwe.raritycore.util.RarityConstants;
+import org.yanbwe.raritycore.util.RarityValidator;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -58,6 +59,6 @@ public class ConfigManager {
      * 验证稀有度值是否有效
      */
     public static boolean isValidRarity(int rarity) {
-        return rarity >= RarityConstants.MIN_RARITY && rarity <= RarityConstants.MAX_RARITY;
+        return RarityValidator.isValidRarity(rarity);
     }
 }
