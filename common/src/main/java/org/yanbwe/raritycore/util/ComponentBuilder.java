@@ -17,31 +17,73 @@ public class ComponentBuilder {
     
     /**
      * 获取预构建的星星字符串
-     * @param count 星星数量
+     * @param rarity 星星数量/稀有度等级
      * @return 星星字符串,永不为null
      */
     @Nonnull
-    public static String getStars(int count) {
-        // 使用新的星星显示管理器
-        try {
-            StarDisplayManager manager =
-                StarDisplayManager.getInstance();
-            return manager.getStarDisplayString(count);
-        } catch (Exception e) {
-            // 回退到旧的实现方式
-            if (count <= 0) {
-                return "";
-            }
-            
-            // 简单直接构建星星字符串
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < count; i++) {
-                sb.append("⭐");
-            }
-            return sb.toString();
-        }
+    public static String getStars(int rarity) {
+        return getStars(rarity, org.yanbwe.raritycore.config.RarityStyleConfigManager.getStarConfig(rarity));
     }
-    
+
+    /**
+     * 按 {@link org.yanbwe.raritycore.config.RarityStyleConfigManager.StarStyle} 构建星星字符串。
+     * <p>
+     * <ul>
+     *   <li>mode 为 {@code custom} 且 custom 非空时，直接返回 custom 字符串；</li>
+     *   <li>否则按 repeatChar 重复 {@code max(1, rarity)} 次（默认字符为 {@code ★}）。</li>
+     * </ul>
+     *
+     * @param rarity    稀有度等级
+     * @param starStyle 星星样式配置
+     * @return 星星字符串,永不为null
+     */
+    @Nonnull
+    public static String getStars(int rarity, org.yanbwe.raritycore.config.RarityStyleConfigManager.StarStyle starStyle) {
+        if (starStyle == null) {
+            return "";
+        }
+
+        String mode = starStyle.mode();
+        String custom = starStyle.custom();
+        if (mode != null && mode.equalsIgnoreCase("custom") && custom != null && !custom.isEmpty()) {
+            return custom;
+        }
+
+        String repeatChar = starStyle.repeatChar();
+        if (repeatChar == null || repeatChar.isEmpty()) {
+            repeatChar = "★";
+        }
+
+        int effectiveRarity = Math.max(1, rarity);
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < effectiveRarity; i++) {
+            result.append(repeatChar);
+        }
+        return result.toString();
+    }
+
+    /**
+     * 构建统一稀有度工具提示组件（V14）。
+     * <p>
+     * 读取 {@link org.yanbwe.raritycore.config.RarityStyleConfigManager#getTooltip(int)}：
+     * show 为 false 时返回空组件；否则使用 {@link StringResolver#resolveComponent} 构建。
+     *
+     * @param rarity 稀有度等级
+     * @return 构建好的组件,永不为null
+     */
+    @Nonnull
+    public static MutableComponent buildRarityTooltipComponent(int rarity) {
+        org.yanbwe.raritycore.config.RarityStyleConfigManager.TooltipStyle tooltip =
+                org.yanbwe.raritycore.config.RarityStyleConfigManager.getTooltip(rarity);
+        if (tooltip == null || !tooltip.show()) {
+            return Component.empty();
+        }
+
+        String stars = getStars(rarity);
+        TextColor color = org.yanbwe.raritycore.config.RarityStyleConfigManager.getTextColor(rarity);
+        return StringResolver.resolveComponent(tooltip.content(), rarity, stars, tooltip.colored(), color, color);
+    }
+
     /**
      * 构建稀有度组件(高性能版本)
      * @param rarity 稀有度等级
@@ -54,7 +96,7 @@ public class ComponentBuilder {
     public static MutableComponent buildRarityComponent(int rarity, ChatFormatting color) {
         if (rarity <= 0) return Component.empty();
         String stars = getStars(rarity);
-        if (org.yanbwe.raritycore.config.ClientConfigManager.isEnableTooltipColor()) {
+        if (org.yanbwe.raritycore.config.RarityStyleConfigManager.isTooltipColorEnabled()) {
             return Component.literal(" " + stars).withStyle(color);
         } else {
             return Component.literal(" " + stars);
@@ -71,7 +113,7 @@ public class ComponentBuilder {
     public static MutableComponent buildRarityComponent(int rarity, TextColor color) {
         if (rarity <= 0) return Component.empty();
         String stars = getStars(rarity);
-        if (org.yanbwe.raritycore.config.ClientConfigManager.isEnableTooltipColor()) {
+        if (org.yanbwe.raritycore.config.RarityStyleConfigManager.isTooltipColorEnabled()) {
             return Component.literal(" " + stars).withStyle(Style.EMPTY.withColor(color));
         } else {
             return Component.literal(" " + stars);
@@ -121,11 +163,11 @@ public class ComponentBuilder {
             String stars = getStars(rarity);
             // $前缀表示翻译键
             String displayText = customText.startsWith("$") && customText.length() > 1
-                ? net.minecraft.network.chat.Component.translatable(customText.substring(1)).getString()
+                ? Component.translatable(customText.substring(1)).getString()
                 : customText;
             return displayText + stars;
         } else {
-            String localizedSuffix = net.minecraft.network.chat.Component.translatable("rarity.core.unusual.tips").getString();
+            String localizedSuffix = Component.translatable("rarity.core.unusual.tips").getString();
             String stars = getStars(rarity);
             return "[" + rarity + localizedSuffix + "] " + stars;
         }

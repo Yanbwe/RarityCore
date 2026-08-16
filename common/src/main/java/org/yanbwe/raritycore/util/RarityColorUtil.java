@@ -2,7 +2,7 @@ package org.yanbwe.raritycore.util;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.TextColor;
-import org.yanbwe.raritycore.config.RarityClientConfig;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public class RarityColorUtil {
     
-    /** 外部注入的自定义颜色（来自 RarityClientConfig.json） */
+    /** 外部注入的自定义颜色（来自 RarityStyleConfigManager） */
     private static final java.util.Map<Integer, Integer> CUSTOM_COLORS = new java.util.concurrent.ConcurrentHashMap<>();
 
     /** 注入自定义颜色 */
@@ -139,13 +139,13 @@ public class RarityColorUtil {
      * 根据稀有度等级获取对应的 RGB 颜色值 (0xRRGGBB packed int, 无 alpha 通道)。
      * 颜色值与现有 {@link #getRarityArgbColor(int)} 一致（去掉 alpha 通道）：
      * <ul>
-     *   <li>1 (普通) — 灰色 {@code #A0A0A0}</li>
-     *   <li>2 (稀有) — 绿色 {@code #00AA00}</li>
+     *   <li>1 (普通) — 灰色 {@code #CCCCCC}</li>
+     *   <li>2 (稀有) — 绿色 {@code #55FF55}</li>
      *   <li>3 (罕见) — 青蓝色 {@code #00AAAA}</li>
      *   <li>4 (史诗) — 浅紫色 {@code #C870FF}</li>
      *   <li>5 (传说) — 金色 {@code #FFAA00}</li>
      *   <li>6 (神话) — 红色 {@code #FF5555}</li>
-     *   <li>7 (唯一) — 深红色 {@code #AA0000}</li>
+     *   <li>7 (唯一) — 红色 {@code #FF3333}</li>
      * </ul>
      *
      * @param rarity 稀有度等级 (1-7)
@@ -156,25 +156,24 @@ public class RarityColorUtil {
         if (custom != null) {
             return custom;
         }
-        // RGB values correspond to existing getRarityArgbColor() with alpha stripped
         return switch (rarity) {
-            case 1 -> 0xA0A0A0;  // 普通 - 灰色
-            case 2 -> 0x00AA00;  // 稀有 - 绿色
+            case 1 -> 0xCCCCCC;  // 普通 - 灰色
+            case 2 -> 0x55FF55;  // 稀有 - 绿色
             case 3 -> 0x00AAAA;  // 罕见 - 青蓝色
             case 4 -> 0xC870FF;  // 史诗 - 浅紫色
             case 5 -> 0xFFAA00;  // 传说 - 金色
             case 6 -> 0xFF5555;  // 神话 - 红色
-            case 7 -> 0xAA0000;  // 唯一 - 深红色
+            case 7 -> 0xFF3333;  // 唯一 - 红色
             default -> DEFAULT_RGB;
         };
     }
 
     /**
-     * 根据稀有度等级获取 {@link TextColor}，优先使用 {@link RarityClientConfig} 中的自定义颜色。
+     * 根据稀有度等级获取 {@link TextColor}，优先使用 {@link RarityStyleConfigManager} 中的样式颜色。
      * <p>
      * 查询逻辑：
      * <ol>
-     *   <li>先通过 {@link RarityClientConfig#getTextColor(int)} 查询自定义颜色</li>
+     *   <li>先通过 {@link RarityStyleConfigManager#getTextColor(int)} 查询 V14 样式颜色</li>
      *   <li>若未配置自定义颜色，则回退到内置 RGB 映射（{@link #getRarityRgbColor(int)}）</li>
      * </ol>
      *
@@ -183,10 +182,10 @@ public class RarityColorUtil {
      */
     @Nonnull
     public static TextColor getRarityTextColor(int rarity) {
-        // 优先使用 RarityClientConfig 自定义颜色
-        TextColor custom = RarityClientConfig.getTextColor(rarity);
-        if (custom != null) {
-            return custom;
+        // 优先使用 RarityStyleConfigManager 样式颜色
+        TextColor styleColor = RarityStyleConfigManager.getTextColor(rarity);
+        if (styleColor != null) {
+            return styleColor;
         }
         // 回退到内置 RGB 映射
         return TextColor.fromRgb(getRarityRgbColor(rarity));
