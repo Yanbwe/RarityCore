@@ -33,7 +33,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          validate-wrapper: false
+          validate-wrappers: false
 
       - name: Resolve version
         id: version
