@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import org.yanbwe.raritycore.config.RarityClientConfig;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -22,11 +22,6 @@ public class ItemStackMixin {
     @Inject(method = "getHoverName", at = @At("RETURN"), cancellable = true)
     private void modifyHoverName(CallbackInfoReturnable<Component> cir) {
         ItemStack stack = (ItemStack) (Object) this;
-        
-        // 检查是否启用物品名称变色功能
-        if (!org.yanbwe.raritycore.config.ClientConfigManager.isEnableItemNameColor()) {
-            return;
-        }
         
         // 获取物品的稀有度(支持 NBT 匹配,使用物品堆缓存)
         Integer rarity = org.yanbwe.raritycore.cache.RenderCacheManager.getCachedRarity(stack);
@@ -43,24 +38,21 @@ public class ItemStackMixin {
         if (rarity == null || rarity < 1) {
             return; // 直接返回,不修改名称颜色
         }
-        
+
+        // 根据稀有度样式配置判断该稀有度是否启用名称颜色
+        if (!RarityStyleConfigManager.isNameColorEnabled(rarity)) {
+            return;
+        }
+
         // 如果启用了跳过未配置物品且物品没有配置稀有度,则不修改名称颜色
         // 注意:需要检查物品是否真的没有配置,而不是默认的稀有度1
         Item item = stack.getItem();
-        if (org.yanbwe.raritycore.config.ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
+        if (RarityStyleConfigManager.isNoRaritySkip() && !hasConfiguredRarity(item)) {
             return;
         }
-        
 
-
-        // Check per-level nameColor config — skip if disabled for this rarity level
-        // Pass raw rarity value; RarityClientConfig handles >7 fallback internally
-        if (!RarityClientConfig.getLevelConfig(rarity).nameColor()) {
-            return;
-        }
-        
         // 如果是普通稀有度(1),则使用白色,但不添加格式化代码(默认颜色)
-        if (rarity == RarityConstants.RARITY_COMMON) {
+        if (rarity == RarityConstants.MIN_RARITY) {
             return;
         }
         

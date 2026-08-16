@@ -9,7 +9,7 @@ import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.config.ClientConfigManager;
-import org.yanbwe.raritycore.config.RarityClientConfig;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
 import org.yanbwe.raritycore.util.RarityColorUtil;
 import org.yanbwe.raritycore.util.RarityConstants;
@@ -17,7 +17,7 @@ import org.yanbwe.raritycore.util.RarityConstants;
 public class ItemBorderRenderer {
 
     public static void renderRarityBorder(GuiGraphicsExtractor guiGraphics, ItemStack itemStack, int x, int y) {
-        if (!ClientConfigManager.isEnableItemBorderRendering()) {
+        if (!RarityStyleConfigManager.isBorderEnabled()) {
             return;
         }
 
@@ -42,21 +42,20 @@ public class ItemBorderRenderer {
         }
 
         if (rarity == null) {
-            rarity = RarityConstants.RARITY_COMMON;
+            rarity = RarityConstants.MIN_RARITY;
         }
 
         Item item = itemStack.getItem();
-        if (ClientConfigManager.isSkipUnconfiguredItems() && !hasConfiguredRarity(item)) {
+        if (RarityStyleConfigManager.isNoRaritySkip() && !hasConfiguredRarity(item)) {
             return;
         }
 
-        // Check per-level renderer config — skip if disabled for this rarity level
-        // Pass raw rarity value; RarityClientConfig handles >7 fallback internally
-        if (!RarityClientConfig.getLevelConfig(rarity).renderer()) {
+        // Check per-level border config — skip if disabled for this rarity level
+        if (!RarityStyleConfigManager.getBorder(rarity).show()) {
             return;
         }
 
-        if (ClientConfigManager.isUseTextureBorder()) {
+        if (RarityStyleConfigManager.getBorder(rarity).useTexture()) {
             renderTextureBorder(guiGraphics, rarity, x, y);
         } else {
             renderColorBorder(guiGraphics, rarity, x, y);
@@ -64,8 +63,8 @@ public class ItemBorderRenderer {
     }
 
     private static void renderTextureBorder(GuiGraphicsExtractor guiGraphics, int rarity, int x, int y) {
-        // Use custom texture from RarityClientConfig if configured, else default path
-        String customTexture = RarityClientConfig.getLevelConfig(rarity).texture();
+        // Use custom texture from RarityStyleConfigManager if configured, else default path
+        String customTexture = RarityStyleConfigManager.getBorderTexture(rarity);
         Identifier textureLocation;
         if (customTexture != null && !customTexture.isEmpty()) {
             textureLocation = Identifier.parse(customTexture);
@@ -84,7 +83,7 @@ public class ItemBorderRenderer {
     private static void renderColorBorder(GuiGraphicsExtractor guiGraphics, int rarity, int x, int y) {
         int borderColor = 0xFF000000 | RarityColorUtil.getRarityRgbColor(rarity);
 
-        if (ClientConfigManager.getItemBorderStyle() == 1) {
+        if (RarityStyleConfigManager.getBorder(rarity).style() == 1) {
             int alphaMask = 0x80000000;
             int translucentColor = (borderColor & 0x00FFFFFF) | alphaMask;
 
