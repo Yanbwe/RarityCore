@@ -1,9 +1,5 @@
 package org.yanbwe.raritycore.command;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.ChatFormatting;
@@ -11,15 +7,12 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import org.yanbwe.raritycore.RarityCore;
-import org.yanbwe.raritycore.config.ClientConfigManager;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.edit.EditModeManager;
 import org.yanbwe.raritycore.edit.EditModeManager.EditMode;
 import org.yanbwe.raritycore.network.SyncManager;
+import org.yanbwe.raritycore.util.RarityConstants;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Set;
 
 /**
@@ -278,49 +271,16 @@ public class UtilityCommands {
      * 切换纹理边框启用状态
      */
     private static int toggleTextureBorder(CommandSourceStack source) {
-        boolean currentState = ClientConfigManager.isUseTextureBorder();
-        boolean newState = !currentState;
-        ClientConfigManager.setUseTextureBorder(newState);
-
-        // 尝试保存到配置文件
         try {
-            Path configDir = org.yanbwe.raritycore.config.ConfigManager.getConfigDirPath();
-            Files.createDirectories(configDir);
-
-            Path configFile = ClientConfigManager.getClientConfigPath();
-
-            // 读取现有配置
-            JsonObject jsonObject;
-            if (Files.exists(configFile)) {
-                String content = Files.readString(configFile);
-                if (!content.trim().isEmpty()) {
-                    try {
-                        jsonObject = JsonParser.parseString(content).getAsJsonObject();
-                    } catch (Exception e) {
-                        RarityCore.LOGGER.warn("Failed to parse config file, will recreate", e);
-                        jsonObject = new JsonObject();
-                    }
-                } else {
-                    jsonObject = new JsonObject();
-                }
-            } else {
-                jsonObject = new JsonObject();
-            }
-
-            // 更新配置
-            jsonObject.addProperty("useTextureBorder", newState);
-
-            // 写入配置文件
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            try (FileWriter writer = new FileWriter(configFile.toFile())) {
-                gson.toJson(jsonObject, writer);
-            }
+            boolean currentState = RarityStyleConfigManager.isBorderUseTexture(RarityConstants.MIN_RARITY);
+            boolean newState = !currentState;
+            RarityStyleConfigManager.setAllBorderUseTexture(newState);
 
             source.sendSuccess(() -> Component.translatable("rarity.core.texture_border_toggle_success",
                 newState ? Component.translatable("rarity.core.enabled") : Component.translatable("rarity.core.disabled")).withStyle(ChatFormatting.GREEN), false);
             return 1;
-        } catch (IOException e) {
-            RarityCore.LOGGER.error("Failed to save client config", e);
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Failed to toggle texture border", e);
             source.sendSuccess(() -> Component.translatable("rarity.core.texture_border_toggle_error").withStyle(ChatFormatting.RED), false);
             return 0;
         }

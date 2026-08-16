@@ -8,6 +8,7 @@ import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.FinalRarityConfigFolderLoader;
 import org.yanbwe.raritycore.config.RarityConfigLoader;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataConfigLoader;
 import org.yanbwe.raritycore.itemdatamatching.SimpleItemDataCache;
@@ -186,6 +187,9 @@ public class ConfigReloadService {
             // 重新加载客户端配置
             ClientConfigManager.loadClientConfig();
             
+            // 重新加载 V14 样式配置（RarityStyle.json）
+            RarityStyleConfigManager.reload();
+
             // 通知星星显示管理器重新加载配置
             StarDisplayManager.getInstance().reloadConfiguration();
             

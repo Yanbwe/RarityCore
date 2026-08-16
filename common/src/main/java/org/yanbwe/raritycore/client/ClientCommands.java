@@ -13,7 +13,7 @@ import org.yanbwe.raritycore.cache.IdCacheManager;
 import org.yanbwe.raritycore.cache.RarityCacheCoordinator;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
 import org.yanbwe.raritycore.config.ClientConfigManager;
-import org.yanbwe.raritycore.config.RarityClientConfig;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.util.StarDisplayManager;
 
 /**
@@ -120,10 +120,10 @@ public class ClientCommands {
                 .executes(context -> {
                     // 重载 client.json
                     ClientConfigManager.loadClientConfig();
+                    // 重载 V14 样式配置（RarityStyle.json）
+                    RarityStyleConfigManager.reload();
                     // 重载星星显示
                     StarDisplayManager.getInstance().reloadConfiguration();
-                    // 重载 RarityClientConfig.json
-                    RarityClientConfig.reloadRarityClientConfig();
                     // 处理 skipUnconfiguredItems 变更
                     ItemBorderRenderer.handleSkipConfigChange();
                     RarityTooltipHandler.handleSkipConfigChange();

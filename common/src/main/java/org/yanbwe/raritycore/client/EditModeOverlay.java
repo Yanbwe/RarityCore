@@ -10,6 +10,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.lwjgl.glfw.GLFW;
 import org.yanbwe.raritycore.RarityCore;
+import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.edit.EditModeManager;
 import org.yanbwe.raritycore.util.InputHelper;
 import org.yanbwe.raritycore.util.RarityColorUtil;
@@ -282,10 +283,9 @@ public class EditModeOverlay {
         if (rarity < 1) {
             return RarityColorUtil.getRarityArgbColor(1);
         }
-        if (rarity <= 7) {
-            return RarityColorUtil.getRarityArgbColor(rarity);
-        }
-        return RarityColorUtil.getRarityArgbColor(7);
+        net.minecraft.network.chat.TextColor textColor = RarityStyleConfigManager.getTextColor(rarity);
+        int rgb = textColor != null ? textColor.getValue() : RarityColorUtil.getRarityRgbColor(rarity);
+        return 0xFF000000 | (rgb & 0xFFFFFF);
     }
 
 }
