@@ -312,7 +312,6 @@ public class RarityStyleConfigManager {
     /** 生成 V14 schema 的默认 RarityStyle.json（JsonObject） */
     public static JsonObject createDefaultConfigJson() {
         JsonObject root = new JsonObject();
-        root.addProperty("version", API_VERSION);
         root.addProperty("enableBorder", true);
         root.addProperty("enableTooltip", true);
         root.addProperty("tooltipColorEnabled", true);
@@ -357,13 +356,27 @@ public class RarityStyleConfigManager {
         root.add("defaults", defaults);
 
         JsonObject rarities = new JsonObject();
-        rarities.addProperty("1", "#CCCCCC");
-        rarities.addProperty("2", "#55FF55");
-        rarities.addProperty("3", "#00AAAA");
-        rarities.addProperty("4", "#C870FF");
-        rarities.addProperty("5", "#FFAA00");
-        rarities.addProperty("6", "#FF5555");
-        rarities.addProperty("7", "#FF3333");
+        JsonObject entry1 = new JsonObject();
+        entry1.addProperty("color", "#CCCCCC");
+        rarities.add("1", entry1);
+        JsonObject entry2 = new JsonObject();
+        entry2.addProperty("color", "#55FF55");
+        rarities.add("2", entry2);
+        JsonObject entry3 = new JsonObject();
+        entry3.addProperty("color", "#55FFFF");
+        rarities.add("3", entry3);
+        JsonObject entry4 = new JsonObject();
+        entry4.addProperty("color", "#FF55FF");
+        rarities.add("4", entry4);
+        JsonObject entry5 = new JsonObject();
+        entry5.addProperty("color", "#FFCC00");
+        rarities.add("5", entry5);
+        JsonObject entry6 = new JsonObject();
+        entry6.addProperty("color", "#FF6666");
+        rarities.add("6", entry6);
+        JsonObject entry7 = new JsonObject();
+        entry7.addProperty("color", "#FF3333");
+        rarities.add("7", entry7);
         root.add("rarities", rarities);
 
         return root;
@@ -391,7 +404,6 @@ public class RarityStyleConfigManager {
     // ================================================================
 
     private static void parseRoot(JsonObject root) {
-        version = getInt(root, "version", 1);
         enableBorder = getBoolean(root, "enableBorder", true);
         enableTooltip = getBoolean(root, "enableTooltip", true);
         tooltipColorEnabled = getBoolean(root, "tooltipColorEnabled", true);
@@ -1068,7 +1080,6 @@ public class RarityStyleConfigManager {
 
     private static JsonObject buildConfigJson() {
         JsonObject root = new JsonObject();
-        root.addProperty("version", version);
         root.addProperty("enableBorder", enableBorder);
         root.addProperty("enableTooltip", enableTooltip);
         root.addProperty("tooltipColorEnabled", tooltipColorEnabled);
