@@ -90,7 +90,7 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
-            artifactId = "${mod_id}-26.2"
+            artifactId = "${mod_id}"
         }
     }
     repositories {
