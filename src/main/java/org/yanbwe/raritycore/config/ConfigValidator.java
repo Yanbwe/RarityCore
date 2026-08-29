@@ -127,6 +127,7 @@ public class ConfigValidator {
         configObject.addProperty("enableCacheSystem", true);
         configObject.addProperty("enableSophisticatedCoreAdapter", true);
         configObject.addProperty("enableIronSpellsAdapter", true);
+        configObject.addProperty("enableFtbLibraryAdapter", true);
         return configObject;
     }
 

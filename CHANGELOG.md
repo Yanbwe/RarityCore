@@ -1,5 +1,20 @@
 # RarityCore 更新日志
 
+## [1211.14.6] - 2026-08-28
+
+### 新增
+- FTB Library 兼容（issue #22）：FTB Quests 任务界面中的任务图标、奖励图标、奖励表图标现在会渲染稀有度边框
+  - 新增软依赖 mixin `ftblibrary.ItemIconMixin`（`@Pseudo`，仿照 Refined Storage 兼容方案），挂载 FTB Library `ItemIcon#draw / #drawStatic`
+  - 边框按图标实际绘制尺寸缩放渲染（支持非 16x16 尺寸，如任务面板 12x12 / 32x32）
+  - 渲染期间抑制 `GuiGraphicsMixin` 内部钩子，避免边框重复绘制
+  - 名称颜色经由 `ItemStack#getHoverName` 已全局生效，FTB 界面无需额外处理
+
+### 配置
+- `client.json` 新增 `enableFtbLibraryAdapter`（默认开启），可禁用 FTB Library 稀有度边框联动
+
+### 构建与其他
+- 更新模组版本至 1211.14.6
+
 ## [1211.14.5] - 2026-08-10
 
 ### 修复

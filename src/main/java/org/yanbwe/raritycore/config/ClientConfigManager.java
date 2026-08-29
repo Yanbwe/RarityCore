@@ -26,6 +26,7 @@ public class ClientConfigManager {
     private static boolean enableCacheSystem = RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM;
     private static boolean enableSophisticatedCoreAdapter = RarityConstants.DEFAULT_ENABLE_SOPHISTICATED_CORE_ADAPTER;
     private static boolean enableIronSpellsAdapter = RarityConstants.DEFAULT_ENABLE_IRON_SPELLS_ADAPTER;
+    private static boolean enableFtbLibraryAdapter = RarityConstants.DEFAULT_ENABLE_FTB_LIBRARY_ADAPTER;
 
     // 配置文件路径
     private static final Path CONFIG_DIR = Paths.get(RarityConstants.CONFIG_DIR_PARENT).resolve(RarityConstants.CONFIG_DIR_NAME);
@@ -50,7 +51,7 @@ public class ClientConfigManager {
             return;
         }
 
-        // 加载 client.json（仅 enableCacheSystem + enableSophisticatedCoreAdapter + enableIronSpellsAdapter）
+        // 加载 client.json（仅 enableCacheSystem + enableSophisticatedCoreAdapter + enableIronSpellsAdapter + enableFtbLibraryAdapter）
         loadClientConfig();
     }
 
@@ -80,7 +81,7 @@ public class ClientConfigManager {
 
     /**
      * 从文件加载客户端配置。
-     * 自动检测并裁剪掉旧版配置项，仅保留 enableCacheSystem、enableSophisticatedCoreAdapter 与 enableIronSpellsAdapter。
+     * 自动检测并裁剪掉旧版配置项，仅保留 enableCacheSystem、enableSophisticatedCoreAdapter、enableIronSpellsAdapter 与 enableFtbLibraryAdapter。
      */
     private static void loadClientConfigFromFile() {
         try (BufferedReader reader = Files.newBufferedReader(CLIENT_CONFIG_FILE)) {
@@ -116,20 +117,28 @@ public class ClientConfigManager {
                     enableIronSpellsAdapter = RarityConstants.DEFAULT_ENABLE_IRON_SPELLS_ADAPTER;
                 }
 
+                // 读取 FTB Library 适配开关
+                if (jsonObject.has("enableFtbLibraryAdapter")) {
+                    enableFtbLibraryAdapter = jsonObject.get("enableFtbLibraryAdapter").getAsBoolean();
+                } else {
+                    enableFtbLibraryAdapter = RarityConstants.DEFAULT_ENABLE_FTB_LIBRARY_ADAPTER;
+                }
+
                 // 检测到旧版配置项存在，自动裁剪并重新保存
                 if (hasObsoleteKeys) {
                     RarityCore.LOGGER.info("Detected obsolete keys in client.json, trimming...");
                     saveClientConfig();
                 }
 
-                RarityCore.LOGGER.info("Client config loaded: enableCacheSystem={}, enableSophisticatedCoreAdapter={}, enableIronSpellsAdapter={}",
-                    enableCacheSystem, enableSophisticatedCoreAdapter, enableIronSpellsAdapter);
+                RarityCore.LOGGER.info("Client config loaded: enableCacheSystem={}, enableSophisticatedCoreAdapter={}, enableIronSpellsAdapter={}, enableFtbLibraryAdapter={}",
+                    enableCacheSystem, enableSophisticatedCoreAdapter, enableIronSpellsAdapter, enableFtbLibraryAdapter);
             }
         } catch (Exception e) {
             RarityCore.LOGGER.error("Error loading client config file, using defaults: {}", CLIENT_CONFIG_FILE, e);
             enableCacheSystem = RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM;
             enableSophisticatedCoreAdapter = RarityConstants.DEFAULT_ENABLE_SOPHISTICATED_CORE_ADAPTER;
             enableIronSpellsAdapter = RarityConstants.DEFAULT_ENABLE_IRON_SPELLS_ADAPTER;
+            enableFtbLibraryAdapter = RarityConstants.DEFAULT_ENABLE_FTB_LIBRARY_ADAPTER;
             createDefaultClientConfig();
         }
     }
@@ -158,12 +167,13 @@ public class ClientConfigManager {
         configObject.addProperty("enableCacheSystem", enableCacheSystem);
         configObject.addProperty("enableSophisticatedCoreAdapter", enableSophisticatedCoreAdapter);
         configObject.addProperty("enableIronSpellsAdapter", enableIronSpellsAdapter);
+        configObject.addProperty("enableFtbLibraryAdapter", enableFtbLibraryAdapter);
 
         try {
             try (Writer writer = new OutputStreamWriter(new FileOutputStream(CLIENT_CONFIG_FILE.toFile()), StandardCharsets.UTF_8)) {
                 GSON.toJson(configObject, writer);
-                RarityCore.LOGGER.info("Client config saved: enableCacheSystem={}, enableSophisticatedCoreAdapter={}, enableIronSpellsAdapter={}",
-                    enableCacheSystem, enableSophisticatedCoreAdapter, enableIronSpellsAdapter);
+                RarityCore.LOGGER.info("Client config saved: enableCacheSystem={}, enableSophisticatedCoreAdapter={}, enableIronSpellsAdapter={}, enableFtbLibraryAdapter={}",
+                    enableCacheSystem, enableSophisticatedCoreAdapter, enableIronSpellsAdapter, enableFtbLibraryAdapter);
             }
         } catch (IOException e) {
             RarityCore.LOGGER.error("Cannot save client config file: {}", CLIENT_CONFIG_FILE, e);
@@ -216,6 +226,20 @@ public class ClientConfigManager {
     public static void setEnableIronSpellsAdapter(boolean enable) {
         enableIronSpellsAdapter = enable;
         notifyCacheOfConfigChange();
+    }
+
+    /**
+     * 获取是否启用 FTB Library 适配
+     */
+    public static boolean isEnableFtbLibraryAdapter() {
+        return enableFtbLibraryAdapter;
+    }
+
+    /**
+     * 设置是否启用 FTB Library 适配
+     */
+    public static void setEnableFtbLibraryAdapter(boolean enable) {
+        enableFtbLibraryAdapter = enable;
     }
 
     // ================================================================

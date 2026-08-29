@@ -80,4 +80,7 @@ public class RarityConstants {
 
     // Iron's Spells 适配
     public static final boolean DEFAULT_ENABLE_IRON_SPELLS_ADAPTER = true;
+
+    // FTB Library 适配（FTB Quests 等基于 FTB Library 的界面）
+    public static final boolean DEFAULT_ENABLE_FTB_LIBRARY_ADAPTER = true;
 }

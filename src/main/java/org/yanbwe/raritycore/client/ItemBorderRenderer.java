@@ -16,8 +16,19 @@ import org.yanbwe.raritycore.util.RarityConstants;
 public class ItemBorderRenderer {
 
     public static void renderRarityBorder(GuiGraphics guiGraphics, ItemStack itemStack, int x, int y) {
+        renderRarityBorderScaled(guiGraphics, itemStack, x, y, 16, 16);
+    }
+
+    /**
+     * 渲染任意尺寸的稀有度边框
+     * 用于 FTB Library 等自定义 GUI 框架（图标可能以非 16x16 尺寸绘制），
+     * 边框贴图按目标区域尺寸缩放绘制，纯色边框按区域尺寸描边
+     */
+    public static void renderRarityBorderScaled(GuiGraphics guiGraphics, ItemStack itemStack, int x, int y, int width, int height) {
+        if (width <= 0 || height <= 0) return;
+
         RarityStyleConfigManager styleMgr = RarityStyleConfigManager.getInstance();
-        
+
         if (!styleMgr.isBorderEnabled()) return;
         if (itemStack.isEmpty()) return;
 
@@ -42,47 +53,47 @@ public class ItemBorderRenderer {
 
         if (border.useTexture) {
             String texturePath = styleMgr.getBorderTexture(rarity);
-            renderTextureBorder(guiGraphics, texturePath, x, y, rarity);
+            renderTextureBorder(guiGraphics, texturePath, x, y, width, height, rarity);
         } else {
             int rgbColor = styleMgr.resolveColor(rarity);
-            renderColorBorder(guiGraphics, rgbColor, x, y, border.style);
+            renderColorBorder(guiGraphics, rgbColor, x, y, width, height, border.style);
         }
     }
 
-    private static void renderTextureBorder(GuiGraphics guiGraphics, String texturePath, int x, int y, int fallbackRarity) {
+    private static void renderTextureBorder(GuiGraphics guiGraphics, String texturePath, int x, int y, int width, int height, int fallbackRarity) {
         ResourceLocation textureLocation;
         try {
             textureLocation = ResourceLocation.parse(texturePath);
         } catch (Exception e) {
             RarityCore.LOGGER.warn("Failed to parse texture path '{}', falling back to color border", texturePath);
             RarityStyleConfigManager mgr = RarityStyleConfigManager.getInstance();
-            renderColorBorder(guiGraphics, mgr.resolveColor(fallbackRarity), x, y, mgr.resolveBorder(fallbackRarity).style);
+            renderColorBorder(guiGraphics, mgr.resolveColor(fallbackRarity), x, y, width, height, mgr.resolveBorder(fallbackRarity).style);
             return;
         }
         try {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
-            guiGraphics.blit(textureLocation, x, y, 0, 0, 16, 16, 16, 16);
+            guiGraphics.blit(textureLocation, x, y, width, height, 0, 0, 16, 16, 16, 16);
         } catch (Exception e) {
             RarityCore.LOGGER.warn("Failed to load texture '{}', falling back to color border", texturePath);
             RarityStyleConfigManager mgr = RarityStyleConfigManager.getInstance();
-            renderColorBorder(guiGraphics, mgr.resolveColor(fallbackRarity), x, y, mgr.resolveBorder(fallbackRarity).style);
+            renderColorBorder(guiGraphics, mgr.resolveColor(fallbackRarity), x, y, width, height, mgr.resolveBorder(fallbackRarity).style);
         }
     }
 
-    private static void renderColorBorder(GuiGraphics guiGraphics, int rgbColor, int x, int y, int style) {
+    private static void renderColorBorder(GuiGraphics guiGraphics, int rgbColor, int x, int y, int width, int height, int style) {
         int argbColor = 0xFF000000 | (rgbColor & 0x00FFFFFF);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         if (style == 1) {
             int alphaMask = 0x80000000;
             int translucentColor = (argbColor & 0x00FFFFFF) | alphaMask;
-            guiGraphics.fill(x, y, x + 16, y + 16, translucentColor);
+            guiGraphics.fill(x, y, x + width, y + height, translucentColor);
         } else {
-            guiGraphics.fill(x, y, x + 16, y + 1, argbColor);
-            guiGraphics.fill(x, y + 15, x + 16, y + 16, argbColor);
-            guiGraphics.fill(x, y, x + 1, y + 16, argbColor);
-            guiGraphics.fill(x + 15, y, x + 16, y + 16, argbColor);
+            guiGraphics.fill(x, y, x + width, y + 1, argbColor);
+            guiGraphics.fill(x, y + height - 1, x + width, y + height, argbColor);
+            guiGraphics.fill(x, y, x + 1, y + height, argbColor);
+            guiGraphics.fill(x + width - 1, y, x + width, y + height, argbColor);
         }
     }
 

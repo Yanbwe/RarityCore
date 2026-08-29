@@ -3,6 +3,7 @@ package org.yanbwe.raritycore.compat;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter;
 import org.yanbwe.raritycore.compat.colortooltips.ColorTooltipsCompat;
+import org.yanbwe.raritycore.compat.ftblibrary.FtbLibraryCompat;
 import org.yanbwe.raritycore.compat.refinedstorage.RefinedStorageCompat;
 import org.yanbwe.raritycore.compat.ironsspells.IronSpellsAdapter;
 import org.yanbwe.raritycore.config.ClientConfigManager;
@@ -66,6 +67,18 @@ public class CompatibilityManager {
             }
         } else {
             RarityCore.LOGGER.info("Iron's Spells compatibility adapter disabled by client config");
+        }
+
+        // 初始化 FTB Library 适配器（可在 client.json 中通过 enableFtbLibraryAdapter 禁用）
+        // 实际的边框渲染兼容通过 ftblibrary.ItemIconMixin 实现，此处仅做检测与日志
+        if (ClientConfigManager.isEnableFtbLibraryAdapter()) {
+            try {
+                FtbLibraryCompat.initialize();
+            } catch (Exception e) {
+                RarityCore.LOGGER.error("Failed to initialize FTB Library compatibility adapter", e);
+            }
+        } else {
+            RarityCore.LOGGER.info("FTB Library compatibility adapter disabled by client config");
         }
 
         // 初始化 colortooltips 适配器
