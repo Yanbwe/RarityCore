@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.yanbwe.raritycore.client.ItemBorderRenderer;
 import org.yanbwe.raritycore.client.RarityExclusionManager;
+import org.yanbwe.raritycore.compat.ftblibrary.ItemIconAccessor;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 
 /**
