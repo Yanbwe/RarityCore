@@ -1,5 +1,13 @@
 # RarityCore Changelog
 
+## [1211.14.6] - 2026-08-28
+
+### Added
+- FTB Library compatibility (issue #22): task icons, reward icons, and reward table icons inside the FTB Quests quest screen now render rarity borders
+
+### Config
+- Added `enableFtbLibraryAdapter` to `client.json` (enabled by default) to disable the FTB Library rarity border integration
+
 ## [1211.14.5] - 2026-08-10
 
 ### Fixed
