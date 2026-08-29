@@ -70,7 +70,7 @@ public class CompatibilityManager {
         }
 
         // 初始化 FTB Library 适配器（可在 client.json 中通过 enableFtbLibraryAdapter 禁用）
-        // 实际的边框渲染兼容通过 ftblibrary.ItemIconMixin 实现，此处仅做检测与日志
+        // 实际的边框渲染兼容通过 ftblibrary.GuiHelperMixin 实现，此处仅做检测与日志
         if (ClientConfigManager.isEnableFtbLibraryAdapter()) {
             try {
                 FtbLibraryCompat.initialize();

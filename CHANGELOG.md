@@ -4,9 +4,8 @@
 
 ### 新增
 - FTB Library 兼容（issue #22）：FTB Quests 任务界面中的任务图标、奖励图标、奖励表图标现在会渲染稀有度边框
-  - 新增软依赖 mixin `ftblibrary.ItemIconMixin`（`@Pseudo`，仿照 Refined Storage 兼容方案），挂载 FTB Library `ItemIcon#draw / #drawStatic`
-  - 边框按图标实际绘制尺寸缩放渲染（支持非 16x16 尺寸，如任务面板 12x12 / 32x32）
-  - 渲染期间抑制 `GuiGraphicsMixin` 内部钩子，避免边框重复绘制
+  - 新增软依赖 mixin `ftblibrary.GuiHelperMixin`（`@Pseudo`，与 1.20.1 版本实现一致），挂载 FTB Library `GuiHelper#drawItem`
+  - FTB 界面所有物品图标（含 `drawStatic` 路径）均汇聚于该方法，边框随 pose 自动对齐与缩放
   - 名称颜色经由 `ItemStack#getHoverName` 已全局生效，FTB 界面无需额外处理
 
 ### 配置

@@ -13,7 +13,7 @@
     "AbstractContainerScreenMixin",
     "GuiGraphicsMixin",
     "GuiMixin",
-    "ftblibrary.ItemIconMixin",
+    "ftblibrary.GuiHelperMixin",
     "refinedstorage.BaseScreenMixin"
   ],
   "injectors": {
