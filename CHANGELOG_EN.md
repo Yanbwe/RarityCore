@@ -1,5 +1,13 @@
 # RarityCore Changelog
 
+## [1211.14.7]
+
+### Fixed
+- Fixed silently failing `equals` conditions on numeric/boolean values: NBT has no boolean type, so vanilla and most mods store flags as `ByteTag` (`getAsString()` returns `1b`/`0b`), which `equals(1)` and `equals(true)` could never match through string comparison
+- Equality comparison is now type-aware: numeric conditions only compare against numeric tags (a numeric expectation can no longer match the text of a string tag such as `StringTag("32")`), boolean conditions accept both `1b`/`0b` and `1`/`0` as well as numeric forms like `Double(1.0)`
+- Packets produced by older builds, where the expected value was stringified (`"1"`, `"true"`), still match correctly, so no reconnect is required
+
+
 ## [1211.14.6] - 2026-08-28
 
 ### Added
