@@ -1,5 +1,14 @@
 # RarityCore Changelog
 
+## [260x.14.1]
+
+### Fixed
+- Fixed silently failing `equals` conditions on numeric/boolean values: item data flags are commonly stored numerically (legacy NBT tags resolve to `Double(1.0/0.0)`, boolean components resolve to `Boolean`), so `equals(true)` and `equals(1)` could never match through string comparison (`"1.0"` vs `"true"`)
+- Equality comparison is now type-aware: numeric expectations compare numerically against `Double/Integer/Long/Short` (0.001 tolerance), and boolean expectations accept both `Boolean` and numeric `0`/`1`
+- Packets produced by older builds, where the expected value was stringified (`"1"`, `"true"`), still match correctly
+- Strings and numbers are no longer conflated: `equals(3)` no longer matches the text of a string component (numeric values under `tag.xxx` still compare numerically)
+
+
 ## [260x.14.0] - 2026-08-16
 
 ### Added
