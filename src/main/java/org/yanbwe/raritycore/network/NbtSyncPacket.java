@@ -266,14 +266,14 @@ public class NbtSyncPacket {
 
             if (condition instanceof org.yanbwe.raritycore.nbtmatching.EqualsCondition) {
                 Object value = ((org.yanbwe.raritycore.nbtmatching.EqualsCondition) condition).getExpectedValue();
+                // 保留原始类型：Number / Boolean 必须以 JSON 数字、布尔写入，
+                // 否则客户端反序列化后得到字符串，数值型 equals 条件会静默失效
                 if (value == null) {
                     data.addProperty("value", "null");
-                } else if (value instanceof String) {
-                    data.addProperty("value", (String) value);
-                } else if (value instanceof Number) {
-                    data.addProperty("value", (Number) value);
                 } else if (value instanceof Boolean) {
                     data.addProperty("value", (Boolean) value);
+                } else if (value instanceof Number) {
+                    data.addProperty("value", (Number) value);
                 } else {
                     data.addProperty("value", value.toString());
                 }
@@ -299,12 +299,35 @@ public class NbtSyncPacket {
                 // 使用Gson安全解析JSON数据
                 JsonObject data = com.google.gson.JsonParser.parseString(valueData).getAsJsonObject();
                 if (data.has("value")) {
-                    return new org.yanbwe.raritycore.nbtmatching.EqualsCondition(path, data.get("value").toString(), description);
+                    com.google.gson.JsonElement valueElement = data.get("value");
+                    return new org.yanbwe.raritycore.nbtmatching.EqualsCondition(
+                        path, readEqualsValue(valueElement), description);
                 }
             } catch (Exception e) {
                 RarityCore.LOGGER.warn("反序列化等值条件时出错: {}", e.getMessage());
             }
             return null;
+        }
+
+        /**
+         * 读取等值条件的期望值，保留原始类型
+         * 必须按 JSON 基本类型还原为 Number / Boolean / String：
+         * 若统一用 toString() 转成字符串，客户端会得到 "32"、"true" 这类字符串，
+         * 与 NBT 的 IntTag / ByteTag（getAsString 为 32 / 1b）比较时静默不匹配，
+         * 表现为规则在本地加载时生效、经服务端同步后失效
+         */
+        private Object readEqualsValue(com.google.gson.JsonElement valueElement) {
+            if (valueElement.isJsonPrimitive()) {
+                com.google.gson.JsonPrimitive primitive = valueElement.getAsJsonPrimitive();
+                if (primitive.isBoolean()) {
+                    return primitive.getAsBoolean();
+                }
+                if (primitive.isNumber()) {
+                    return primitive.getAsNumber();
+                }
+                return primitive.getAsString();
+            }
+            return valueElement.toString();
         }
 
         private NbtCondition deserializeRangeCondition() {

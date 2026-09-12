@@ -7,7 +7,9 @@ package org.yanbwe.raritycore.network;
 public class NetworkConstants {
     
     // 协议版本号
-    public static final String PROTOCOL_VERSION = "1.1.0";
+    // 1.2.0：NBT 规则同步包改为保留条件值原始类型（Number/Boolean），
+    //        旧版本因统一字符串化导致客户端数值型 equals 条件静默失效，故提升版本阻止新旧端混连
+    public static final String PROTOCOL_VERSION = "1.2.0";
     
     // 网络通道名称
     public static final String RARITY_SYNC_CHANNEL = "rarity_sync";

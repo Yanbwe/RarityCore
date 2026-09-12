@@ -2,6 +2,7 @@ package org.yanbwe.raritycore.nbtmatching;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import org.yanbwe.raritycore.RarityCore;
 
 import java.util.List;
 
@@ -34,7 +35,21 @@ public class EqualsCondition extends NbtCondition {
             return false;
         }
         
-        return compareTags(actualTag, expectedValue);
+        return fireCompare(actualTag, compareTags(actualTag, expectedValue));
+    }
+    
+    /**
+     * 输出一次等值比较的结果到 debug 日志
+     * 解决"规则不生效但无任何提示"的排查困难：可直接看到路径、实际标签类型/内容与期望值
+     */
+    private boolean fireCompare(Tag actual, boolean matched) {
+        if (RarityCore.LOGGER.isDebugEnabled()) {
+            RarityCore.LOGGER.debug("[EqualsCondition] 路径='{}' 实际=({}){} 期望={}({}) 结果={}",
+                path, actual.getClass().getSimpleName(), actual.getAsString(),
+                expectedValue, expectedValue == null ? "null" : expectedValue.getClass().getSimpleName(),
+                matched);
+        }
+        return matched;
     }
     
     /**
@@ -50,7 +65,7 @@ public class EqualsCondition extends NbtCondition {
         
         // 对于通配符,采用"任意匹配"策略:只要有一个元素匹配成功即返回true
         for (Tag result : results) {
-            if (compareTags(result, expectedValue)) {
+            if (fireCompare(result, compareTags(result, expectedValue))) {
                 return true;
             }
         }
@@ -74,25 +89,140 @@ public class EqualsCondition extends NbtCondition {
             expectedString = expected.toString();
         }
         
-        // 对于数值类型,尝试数值比较
+        // 类型安全：所有分支都兼容 Number/Boolean/String 任意实例，避免 ClassCastException
         if (expected instanceof Number) {
-            try {
-                double actualNum = Double.parseDouble(actualString);
-                double expectedNum = ((Number) expected).doubleValue();
-                return Math.abs(actualNum - expectedNum) < 0.001;
-            } catch (NumberFormatException e) {
-                // 如果不能转换为数字,则使用字符串比较
-                return actualString.equals(expectedString);
+            // 仅在"实际标签本身是数值类型"时做数值比较，避免 StringTag("32") 被 equals(32) 误匹配
+            // 注意 ByteTag 的 getAsString() 带后缀（"1b"/"0b"），需按字节字面量比较
+            if (!isNumberComparableTag(actual)) {
+                return false;
             }
+            return equalsNumeric(actualString, ((Number) expected).doubleValue());
         }
         
-        // 对于布尔值
+        // 对于布尔值：NBT 没有布尔类型，原版与模组普遍用 ByteTag(1b/0b) 存储标志位，同时兼容 IntTag(1/0)
         if (expected instanceof Boolean) {
-            return actualString.equals(expected.toString());
+            if (!isNumberComparableTag(actual)) {
+                return false;
+            }
+            return readBoolean(actualString) == ((Boolean) expected).booleanValue();
         }
         
         // 默认使用字符串比较
-        return actualString.equals(expectedString);
+        if (actualString.equals(expectedString)) {
+            return true;
+        }
+        
+        // 字符串形式的期望值：兼容"配置写数字/布尔但 NBT 是数值标签"的情形
+        // （如 {"value":"1"} 对应 ByteTag(1b)、{"value":"32"} 对应 IntTag(32)、{"value":"true"} 对应 ByteTag(1b)）
+        // 该情形源于旧版本同步包把数值一律序列化为字符串，此分支使客户端无需重连即可自愈；
+        // 仍要求实际标签是数值类型，因此不会误匹配 StringTag("32")
+        if (expected instanceof String && isNumberComparableTag(actual)) {
+            if (numericEquals(actualString, expectedString)) {
+                return true;
+            }
+            if ("true".equalsIgnoreCase(expectedString) && readBoolean(actualString)) {
+                return true;
+            }
+            if ("false".equalsIgnoreCase(expectedString) && !readBoolean(actualString)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * 判断标签是否可参与数值/布尔比较
+     * 限定为真正的数值型标签，避免数字型期望值误匹配字符串标签内容
+     */
+    private boolean isNumberComparableTag(Tag tag) {
+        return isNumericTag(tag);
+    }
+    
+    /**
+     * 将 NBT 的字符串表示与期望数值比较
+     * ByteTag 的 getAsString() 形如 "1b"/"0b"，需剥离后缀后再解析
+     * @return 两侧数值相等（容差 0.001）时返回 true
+     */
+    private boolean equalsNumeric(String actualString, double expectedNum) {
+        try {
+            return Math.abs(Double.parseDouble(stripNumericSuffix(actualString)) - expectedNum) < 0.001;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+    
+    /**
+     * 剥离 NBT 数值字符串的紧凑后缀（b/s/L/f/d，如 "1b"、"100L"、"1.5f"）
+     */
+    private String stripNumericSuffix(String value) {
+        if (value == null || value.isEmpty()) {
+            return value;
+        }
+        char last = value.charAt(value.length() - 1);
+        if (last == 'b' || last == 'B' || last == 's' || last == 'S'
+                || last == 'l' || last == 'L' || last == 'f' || last == 'F' || last == 'd' || last == 'D') {
+            return value.substring(0, value.length() - 1);
+        }
+        return value;
+    }
+    
+    /**
+     * 判断标签是否为数值类型（BYTE/SHORT/INT/LONG/FLOAT/DOUBLE）
+     */
+    private boolean isNumericTag(Tag tag) {
+        int id = tag.getId();
+        return id == Tag.TAG_BYTE || id == Tag.TAG_SHORT || id == Tag.TAG_INT
+            || id == Tag.TAG_LONG || id == Tag.TAG_FLOAT || id == Tag.TAG_DOUBLE;
+    }
+    
+    /**
+     * 判断标签是否可解释为布尔值
+     * NBT 没有布尔类型：原版与模组通常用 ByteTag(1b/0b) 表示，也兼容 IntTag(1/0)
+     * 复用 isNumberComparableTag 的判定口径，避免两处逻辑漂移
+     */
+    private boolean isBooleanTag(Tag tag) {
+        return isNumberComparableTag(tag);
+    }
+    
+    /**
+     * 按数值比较两个字符串（实际 NBT 的 getAsString 结果与期望值字符串）
+     * 实际值会先剥离 ByteTag/LongTag 等紧凑后缀，使旧格式 {"value":"1"} 仍能匹配 ByteTag(1b)
+     * @return 两侧均可解析为数字且数值相等时返回 true
+     */
+    private boolean numericEquals(String actualString, String expectedString) {
+        try {
+            double actualNum = Double.parseDouble(stripNumericSuffix(actualString.trim()));
+            double expectedNum = Double.parseDouble(expectedString.trim());
+            return Math.abs(actualNum - expectedNum) < 0.001;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+    
+    /**
+     * 将 NBT 字符串形式的值读取为布尔
+     * 支持 "1"/"0"（数值标签）、"1b"/"0b"（ByteTag）以及 "true"/"false"
+     * @return 无法识别为布尔时返回 false
+     */
+    private boolean readBoolean(String value) {
+        if (value == null) {
+            return false;
+        }
+        String normalized = value.trim();
+        if (normalized.endsWith("b") || normalized.endsWith("B")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        if ("true".equalsIgnoreCase(normalized)) {
+            return true;
+        }
+        if ("false".equalsIgnoreCase(normalized)) {
+            return false;
+        }
+        try {
+            return Double.parseDouble(normalized) != 0.0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
     
 
