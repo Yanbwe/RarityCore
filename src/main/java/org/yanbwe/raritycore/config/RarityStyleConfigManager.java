@@ -28,6 +28,20 @@ public class RarityStyleConfigManager {
     private static final Path CONFIG_DIR = Paths.get(RarityConstants.CONFIG_DIR_PARENT).resolve(RarityConstants.CONFIG_DIR_NAME);
     private static final Path CONFIG_FILE = CONFIG_DIR.resolve(RarityConstants.RARITY_STYLE_CONFIG_FILE_NAME);
 
+    /**
+     * V14 起已由 RarityStyle.json（defaults 段）接管、需要从 client.json 中剔除的旧总开关键
+     * 仅收录"删除后不改变任何行为"的键：这两个旧键与新键 enableBorder / enableTooltip 的
+     * 默认值一致（都为 true），且已无任何读取方，属于纯粹的死键
+     *
+     * 刻意不收录 itemBorderStyle / useTextureBorder / enableItemNameColor / skipUnconfiguredItems /
+     * starDisplay 等旧键：迁移逻辑并不读取它们的值来实现迁移，直接删除等于静默丢弃用户的设置
+     * （例如用户手动设过 useTextureBorder=true 时会因删键而回退）。将它们原样保留，零副作用
+     */
+    private static final String[] LEGACY_CLIENT_KEYS = {
+        "enableItemBorderRendering",
+        "enableTooltipInsert"
+    };
+
     // 全局主开关（对应旧 client.json 总开关）
     private static boolean enableBorder = true;
     private static boolean enableTooltip = true;
@@ -142,8 +156,11 @@ public class RarityStyleConfigManager {
             RarityCore.LOGGER.error("Cannot create config directory: {}", CONFIG_DIR, e);
             return;
         }
-        loadConfig();
+        // 顺序很重要：先清理 client.json 的旧键，再加载 RarityStyle 配置，
+        // 最后重新加载客户端配置，确保补入的开关（如 enableIronSpellsAdapter）当次启动即生效
         handleLegacyFiles();
+        loadConfig();
+        ClientConfigManager.loadClientConfig();
     }
 
     public static void loadConfig() {
@@ -997,27 +1014,40 @@ public class RarityStyleConfigManager {
     // ───────────────────────── 旧文件处理 ─────────────────────────
 
     private static void handleLegacyFiles() {
-        // client.json：裁剪为仅保留 enableCacheSystem
+        // client.json：清除 V14 已迁入 RarityStyle.json 的旧总开关键
+        // 注意：这里只做"定向剔除"——仅删除下面 LEGACY_CLIENT_KEYS 中列出的键，
+        // 文件中其余任何键（enableCacheSystem、enableIronSpellsAdapter 等本模组开关，
+        // 以及用户自定义键）一律原样保留。
+        //
+        // 历史缺陷：本方法曾把 client.json 整体重写为"只含 enableCacheSystem"的对象，
+        // 导致 1201.14.1 新增的 enableIronSpellsAdapter 每次启动都被删除，
+        // 用户手动添加该键也会被吞掉，铁魔法动态映射因此永远无法关闭。
         Path clientFile = CONFIG_DIR.resolve(RarityConstants.CLIENT_CONFIG_FILE_NAME);
         try {
-            boolean hadCache = false;
-            boolean cacheVal = RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM;
             if (Files.exists(clientFile)) {
+                JsonObject existing;
                 try (BufferedReader r = Files.newBufferedReader(clientFile)) {
-                    JsonObject jo = GSON.fromJson(r, JsonObject.class);
-                    if (jo != null && jo.has("enableCacheSystem")) {
-                        hadCache = true;
-                        cacheVal = jo.get("enableCacheSystem").getAsBoolean();
+                    existing = GSON.fromJson(r, JsonObject.class);
+                }
+
+                if (existing != null) {
+                    boolean changed = false;
+                    for (String legacyKey : LEGACY_CLIENT_KEYS) {
+                        if (existing.has(legacyKey)) {
+                            existing.remove(legacyKey);
+                            changed = true;
+                            RarityCore.LOGGER.info("Removed legacy client.json option '{}' (migrated to RarityStyle.json)", legacyKey);
+                        }
                     }
-                } catch (Exception ignored) {}
-            }
-            JsonObject trimmed = new JsonObject();
-            trimmed.addProperty("enableCacheSystem", hadCache ? cacheVal : RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM);
-            try (OutputStreamWriter w = new OutputStreamWriter(Files.newOutputStream(clientFile), StandardCharsets.UTF_8)) {
-                GSON.toJson(trimmed, w);
+                    if (changed) {
+                        try (OutputStreamWriter w = new OutputStreamWriter(Files.newOutputStream(clientFile), StandardCharsets.UTF_8)) {
+                            GSON.toJson(existing, w);
+                        }
+                    }
+                }
             }
         } catch (Exception e) {
-            RarityCore.LOGGER.error("Failed to trim legacy client.json", e);
+            RarityCore.LOGGER.error("Failed to clean legacy client.json options", e);
         }
 
         // RarityClientConfig.json：检测即直接删除（V14 已迁移至 RarityStyle.json）

@@ -59,6 +59,17 @@ public class ClientConfigManager {
                 } else {
                     enableIronSpellsAdapter = RarityConstants.DEFAULT_ENABLE_IRON_SPELLS_ADAPTER;
                 }
+
+                // 自愈：旧版本生成的 client.json 可能缺键，或键曾被旧版迁移逻辑误删。
+                // 这里把本管理器负责的键补进文件，保留文件中其余的既有键，避免用户手动添加的
+                // 配置项因键缺失而静默回退到默认值（表现为"改了配置不生效"）。
+                JsonObject healed = new JsonObject();
+                healed.addProperty("enableCacheSystem", enableCacheSystem);
+                healed.addProperty("enableIronSpellsAdapter", enableIronSpellsAdapter);
+                int addedKeys = writeMissingKnownKeys(healed);
+                if (addedKeys > 0) {
+                    RarityCore.LOGGER.warn("client.json 缺少 {} 个配置项并已自动补入（原文件其余内容保留）: {}", addedKeys, CLIENT_CONFIG_FILE);
+                }
             }
             RarityCore.LOGGER.info("Client config loaded: enableCacheSystem={}, enableIronSpellsAdapter={}", enableCacheSystem, enableIronSpellsAdapter);
         } catch (Exception e) {
@@ -80,6 +91,46 @@ public class ClientConfigManager {
             }
         } catch (IOException e) {
             RarityCore.LOGGER.error("Cannot create default client config file: {}", CLIENT_CONFIG_FILE, e);
+        }
+    }
+
+    /**
+     * 把已知配置项中缺失的键补写进 client.json，保留文件中其余既有键
+     * 与 {@link #createDefaultClientConfig()} 不同：本方法不重建文件，
+     * 只做"缺什么补什么"，因此用户自定义键与既有配置值不会被丢弃
+     *
+     * @param knownConfig 已知配置项（键 + 缺失时的回退值）
+     * @return 实际补入的键数量，未发生写入时返回 0
+     */
+    private static int writeMissingKnownKeys(JsonObject knownConfig) {
+        try {
+            JsonObject existing = new JsonObject();
+            if (Files.exists(CLIENT_CONFIG_FILE)) {
+                try (BufferedReader reader = Files.newBufferedReader(CLIENT_CONFIG_FILE)) {
+                    JsonObject loaded = GSON.fromJson(reader, JsonObject.class);
+                    if (loaded != null) {
+                        existing = loaded;
+                    }
+                }
+            }
+
+            int added = 0;
+            for (String key : knownConfig.keySet()) {
+                if (!existing.has(key)) {
+                    existing.add(key, knownConfig.get(key));
+                    added++;
+                }
+            }
+
+            if (added > 0) {
+                try (OutputStreamWriter writer = new OutputStreamWriter(Files.newOutputStream(CLIENT_CONFIG_FILE), StandardCharsets.UTF_8)) {
+                    GSON.toJson(existing, writer);
+                }
+            }
+            return added;
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Cannot sync known keys into client config: {}", CLIENT_CONFIG_FILE, e);
+            return 0;
         }
     }
 
