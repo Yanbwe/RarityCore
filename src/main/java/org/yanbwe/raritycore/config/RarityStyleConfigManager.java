@@ -863,6 +863,57 @@ public class RarityStyleConfigManager {
         if (src.star.customSpecified) acc.star.custom = src.star.custom;
     }
 
+    // ── 逐级序列化（只写显式指定的字段，保住"未指定即向低等级继承"语义）──
+    //
+    // 历史缺陷：buildCurrentConfigJson 的 rarities 循环写 border 时无条件写全 4 个字段，
+    // 而 tooltip 整个字段根本没被写。后果有二：
+    //   1. 任何一次保存（含 setTooltipContent/setStarMode 等 setter 触发的 saveToFile）
+    //      都会把用户在 RarityStyle.json 里手写的 rarities.<n>.tooltip 段从文件里抹掉，
+    //      且 parseLevelOverride 读不回来 → 手写配置永久失效、setter 改动重启即失。
+    //   2. border 全字段写出后，重载时 parseBorder 把它们全部标为 *Specified=true，
+    //      于是"未指定即继承低等级/默认值"在首次保存后永久失效。
+    // 现在两个方法都只写 *Specified 为真的键，上述两个问题一并消除。
+
+    /** 按 *Specified 标记精确写 border 段；无任何显式字段时返回 null（不写出该键） */
+    private static JsonObject writeBorder(BorderConfig b) {
+        if (b == null) {
+            return null;
+        }
+        JsonObject o = new JsonObject();
+        if (b.useTextureSpecified) o.addProperty("useTexture", b.useTexture);
+        if (b.defaultTextureSpecified) o.addProperty("defaultTexture", b.defaultTexture);
+        if (b.styleSpecified) o.addProperty("style", b.style);
+        if (b.showSpecified) o.addProperty("show", b.show);
+        if (b.fallbackSpecified) o.addProperty("fallback", b.fallback);
+        return o.size() == 0 ? null : o;
+    }
+
+    /** 按 *Specified 标记精确写 tooltip 段（含 level / star 子段）；无显式字段时返回 null */
+    private static JsonObject writeTooltip(TooltipConfig t) {
+        if (t == null) {
+            return null;
+        }
+        JsonObject o = new JsonObject();
+        if (t.showSpecified) o.addProperty("show", t.show);
+        if (t.contentSpecified) o.addProperty("content", t.content);
+        if (t.coloredSpecified) o.addProperty("colored", t.colored);
+
+        JsonObject level = new JsonObject();
+        if (t.level.coloredSpecified) level.addProperty("colored", t.level.colored);
+        if (t.level.translationKeySpecified) level.addProperty("translationKey", t.level.translationKey);
+        if (t.level.fallbackSpecified) level.addProperty("fallback", t.level.fallback);
+        if (level.size() > 0) o.add("level", level);
+
+        JsonObject star = new JsonObject();
+        if (t.star.coloredSpecified) star.addProperty("colored", t.star.colored);
+        if (t.star.modeSpecified) star.addProperty("mode", t.star.mode);
+        if (t.star.repeatCharSpecified) star.addProperty("repeatChar", t.star.repeatChar);
+        if (t.star.customSpecified) star.addProperty("custom", t.star.custom);
+        if (star.size() > 0) o.add("star", star);
+
+        return o.size() == 0 ? null : o;
+    }
+
     private static void injectColors() {
         Map<Integer, Integer> colors = new HashMap<>();
         for (int i = 1; i <= RarityConstants.MAX_RARITY; i++) {
@@ -921,21 +972,17 @@ public class RarityStyleConfigManager {
         noRarity.addProperty("defaultRarity", defaults.noRarity.defaultRarity);
         d.add("noRarity", noRarity);
         root.add("defaults", d);
-        // rarities
+        // rarities：只写显式指定的字段，未指定的字段保持缺省以便向低等级继承
         JsonObject rarities = new JsonObject();
         for (Map.Entry<Integer, LevelOverride> e : RARITIES.entrySet()) {
             LevelOverride o = e.getValue();
             JsonObject entry = new JsonObject();
             if (o.colorSpecified) entry.addProperty("color", o.color);
             if (o.itemNameColor != null) entry.addProperty("itemNameColor", o.itemNameColor);
-            if (o.border != null) {
-                JsonObject b = new JsonObject();
-                b.addProperty("useTexture", o.border.useTexture);
-                b.addProperty("defaultTexture", o.border.defaultTexture);
-                b.addProperty("style", o.border.style);
-                b.addProperty("show", o.border.show);
-                entry.add("border", b);
-            }
+            JsonObject b = writeBorder(o.border);
+            if (b != null) entry.add("border", b);
+            JsonObject t = writeTooltip(o.tooltip);
+            if (t != null) entry.add("tooltip", t);
             rarities.add(String.valueOf(e.getKey()), entry);
         }
         root.add("rarities", rarities);
