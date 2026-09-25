@@ -79,19 +79,20 @@ public class CompatibilityManager {
             RarityCore.LOGGER.error("Failed to initialize Apotheosis compatibility adapter", e);
         }
         
-        // 初始化 Iron's Spellbooks 适配器（可在 client.json 中通过 enableIronSpellsAdapter 禁用）
-        if (org.yanbwe.raritycore.config.ClientConfigManager.isEnableIronSpellsAdapter()) {
-            try {
-                Class.forName("io.redspace.ironsspellbooks.IronsSpellbooks");
-                org.yanbwe.raritycore.compat.ironsspellbooks.IronSpellbooksAdapter.init();
-                RarityCore.LOGGER.info("Iron's Spellbooks compatibility adapter initialized");
-            } catch (ClassNotFoundException e) {
-                RarityCore.LOGGER.debug("Iron's Spellbooks not found, skipping compatibility adapter");
-            } catch (Exception e) {
-                RarityCore.LOGGER.error("Failed to initialize Iron's Spellbooks compatibility adapter", e);
-            }
-        } else {
-            RarityCore.LOGGER.info("Iron's Spellbooks compatibility adapter disabled by client config");
+        // 初始化 Iron's Spellbooks 适配器
+        //
+        // 注意：这里刻意不再受 ClientConfigManager.isEnableIronSpellsAdapter() 控制。
+        // 该开关是"仅客户端显示开关"，而适配器必须在两端都初始化——否则关闭开关的一侧
+        // 解析不出铁魔法稀有度，与服务端结果不一致。显示与否交给客户端渲染链路处理
+        // （见 org.yanbwe.raritycore.client.IronSpellsDisplaySwitch）。
+        try {
+            Class.forName("io.redspace.ironsspellbooks.IronsSpellbooks");
+            org.yanbwe.raritycore.compat.ironsspellbooks.IronSpellbooksAdapter.init();
+            RarityCore.LOGGER.info("Iron's Spellbooks compatibility adapter initialized");
+        } catch (ClassNotFoundException e) {
+            RarityCore.LOGGER.debug("Iron's Spellbooks not found, skipping compatibility adapter");
+        } catch (Exception e) {
+            RarityCore.LOGGER.error("Failed to initialize Iron's Spellbooks compatibility adapter", e);
         }
 
         // 初始化精致存储适配器

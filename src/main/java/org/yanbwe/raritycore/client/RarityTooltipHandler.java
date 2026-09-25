@@ -54,9 +54,16 @@ public class RarityTooltipHandler {
                 RenderCacheManager.cacheItemStackRarity(itemStack, rarity);
             }
         }
+
+        // 关闭铁魔法联动时的回退值：沿用解析阶段的原值（关闭显示不应改变"该物品本来的稀有度"），
+        // 取不到才用文件配置的默认值。注意必须在下面用默认值覆盖 rarity 之前先捕获。
+        Integer fallbackRarity = rarity;
         if (rarity == null) {
             rarity = RarityStyleConfigManager.getDefaultsNoRarityDefaultRarity();
         }
+
+        // 铁魔法联动已在客户端关闭时，把法术等级派生的稀有度替换为回退值（仅影响显示）
+        rarity = IronSpellsDisplaySwitch.applyIfDisabled(itemStack, rarity, fallbackRarity);
 
         if (ClientConfigManager.isSkipUnconfiguredItems() && !RarityRegistry.hasConfiguredRarity(item, itemStack)) {
             return;

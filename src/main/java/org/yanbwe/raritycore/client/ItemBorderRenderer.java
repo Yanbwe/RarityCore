@@ -46,10 +46,17 @@ public class ItemBorderRenderer {
             rarity = RarityRegistry.getRarity(itemStack);
         }
         
-        // 如果仍然没有获取到稀有度,使用文件配置的默认值
+        if (rarity == null) {
+            // 缓存/注册表都没命中（多半是神化或铁魔法这类依赖实时 NBT 的物品）：
+            // 回落取该物品的 ID 缓存值，取不到再用文件配置的默认值
+            rarity = RenderCacheManager.getCachedRarityByItem(itemStack.getItem());
+        }
         if (rarity == null) {
             rarity = RarityStyleConfigManager.getDefaultsNoRarityDefaultRarity();
         }
+
+        // 铁魔法联动已在客户端关闭时，把法术等级派生的稀有度替换为回退值（仅影响显示）
+        rarity = IronSpellsDisplaySwitch.applyIfDisabled(itemStack, rarity, null);
         
         // 如果启用了跳过未配置物品且物品没有配置稀有度,则不渲染
         // 注意:需要检查物品是否真的没有配置,而不是默认的稀有度1

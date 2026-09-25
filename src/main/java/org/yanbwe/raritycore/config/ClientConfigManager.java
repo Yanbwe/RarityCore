@@ -16,13 +16,27 @@ import java.nio.file.Paths;
 
 /**
  * 客户端配置管理器（V14 裁剪版）
- * 仅保留缓存系统总开关；其余视觉表现配置已迁移至 RarityStyleConfigManager
+ * 仅保留缓存系统总开关与铁魔法联动显示开关；其余视觉表现配置已迁移至 RarityStyleConfigManager
+ *
+ * <p><b>本文件是纯粹的客户端显示配置。</b>它位于 {@code config/raritycore/client.json}，
+ * 而该文件在服务端与每个玩家客户端上各存一份、互不相同。因此这里的开关只能影响
+ * <b>本地显示</b>，不得参与稀有度解析——否则服务端与客户端会算出不同稀有度且无法对齐。
+ * {@code enableIronSpellsAdapter} 正是按此语义处理的：解析链两端一致地解析铁魔法物品，
+ * 关闭该开关仅表示本地不显示（见 {@link org.yanbwe.raritycore.client.IronSpellsDisplaySwitch}）。</p>
  */
 public class ClientConfigManager {
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private static boolean enableCacheSystem = RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM;
+
+    /**
+     * 铁魔法（Iron's Spellbooks）稀有度联动的<b>客户端显示开关</b>。
+     * 关闭后仅本地不再显示法术等级派生的稀有度（边框/提示/名称颜色），
+     * 解析链结果不变，因此不会与服务端产生分歧。
+     *
+     * @see org.yanbwe.raritycore.client.IronSpellsDisplaySwitch
+     */
     private static boolean enableIronSpellsAdapter = RarityConstants.DEFAULT_ENABLE_IRON_SPELLS_ADAPTER;
 
     private static final Path CONFIG_DIR = Paths.get(RarityConstants.CONFIG_DIR_PARENT).resolve(RarityConstants.CONFIG_DIR_NAME);
@@ -160,10 +174,15 @@ public class ClientConfigManager {
         }
     }
 
+    /** 铁魔法联动的客户端显示开关是否开启（默认开启） */
     public static boolean isEnableIronSpellsAdapter() {
         return enableIronSpellsAdapter;
     }
 
+    /**
+     * 设置铁魔法联动的客户端显示开关。
+     * 仅影响本地显示；解析链不受影响，故不会导致服务端/客户端稀有度分歧。
+     */
     public static void setEnableIronSpellsAdapter(boolean enable) {
         enableIronSpellsAdapter = enable;
         try {

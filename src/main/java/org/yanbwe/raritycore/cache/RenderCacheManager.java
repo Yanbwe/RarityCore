@@ -38,6 +38,14 @@ public class RenderCacheManager {
     }
 
     /**
+     * 按物品查询 ID 缓存，不构造 ItemStack、也不触发回退计算。
+     * 供渲染热路径在"缓存与注册表都没命中"时取回退值使用。
+     */
+    public static Integer getCachedRarityByItem(Item item) {
+        return DualCacheManager.getCachedRarityByItem(item);
+    }
+
+    /**
      * 缓存物品稀有度
      */
     public static void cacheRarity(Item item, Integer rarity) {
