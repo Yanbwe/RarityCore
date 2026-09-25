@@ -1,5 +1,25 @@
 # RarityCore 更新日志
 
+## [1201.14.4]
+
+### 修复
+- 修复 `/raritycore reload` 之后新数据从不推送给客户端的问题：`NetworkRetryManager` 用 `channel instanceof IncrementalSyncPacket` / `instanceof RaritySyncPacket` 分派发送，但形参实为 `IncrementalSyncPacket.INSTANCE`／`RaritySyncPacket.INSTANCE`，其声明类型是 `SimpleChannel`，与包类没有任何继承关系，两个判断恒为假、方法恒返回 `false`（发送从未发生）。而调用方丢弃了返回值、"发送成功"日志又只在重试时打印，因此失败完全静默。后果不只是用户手写配置不生效——**75 个内置数据包 JSON（含 74 个模组）全部经 `RarityRegistry.register(item, rarity)`（默认同步）注册**，同样受影响
+  - 现在直接用通道形参发送，不再做无意义的类型判断；成功判定改为依据返回值而非"没有抛异常"，失败会真正重试并按玩家粒度只重试失败者，全失败时记录 error
+- 修复 `RarityStyle.json` 写盘时丢失逐级 `tooltip` 段的问题：`buildCurrentConfigJson` 的 `rarities` 循环只写出 `color`、`itemNameColor`、`border` 三个键，**从不写 `tooltip`**，而 `parseLevelOverride` 会读取它。于是任何一次保存（含 `setTooltipContent` / `setStarMode` / `setStarRepeatChar` 及 KubeJS 同名绑定触发的写盘）都会把该段从文件里抹掉，setter 改动重启即失，用户手写的逐级 tooltip/star 配置也永久读不回来
+  - 同一处 `border` 原本无条件写全 4 个字段，重载时 `parseBorder` 把它们全部标记为"显式指定"，导致**"未指定即向低等级继承"在首次保存后永久失效**；逐级 `border.fallback` 也从不被写出
+  - 现在新增 `writeBorder` / `writeTooltip`，按 `*Specified` 标记只写显式指定的字段；`defaults` 段仍完整写出（它是全量默认值的唯一来源）
+- 修复批量同步缓冲区在积压时**静默丢弃变更操作**的问题：`SyncBatchManager.addOperation` 在待处理数达到 1000 时直接 `return true` 而不入队，注释里的"立即发送"需要调用方响应返回值才会发生，而所有调用方都忽略了它——超阈值的操作被丢弃，只有下次登录或 reload 才会补上
+  - 现在始终入队，阈值到达时通过返回值请求调用方立即排空；常量由 `MAX_PENDING_OPERATIONS` 更名为 `URGENT_FLUSH_THRESHOLD`（它从来不是丢弃上限）
+  - `RarityRegistry` 的三处变更登记改为经统一的 `enqueueChange` 入队，收到排空请求时调用 `DelayedSyncManager.flushPendingOperations()`（该方法只向单线程执行器提交任务，不阻塞、也不会与批量锁重入）
+- 修复铁魔法（Iron's Spells）开关导致**服务端与客户端算出不同稀有度**的问题：`RarityRegistry.checkIronSpellbooksRarity` 在稀有度解析阶段读取 `ClientConfigManager.isEnableIronSpellsAdapter()`，而该键位于各端独立的 `config/raritycore/client.json`。多人游戏下服务器管理员为排查 issue #14 关掉自己那份，就会使服务端跳过铁魔法分支、客户端仍走该分支，同一物品两边结果不一致，且用户没有任何手段对齐
+  - 该开关现明确定义为**纯客户端显示开关**：解析链两端一致地按法术等级解析，关闭仅表示本地不显示；对外 API（`RarityCoreAPI.getRarity()` 等）返回的仍是真实解析结果，联动模组与 KubeJS 在任一端拿到的数据一致
+  - 兼容适配器初始化不再受该开关控制（`CompatibilityManager`）——否则关掉开关的一侧根本不初始化适配器，反而解析不出铁魔法
+  - 新增 `client.IronSpellsDisplaySwitch` 作为该开关的唯一归属地；开关开启（默认）时第一道判断即返回，渲染热路径零额外开销
+- 修复神化与铁魔法物品在**边框渲染路径**上一律显示最低档的问题：这两类物品会被 `DualCacheManager` 主动判为未命中（以强制实时计算），而 `ItemBorderRenderer` 在未命中时直接退到 `defaults.noRarity.defaultRarity`。现在先按物品查 ID 缓存，取不到才用默认值
+
+### 其他
+- `ClientConfigManager` 类文档明确其"纯客户端显示配置"定位：其中的开关只能影响本地显示，不得参与稀有度解析
+
 ## [1201.14.3]
 
 ### 修复

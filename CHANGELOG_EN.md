@@ -1,5 +1,25 @@
 # RarityCore Changelog
 
+## [1201.14.4]
+
+### Fixed
+- Fixed new data never being pushed to clients after `/raritycore reload`: `NetworkRetryManager` dispatched packets with `channel instanceof IncrementalSyncPacket` / `instanceof RaritySyncPacket`, but the arguments are actually `IncrementalSyncPacket.INSTANCE` / `RaritySyncPacket.INSTANCE`, whose declared type is `SimpleChannel` — unrelated to the packet classes. Both checks were therefore always false and the method always returned `false`, so no packet was ever sent. Callers discarded the return value and the "sent successfully" log only fired on a retry, so the failure was completely silent. The impact went beyond hand-written configs: **all 75 bundled datapack JSONs (74 mods) register through `RarityRegistry.register(item, rarity)`, which syncs by default**
+  - The channel argument is now used directly instead of being type-checked, success is judged by the return value rather than "no exception was thrown", and failures retry per-player (only the players that actually failed) with an error logged when all attempts are exhausted
+- Fixed the per-level `tooltip` block being lost when `RarityStyle.json` is written: the `rarities` loop in `buildCurrentConfigJson` only wrote `color`, `itemNameColor` and `border` and **never wrote `tooltip`**, even though `parseLevelOverride` reads it. As a result every save (including those triggered by `setTooltipContent` / `setStarMode` / `setStarRepeatChar` and their KubeJS bindings) erased that block from the file: setter changes were lost on restart and hand-written per-level tooltip/star config could never be read back
+  - In the same loop `border` was written with all four fields unconditionally, so on reload `parseBorder` marked them all as explicitly specified — **"unspecified means inherit from the lower level" silently stopped working after the first save**. Per-level `border.fallback` was never written either
+  - Two new helpers, `writeBorder` / `writeTooltip`, now write only the fields marked `*Specified`; the `defaults` block is still written in full since it is the single source of default values
+- Fixed the batch sync buffer **silently dropping change operations** under backlog: `SyncBatchManager.addOperation` returned `true` without enqueueing once the pending count reached 1000. The "send immediately" promised by the comment only happened if callers honoured the return value, and every caller ignored it — so operations past the threshold were dropped until the next login or reload
+  - Operations are now always enqueued and the threshold merely requests an immediate flush; the constant was renamed from `MAX_PENDING_OPERATIONS` to `URGENT_FLUSH_THRESHOLD`, which reflects what it always was
+  - The three change registrations in `RarityRegistry` now go through a shared `enqueueChange`, which calls `DelayedSyncManager.flushPendingOperations()` when a flush is requested (that method only submits to a single-threaded executor — it does not block and cannot re-enter the batch lock)
+- Fixed the Iron's Spellbooks switch causing **the server and client to compute different rarities**: `RarityRegistry.checkIronSpellbooksRarity` read `ClientConfigManager.isEnableIronSpellsAdapter()` during rarity resolution, but that key lives in the per-installation `config/raritycore/client.json`. In multiplayer, a server admin disabling their own copy (while investigating issue #14) made the server skip the Iron's Spellbooks branch while clients still took it, producing different results for the same item with no way for users to align them
+  - The switch is now explicitly a **client-side display switch**: both sides resolve spell level identically, and disabling it only means "do not display locally". Public API (`RarityCoreAPI.getRarity()` and friends) still returns the true resolved value, so integration mods and KubeJS see identical data on either side
+  - Compatibility adapter initialization is no longer gated on that switch (`CompatibilityManager`) — otherwise the side that disabled it would not even initialize the adapter and would resolve nothing, which is worse
+  - Added `client.IronSpellsDisplaySwitch` as the single home for the switch; when it is on (the default) it returns on the first check, so the rendering hot path pays nothing
+- Fixed Apotheosis and Iron's Spellbooks items always rendering at the lowest tier in the **border path**: `DualCacheManager` deliberately reports a miss for these items (to force live computation), and `ItemBorderRenderer` fell straight back to `defaults.noRarity.defaultRarity` on a miss. It now consults the per-item ID cache first and only then the default
+
+### Other
+- `ClientConfigManager` class documentation now states its role as **pure client-side display configuration**: its switches may only affect local display and must not take part in rarity resolution
+
 ## [1201.14.3]
 
 ### Fixed
