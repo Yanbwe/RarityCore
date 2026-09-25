@@ -15,7 +15,11 @@ public class SyncBatchManager {
     // 批处理配置常量
     private static final int BATCH_SIZE_THRESHOLD = 50; // 批量阈值
     private static final long BATCH_TIME_WINDOW_MS = 2000; // 2秒时间窗口
-    private static final int MAX_PENDING_OPERATIONS = 1000; // 最大待处理操作数
+    /**
+     * 积压阈值：达到该数量时请求调用方立即排空缓冲区。
+     * 注意这<b>不是</b>丢弃上限——{@link #addOperation} 永远会入队，绝不会因为积压而丢操作。
+     */
+    private static final int URGENT_FLUSH_THRESHOLD = 1000;
     private static final int HIGH_PRIORITY_THRESHOLD = 10; // 高优先级阈值
     
     // 待处理的变更操作缓冲区
@@ -50,20 +54,32 @@ public class SyncBatchManager {
     
     /**
      * 添加变更操作到批处理队列(指定优先级)
+     *
+     * <p><b>本方法保证不丢弃操作。</b>历史缺陷：待处理数量达到 {@link #URGENT_FLUSH_THRESHOLD} 时
+     * 曾直接 {@code return true} 而不入队，注释写的"立即发送"需要调用方响应返回值才会发生——
+     * 而所有调用方都忽略了返回值（{@code RarityRegistry}、{@code ConfigLoaderUtils}、
+     * {@code RarityManagementCommands}、{@code EditModeManager}），于是超阈值之后的操作被静默丢弃，
+     * 只有等到下次登录全量同步或 {@code /raritycore reload} 才会补上。
+     * 缓冲区的职责是"合并待发送操作"，不是调度器，因此这里改为始终入队；
+     * 到达阈值时通过返回 true 提示调用方立即排空。</p>
+     *
+     * <p>返回 true 的调用方可以安全地调用
+     * {@link DelayedSyncManager#flushPendingOperations()}——该方法只向单线程执行器提交任务，
+     * 不会阻塞、也不会重入本锁。</p>
+     *
      * @param operation 变更操作
      * @param priority 同步优先级
      * @return 是否需要立即发送批次
      */
     public static boolean addOperation(ChangeOperation operation, SyncPriority priority) {
+        if (operation == null) {
+            RarityCore.LOGGER.warn("SyncBatchManager received a null operation, ignoring");
+            return false;
+        }
         synchronized (batchLock) {
-            // 检查是否超过最大容量
-            if (pendingOperations.size() >= MAX_PENDING_OPERATIONS) {
-                return true; // 立即发送
-            }
-            
-            // 添加操作到缓冲区
+            // 始终入队：缓冲区只负责合并待发送操作，绝不静默丢弃
             pendingOperations.add(operation);
-            
+
             // 添加到优先级队列
             priorityQueues.computeIfAbsent(priority, k -> new ArrayList<>()).add(operation);
             
@@ -72,6 +88,13 @@ public class SyncBatchManager {
                 return true;
             } else if (priority == SyncPriority.HIGH && 
                       pendingOperations.size() >= HIGH_PRIORITY_THRESHOLD) {
+                return true;
+            }
+
+            // 积压到上限：提示调用方立即排空（操作已入队，不会被丢弃）
+            if (pendingOperations.size() >= URGENT_FLUSH_THRESHOLD) {
+                RarityCore.LOGGER.warn("SyncBatchManager backlog reached {} operations, requesting immediate flush",
+                    pendingOperations.size());
                 return true;
             }
             

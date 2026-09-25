@@ -15,6 +15,7 @@ import org.yanbwe.raritycore.compat.CompatibilityChecker;
 import org.yanbwe.raritycore.event.RarityChangeEvent;
 import org.yanbwe.raritycore.event.RarityQueryEvent;
 import org.yanbwe.raritycore.network.ChangeOperation;
+import org.yanbwe.raritycore.network.SyncBatchManager;
 import org.yanbwe.raritycore.network.SyncManager;
 import org.yanbwe.raritycore.util.RarityConstants;
 
@@ -60,9 +61,9 @@ public class RarityRegistry {
 
                 if (syncToClients) {
                     if (oldRarity == null) {
-                        SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.ADD, itemId, rarity));
+                        enqueueChange(new ChangeOperation(ChangeOperation.OperationType.ADD, itemId, rarity));
                     } else {
-                        SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.UPDATE, itemId, rarity));
+                        enqueueChange(new ChangeOperation(ChangeOperation.OperationType.UPDATE, itemId, rarity));
                     }
                 }
             }
@@ -88,10 +89,24 @@ public class RarityRegistry {
 
                 if (syncToClients) {
                     if (removedRarity != null) {
-                        SyncManager.addChangeOperation(new ChangeOperation(ChangeOperation.OperationType.DELETE, itemId, null));
+                        enqueueChange(new ChangeOperation(ChangeOperation.OperationType.DELETE, itemId, null));
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * 把变更操作放入批量缓冲，并响应缓冲区发出的"请立即排空"信号。
+     *
+     * <p>{@link SyncManager#addChangeOperation} 的返回值此前被所有调用方忽略，因此
+     * {@code SyncBatchManager} 在积压达阈值时发出的立即排空请求无人响应。这里统一处理：
+     * 请求排空时调用 {@link org.yanbwe.raritycore.network.DelayedSyncManager#flushPendingOperations()}，
+     * 该方法只向单线程执行器提交任务，不会阻塞、也不会与当前持有的批量锁重入。</p>
+     */
+    private static void enqueueChange(ChangeOperation operation) {
+        if (SyncBatchManager.addOperation(operation)) {
+            org.yanbwe.raritycore.network.DelayedSyncManager.flushPendingOperations();
         }
     }
 
@@ -353,11 +368,14 @@ public class RarityRegistry {
 
 
     // 检查 Iron's Spellbooks 稀有度
+    //
+    // 注意：这里刻意不读 ClientConfigManager.isEnableIronSpellsAdapter()。
+    // 该开关语义是"仅客户端显示开关"，若在此处读取，服务端进程也会读到 config/raritycore/client.json，
+    // 于是同一物品在客户端与服务端可以解析出不同稀有度（多人游戏下服务器与玩家各自的
+    // client.json 相互独立，无法对齐）。现在本方法在两端一致地把铁魔法物品解析为法术等级对应稀有度，
+    // 显示与否由客户端渲染链路（IronSpellsDisplaySwitch）决定。
     @Nullable
     private static Integer checkIronSpellbooksRarity(@Nullable ItemStack itemStack) {
-        if (!org.yanbwe.raritycore.config.ClientConfigManager.isEnableIronSpellsAdapter()) {
-            return null;
-        }
         if (itemStack == null || itemStack.isEmpty() || !itemStack.hasTag()) {
             return null;
         }
