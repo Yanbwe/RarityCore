@@ -1,5 +1,13 @@
 # RarityCore Changelog
 
+## [260x.14.2]
+
+### Fixed
+- Fixed the batch sync buffer **silently dropping change operations** under backlog (26.1 and 26.2 share one source tree, so both are affected): `SyncBatchManager.addOperation` returned `true` without enqueueing once the pending count reached `MAX_PENDING_OPERATIONS` (1000), and its only caller `ConfigLoaderUtils` ignored the return value — so config entries past the threshold were neither registered nor synced, with no log at all. The bulk loading paths (`FinalRarityConfigFolderLoader` / `RarityConfigLoader`, both loading file by file in batch mode) do not drain while loading, so this is genuinely reachable
+  - Operations are now always enqueued, and reaching the threshold requests an immediate flush via the return value and logs a WARN; the constant was renamed to `URGENT_FLUSH_THRESHOLD` with a note that it is not a drop limit
+  - Added guards for `operation == null` and `priority == null` (the latter would otherwise throw an NPE on the `EnumMap`, causing already-enqueued operations to be missed when draining by priority)
+  - `ConfigLoaderUtils` now honours the return value and flushes once after a whole file has loaded; each operation is isolated so that a single listener throwing cannot abort the entire config reload or discard the remaining drained operations
+
 ## [260x.14.1]
 
 ### Fixed
@@ -7,10 +15,6 @@
 - Equality comparison is now type-aware: numeric expectations compare numerically against `Double/Integer/Long/Short` (0.001 tolerance), and boolean expectations accept both `Boolean` and numeric `0`/`1`
 - Packets produced by older builds, where the expected value was stringified (`"1"`, `"true"`), still match correctly
 - Strings and numbers are no longer conflated: `equals(3)` no longer matches the text of a string component (numeric values under `tag.xxx` still compare numerically)
-- Fixed the batch sync buffer **silently dropping change operations** under backlog (26.1 and 26.2 share one source tree, so both are affected): `SyncBatchManager.addOperation` returned `true` without enqueueing once the pending count reached `MAX_PENDING_OPERATIONS` (1000), and its only caller `ConfigLoaderUtils` ignored the return value — so config entries past the threshold were neither registered nor synced, with no log at all. The bulk loading paths (`FinalRarityConfigFolderLoader` / `RarityConfigLoader`, both loading file by file in batch mode) do not drain while loading, so this is genuinely reachable
-  - Operations are now always enqueued, and reaching the threshold requests an immediate flush via the return value and logs a WARN; the constant was renamed to `URGENT_FLUSH_THRESHOLD` with a note that it is not a drop limit
-  - Added guards for `operation == null` and `priority == null` (the latter would otherwise throw an NPE on the `EnumMap`, causing already-enqueued operations to be missed when draining by priority)
-  - `ConfigLoaderUtils` now honours the return value and flushes once after a whole file has loaded; each operation is isolated so that a single listener throwing cannot abort the entire config reload or discard the remaining drained operations
 
 
 ## [260x.14.0] - 2026-08-16

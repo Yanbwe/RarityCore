@@ -1,5 +1,13 @@
 # RarityCore 更新日志
 
+## [260x.14.2]
+
+### 修复
+- 修复批量同步缓冲区在积压时**静默丢弃变更操作**的问题（26.1 / 26.2 共享源码，两者均受影响）：`SyncBatchManager.addOperation` 在待处理数达到 `MAX_PENDING_OPERATIONS`（1000）时直接 `return true` 而不入队，而唯一调用方 `ConfigLoaderUtils` 忽略了返回值——第 1001 条起的配置项既不注册也不下发、且无任何日志。该类批量加载路径（`FinalRarityConfigFolderLoader` / `RarityConfigLoader`，均以批处理模式逐文件加载）在加载期间不排空，因此真实可达
+  - 现在始终入队，达阈值时通过返回值请求调用方立即排空并记录 WARN；常量更名为 `URGENT_FLUSH_THRESHOLD` 并注明它不是丢弃上限
+  - 补 `operation == null` 与 `priority == null` 守卫（后者否则会在 `EnumMap` 上抛 NPE，使已入队的操作在按优先级排空时被漏掉）
+  - `ConfigLoaderUtils` 响应返回值，在整份文件加载完成后排空一次并下发；排空过程逐条隔离异常，避免单个监听器抛错中断整个配置重载、以及剩余已排空操作被丢弃
+
 ## [260x.14.1]
 
 ### 修复
@@ -7,10 +15,6 @@
 - 等值比较改为类型感知：数值期望值对 `Double/Integer/Long/Short` 等一律按数值比较（容差 0.001），布尔期望值同时兼容 `Boolean` 与数值 `0/1`
 - 兼容旧同步包数据：期望值被历史版本字符串化（如 `"1"`、`"true"`）时仍能正确匹配
 - 字符串与数字不再混同：`equals(3)` 不会误匹配字符串 `"3"` 的文本标签（`tag.xxx` 下数值仍按数值比较）
-- 修复批量同步缓冲区在积压时**静默丢弃变更操作**的问题（26.1 / 26.2 共享源码，两者均受影响）：`SyncBatchManager.addOperation` 在待处理数达到 `MAX_PENDING_OPERATIONS`（1000）时直接 `return true` 而不入队，而唯一调用方 `ConfigLoaderUtils` 忽略了返回值——第 1001 条起的配置项既不注册也不下发、且无任何日志。该类批量加载路径（`FinalRarityConfigFolderLoader` / `RarityConfigLoader`，均以批处理模式逐文件加载）在加载期间不排空，因此真实可达
-  - 现在始终入队，达阈值时通过返回值请求调用方立即排空并记录 WARN；常量更名为 `URGENT_FLUSH_THRESHOLD` 并注明它不是丢弃上限
-  - 补 `operation == null` 与 `priority == null` 守卫（后者否则会在 `EnumMap` 上抛 NPE，使已入队的操作在按优先级排空时被漏掉）
-  - `ConfigLoaderUtils` 响应返回值，在整份文件加载完成后排空一次并下发；排空过程逐条隔离异常，避免单个监听器抛错中断整个配置重载、以及剩余已排空操作被丢弃
 
 
 ## [260x.14.0] - 2026-08-16
