@@ -23,7 +23,14 @@ public class SyncBatchManager {
     // 批处理配置常量
     private static final int BATCH_SIZE_THRESHOLD = 50; // 批量阈值
     private static final long BATCH_TIME_WINDOW_MS = 2000; // 2秒时间窗口
-    private static volatile int maxPendingOperations = RarityConstants.DEFAULT_MAX_PENDING_OPERATIONS; // 最大待处理操作数
+    /**
+     * 积压排空阈值（对应配置文件 {@code sync_batch.json} 的 {@code maxPendingOperations} 键，
+     * 默认 {@link RarityConstants#DEFAULT_MAX_PENDING_OPERATIONS}）。
+     *
+     * <p><b>它不是丢弃上限。</b>达到该数量时 {@link #addOperation} 会返回 true 请求调用方立即排空，
+     * 并记录 WARN 日志；操作本身永远会入队，绝不会因为积压而被静默丢弃。</p>
+     */
+    private static volatile int maxPendingOperations = RarityConstants.DEFAULT_MAX_PENDING_OPERATIONS;
     private static final int HIGH_PRIORITY_THRESHOLD = 10; // 高优先级阈值
 
     // 配置文件路径（遵循 CacheConfig 模式）
@@ -67,20 +74,28 @@ public class SyncBatchManager {
     
     /**
      * 添加变更操作到批处理队列(指定优先级)
+     *
+     * <p><b>本方法保证不丢弃操作。</b>历史缺陷：待处理数量达到 {@link #maxPendingOperations} 时，
+     * 曾直接 {@code return true} 而不执行入队——注释写的"立即发送"需要调用方响应返回值才会发生，
+     * 而已知调用方（{@code ConfigLoaderUtils.loadJsonConfigFileWithBatch} 等）忽略了返回值，
+     * 于是超阈值之后的操作既不注册也不下发，且没有任何日志。</p>
+     *
+     * <p>现在改为：无论积压多少都先入队；到达积压阈值时返回 true 请求调用方立即排空，
+     * 并记录含当前积压数的 WARN 日志。缓冲区只负责合并待发送操作，不负责调度。</p>
+     *
      * @param operation 变更操作
      * @param priority 同步优先级
      * @return 是否需要立即发送批次
      */
     public static boolean addOperation(ChangeOperation operation, SyncPriority priority) {
+        if (operation == null) {
+            RarityCore.LOGGER.warn("SyncBatchManager received a null operation, ignoring");
+            return false;
+        }
         synchronized (batchLock) {
-            // 检查是否超过最大容量
-            if (pendingOperations.size() >= maxPendingOperations) {
-                return true; // 立即发送
-            }
-            
-            // 添加操作到缓冲区
+            // 始终入队：缓冲区只负责合并待发送操作，绝不因为积压而静默丢弃
             pendingOperations.add(operation);
-            
+
             // 添加到优先级队列
             priorityQueues.computeIfAbsent(priority, k -> new ArrayList<>()).add(operation);
             
@@ -89,6 +104,14 @@ public class SyncBatchManager {
                 return true;
             } else if (priority == SyncPriority.HIGH && 
                       pendingOperations.size() >= HIGH_PRIORITY_THRESHOLD) {
+                return true;
+            }
+
+            // 积压达到阈值：请求调用方立即排空（操作已入队，不会被丢弃）
+            // 注意必须放在 BATCH_SIZE_THRESHOLD 判断之前，否则永远走不到这里、日志也不会出现
+            if (pendingOperations.size() >= maxPendingOperations) {
+                RarityCore.LOGGER.warn("SyncBatchManager backlog reached {} operations (threshold={}), requesting immediate flush",
+                    pendingOperations.size(), maxPendingOperations);
                 return true;
             }
             
@@ -172,14 +195,16 @@ public class SyncBatchManager {
     }
     
     /**
-     * 获取当前最大待处理操作数配置值
+     * 获取当前积压排空阈值（配置文件 sync_batch.json 的 maxPendingOperations 键）。
+     * 达到该值时 {@link #addOperation} 会请求调用方立即排空，但不会丢弃任何操作。
      */
     public static int getMaxPendingOperations() {
         return maxPendingOperations;
     }
 
     /**
-     * 从配置文件加载最大待处理操作数。
+     * 从配置文件加载积压排空阈值（sync_batch.json 的 maxPendingOperations 键）。
+     * 该值只决定"何时请求调用方立即排空缓冲区"，<b>不是丢弃上限</b>。
      * 遵循 CacheConfig.loadFromConfig() 模式：
      * - 配置文件不存在时使用硬编码默认值
      * - 读取失败时回退到默认值
@@ -213,7 +238,7 @@ public class SyncBatchManager {
     }
 
     /**
-     * 重新加载最大待处理操作数配置（支持运行时配置热更新）
+     * 重新加载积压排空阈值配置（支持运行时配置热更新）
      */
     public static void reloadConfig() {
         loadMaxPendingOperations();
