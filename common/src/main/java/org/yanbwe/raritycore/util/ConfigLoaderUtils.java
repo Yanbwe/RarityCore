@@ -8,11 +8,16 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.network.ChangeOperation;
+import org.yanbwe.raritycore.network.SyncBatchManager;
+import org.yanbwe.raritycore.network.SyncManager;
+import org.yanbwe.raritycore.registry.RarityRegistry;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -83,13 +88,23 @@ public class ConfigLoaderUtils {
     
     /**
      * 带批处理支持的配置加载方法
+     *
+     * <p>批处理路径下操作只入队，因此必须响应 {@link SyncBatchManager#addOperation(ChangeOperation)}
+     * 的返回值（true = 积压已达阈值，请求立即排空）：本方法在<b>整份文件</b>加载完成后统一排空一次，
+     * 既避免了逐条回调频繁发包，又保证积压到阈值时不丢任何操作。
+     * 若本文件没有收到排空请求，残留操作由
+     * {@code ConfigReloadService.processPendingBatchOperations()} 在重载流程末尾兜底排空。</p>
+     *
      * @param configFile 配置文件路径
      * @param fileName 文件名
      * @param useBatchProcessing 是否使用批处理
      * @return 成功加载的物品数量
      */
     public static int loadJsonConfigFileWithBatch(Path configFile, String fileName, boolean useBatchProcessing) {
-        return loadJsonConfigFile(configFile, fileName, (itemIdString, rarity) -> {
+        // 本文件加载期间是否收到过"立即排空"请求（lambda 内需要 effectively final 的容器）
+        AtomicBoolean flushRequested = new AtomicBoolean(false);
+
+        int loadedCount = loadJsonConfigFile(configFile, fileName, (itemIdString, rarity) -> {
             Identifier itemId = Identifier.parse(itemIdString);
 
             if (useBatchProcessing) {
@@ -99,17 +114,88 @@ public class ConfigLoaderUtils {
                     itemId,
                     rarity == 0 ? null : rarity
                 );
-                org.yanbwe.raritycore.network.SyncBatchManager.addOperation(operation);
+                if (SyncBatchManager.addOperation(operation)) {
+                    flushRequested.set(true);
+                }
             } else {
                 // 直接注册到稀有度注册表
                 net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(itemId)
                     .map(holder -> holder.value())
                     .orElse(null);
                 if (item != null) {
-                    org.yanbwe.raritycore.registry.RarityRegistry.register(item, rarity, false);
+                    RarityRegistry.register(item, rarity, false);
                 }
             }
         });
+
+        // 整份文件加载完成，响应该文件的排空请求
+        if (useBatchProcessing && flushRequested.get()) {
+            flushPendingBatchOperations(fileName);
+        }
+
+        return loadedCount;
+    }
+
+    /**
+     * 排空 {@link SyncBatchManager} 的积压操作：应用到稀有度注册表并下发到客户端。
+     *
+     * <p>与 {@code ConfigReloadService.processPendingBatchOperations()} 保持相同的应用语义
+     * （ADD/UPDATE → {@link RarityRegistry#register}，DELETE → {@link RarityRegistry#unregister}，
+     * 均以 {@code syncToClients=false} 注册以免逐条触发全量同步）；
+     * 随后把已应用的操作投递到 {@link SyncManager} 的增量缓冲区，
+     * 并通过<b>活的</b>下发入口 {@link SyncManager#syncIncrementalChangesToClients()}
+     * 一次性发出增量包（该入口由 ServerTickListener / SchedulerService / RarityRegistry 调用）。
+     * 若服务器尚未就绪，该方法会保留缓冲区数据、由后续 tick 或登录时的全量同步补上，不会丢失。</p>
+     *
+     * @param fileName 触发排空的文件名（仅用于日志）
+     */
+    private static void flushPendingBatchOperations(String fileName) {
+        List<ChangeOperation> pendingOps = SyncBatchManager.getAndClearPendingOperations();
+        if (pendingOps.isEmpty()) {
+            return;
+        }
+
+        int appliedCount = 0;
+        for (ChangeOperation op : pendingOps) {
+            // 逐条隔离异常：单个操作失败（例如事件监听器抛异常）不应连累剩余操作，
+            // 也不应让异常冒泡出去中断整个配置重载流程
+            try {
+                net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(op.getItemId())
+                    .map(holder -> holder.value())
+                    .orElse(null);
+                if (item == null || op.getItemId().equals(BuiltInRegistries.ITEM.getDefaultKey())) {
+                    continue;
+                }
+
+                switch (op.getType()) {
+                    case ADD:
+                    case UPDATE:
+                        RarityRegistry.register(item, op.getRarity(), false);
+                        appliedCount++;
+                        break;
+                    case DELETE:
+                        RarityRegistry.unregister(item, false);
+                        appliedCount++;
+                        break;
+                }
+
+                // 同步投递到增量同步缓冲区，供下面的立即下发使用
+                SyncManager.addChangeOperation(op);
+            } catch (Exception e) {
+                RarityCore.LOGGER.error("Failed to apply pending batch operation for '{}'", op.getItemId(), e);
+            }
+        }
+
+        if (appliedCount > 0) {
+            RarityCore.LOGGER.info("Flushed {} pending batch operations after loading '{}' (applied: {})",
+                pendingOps.size(), fileName, appliedCount);
+            try {
+                SyncManager.syncIncrementalChangesToClients();
+            } catch (Exception e) {
+                // 注册表数据已应用，客户端会通过后续增量 tick / 登录时的全量同步补齐
+                RarityCore.LOGGER.error("Failed to dispatch incremental sync after flushing batch operations", e);
+            }
+        }
     }
     
     /**
