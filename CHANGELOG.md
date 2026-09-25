@@ -3,6 +3,11 @@
 ## [1211.14.8]
 
 ### 修复
+- 修复铁魔法（Iron's Spells）适配器**整体失效**、法术等级不再影响稀有度的问题：`IronSpellsAdapter` 反射缓存的类名写错——`SpellContainer` 实际位于 `io.redspace.ironsspellbooks.capabilities.magic`，代码却写成 `api.spells.SpellContainer`，导致 `Class.forName` 抛异常、适配器把自身标记为"未加载"并静默降级
+  - 后果：铁魔法分支在优先级链中永不命中，所有法术卷轴/法书一律落到静态数据包映射，稀有度**不随法术等级变化**（同一物品所有等级显示相同稀有度）
+  - 日志只会留下一条 `Failed to cache Iron's Spells method references` 的 WARN，其后仍有 `Iron's Spells compatibility adapter initialized` 的 INFO，容易误判为正常；本次同时修正该日志语义，并新增 `isFunctional()` 以便区分"模组未安装"与"模组在装但适配器不可用"
+  - 类名解析改为多候选回退（实现类优先、接口兜底），组件值实际类型是接口 `ISpellContainer`（`SpellContainer.CODEC` 声明为 `Codec<ISpellContainer>`），因此实现类与接口任一可解析即可
+- 修复法术等级读取**硬编码槽位 0** 的问题：原实现调用 `getSpellAtIndex(0)`，当法术不在槽 0 时抛 `IllegalStateException` 并被外层吞成一条 WARN，该物品静默失去铁魔法稀有度。现优先使用 `getActiveSpells()`（返回**非空**槽位列表）并取 `SpellSlot.getLevel()`，不再受法术所在槽位影响；`getSpellAtIndex(0)` 仅作后备
 - 修复批量同步缓冲区在积压时**静默丢弃变更操作**的问题：`SyncBatchManager.addOperation` 在待处理数达到 `maxPendingOperations`（默认 1000，可由 `sync_batch.json` 覆盖）时直接 `return true` 而不入队，而唯一调用方 `ConfigLoaderUtils` 忽略了返回值——第 1001 条起的配置项既不注册也不下发、且无任何日志。该类批量加载路径（`FinalRarityConfigFolderLoader` / `RarityConfigLoader`，均以批处理模式逐文件加载）在加载期间不排空，因此真实可达
   - 现在始终入队，达阈值时通过返回值请求调用方立即排空并记录 WARN；字段名与 `sync_batch.json` 键名保持不变（配置兼容），仅澄清其语义是"排空请求阈值"而非丢弃上限
   - `ConfigLoaderUtils` 响应返回值，在整份文件加载完成后排空一次：先按 `ConfigReloadService` 同语义把操作应用到注册表，再一次性交给增量同步缓冲区按上限分包下发，避免逐条发包

@@ -37,6 +37,10 @@ public class IronSpellsAdapter {
     /** 缓存的反射方法引用，避免热路径上重复调用 getMethod() */
     private static volatile Method cachedGetSpellAtIndex;
     private static volatile Method cachedGetLevel;
+    /** 非空槽位列表（优先使用）；模组版本过旧时可能不存在 */
+    private static volatile Method cachedGetActiveSpells;
+    /** SpellSlot#getLevel() —— 槽位本身即带等级 */
+    private static volatile Method cachedGetSlotLevel;
 
     /**
      * 初始化适配器。
@@ -67,17 +71,37 @@ public class IronSpellsAdapter {
 
         spellContainerKey = ResourceLocation.fromNamespaceAndPath("irons_spellbooks", "spell_container");
 
-        // 缓存反射方法引用，避免热路径上每次调用都执行 getMethod() 查找
+        // 缓存反射方法引用，避免热路径上每次调用都执行 getMethod() 查找。
+        //
+        // 类名必须与铁魔法模组实际的包结构一致（1.21.1-3.16.x 实测）：
+        //   - SpellContainer 位于 io.redspace.ironsspellbooks.capabilities.magic，
+        //     **不在** api.spells（历史代码写错，导致 Class.forName 抛异常、适配器静默失效）
+        //   - SpellData 位于 io.redspace.ironsspellbooks.api.spells
+        // 组件值实际类型是接口 ISpellContainer（SpellContainer.CODEC 声明为 Codec<ISpellContainer>），
+        // 因此接口与实现类都尝试一次，任一成功即可。
         try {
-            Class<?> spellContainerClass = Class.forName(
-                "io.redspace.ironsspellbooks.api.spells.SpellContainer");
+            Class<?> spellContainerClass = resolveFirstPresent(
+                "io.redspace.ironsspellbooks.capabilities.magic.SpellContainer",
+                "io.redspace.ironsspellbooks.api.spells.ISpellContainer");
+            // 优先用 getActiveSpells()：返回的是**非空**槽位列表，不受法术位于哪个索引影响。
+            // 历史实现硬编码 getSpellAtIndex(0)，当法术不在槽 0 时会抛 IllegalStateException
+            // 并被外层吞成一条 WARN，导致该物品静默失去铁魔法稀有度。
+            try {
+                cachedGetActiveSpells = spellContainerClass.getMethod("getActiveSpells");
+            } catch (NoSuchMethodException e) {
+                RarityCore.LOGGER.debug("getActiveSpells not found on {}, will fall back to index 0", spellContainerClass.getName());
+            }
             cachedGetSpellAtIndex = spellContainerClass.getMethod("getSpellAtIndex", int.class);
+
+            Class<?> spellSlotClass = Class.forName(
+                "io.redspace.ironsspellbooks.api.spells.SpellSlot");
+            cachedGetSlotLevel = spellSlotClass.getMethod("getLevel");
 
             Class<?> spellDataClass = Class.forName(
                 "io.redspace.ironsspellbooks.api.spells.SpellData");
             cachedGetLevel = spellDataClass.getMethod("getLevel");
         } catch (Exception e) {
-            RarityCore.LOGGER.warn("Failed to cache Iron's Spells method references: {}", e.getMessage());
+            RarityCore.LOGGER.warn("Failed to cache Iron's Spells method references: {}", e.toString());
             isIronSpellsLoaded = false;
             isInitialized = true;
             return;
@@ -85,6 +109,22 @@ public class IronSpellsAdapter {
 
         RarityCore.LOGGER.info("Iron's Spells compatibility adapter initialized, target component: {}", spellContainerKey);
         isInitialized = true;
+    }
+
+    /**
+     * 依次尝试多个类名，返回第一个能加载到的类。
+     * 用于兼容同一 API 在不同模组版本中被放在不同包下的情况。
+     */
+    private static Class<?> resolveFirstPresent(String... classNames) throws ClassNotFoundException {
+        ClassNotFoundException last = null;
+        for (String name : classNames) {
+            try {
+                return Class.forName(name);
+            } catch (ClassNotFoundException e) {
+                last = e;
+            }
+        }
+        throw last != null ? last : new ClassNotFoundException("no candidate class names provided");
     }
 
     /**
@@ -185,19 +225,51 @@ public class IronSpellsAdapter {
     }
 
     /**
-     * 反射调用 spellContainer.getSpellAtIndex(0).getLevel() 获取法术等级。
-     * <p>SpellContainer API:
-     * <ul>
-     *   <li>{@code getSpellAtIndex(int)} → SpellData</li>
-     *   <li>{@code SpellData.getLevel()} → int</li>
-     * </ul>
+     * 反射获取法术等级（该物品上的第一个非空法术）。
+     *
+     * <p>优先路径：{@code getActiveSpells()} 返回**非空**槽位列表，取其首个槽位的
+     * {@code SpellSlot.getLevel()}，因此不受"法术位于哪个槽位"影响。</p>
+     *
+     * <p>后备路径：{@code getSpellAtIndex(0).getLevel()}（旧实现，槽位 0 为空时无解）。</p>
+     *
+     * @return 法术等级；该容器内没有任何有效法术时返回 0
      */
     private static int invokeSpellLevel(Object spellContainer) throws Exception {
+        if (cachedGetActiveSpells != null && cachedGetSlotLevel != null) {
+            Object active = cachedGetActiveSpells.invoke(spellContainer);
+            if (active instanceof java.util.List<?> slots) {
+                for (Object slot : slots) {
+                    if (slot == null) {
+                        continue;
+                    }
+                    int level = (int) cachedGetSlotLevel.invoke(slot);
+                    if (level >= 1) {
+                        return level;
+                    }
+                }
+                return 0;
+            }
+        }
+
         Object spellData = cachedGetSpellAtIndex.invoke(spellContainer, 0);
         if (spellData == null) {
-            throw new IllegalStateException("No spell at index 0");
+            return 0;
         }
         return (int) cachedGetLevel.invoke(spellData);
+    }
+
+    /**
+     * 该物品是否具备可解析的铁魔法法术数据。
+     * 模组已加载、方法引用解析成功，且能从物品组件读出有效法术等级时为 true。
+     *
+     * <p>用于区分"模组未安装"与"模组在装但适配器不可用"（后者说明类名/API 与当前
+     * 模组版本不匹配，需要修正反射目标）。</p>
+     */
+    public static boolean isFunctional() {
+        if (!isLoaded()) {
+            return false;
+        }
+        return spellContainerKey != null && cachedGetSpellAtIndex != null && cachedGetLevel != null;
     }
 
     /**
@@ -209,5 +281,7 @@ public class IronSpellsAdapter {
         spellContainerKey = null;
         cachedGetSpellAtIndex = null;
         cachedGetLevel = null;
+        cachedGetActiveSpells = null;
+        cachedGetSlotLevel = null;
     }
 }
