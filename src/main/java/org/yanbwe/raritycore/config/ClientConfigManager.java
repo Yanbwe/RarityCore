@@ -17,6 +17,12 @@ import java.util.Set;
 /**
  * 客户端配置管理器
  * 负责管理客户端相关的配置（已精简，视觉配置迁移至 RarityStyleConfigManager）
+ *
+ * <p><b>本文件是纯粹的客户端显示配置。</b>它位于 {@code config/raritycore/client.json}，
+ * 而该文件在服务端与每个玩家客户端上各存一份、互不相同。因此这里的开关只能影响
+ * <b>本地显示</b>，不得参与稀有度解析——否则服务端与客户端会算出不同稀有度且无法对齐。
+ * {@code enableIronSpellsAdapter} 正是按此语义处理的：解析链两端一致地解析铁魔法物品，
+ * 关闭该开关仅表示本地不显示（见 {@link org.yanbwe.raritycore.client.IronSpellsDisplaySwitch}）。</p>
  */
 public class ClientConfigManager {
 
@@ -25,7 +31,16 @@ public class ClientConfigManager {
     // 客户端配置
     private static boolean enableCacheSystem = RarityConstants.DEFAULT_ENABLE_CACHE_SYSTEM;
     private static boolean enableSophisticatedCoreAdapter = RarityConstants.DEFAULT_ENABLE_SOPHISTICATED_CORE_ADAPTER;
+
+    /**
+     * 铁魔法（Iron's Spellbooks）稀有度联动的<b>客户端显示开关</b>。
+     * 关闭后仅本地不再显示法术等级派生的稀有度（边框/提示/名称颜色），
+     * 解析链结果不变，因此不会与服务端产生分歧。
+     *
+     * @see org.yanbwe.raritycore.client.IronSpellsDisplaySwitch
+     */
     private static boolean enableIronSpellsAdapter = RarityConstants.DEFAULT_ENABLE_IRON_SPELLS_ADAPTER;
+
     private static boolean enableFtbLibraryAdapter = RarityConstants.DEFAULT_ENABLE_FTB_LIBRARY_ADAPTER;
 
     // 配置文件路径
@@ -214,14 +229,17 @@ public class ClientConfigManager {
     }
 
     /**
-     * 获取是否启用 Iron's Spells 适配
+     * 获取铁魔法联动的客户端显示开关。
+     * <p>只影响本地渲染（边框/提示/名称颜色），不影响稀有度解析：
+     * 解析链两端一致地按法术等级解析，见
+     * {@link org.yanbwe.raritycore.client.IronSpellsDisplaySwitch}。</p>
      */
     public static boolean isEnableIronSpellsAdapter() {
         return enableIronSpellsAdapter;
     }
 
     /**
-     * 设置是否启用 Iron's Spells 适配
+     * 设置铁魔法联动的客户端显示开关（仅影响本地显示，不影响解析结果）
      */
     public static void setEnableIronSpellsAdapter(boolean enable) {
         enableIronSpellsAdapter = enable;

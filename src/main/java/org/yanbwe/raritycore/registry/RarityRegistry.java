@@ -14,7 +14,6 @@ import org.yanbwe.raritycore.cache.DualCacheManager;
 import org.yanbwe.raritycore.compat.CompatibilityChecker;
 import org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter;
 import org.yanbwe.raritycore.compat.ironsspells.IronSpellsAdapter;
-import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.config.TagRarityConfig;
@@ -496,13 +495,17 @@ public class RarityRegistry {
      * 仅当 Iron's Spells 模组已加载且有有效法术数据时返回非 null 值。
      * </p>
      *
+     * <p><b>这里刻意不读 {@code ClientConfigManager.isEnableIronSpellsAdapter()}。</b>
+     * 该开关语义是"仅客户端显示开关"，若在此处读取，服务端进程也会读到
+     * {@code config/raritycore/client.json}，于是同一物品在客户端与服务端可以解析出不同稀有度
+     * （多人游戏下服务器与玩家各自的 client.json 相互独立，无法对齐）。
+     * 现在本方法在两端一致地把铁魔法物品解析为法术等级对应稀有度，
+     * 显示与否由客户端渲染链路（{@code IronSpellsDisplaySwitch}）决定。</p>
+     *
      * @param itemStack 物品栈
      * @return 稀有度等级，如果模组未加载或无有效法术数据则返回 null
      */
     private static Integer checkIronSpellsRarity(@Nullable ItemStack itemStack) {
-        if (!ClientConfigManager.isEnableIronSpellsAdapter()) {
-            return null;
-        }
         if (!IronSpellsAdapter.isLoaded()) {
             return null;
         }

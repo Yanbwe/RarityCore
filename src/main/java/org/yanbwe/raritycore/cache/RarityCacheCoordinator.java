@@ -7,7 +7,6 @@ import net.minecraft.world.item.ItemStack;
 import org.yanbwe.raritycore.RarityCore;
 import org.yanbwe.raritycore.compat.apotheosis.ApotheosisAdapter;
 import org.yanbwe.raritycore.compat.ironsspells.IronSpellsAdapter;
-import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.ServerConfigManager;
 import org.yanbwe.raritycore.itemdatamatching.ItemDataRarityMatcher;
 import org.yanbwe.raritycore.registry.ComponentRarityReader;
@@ -32,7 +31,8 @@ public class RarityCacheCoordinator {
     private static volatile boolean cachedApotheosisActive = false;
     private static volatile boolean apotheosisActiveChecked = false;
 
-    /** Iron's Spells 模组激活状态缓存 — 避免快速路径中每次调用都进入 try-catch */
+    /** Iron's Spells 模组激活状态缓存 — 避免快速路径中每次调用都进入 try-catch。
+     *  只取决于适配器是否加载，不看 client.json 的显示开关（见 {@link #isIronSpellsActive()}）。 */
     private static volatile boolean cachedIronSpellsActive = false;
     private static volatile boolean ironSpellsActiveChecked = false;
 
@@ -285,6 +285,8 @@ public class RarityCacheCoordinator {
      * 检查 Iron's Spells 兼容是否激活（影响缓存策略选择）— 懒加载缓存版本。
      * 与 {@link #isApotheosisActive()} 机制一致：Iron's Spells 物品的稀有度
      * 基于 spell_container 组件数据，不能用类型级 ID 缓存，必须走组件缓存路径。
+     * <p>只取决于适配器是否加载，<b>不</b>再受 client.json 的显示开关影响，
+     * 以免服务端与客户端因各自 client.json 不同而在缓存路径上分叉。</p>
      * @return Iron's Spells 兼容是否处于激活状态
      */
     private static boolean isIronSpellsActive() {
@@ -292,8 +294,12 @@ public class RarityCacheCoordinator {
             return cachedIronSpellsActive;
         }
         try {
-            cachedIronSpellsActive = ClientConfigManager.isEnableIronSpellsAdapter()
-                && IronSpellsAdapter.isLoaded();
+            // 刻意不读 ClientConfigManager.isEnableIronSpellsAdapter()：
+            // 那是"仅客户端显示开关"，写在两端各自独立的 client.json 里。
+            // 缓存策略必须在服务端与客户端保持一致，否则同一条目会在两端走不同缓存路径而分叉；
+            // 这里只取决于适配器是否加载（铁魔法物品的稀有度来自 spell_container 组件，
+            // 不能用类型级 ID 缓存）。
+            cachedIronSpellsActive = IronSpellsAdapter.isLoaded();
         } catch (Exception e) {
             cachedIronSpellsActive = false;
         }

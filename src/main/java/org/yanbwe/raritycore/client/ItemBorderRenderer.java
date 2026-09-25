@@ -45,6 +45,9 @@ public class ItemBorderRenderer {
         }
         if (rarity == null) rarity = RarityConstants.MIN_RARITY;
 
+        // 铁魔法联动已在客户端关闭时，把法术等级派生的稀有度替换为回退值（仅影响显示）
+        rarity = IronSpellsDisplaySwitch.applyIfDisabled(itemStack, rarity, null);
+
         Item item = itemStack.getItem();
         if (styleMgr.isNoRaritySkip() && !RarityRegistry.hasConfiguredRarity(item)) return;
 

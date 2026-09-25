@@ -124,6 +124,11 @@ public class RarityTooltipHandler {
             rarity = RarityConstants.MIN_RARITY;
         }
 
+        // 铁魔法联动已在客户端关闭时，把法术等级派生的稀有度替换为回退值（仅影响显示）。
+        // 传 null 让开关自己走"ID 缓存 → defaults.noRarity.defaultRarity"回退链，
+        // 否则这里会把法术等级派生的值当成"原值"传回去，开关等于失效。
+        rarity = IronSpellsDisplaySwitch.applyIfDisabled(itemStack, rarity, null);
+
         // 如果启用了跳过未配置物品且物品没有配置稀有度,则不插入工具提示
         // 注意:需要检查物品是否真的没有配置,而不是检查rarity是否为null
         if (ClientConfigManager.isSkipUnconfiguredItems() && !RarityRegistry.hasConfiguredRarity(item)) {

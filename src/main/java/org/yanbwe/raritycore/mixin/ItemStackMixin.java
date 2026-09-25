@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.yanbwe.raritycore.cache.RenderCacheManager;
+import org.yanbwe.raritycore.client.IronSpellsDisplaySwitch;
 import org.yanbwe.raritycore.config.ClientConfigManager;
 import org.yanbwe.raritycore.config.RarityStyleConfigManager;
 import org.yanbwe.raritycore.registry.RarityRegistry;
@@ -42,7 +43,11 @@ public class ItemStackMixin {
         if (rarity == null || rarity < 1) {
             return;
         }
-        
+
+        // 铁魔法联动已在客户端关闭时，把法术等级派生的稀有度替换为回退值（仅影响显示）。
+        // 名称颜色与边框/提示走同一条解析入口，必须同样处理，否则关闭开关后名字仍是法术稀有度的颜色
+        rarity = IronSpellsDisplaySwitch.applyIfDisabled(stack, rarity, null);
+
         // 如果启用了跳过未配置物品且物品没有配置稀有度,则不修改名称颜色
         Item item = stack.getItem();
         if (ClientConfigManager.isSkipUnconfiguredItems() && !RarityRegistry.hasConfiguredRarity(item)) {
