@@ -14,8 +14,10 @@
 - 修复铁魔法（Iron's Spells）开关导致**服务端与客户端算出不同稀有度**的问题：`RarityRegistry.checkIronSpellbooksRarity` 在稀有度解析阶段读取 `ClientConfigManager.isEnableIronSpellsAdapter()`，而该键位于各端独立的 `config/raritycore/client.json`。多人游戏下服务器管理员为排查 issue #14 关掉自己那份，就会使服务端跳过铁魔法分支、客户端仍走该分支，同一物品两边结果不一致，且用户没有任何手段对齐
   - 该开关现明确定义为**纯客户端显示开关**：解析链两端一致地按法术等级解析，关闭仅表示本地不显示；对外 API（`RarityCoreAPI.getRarity()` 等）返回的仍是真实解析结果，联动模组与 KubeJS 在任一端拿到的数据一致
   - 兼容适配器初始化不再受该开关控制（`CompatibilityManager`）——否则关掉开关的一侧根本不初始化适配器，反而解析不出铁魔法
-  - 新增 `client.IronSpellsDisplaySwitch` 作为该开关的唯一归属地；开关开启（默认）时第一道判断即返回，渲染热路径零额外开销
+  - 新增 `client.IronSpellsDisplaySwitch` 作为该开关的唯一归属地；开关开启（默认）时第一道判断即返回，渲染热路径零额外开销。关闭时把法术等级派生的稀有度替换为回退值（ID 缓存 → 无稀有度默认值），边框、工具提示、名称颜色三条渲染链路均生效
+  - 注意：该开关关闭后，若客户端的 `defaults.noRarity.defaultRarity` 与服务端不同，无任何稀有度来源的物品仍可能出现显示差异（该回退值取自各端独立的 `RarityStyle.json`）。此为本版本有意保留的行为，如需可改为服务端权威来源
 - 修复神化与铁魔法物品在**边框渲染路径**上一律显示最低档的问题：这两类物品会被 `DualCacheManager` 主动判为未命中（以强制实时计算），而 `ItemBorderRenderer` 在未命中时直接退到 `defaults.noRarity.defaultRarity`。现在先按物品查 ID 缓存，取不到才用默认值
+- 修复铁魔法显示开关在**工具提示路径**上不生效的问题：该路径把"已解析出的稀有度"当作回退值传给开关，而对铁魔法物品而言这个值恰恰就是法术等级派生值，开关关闭时会原样返回它，等于该条链路开关失效（边框与名称颜色路径传 `null`，不受影响）。现在统一传 `null`，由开关自行解析回退值
 
 ### 其他
 - `ClientConfigManager` 类文档明确其"纯客户端显示配置"定位：其中的开关只能影响本地显示，不得参与稀有度解析
